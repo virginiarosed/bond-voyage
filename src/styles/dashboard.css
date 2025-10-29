@@ -2,7 +2,7 @@
 
 :root {
   --font-size: 16px;
-  
+
   /* BondVoyage Brand Colors */
   --ocean-blue: #0A7AFF;
   --sky-blue: #3B9EFF;
@@ -15,7 +15,7 @@
   --silver: #E5E7EB;
   --slate: #64748B;
   --charcoal: #334155;
-  
+
   --background: #F8FAFB;
   --foreground: #1A2B4F;
   --card: #ffffff;
@@ -112,7 +112,7 @@
   --gradient-to: #1E40AF;
   --shadow-color: rgba(96, 165, 250, 0.15);
   --shadow-color-strong: rgba(96, 165, 250, 0.3);
-  
+
   /* Additional dark mode specific colors */
   --ocean-blue: #60A5FA;
   --sky-blue: #3B82F6;
