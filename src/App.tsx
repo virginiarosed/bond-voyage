@@ -119,6 +119,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const { currentSide } = useSide();
   const [currentTheme, setCurrentTheme] = useState("light");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true)
 
   const { breadcrumbs: contextBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
 
@@ -143,7 +144,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         import("./styles/globals.css")
         import("./styles/index.css")
     }
-  }, [location])
+    setTimeout(() => {
+      setIsLoading(false)
+
+    }, 1500)
+
+  }, [location, setIsLoading])
+
 
   // Close mobile menu on route change, reset breadcrumbs, and scroll to top
   useEffect(() => {
@@ -440,6 +447,19 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const config = pageConfig[location.pathname] || pageConfig["/"];
+
+  /**
+   * @TODO change design of this overlay
+   */
+  if (isLoading) {
+  return <div style={{
+    backgroundColor: 'black',
+    position: 'absolute',
+    height: '100vh',
+    width: '100vw',
+  }}></div>
+
+  }
   
   // Use context breadcrumbs if set, otherwise use page config breadcrumbs
   const displayBreadcrumbs = contextBreadcrumbs.length > 0 ? contextBreadcrumbs : config.breadcrumbs;
