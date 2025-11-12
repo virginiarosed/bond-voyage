@@ -5,8 +5,8 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { motion } from "motion/react";
 import barroso from "../assets/barroso.png"
 import dichoso from "../assets/dichoso.png"
-import hidalgo from "../assets/hidalgo.png"
-import lacsa from "../assets/lacsa.jpg"
+import hidalgo from "../assets/hidalgo.PNG"
+import lacsa from "../assets/lacsa.jpg  "
 import melgar from "../assets/melgar.png"
 
 const teamMembers = [
