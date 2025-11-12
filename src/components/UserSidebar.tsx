@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSide } from "./SideContext";
 import { useProfile } from "./ProfileContext";
+import bondVoyage from "../assets/BondVoyage Logo White (logo only).png"
 
 interface UserSidebarProps {
   currentTheme: string;
@@ -150,18 +151,15 @@ export function UserSidebar({ currentTheme, onThemeChange, isMobileMenuOpen, set
         {/* Mountain Logo Brand Button with Side Menu */}
         <div className="relative" ref={sideMenuRef}>
           <button 
-            onClick={() => setShowSideMenu(!showSideMenu)}
-            className="mt-5 mb-6 w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 hover:scale-105 hover:rotate-2"
-            style={{
-              background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))`,
-              boxShadow: `0 4px 12px var(--shadow-color-strong)`
-            }}
-          >
-            <svg viewBox="0 0 200 120" width="32" height="32">
-              <path d="M 10 110 L 70 10 L 100 60 L 130 10 L 190 110 Z" fill="white"/>
-              <circle cx="100" cy="75" r="12" fill="white" opacity="0.9"/>
-            </svg>
-          </button>
+                      onClick={() => setShowSideMenu(!showSideMenu)}
+                      className="mt-5 mb-6 w-14 h-14 p-2 rounded-2xl flex items-center justify-center transition-all duration-200 hover:scale-105 hover:rotate-2"
+                      style={{
+                        background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))`,
+                        boxShadow: `0 4px 12px var(--shadow-color-strong)`
+                      }}
+                    >
+                      <img src={bondVoyage} alt="Bond Voyage"/>
+                    </button>
 
           {/* Side Switch Menu Overlay */}
           {showSideMenu && (
@@ -178,7 +176,7 @@ export function UserSidebar({ currentTheme, onThemeChange, isMobileMenuOpen, set
         </div>
 
       {/* Navigation Menu Items */}
-      <div className="flex flex-col items-center gap-1 mt-4">
+      <div className="flex flex-col items-center gap-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.id;
@@ -188,7 +186,7 @@ export function UserSidebar({ currentTheme, onThemeChange, isMobileMenuOpen, set
               key={item.id}
               onClick={() => handleNavigate(item.id)}
               className={`
-                relative w-16 h-[72px] rounded-xl flex flex-col items-center justify-center gap-1.5
+                relative w-14 h-14 rounded-xl flex flex-col items-center justify-center gap-1.5
                 transition-all duration-200 hover:-translate-y-0.5
                 ${isActive 
                   ? 'bg-sidebar-accent border-l-[3px] border-sidebar-primary' 
@@ -216,7 +214,7 @@ export function UserSidebar({ currentTheme, onThemeChange, isMobileMenuOpen, set
         <div className="relative" ref={moreMenuRef}>
           <button
             onClick={() => setShowMoreMenu(!showMoreMenu)}
-            className="relative w-16 h-[72px] rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sidebar-accent/50"
+            className="relative w-14 h-14 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sidebar-accent/50"
           >
             <div className="w-10 h-10 rounded-[10px] flex items-center justify-center">
               <Grid3x3 className="w-5 h-5 text-sidebar-foreground/60 transition-colors" strokeWidth={2.5} />
@@ -320,7 +318,7 @@ export function UserSidebar({ currentTheme, onThemeChange, isMobileMenuOpen, set
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 overflow-hidden"
+            className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 overflow-hidden"
           >
             {userProfileData.profilePicture ? (
               <img src={userProfileData.profilePicture} alt="Profile" className="w-full h-full object-cover" />

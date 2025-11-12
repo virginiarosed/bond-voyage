@@ -8,6 +8,7 @@ import {
   Calendar,
   Users,
   RotateCcw,
+  ChevronLeft,
   ChevronRight,
   Phone,
   Mail,
@@ -578,6 +579,21 @@ export function Approvals({
   if (viewMode === "detail" && currentBooking) {
     return (
       <div className="space-y-6">
+        {/* Header with back button */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleBackToList}
+            className="w-10 h-10 rounded-xl bg-white border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] flex items-center justify-center transition-all"
+          >
+            <ChevronLeft className="w-5 h-5 text-[#64748B]" />
+          </button>
+          <div>
+            <h2 className="text-[#1A2B4F] font-semibold">{currentBooking.destination}</h2>
+            <p className="text-sm text-[#64748B]">
+              {activeTab === "rejected" ? "Rejected Booking" : "Pending Approval"} - {currentBooking.id}
+            </p>
+          </div>
+        </div>
         {/* Booking Header Card */}
         <div className="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
           <div className="flex items-start justify-between mb-6">
