@@ -45,7 +45,7 @@ export function StandardItineraryDetailView({ itinerary, itineraryDetails, onBac
         </button>
         <div>
           <h2 className="text-[#1A2B4F] font-semibold">{itinerary.title}</h2>
-          <p className="text-sm text-[#64748B]">Standard Itinerary Template</p>
+          <p className="text-sm text-[#64748B]">Standard Itinerary</p>
         </div>
       </div>
 

@@ -328,13 +328,6 @@ export function SpinTheWheel() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-foreground text-2xl mb-1">Spin the Wheel</h1>
-          <p className="text-muted-foreground">Let fate decide your next adventure!</p>
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Wheel Section */}
@@ -484,7 +477,7 @@ export function SpinTheWheel() {
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Boracay&#10;Palawan&#10;Siargao&#10;Baguio&#10;Cebu&#10;Vigan"
+                placeholder="Options..."
                 className="w-full h-48 px-4 py-3 bg-input-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
                 style={{ fontFamily: 'monospace' }}
               />

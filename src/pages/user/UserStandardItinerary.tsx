@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { BookOpen, Search, ArrowLeft, MapPin, Calendar, DollarSign, Users, Plane, Hotel, Camera, UtensilsCrossed, Car, Package, Send, ChevronLeft } from "lucide-react";
+import { BookOpen, Eye, Search, ArrowLeft, MapPin, Calendar, DollarSign, Users, Plane, Hotel, Camera, UtensilsCrossed, Car, Package, Send, ChevronLeft } from "lucide-react";
 import { ContentCard } from "../../components/ContentCard";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { SearchFilterToolbar, SortOrder } from "../../components/SearchFilterToolbar";
@@ -759,14 +759,18 @@ export function UserStandardItinerary() {
   // Grid View
   return (
     <div className="space-y-6">
-      {/* Back Button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 px-4 py-2 text-[#64748B] dark:text-[#94A3B8] hover:text-[#0A7AFF] dark:hover:text-[#2596be] transition-colors"
-      >
-        <ChevronLeft className="w-5 h-5" />
-        <span className="text-sm font-medium">Back</span>
-      </button>
+      {/* Header with back button */}
+<div className="flex items-center gap-4 mb-6">
+  <button
+    onClick={() => navigate('/user/travels')}
+    className="w-10 h-10 rounded-xl bg-white border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] dark:bg-gray-800 dark:border-gray-700 dark:hover:border-[#0A7AFF] dark:hover:bg-[rgba(10,122,255,0.05)] flex items-center justify-center transition-all"
+  >
+    <ChevronLeft className="w-5 h-5 text-[#64748B] dark:text-[#94A3B8]" />
+  </button>
+  <div>
+    <h2 className="text-[#1A2B4F] dark:text-white font-semibold">Back to Travels</h2>
+  </div>
+</div>
 
       <ContentCard 
         title="Standard Itinerary Packages" 
@@ -785,59 +789,73 @@ export function UserStandardItinerary() {
 
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedTemplates.map((template) => (
-            <div
-              key={template.id}
-              ref={(el) => (standardRefs.current[template.id] = el)}
-              className="group rounded-2xl border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-white dark:bg-[#1A1F2E] overflow-hidden hover:border-[#0A7AFF] dark:hover:border-[#2596be] hover:shadow-lg transition-all cursor-pointer"
-              onClick={() => handleViewDetails(template.id)}
-            >
-              {/* Image */}
-              <div className="h-48 relative overflow-hidden">
-                <ImageWithFallback
-                  src={template.image}
-                  alt={template.destination}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-3 left-3">
-                  <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/20 backdrop-blur-sm text-white border border-white/30">
-                    {template.days} Days
-                  </span>
-                </div>
-              </div>
+  {sortedTemplates.map((template) => (
+    <div
+      key={template.id}
+      ref={(el) => (standardRefs.current[template.id] = el)}
+      className="group rounded-2xl border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-white dark:bg-[#1A1F2E] overflow-hidden hover:border-[#0A7AFF] dark:hover:border-[#2596be] hover:shadow-lg transition-all"
+    >
+      {/* Image */}
+      <div className="h-48 relative overflow-hidden">
+        <ImageWithFallback
+          src={template.image}
+          alt={template.destination}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute bottom-3 left-3">
+          <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/20 backdrop-blur-sm text-white border border-white/30">
+            {template.days} Days
+          </span>
+        </div>
+      </div>
 
-              {/* Content */}
-              <div className="p-5">
-                <h3 className="font-semibold text-[#1A2B4F] dark:text-white mb-2 group-hover:text-[#0A7AFF] dark:group-hover:text-[#2596be] transition-colors">
-                  {template.title}
-                </h3>
-                <div className="flex items-center gap-2 text-sm text-[#64748B] dark:text-[#94A3B8] mb-4">
-                  <MapPin className="w-4 h-4" />
-                  <span>{template.destination}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-[#64748B] dark:text-[#94A3B8] mb-1">Starting from</p>
-                    <p className="text-lg font-bold text-[#0A7AFF] dark:text-[#2596be]">
-                      ₱{template.pricePerPax.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">per person</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* Content */}
+      <div className="p-5">
+        <h3 className="font-semibold text-[#1A2B4F] dark:text-white mb-2 group-hover:text-[#0A7AFF] dark:group-hover:text-[#2596be] transition-colors">
+          {template.title}
+        </h3>
+        <div className="flex items-center gap-2 text-sm text-[#64748B] dark:text-[#94A3B8] mb-4">
+          <MapPin className="w-4 h-4" />
+          <span>{template.destination}</span>
+        </div>
+        
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8] mb-1">Starting from</p>
+            <p className="text-lg font-bold text-[#0A7AFF] dark:text-[#2596be]">
+              ₱{template.pricePerPax.toLocaleString()}
+            </p>
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">per person</p>
+          </div>
+          {/* View Details Button */}
+        <div className="flex justify-end">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewDetails(template.id);
+            }}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] dark:from-[#2596be] dark:to-[#25bce0] text-white text-sm font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
+          >
+            <Eye className="w-4 h-4" />
+            View Details
+          </button>
+        </div>
         </div>
 
-        {sortedTemplates.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-[#F8FAFB] dark:bg-[#0F1419] flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-[#64748B] dark:text-[#94A3B8]" />
-            </div>
-            <p className="text-[#64748B] dark:text-[#94A3B8]">No itineraries found</p>
-          </div>
-        )}
+      </div>
+    </div>
+  ))}
+</div>
+
+{sortedTemplates.length === 0 && (
+  <div className="text-center py-12">
+    <div className="w-16 h-16 rounded-full bg-[#F8FAFB] dark:bg-[#0F1419] flex items-center justify-center mx-auto mb-4">
+      <Search className="w-8 h-8 text-[#64748B] dark:text-[#94A3B8]" />
+    </div>
+    <p className="text-[#64748B] dark:text-[#94A3B8]">No itineraries found</p>
+  </div>
+)}
       </ContentCard>
     </div>
   );

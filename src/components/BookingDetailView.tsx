@@ -1,4 +1,4 @@
-import { ChevronRight, MapPin, Calendar, Users, CreditCard, Clock, Phone, Mail, User, AlertTriangle, CheckCircle } from "lucide-react";
+import { ChevronRight, ChevronLeft, MapPin, Calendar, Users, CreditCard, Clock, Phone, Mail, User, AlertTriangle, CheckCircle } from "lucide-react";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
@@ -40,12 +40,15 @@ interface BookingDetailViewProps {
   itinerary: ItineraryDay[];
   onBack: () => void;
   actionButtons?: React.ReactNode;
-  breadcrumbPage: string;
+  breadcrumbPage?: string;
   headerVariant?: "default" | "approval" | "completed" | "cancelled";
   showPaymentDetails?: boolean;
   onPaymentStatusChange?: (bookingId: string, newStatus: string) => void;
   onPaidAmountChange?: (bookingId: string, newAmount: number) => void;
   isRequestedItinerary?: boolean;
+  useBackButtonHeader?: boolean;
+  backButtonSubtitle?: string;
+  useBreadcrumbs?: boolean;
 }
 
 export function BookingDetailView({
@@ -53,12 +56,15 @@ export function BookingDetailView({
   itinerary = [],
   onBack,
   actionButtons,
-  breadcrumbPage,
+  breadcrumbPage = "",
   headerVariant = "default",
   showPaymentDetails = false,
   onPaymentStatusChange,
   onPaidAmountChange,
   isRequestedItinerary = false,
+  useBackButtonHeader = false,
+  backButtonSubtitle = "",
+  useBreadcrumbs = false,
 }: BookingDetailViewProps) {
   const getHeaderGradient = () => {
     switch (headerVariant) {
@@ -77,17 +83,36 @@ export function BookingDetailView({
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 text-sm">
-        <button 
-          onClick={onBack}
-          className="text-[#0A7AFF] hover:text-[#0865CC] font-medium transition-colors"
-        >
-          {breadcrumbPage}
-        </button>
-        <ChevronRight className="w-4 h-4 text-[#64748B]" />
-        <span className="text-[#334155] font-medium">{booking.id}</span>
-      </div>
+      {/* Conditional Header - Different styles based on view type */}
+      {useBreadcrumbs ? (
+        /* Breadcrumb Navigation for specific views that need it */
+        <div className="flex items-center gap-2 text-sm">
+          <button 
+            onClick={onBack}
+            className="text-[#0A7AFF] hover:text-[#0865CC] font-medium transition-colors"
+          >
+            {breadcrumbPage}
+          </button>
+          <ChevronRight className="w-4 h-4 text-[#64748B]" />
+          <span className="text-[#334155] font-medium">{booking.id}</span>
+        </div>
+      ) : (
+        /* Header with back button - Default for most views */
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={onBack}
+            className="w-10 h-10 rounded-xl bg-white border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] flex items-center justify-center transition-all"
+          >
+            <ChevronLeft className="w-5 h-5 text-[#64748B]" />
+          </button>
+          <div>
+            <h2 className="text-[#1A2B4F] font-semibold">{booking.itinerary || booking.destination}</h2>
+            <p className="text-sm text-[#64748B]">
+              {backButtonSubtitle || (isRequestedItinerary ? "Requested Itinerary" : "Booking Details")}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Booking Header Card */}
       <div className={`rounded-2xl p-8 text-white shadow-lg ${getHeaderGradient()}`}>
@@ -256,17 +281,9 @@ export function BookingDetailView({
           )}
 
           {/* Actions */}
-          {(actionButtons || !isRequestedItinerary) && (
+          {actionButtons && (
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 space-y-3">
               {actionButtons}
-              {!isRequestedItinerary && (
-                <button
-                  onClick={onBack}
-                  className="w-full h-11 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-[#334155] font-medium transition-all"
-                >
-                  Back to List
-                </button>
-              )}
             </div>
           )}
         </div>

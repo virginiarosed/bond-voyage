@@ -1,4 +1,4 @@
-import { Calendar, MapPin, User, Users, Globe, Eye, Edit, RotateCcw, X, ChevronRight, Phone, Mail, CreditCard, CheckCircle2, Package, Clock, Plane, Hotel, Camera, UtensilsCrossed, Car, Briefcase, FileCheck, ClipboardList, BookOpen, Download } from "lucide-react";
+import { Calendar, MapPin, User, Users, Globe, Eye, Edit, RotateCcw, X, ChevronRight, ChevronLeft, Phone, Mail, CreditCard, CheckCircle2, Package, Clock, Plane, Hotel, Camera, UtensilsCrossed, Car, Briefcase, FileCheck, ClipboardList, BookOpen, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
@@ -881,6 +881,19 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
   if (viewMode === "detail" && selectedBooking) {
     return (
       <div className="space-y-6">
+        {/* Header with back button */} 
+        <div className="flex items-center gap-4 mb-6">   
+          <button     
+            onClick={() => navigate(-1)}     
+            className="w-10 h-10 rounded-xl bg-white border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] dark:bg-gray-800 dark:border-gray-700 dark:hover:border-[#0A7AFF] dark:hover:bg-[rgba(10,122,255,0.05)] flex items-center justify-center transition-all"   
+          >     
+            <ChevronLeft className="w-5 h-5 text-[#64748B] dark:text-[#94A3B8]" />   
+          </button>   
+          <div>     
+            <h2 className="text-[#1A2B4F] dark:text-white font-semibold">{selectedBooking.itinerary}</h2>     
+            <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">Booking Details</p>   
+          </div> 
+        </div> 
         {/* Booking Header Card */}
         <div className="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
           <div className="flex items-start justify-between mb-6">

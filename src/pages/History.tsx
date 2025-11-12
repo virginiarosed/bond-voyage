@@ -471,6 +471,8 @@ export function History({ historyBookings, setHistoryBookings }: HistoryProps) {
         breadcrumbPage="History"
         headerVariant={headerVariant}
         showPaymentDetails={false}
+        useBackButtonHeader={true}
+        backButtonSubtitle={selectedBooking.status === "completed" ? "Completed Booking" : "Cancelled Booking"}
       />
     );
   }
