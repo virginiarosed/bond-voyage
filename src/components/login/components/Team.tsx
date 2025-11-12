@@ -3,36 +3,41 @@
 import { Mail } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { motion } from "motion/react";
+import barroso from "../assets/barroso.png"
+import dichoso from "../assets/dichoso.png"
+import hidalgo from "../assets/hidalgo.png"
+import lacsa from "../assets/lacsa.jpg"
+import melgar from "../assets/melgar.png"
 
 const teamMembers = [
   {
     name: "Fara Katrina Lacsa",
     role: "Project Manager",
-    image: "https://images.unsplash.com/photo-1581065178047-8ee15951ede6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwd29tYW58ZW58MXx8fHwxNzU5OTI5MDMwfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: lacsa,
     email: "fara.lacsa@bondvoyage.com",
   },
   {
     name: "Maryll Nezeriah Barroso",
     role: "Business Analyst",
-    image: "https://images.unsplash.com/photo-1581065178047-8ee15951ede6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwYXNpYW4lMjB3b21hbnxlbnwxfHx8fDE3NjAwMjc2NzZ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: barroso,
     email: "maryll.barroso@bondvoyage.com",
   },
   {
     name: "Virginia Rose Dichoso",
     role: "Frontend Developer",
-    image: "https://images.unsplash.com/photo-1736939678218-bd648b5ef3bb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwZmlsaXBpbmElMjB3b21hbnxlbnwxfHx8fDE3NjAwMjc2NzZ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: dichoso,
     email: "virginia.dichoso@bondvoyage.com",
   },
   {
     name: "Ayumi Hidalgo",
     role: "Business Analyst",
-    image: "https://images.unsplash.com/photo-1676777493576-1432f14373bb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwamFwYW5lc2UlMjB3b21hbnxlbnwxfHx8fDE3NjAwMjc2NzZ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: hidalgo,
     email: "ayumi.hidalgo@bondvoyage.com",
   },
   {
     name: "Felix Angelo Melgar",
     role: "Backend Developer",
-    image: "https://images.unsplash.com/photo-1723537742563-15c3d351dbf2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwbWFufGVufDF8fHx8MTc1OTk4NzY1N3ww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: melgar,
     email: "felix.melgar@bondvoyage.com",
   },
 ];

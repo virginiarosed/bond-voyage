@@ -8,6 +8,7 @@ import { Label } from "./ui/label";
 import { Mail, Phone, MapPin, Send, Plane, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
+
 export function Contact() {
   const [messageValue, setMessageValue] = useState("");
   const [showEasterEgg, setShowEasterEgg] = useState(false);

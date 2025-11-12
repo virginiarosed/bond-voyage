@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog@1.1.6";
 import { DialogTitle, DialogDescription } from "./ui/dialog";
+import bondVoyageLogo from "../assets/40755770f782ee2806bf45fc8b364947bbbe25e5.png";
+
 
 interface SignUpModalProps {
   isOpen: boolean;
@@ -363,12 +365,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
 
                 <div className="absolute inset-0 flex items-center justify-center p-8">
                   <div className="max-w-[350px] text-white">
-                    <div
-                      className="mb-6 h-10 w-auto text-2xl font-bold"
-                      style={{ filter: "drop-shadow(0 2px 16px rgba(0,0,0,0.3))" }}
-                    >
-                      BondVoyage
-                    </div>
+                    <img src={bondVoyageLogo} className="mb-4 aspect-16/9 h-10" />
 
                     <h2
                       className="mb-3 text-white"
