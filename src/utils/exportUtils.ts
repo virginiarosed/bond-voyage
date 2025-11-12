@@ -310,12 +310,12 @@ export const exportToPDF = (data: any[], title: string, columns: string[]) => {
   }
 };
 
-// Excel Export Function (CSV format) with Enhanced Professional Design
+
 export const exportToExcel = (data: any[], title: string, columns: string[]) => {
-  // Create professional Excel-compatible CSV content with BondVoyage branding
+
   let csvContent = '';
   
-  // Header Section with BondVoyage Branding
+  // Header Section
   csvContent += `"🏔️ 4B's TRAVEL AND TOURS"\n`;
   csvContent += `"Creating Unforgettable Adventures"\n`;
   csvContent += `"══════════════════════════════════════════════════════════════════════════════"\n\n`;
@@ -375,14 +375,13 @@ export const exportToExcel = (data: any[], title: string, columns: string[]) => 
   
   // Footer Section
   csvContent += `"══════════════════════════════════════════════════════════════════════════════"\n`;
-  csvContent += `"🏔️ BondVoyage Travel Agency"\n`;
-  csvContent += `"📧 Email: info@bondvoyage.ph"\n`;
+  csvContent += `"🏔️ 4B's Travel and Tours"\n`;
+  csvContent += `"📧 Email: 4bstravelandtours@gmail.ph"\n`;
   csvContent += `"📱 Phone: +63 917 123 4567"\n`;
-  csvContent += `"🌐 Website: www.bondvoyage.ph"\n`;
-  csvContent += `"📍 Location: Manila, Philippines"\n`;
+  csvContent += `"📍 Location: Laguna, Philippines"\n`;
   csvContent += `"══════════════════════════════════════════════════════════════════════════════"\n`;
   csvContent += `"⚠️  CONFIDENTIAL - For Internal Use Only"\n`;
-  csvContent += `"This document contains proprietary information of BondVoyage Travel Agency"\n`;
+  csvContent += `"This document contains proprietary information of 4B's Travel and Tours"\n`;
 
   // Create blob with UTF-8 BOM for Excel compatibility
   const BOM = '\uFEFF';
@@ -757,7 +756,7 @@ export const exportBookingDetailToPDF = (booking: any, itinerary: any[]) => {
               </div>
             </div>
             <div class="status-badge">
-              BondVoyage<br/>Travel Agency
+              4B's Travel and Tours<br/>
             </div>
           </div>
         </div>

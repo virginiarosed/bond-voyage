@@ -48,7 +48,7 @@ export function UserInquiries() {
       unreadCount: 0,
       messages: [
         { id: "msg-001", sender: "user", senderName: "Maria Santos", content: "Hi! I'd like to know if the Palawan package includes snorkeling equipment?", timestamp: new Date("2024-11-28T10:30:00"), read: true },
-        { id: "msg-002", sender: "admin", senderName: "Admin - Juan Cruz", content: "Hello Maria! Yes, snorkeling equipment is included in the package. You'll also have a guide.", timestamp: new Date("2024-11-28T14:15:00"), read: true }
+        { id: "msg-002", sender: "admin", senderName: "Admin", content: "Hello Maria! Yes, snorkeling equipment is included in the package. You'll also have a guide.", timestamp: new Date("2024-11-28T14:15:00"), read: true }
       ]
     },
     {
@@ -71,8 +71,8 @@ export function UserInquiries() {
       unreadCount: 1,
       messages: [
         { id: "msg-004", sender: "user", senderName: "Maria Santos", content: "I need to change my travel dates for booking BV-2025-001", timestamp: new Date("2024-11-27T15:00:00"), read: true },
-        { id: "msg-005", sender: "admin", senderName: "Admin - Ana Reyes", content: "We can help you with that. What are your preferred new dates?", timestamp: new Date("2024-11-27T18:20:00"), read: true },
-        { id: "msg-006", sender: "admin", senderName: "Admin - Ana Reyes", content: "Please let us know your new dates so we can check availability.", timestamp: new Date("2024-11-28T10:30:00"), read: false }
+        { id: "msg-005", sender: "admin", senderName: "Admin", content: "We can help you with that. What are your preferred new dates?", timestamp: new Date("2024-11-27T18:20:00"), read: true },
+        { id: "msg-006", sender: "admin", senderName: "Admin", content: "Please let us know your new dates so we can check availability.", timestamp: new Date("2024-11-28T10:30:00"), read: false }
       ]
     }
   ]);
@@ -421,45 +421,47 @@ export function UserInquiries() {
             </DialogHeader>
 
             {/* Messages - Scrollable */}
-            <ScrollArea className="flex-1 px-6 py-4">
-              <div className="space-y-4 pr-4">
-                {selectedInquiry.messages.map((message, index) => (
-                  <div key={message.id}>
-                    {/* Unread Messages Marker */}
-                    {index === firstUnreadIndex && firstUnreadIndex !== -1 && (
-                      <div className="flex items-center gap-3 my-6">
-                        <div className="flex-1 h-px bg-[#FF6B6B]"></div>
-                        <span className="text-xs font-semibold text-[#FF6B6B] bg-[rgba(255,107,107,0.1)] px-3 py-1 rounded-full border border-[rgba(255,107,107,0.2)]">
-                          {selectedInquiry.messages.filter(msg => msg.sender === "admin" && !msg.read).length} Unread Message{selectedInquiry.messages.filter(msg => msg.sender === "admin" && !msg.read).length > 1 ? 's' : ''}
-                        </span>
-                        <div className="flex-1 h-px bg-[#FF6B6B]"></div>
-                      </div>
-                    )}
-                    
-                    <div
-                      className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                      <div className={`max-w-[70%] ${message.sender === "user" ? "order-2" : "order-1"}`}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-medium text-[#64748B] dark:text-[#94A3B8]">{message.senderName}</span>
-                          <span className="text-xs text-[#94A3B8] dark:text-[#64748B]">{formatTimestamp(message.timestamp)}</span>
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full px-6 py-4">
+                <div className="space-y-4 pr-4">
+                  {selectedInquiry.messages.map((message, index) => (
+                    <div key={message.id}>
+                      {/* Unread Messages Marker */}
+                      {index === firstUnreadIndex && firstUnreadIndex !== -1 && (
+                        <div className="flex items-center gap-3 my-6">
+                          <div className="flex-1 h-px bg-[#FF6B6B]"></div>
+                          <span className="text-xs font-semibold text-[#FF6B6B] bg-[rgba(255,107,107,0.1)] px-3 py-1 rounded-full border border-[rgba(255,107,107,0.2)]">
+                            {selectedInquiry.messages.filter(msg => msg.sender === "admin" && !msg.read).length} Unread Message{selectedInquiry.messages.filter(msg => msg.sender === "admin" && !msg.read).length > 1 ? 's' : ''}
+                          </span>
+                          <div className="flex-1 h-px bg-[#FF6B6B]"></div>
                         </div>
-                        <div
-                          className={`p-4 rounded-2xl ${
-                            message.sender === "user"
-                              ? "bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] dark:from-[#2596be] dark:to-[#25bce0] text-white rounded-tr-sm"
-                              : "bg-[#F8FAFB] dark:bg-[#1A1F2E] border-2 border-[#E5E7EB] dark:border-[#2A3441] text-[#334155] dark:text-[#E5E7EB] rounded-tl-sm"
-                          }`}
-                        >
-                          <p className="text-sm leading-relaxed">{message.content}</p>
+                      )}
+                      
+                      <div
+                        className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div className={`max-w-[70%] ${message.sender === "user" ? "order-2" : "order-1"}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-medium text-[#64748B] dark:text-[#94A3B8]">{message.senderName}</span>
+                            <span className="text-xs text-[#94A3B8] dark:text-[#64748B]">{formatTimestamp(message.timestamp)}</span>
+                          </div>
+                          <div
+                            className={`p-4 rounded-2xl ${
+                              message.sender === "user"
+                                ? "bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] dark:from-[#2596be] dark:to-[#25bce0] text-white rounded-tr-sm"
+                                : "bg-[#F8FAFB] dark:bg-[#1A1F2E] border-2 border-[#E5E7EB] dark:border-[#2A3441] text-[#334155] dark:text-[#E5E7EB] rounded-tl-sm"
+                            }`}
+                          >
+                            <p className="text-sm leading-relaxed">{message.content}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+            </div>
 
             {/* Message Input - Fixed at Bottom */}
             {selectedInquiry.status === "open" && (

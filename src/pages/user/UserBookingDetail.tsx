@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Plane, Hotel, Camera, UtensilsCrossed, Car, Download } from "lucide-react";
+import { Plane, Hotel, Camera, UtensilsCrossed, Car, Download, Eye } from "lucide-react";
 import { BookingDetailView } from "../../components/BookingDetailView";
 import { ItineraryDetailDisplay } from "../../components/ItineraryDetailDisplay";
 import { exportBookingDetailToPDF, exportBookingDetailToExcel } from "../../utils/exportUtils";

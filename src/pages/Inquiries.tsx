@@ -54,7 +54,7 @@ const mockInquiries: Inquiry[] = [
       {
         id: "msg-002",
         sender: "admin",
-        senderName: "Admin - Juan Cruz",
+        senderName: "Admin",
         content: "Hello Maria! Thank you for your interest. The ₱4,500 per person includes accommodation for 4 nights, daily breakfast, island hopping tour, airport transfers, and tour guide services. Flights and lunch/dinner are not included.",
         timestamp: new Date("2024-01-15T10:15:00"),
         read: true,
@@ -173,7 +173,7 @@ const mockInquiries: Inquiry[] = [
       {
         id: "msg-011",
         sender: "admin",
-        senderName: "Admin - Juan Cruz",
+        senderName: "Admin",
         content: "Hi Miguel! Yes, we offer group discounts for 20+ people. For your group size, we can offer a 15% discount on the total package price. Would you like me to prepare a customized quotation?",
         timestamp: new Date("2024-01-12T10:30:00"),
         read: true,

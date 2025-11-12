@@ -76,7 +76,7 @@ function WinnerModal({ winner, onClose, onRemove, eliminationMode }: WinnerModal
 
 export function SpinTheWheel() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [items, setItems] = useState<string[]>(["Boracay", "Palawan", "Siargao", "Baguio", "Cebu", "Vigan"]);
+  const [items, setItems] = useState<string[]>([]);
   const [inputText, setInputText] = useState("");
   const [currentDeg, setCurrentDeg] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -477,7 +477,7 @@ export function SpinTheWheel() {
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Options..."
+                placeholder="List of Options"
                 className="w-full h-48 px-4 py-3 bg-input-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
                 style={{ fontFamily: 'monospace' }}
               />
