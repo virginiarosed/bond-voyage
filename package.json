@@ -60,6 +60,6 @@
       },
       "scripts": {
             "dev": "vite",
-            "build": "vite build --output build"
+            "build": "vite build --outDir build"
       }
 }
