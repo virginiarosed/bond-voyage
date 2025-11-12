@@ -42,6 +42,7 @@ import { UserBookingDetail } from "./pages/user/UserBookingDetail";
 import { UserHistoryDetail } from "./pages/user/UserHistoryDetail";
 import { UserStandardItinerary } from "./pages/user/UserStandardItinerary";
 import HomePage from "./pages/HomePage";
+import { LoadingOverlay } from "./components/LoadingOverlay";
 
 
 // Utility function to format dates consistently
@@ -452,13 +453,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
    * @TODO change design of this overlay
    */
   if (isLoading) {
-  return <div style={{
-    backgroundColor: 'black',
-    position: 'absolute',
-    height: '100vh',
-    width: '100vw',
-  }}></div>
-
+  return <LoadingOverlay/>
   }
   
   // Use context breadcrumbs if set, otherwise use page config breadcrumbs
