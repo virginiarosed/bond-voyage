@@ -305,7 +305,7 @@ export function Sidebar({ currentTheme, onThemeChange, isMobileMenuOpen, setIsMo
                   </div>
                   <div className="flex-1">
                     <h3 className="text-base text-popover-foreground">{profileData.companyName}</h3>
-                    <p className="text-sm text-muted-foreground">{profileData.email}</p>
+                    <p className="text-xs text-muted-foreground">{profileData.email}</p>
                   </div>
                 </div>
               </div>

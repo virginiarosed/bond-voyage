@@ -594,7 +594,7 @@ export function CreateNewTravel() {
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-6 pb-32">
+    <div className="gap-6" style={{paddingBottom: 50}}>
       {/* Main Content */}
       <div className="space-y-6">
         {/* Header */}
