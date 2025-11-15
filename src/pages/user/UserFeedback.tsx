@@ -9,6 +9,7 @@ import { Textarea } from "../../components/ui/textarea";
 import { Label } from "../../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { toast } from "sonner@2.0.3";
+import { useProfile } from "../../components/ProfileContext";
 
 interface FeedbackItem {
   id: number;
@@ -37,6 +38,8 @@ export function UserFeedback() {
   const [selectedTab, setSelectedTab] = useState<"all" | "unread">("all");
   const [starFilters, setStarFilters] = useState<number[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  const {profileData} = useProfile()
   
   // New feedback modal state
   const [newFeedbackModalOpen, setNewFeedbackModalOpen] = useState(false);
@@ -558,7 +561,7 @@ export function UserFeedback() {
 
               {/* Admin Reply */}
               <div>
-                <h4 className="text-sm font-semibold text-[#1A2B4F] mb-2">BondVoyage's Reply</h4>
+                <h4 className="text-sm font-semibold text-[#1A2B4F] mb-2">{profileData.companyName}'s Reply</h4>
                 <div className="bg-[rgba(16,185,129,0.08)] border border-[rgba(16,185,129,0.2)] rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium">

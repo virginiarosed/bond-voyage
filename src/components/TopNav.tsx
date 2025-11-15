@@ -12,12 +12,10 @@ interface TopNavProps {
 
 export function TopNav({ pageTitle, pageSubtitle, breadcrumbs, isMobileMenuOpen, onMobileMenuToggle }: TopNavProps) {
   const navigate = useNavigate();
-  const location = useLocation()
 
-  if (location.pathname === '/') return null
 
   return (
-    <div className="bg-card border-b border-border shadow-[0_1px_3px_rgba(0,0,0,0.08)] z-30 px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6">
+    <div className="sm:hidden bg-card border-b border-border shadow-[0_1px_3px_rgba(0,0,0,0.08)] z-30 px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6">
       <div className="flex items-start gap-4">
         {/* Mobile Menu Button */}
         {onMobileMenuToggle && (

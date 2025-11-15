@@ -649,7 +649,7 @@ export function CreateStandardItinerary({ onSave, onSaveDraft, initialData }: Cr
 
   return (
     <>
-    <div className="space-y-6 pb-32">
+    <div className="space-y-6" style={{paddingBottom: 70}}>
         {/* Header */}
         <ContentCard>
           <div className="flex items-center gap-4">

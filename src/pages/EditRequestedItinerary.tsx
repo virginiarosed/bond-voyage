@@ -1388,7 +1388,7 @@ export function EditRequestedItinerary() {
   };
 
   return (
-    <div className="space-y-6 pb-32">
+    <div className="space-y-6" style={{paddingBottom: 45}}>
       {/* Header */}
       <ContentCard>
         <div className="flex items-center gap-4">
@@ -2095,6 +2095,13 @@ export function EditRequestedItinerary() {
         </div>
       </ContentCard>
 
+      
+      {/* AI Travel Assistant */}
+      <AITravelAssistant
+        itineraryDays={itineraryDays}
+        destination={formData.destination}
+      />
+
       {/* Sticky Bottom Bar */}
       <div className="fixed bottom-0 left-20 right-0 bg-white border-t-2 border-[#E5E7EB] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50">
         <div className="max-w-[1400px] mx-auto px-8 h-[72px] flex items-center justify-between">
@@ -2301,11 +2308,6 @@ export function EditRequestedItinerary() {
         confirmVariant="destructive"
       />
 
-      {/* AI Travel Assistant */}
-      <AITravelAssistant
-        itineraryDays={itineraryDays}
-        destination={formData.destination}
-      />
     </div>
   );
 }

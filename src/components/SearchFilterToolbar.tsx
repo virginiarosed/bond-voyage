@@ -128,12 +128,12 @@ export function SearchFilterToolbar({
         {/* Export Dropdown */}
         {showExport && (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            {!location.pathname.includes('itinerary') && <DropdownMenuTrigger asChild>
               <button className="h-11 px-3 sm:px-4 rounded-xl border border-[#E5E7EB] dark:border-[#2A3441] bg-white dark:bg-[#2596be] hover:bg-[#F8FAFB] dark:hover:bg-[#1f7a9e] flex items-center gap-2 text-sm text-[#334155] dark:text-white transition-colors flex-1 sm:flex-initial">
                 <Download className="w-4 h-4" />
                 <span className="hidden sm:inline">Export</span>
               </button>
-            </DropdownMenuTrigger>
+            </DropdownMenuTrigger>}
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={onExportPDF} className="cursor-pointer">
                 <FileText className="w-4 h-4 mr-2 text-[#FF6B6B]" />

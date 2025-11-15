@@ -331,6 +331,7 @@ export function UserSidebar({ currentTheme, onThemeChange, isMobileMenuOpen, set
           {showUserMenu && (
             <div className="fixed bottom-3 left-24 w-72 max-w-[calc(100vw-6rem)] bg-card/80 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_rgba(10,122,255,0.12),0_2px_8px_rgba(0,0,0,0.08)] border border-border/50 z-[200] overflow-hidden">
               <div className="p-5 border-b border-border/50 bg-gradient-to-br from-primary/5 to-accent/5">
+
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md overflow-hidden">
                     {userProfileData.profilePicture ? (

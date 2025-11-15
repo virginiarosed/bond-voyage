@@ -18,6 +18,11 @@ export const exportToPDF = (data: any[], title: string, columns: string[]) => {
           color: #1A2B4F;
           background: white;
         }
+
+        .logo {
+          height: 40;
+          width: 40;
+        }
         
         .container {
           max-width: 100%;
@@ -42,6 +47,10 @@ export const exportToPDF = (data: any[], title: string, columns: string[]) => {
           display: flex;
           align-items: center;
           gap: 20px;
+        }
+
+        .image-logo {
+          height: 40px;
         }
         
         .logo {
@@ -218,12 +227,13 @@ export const exportToPDF = (data: any[], title: string, columns: string[]) => {
         <div class="header">
           <div class="header-content">
             <div class="logo-section">
-              <div class="logo">🏔️</div>
-              <div class="header-text">
+              <img class="image-logo" src="src/components/login/assets/40755770f782ee2806bf45fc8b364947bbbe25e5.png"/>
+              
+            </div>
+            <div class="header-text">
                 <h1>${title}</h1>
                 <p class="subtitle">4B's Travel and Tours - Admin Report</p>
               </div>
-            </div>
             <div class="date-badge">
               ${new Date().toLocaleDateString('en-US', { 
                 month: 'long', 
