@@ -1,7 +1,7 @@
-# BondVoyage Admin Dashboard - Notification System Features
+# BondVoyage- Notification System Features
 
 ## Overview
-The notification system provides real-time alerts and updates for all critical activities across the BondVoyage Admin Dashboard. Admins receive instant notifications about bookings, payments, user activities, inquiries, feedback, and system events.
+The notification system provides real-time alerts and updates for all critical activities across the BondVoyage. Admins receive instant notifications about bookings, payments, user activities, inquiries, feedback, and system events.
 
 ## Notification Types & Details
 
