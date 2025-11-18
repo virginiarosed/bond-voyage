@@ -12,11 +12,11 @@ import {
   X,
   ArrowRight,
   ArrowLeft,
+  Mail,
+  RefreshCw,
 } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog@1.1.6";
 import { DialogTitle, DialogDescription } from "./ui/dialog";
-import bondVoyageLogo from "../assets/40755770f782ee2806bf45fc8b364947bbbe25e5.png";
-
 
 interface SignUpModalProps {
   isOpen: boolean;
@@ -36,32 +36,22 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
   
-  const [securityQuestion1, setSecurityQuestion1] = useState("");
-  const [securityAnswer1, setSecurityAnswer1] = useState("");
-  const [securityQuestion2, setSecurityQuestion2] = useState("");
-  const [securityAnswer2, setSecurityAnswer2] = useState("");
-  const [securityQuestion3, setSecurityQuestion3] = useState("");
-  const [securityAnswer3, setSecurityAnswer3] = useState("");
+  // OTP States
+  const [generatedOTP, setGeneratedOTP] = useState("");
+  const [otpInput, setOtpInput] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [showOTPEmail, setShowOTPEmail] = useState(false);
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [touched, setTouched] = useState<{[key: string]: boolean}>({});
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState<{
-    type: "error" | "success";
+    type: "error" | "success" | "info";
     title: string;
     message: string;
   } | null>(null);
-
-  const securityQuestions = [
-    { value: "movie", label: "What was the first movie you watched in theater?" },
-    { value: "friend", label: "What year did you meet your oldest friend?" },
-    { value: "purchase", label: "What is the first thing you bought with your own money?" },
-    { value: "toy", label: "What is the name of your favorite childhood toy?" },
-    { value: "pet", label: "What is the name of your first pet that wasn't a dog or cat?" },
-    { value: "book", label: "What was the title of the first book you ever read by yourself?" },
-    { value: "character", label: "What is the name of the first fictional character you admired?" },
-  ];
 
   const validatePassword = (pass: string) => {
     const requirements = {
@@ -106,6 +96,11 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
     return "";
   };
 
+  // Generate random 6-digit OTP
+  const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   // Check if Step 1 form is valid
   const isStep1Valid = () => {
     return (
@@ -121,21 +116,6 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
       allRequirementsMet &&
       passwordConfirmation &&
       password === passwordConfirmation
-    );
-  };
-
-  // Check if Step 2 form is valid
-  const isStep2Valid = () => {
-    return (
-      securityQuestion1 &&
-      securityAnswer1 &&
-      securityQuestion2 &&
-      securityAnswer2 &&
-      securityQuestion3 &&
-      securityAnswer3 &&
-      securityQuestion1 !== securityQuestion2 &&
-      securityQuestion2 !== securityQuestion3 &&
-      securityQuestion1 !== securityQuestion3
     );
   };
 
@@ -171,6 +151,24 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
     }
     
     setErrors(newErrors);
+  };
+
+  const sendOTP = () => {
+    setOtpSending(true);
+    const otp = generateOTP();
+    setGeneratedOTP(otp);
+    
+    // Simulate sending email
+    setTimeout(() => {
+      setOtpSending(false);
+      setShowOTPEmail(true);
+      setShowToast({
+        type: "success",
+        title: "OTP Sent!",
+        message: `We've sent a verification code to ${email}`,
+      });
+      setTimeout(() => setShowToast(null), 4000);
+    }, 1500);
   };
 
   const handleNext = () => {
@@ -211,35 +209,32 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
       return;
     }
     
+    // Send OTP and move to step 2
+    sendOTP();
     setStep(2);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleResendOTP = () => {
+    setOtpInput("");
+    setOtpError("");
+    sendOTP();
+  };
+
+  const handleVerifyOTP = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const questions = [securityQuestion1, securityQuestion2, securityQuestion3];
-    const uniqueQuestions = new Set(questions.filter(q => q !== ""));
-    
-    if (uniqueQuestions.size !== 3) {
-      setShowToast({
-        type: "error",
-        title: "Security Questions Error",
-        message: "Please select three unique security questions",
-      });
-      setTimeout(() => setShowToast(null), 4000);
+    if (otpInput.length !== 6) {
+      setOtpError("Please enter the complete 6-digit code");
       return;
     }
     
-    if (!securityAnswer1 || !securityAnswer2 || !securityAnswer3) {
-      setShowToast({
-        type: "error",
-        title: "Security Questions Error",
-        message: "Please answer all security questions",
-      });
-      setTimeout(() => setShowToast(null), 4000);
+    if (otpInput !== generatedOTP) {
+      setOtpError("Invalid verification code. Please try again.");
+      setOtpInput("");
       return;
     }
     
+    // OTP is valid, create account
     setIsLoading(true);
     
     setTimeout(() => {
@@ -267,12 +262,10 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
     setBirthday("");
     setPassword("");
     setPasswordConfirmation("");
-    setSecurityQuestion1("");
-    setSecurityAnswer1("");
-    setSecurityQuestion2("");
-    setSecurityAnswer2("");
-    setSecurityQuestion3("");
-    setSecurityAnswer3("");
+    setGeneratedOTP("");
+    setOtpInput("");
+    setOtpError("");
+    setShowOTPEmail(false);
     setErrors({});
     setTouched({});
     setShowToast(null);
@@ -283,6 +276,83 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
       setTimeout(resetForm, 300);
     }
   }, [isOpen]);
+
+  // Handle OTP input change
+  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setOtpInput(value);
+    setOtpError("");
+  };
+
+  // Handle OTP input key down (for moving between inputs)
+  const handleOtpKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !otpInput[index] && index > 0) {
+      // Move focus to previous input on backspace
+      const prevInput = document.getElementById(`otp-${index - 1}`);
+      if (prevInput) {
+        prevInput.focus();
+      }
+    }
+  };
+
+  // Handle OTP input (for auto-focus next input)
+  const handleOtpInput = (e: React.FormEvent<HTMLInputElement>, index: number) => {
+    const value = e.currentTarget.value;
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      if (nextInput) {
+        nextInput.focus();
+      }
+    }
+  };
+
+  // Render OTP inputs
+  const renderOtpInputs = () => {
+    return (
+      <div className="flex justify-center gap-3">
+        {[0, 1, 2, 3, 4, 5].map((index) => (
+          <input
+            key={index}
+            id={`otp-${index}`}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={1}
+            value={otpInput[index] || ''}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, '');
+              if (value) {
+                const newOtp = otpInput.split('');
+                newOtp[index] = value;
+                const newOtpString = newOtp.join('');
+                setOtpInput(newOtpString.slice(0, 6));
+                
+                // Auto-focus next input
+                if (value && index < 5) {
+                  const nextInput = document.getElementById(`otp-${index + 1}`);
+                  if (nextInput) {
+                    nextInput.focus();
+                  }
+                }
+              } else {
+                // Handle backspace
+                const newOtp = otpInput.split('');
+                newOtp[index] = '';
+                setOtpInput(newOtp.join(''));
+              }
+            }}
+            onKeyDown={(e) => handleOtpKeyDown(e, index)}
+            onInput={(e) => handleOtpInput(e, index)}
+            className={`w-12 h-12 text-center rounded-xl border-2 transition-all duration-200 outline-none text-[20px] font-semibold ${
+              otpError
+                ? "border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
+                : "border-[#E5E7EB] bg-[#F8FAFB]"
+            } focus:border-[#0A7AFF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(10,122,255,0.08)]`}
+          />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -365,7 +435,12 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
 
                 <div className="absolute inset-0 flex items-center justify-center p-8">
                   <div className="max-w-[350px] text-white">
-                    <img src={bondVoyageLogo} className="mb-4 aspect-16/9 h-10" />
+                    <div
+                      className="mb-6 h-10 w-auto text-2xl font-bold"
+                      style={{ filter: "drop-shadow(0 2px 16px rgba(0,0,0,0.3))" }}
+                    >
+                      BondVoyage
+                    </div>
 
                     <h2
                       className="mb-3 text-white"
@@ -446,13 +521,17 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                             className={`mb-6 flex items-start gap-3 p-4 bg-white rounded-xl shadow-lg border-l-4 animate-toast ${
                               showToast.type === "error"
                                 ? "border-[#FF6B6B]"
-                                : "border-[#10B981]"
+                                : showToast.type === "success"
+                                ? "border-[#10B981]"
+                                : "border-[#0A7AFF]"
                             }`}
                           >
                             {showToast.type === "error" ? (
                               <XCircle className="w-5 h-5 text-[#FF6B6B] flex-shrink-0" />
-                            ) : (
+                            ) : showToast.type === "success" ? (
                               <CheckCircle className="w-5 h-5 text-[#10B981] flex-shrink-0" />
+                            ) : (
+                              <Mail className="w-5 h-5 text-[#0A7AFF] flex-shrink-0" />
                             )}
                             <div className="flex-1">
                               <div className="text-[#1A2B4F]" style={{ fontSize: "14px", fontWeight: 600 }}>
@@ -742,9 +821,9 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                           <button
                             type="button"
                             onClick={handleNext}
-                            disabled={!isStep1Valid()}
+                            disabled={!isStep1Valid() || otpSending}
                             className={`w-full h-12 px-6 rounded-xl border-none text-white transition-all flex items-center justify-center gap-2 ${
-                              !isStep1Valid()
+                              !isStep1Valid() || otpSending
                                 ? "opacity-50 cursor-not-allowed"
                                 : "hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.98]"
                             }`}
@@ -756,8 +835,17 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                               letterSpacing: "0.3px",
                             }}
                           >
-                            Next
-                            <ArrowRight className="w-5 h-5" />
+                            {otpSending ? (
+                              <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Sending OTP...
+                              </>
+                            ) : (
+                              <>
+                                Next
+                                <ArrowRight className="w-5 h-5" />
+                              </>
+                            )}
                           </button>
                         </form>
 
@@ -774,7 +862,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                       </>
                     )}
 
-                    {/* Step 2: Security Questions */}
+                    {/* Step 2: OTP Verification */}
                     {step === 2 && (
                       <>
                         <div className="mb-8">
@@ -792,7 +880,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                           </div>
                           <DialogTitle asChild>
                             <h2 className="text-[#1A2B4F] mb-2" style={{ fontSize: "28px", fontWeight: 700 }}>
-                              Security{" "}
+                              Verify Your{" "}
                               <span
                                 style={{
                                   background:
@@ -802,13 +890,13 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                                   backgroundClip: "text",
                                 }}
                               >
-                                Questions
+                                Email
                               </span>
                             </h2>
                           </DialogTitle>
                           <DialogDescription asChild>
                             <p className="text-[#64748B]" style={{ fontSize: "15px" }}>
-                              Help us secure your account for future recovery
+                              We sent a 6-digit code to <span className="text-[#1A2B4F]" style={{ fontWeight: 600 }}>{email}</span>
                             </p>
                           </DialogDescription>
                         </div>
@@ -818,13 +906,17 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                             className={`mb-6 flex items-start gap-3 p-4 bg-white rounded-xl shadow-lg border-l-4 animate-toast ${
                               showToast.type === "error"
                                 ? "border-[#FF6B6B]"
-                                : "border-[#10B981]"
+                                : showToast.type === "success"
+                                ? "border-[#10B981]"
+                                : "border-[#0A7AFF]"
                             }`}
                           >
                             {showToast.type === "error" ? (
                               <XCircle className="w-5 h-5 text-[#FF6B6B] flex-shrink-0" />
-                            ) : (
+                            ) : showToast.type === "success" ? (
                               <CheckCircle className="w-5 h-5 text-[#10B981] flex-shrink-0" />
+                            ) : (
+                              <Mail className="w-5 h-5 text-[#0A7AFF] flex-shrink-0" />
                             )}
                             <div className="flex-1">
                               <div className="text-[#1A2B4F]" style={{ fontSize: "14px", fontWeight: 600 }}>
@@ -844,120 +936,68 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                           </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                          {/* Security Question 1 */}
+                        {/* Email Preview (for demo purposes) */}
+                        {showOTPEmail && (
+                          <div className="mb-6 p-4 bg-gradient-to-br from-[#F0F9FF] to-[#F0FDFA] rounded-xl border border-[#0A7AFF]/20">
+                            <div className="flex items-start gap-3 mb-3">
+                              <Mail className="w-5 h-5 text-[#0A7AFF] flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-[#1A2B4F]" style={{ fontSize: "13px", fontWeight: 600 }}>
+                                  Email Preview (Demo Mode)
+                                </p>
+                                <p className="text-[#64748B] mt-1" style={{ fontSize: "12px" }}>
+                                  In production, this code would be sent to your email
+                                </p>
+                              </div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg border border-[#E5E7EB]">
+                              <p className="text-[#64748B] mb-2" style={{ fontSize: "12px" }}>
+                                Your verification code is:
+                              </p>
+                              <p className="text-[#0A7AFF] tracking-widest" style={{ fontSize: "24px", fontWeight: 700, fontFamily: "monospace" }}>
+                                {generatedOTP}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        <form onSubmit={handleVerifyOTP} className="space-y-6">
                           <div>
-                            <label htmlFor="securityQuestion1" className="block text-[#1A2B4F] mb-2" style={{ fontSize: "14px", fontWeight: 600 }}>
-                              Security Question 1
+                            <label className="block text-[#1A2B4F] mb-3 text-center" style={{ fontSize: "14px", fontWeight: 600 }}>
+                              Enter Verification Code
                             </label>
-                            <select
-                              id="securityQuestion1"
-                              value={securityQuestion1}
-                              onChange={(e) => setSecurityQuestion1(e.target.value)}
-                              className="w-full h-12 px-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] transition-all duration-200 outline-none focus:border-[#0A7AFF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(10,122,255,0.08)]"
-                              style={{ fontSize: "15px" }}
-                              required
-                            >
-                              <option value="">Select a question</option>
-                              {securityQuestions.map((q) => (
-                                <option key={q.value} value={q.value} disabled={q.value === securityQuestion2 || q.value === securityQuestion3}>
-                                  {q.label}
-                                </option>
-                              ))}
-                            </select>
+                            {renderOtpInputs()}
+                            {otpError && (
+                              <div className="flex items-start gap-2 mt-3 justify-center animate-error">
+                                <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                                <span className="text-[#FF6B6B]" style={{ fontSize: "13px", fontWeight: 500 }}>
+                                  {otpError}
+                                </span>
+                              </div>
+                            )}
                           </div>
 
-                          {securityQuestion1 && (
-                            <div>
-                              <input
-                                type="text"
-                                value={securityAnswer1}
-                                onChange={(e) => setSecurityAnswer1(e.target.value)}
-                                placeholder="Your answer"
-                                className="w-full h-12 px-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] transition-all duration-200 outline-none focus:border-[#0A7AFF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(10,122,255,0.08)]"
-                                style={{ fontSize: "15px" }}
-                                required
-                              />
-                            </div>
-                          )}
-
-                          {/* Security Question 2 */}
-                          <div>
-                            <label htmlFor="securityQuestion2" className="block text-[#1A2B4F] mb-2" style={{ fontSize: "14px", fontWeight: 600 }}>
-                              Security Question 2
-                            </label>
-                            <select
-                              id="securityQuestion2"
-                              value={securityQuestion2}
-                              onChange={(e) => setSecurityQuestion2(e.target.value)}
-                              className="w-full h-12 px-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] transition-all duration-200 outline-none focus:border-[#0A7AFF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(10,122,255,0.08)]"
-                              style={{ fontSize: "15px" }}
-                              required
+                          <div className="text-center">
+                            <p className="text-[#64748B] mb-2" style={{ fontSize: "13px" }}>
+                              Didn't receive the code?
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleResendOTP}
+                              disabled={otpSending}
+                              className="text-[#0A7AFF] hover:text-[#3B9EFF] transition-colors inline-flex items-center gap-2"
+                              style={{ fontSize: "14px", fontWeight: 600 }}
                             >
-                              <option value="">Select a question</option>
-                              {securityQuestions.map((q) => (
-                                <option key={q.value} value={q.value} disabled={q.value === securityQuestion1 || q.value === securityQuestion3}>
-                                  {q.label}
-                                </option>
-                              ))}
-                            </select>
+                              <RefreshCw className={`w-4 h-4 ${otpSending ? 'animate-spin' : ''}`} />
+                              Resend Code
+                            </button>
                           </div>
-
-                          {securityQuestion2 && (
-                            <div>
-                              <input
-                                type="text"
-                                value={securityAnswer2}
-                                onChange={(e) => setSecurityAnswer2(e.target.value)}
-                                placeholder="Your answer"
-                                className="w-full h-12 px-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] transition-all duration-200 outline-none focus:border-[#0A7AFF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(10,122,255,0.08)]"
-                                style={{ fontSize: "15px" }}
-                                required
-                              />
-                            </div>
-                          )}
-
-                          {/* Security Question 3 */}
-                          <div>
-                            <label htmlFor="securityQuestion3" className="block text-[#1A2B4F] mb-2" style={{ fontSize: "14px", fontWeight: 600 }}>
-                              Security Question 3
-                            </label>
-                            <select
-                              id="securityQuestion3"
-                              value={securityQuestion3}
-                              onChange={(e) => setSecurityQuestion3(e.target.value)}
-                              className="w-full h-12 px-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] transition-all duration-200 outline-none focus:border-[#0A7AFF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(10,122,255,0.08)]"
-                              style={{ fontSize: "15px" }}
-                              required
-                            >
-                              <option value="">Select a question</option>
-                              {securityQuestions.map((q) => (
-                                <option key={q.value} value={q.value} disabled={q.value === securityQuestion1 || q.value === securityQuestion2}>
-                                  {q.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {securityQuestion3 && (
-                            <div>
-                              <input
-                                type="text"
-                                value={securityAnswer3}
-                                onChange={(e) => setSecurityAnswer3(e.target.value)}
-                                placeholder="Your answer"
-                                className="w-full h-12 px-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] transition-all duration-200 outline-none focus:border-[#0A7AFF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(10,122,255,0.08)]"
-                                style={{ fontSize: "15px" }}
-                                required
-                              />
-                            </div>
-                          )}
 
                           <button
                             type="submit"
-                            disabled={isLoading || !isStep2Valid()}
+                            disabled={isLoading || otpInput.length !== 6}
                             className={`w-full h-12 px-6 rounded-xl border-none text-white transition-all flex items-center justify-center ${
-                              isLoading || !isStep2Valid()
+                              isLoading || otpInput.length !== 6
                                 ? "opacity-50 cursor-not-allowed"
                                 : "hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.98]"
                             }`}
@@ -972,10 +1012,10 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                             {isLoading ? (
                               <span className="flex items-center justify-center gap-2">
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                Creating Account...
+                                Verifying...
                               </span>
                             ) : (
-                              "Create Account"
+                              "Verify & Create Account"
                             )}
                           </button>
                         </form>
