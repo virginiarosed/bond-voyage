@@ -1,4 +1,4 @@
-import { Calendar, MapPin, User, Users, Globe, Eye, Edit, RotateCcw, X, ChevronRight, ChevronLeft, Phone, Mail, CreditCard, CheckCircle2, Package, Clock, Plane, Hotel, Camera, UtensilsCrossed, Car, Briefcase, FileCheck, ClipboardList, BookOpen, Download } from "lucide-react";
+import { Calendar, MapPin, User, Users, Globe, Eye, Edit, RotateCcw, X, ChevronLeft, ChevronRight, Phone, Mail, CreditCard, CheckCircle2, Package, Clock, Plane, Hotel, Camera, UtensilsCrossed, Car, Briefcase, FileCheck, ClipboardList, BookOpen, Download, Pen, Save, Banknote, Smartphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
@@ -19,6 +19,16 @@ import { toast } from "sonner@2.0.3";
 import { useBreadcrumbs } from "../components/BreadcrumbContext";
 import { exportToPDF, exportToExcel, exportBookingDetailToPDF, exportBookingDetailToExcel } from "../utils/exportUtils";
 
+interface PaymentSubmission {
+  id: string;
+  paymentType: "Full Payment" | "Partial Payment";
+  amount: number;
+  modeOfPayment: "Cash" | "Gcash";
+  proofOfPayment?: string;
+  cashConfirmation?: string;
+  submittedAt: string;
+}
+
 type Booking = {
   id: string;
   customer: string;
@@ -38,6 +48,9 @@ type Booking = {
   bookingType?: "Customized" | "Requested" | "Standard";
   tourType?: "Joiner" | "Private";
   itineraryDetails?: ItineraryDay[];
+  modeOfPayment?: "Cash" | "Gcash" | "";
+  paymentHistory?: PaymentSubmission[];
+  totalPaid?: number;
 };
 
 type ItineraryDay = {
@@ -88,6 +101,9 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
   // State for standard bookings from UserStandardItinerary
   const [standardBookingsFromUser, setStandardBookingsFromUser] = useState<Booking[]>([]);
 
+  // Edit payment state
+  const [editingPayment, setEditingPayment] = useState(false);
+
   // Edit modal states for Standard bookings
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [bookingToEdit, setBookingToEdit] = useState<Booking | null>(null);
@@ -112,303 +128,254 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
   const [cancellationReason, setCancellationReason] = useState("");
 
   const [bookings, setBookings] = useState<Booking[]>([
-    // 2026 Bookings
     {
-      id: "BK-2026-001",
-      customer: "Sofia Villanueva",
-      email: "sofia.villanueva@email.com",
-      mobile: "+63 915 234 5678",
-      destination: "Batanes, Cagayan Valley",
-      itinerary: "Batanes 6-Day Cultural Immersion",
-      startDate: "2026-03-15",
-      endDate: "2026-03-21",
-      travelers: 2,
-      totalAmount: 48000,
-      paid: 48000,
-      paymentStatus: "Paid",
-      bookedDate: "2024-10-14",
-      bookedDateObj: new Date("2024-10-14"),
-      status: "active",
-      bookingType: "Customized",
-      tourType: "Private",
-      itineraryDetails: [
-        {
-          day: 1,
-          title: "Arrival & Basco Exploration",
-          activities: [
-            { time: "10:00 AM", icon: Plane, title: "Arrival at Basco Airport", description: "Meet local guide", location: "Basco Airport" },
-            { time: "11:30 AM", icon: Hotel, title: "Hotel Check-in", description: "Check-in at traditional Ivatan homestay", location: "Basco Town" },
-            { time: "2:00 PM", icon: Camera, title: "Basco Lighthouse", description: "Visit historic lighthouse with panoramic views", location: "Naidi Hills" },
-            { time: "5:00 PM", icon: Camera, title: "Sunset at Valugan Boulder Beach", description: "Marvel at unique rock formations", location: "Valugan Beach" },
-          ],
-        },
-        {
-          day: 2,
-          title: "North Batan Tour",
-          activities: [
-            { time: "7:00 AM", icon: UtensilsCrossed, title: "Traditional Breakfast", description: "Taste authentic Ivatan cuisine", location: "Homestay" },
-            { time: "9:00 AM", icon: Camera, title: "Rakuh-a-Payaman", description: "Rolling hills viewpoint", location: "Mahatao" },
-            { time: "11:00 AM", icon: Camera, title: "Marlboro Hills", description: "Scenic grasslands", location: "Racuh a Payaman" },
-            { time: "1:00 PM", icon: UtensilsCrossed, title: "Lunch", description: "Local restaurant", location: "Basco" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "BK-2026-002",
-      customer: "Miguel Santos",
-      email: "miguel.santos@email.com",
-      mobile: "+63 926 789 0123",
-      destination: "Vigan, Ilocos Sur",
-      itinerary: "Vigan 4-Day Heritage Walk",
-      startDate: "2026-05-10",
-      endDate: "2026-05-14",
+      id: "BV-2025-001",
+      customer: "Maria Santos",
+      email: "maria.santos@email.com",
+      mobile: "+63 917 123 4567",
+      destination: "Boracay, Aklan",
+      itinerary: "Boracay 5-Day Beach Paradise",
+      startDate: "2025-12-20",
+      endDate: "2025-12-25",
       travelers: 4,
-      totalAmount: 36000,
-      paid: 18000,
-      paymentStatus: "Partial",
-      bookedDate: "2024-10-13",
-      bookedDateObj: new Date("2024-10-13"),
+      totalAmount: 85500,
+      paid: 85500,
+      paymentStatus: "Paid",
+      bookedDate: "2025-11-10",
+      bookedDateObj: new Date("2025-11-10"),
       status: "active",
       bookingType: "Standard",
+      tourType: "Private",
+      modeOfPayment: "Cash",
       itineraryDetails: [
         {
           day: 1,
-          title: "Heritage City Arrival",
+          title: "Arrival & Beach Welcome",
           activities: [
-            { time: "8:00 AM", icon: Car, title: "Departure from Manila", description: "Travel to Vigan", location: "Manila" },
-            { time: "4:00 PM", icon: Hotel, title: "Check-in", description: "Heritage hotel check-in", location: "Calle Crisologo" },
-            { time: "6:00 PM", icon: Camera, title: "Kalesa Ride", description: "Horse-drawn carriage tour", location: "Heritage Village" },
+            { time: "10:00 AM", icon: Plane, title: "Arrival at Caticlan Airport", description: "Transfer to Boracay Island", location: "Caticlan Airport" },
+            { time: "12:00 PM", icon: Hotel, title: "Resort Check-in", description: "Beachfront resort at Station 2", location: "White Beach" },
+            { time: "3:00 PM", icon: Camera, title: "Beach Exploration", description: "Relax at White Beach", location: "Station 2" },
+            { time: "6:00 PM", icon: UtensilsCrossed, title: "Welcome Dinner", description: "Seafood dinner by the beach", location: "D'Mall Area" },
+          ],
+        },
+        {
+          day: 2,
+          title: "Island Hopping Adventure",
+          activities: [
+            { time: "8:00 AM", icon: UtensilsCrossed, title: "Breakfast", description: "Resort breakfast buffet", location: "Resort" },
+            { time: "9:00 AM", icon: Plane, title: "Island Hopping Tour", description: "Visit Crystal Cove, Crocodile Island", location: "Boracay Islands" },
+            { time: "12:00 PM", icon: UtensilsCrossed, title: "Beach Lunch", description: "Fresh catch of the day", location: "Puka Beach" },
+            { time: "3:00 PM", icon: Camera, title: "Snorkeling", description: "Underwater adventure", location: "Coral Garden" },
           ],
         },
       ],
     },
     {
-      id: "BK-2026-003",
-      customer: "Katrina Dela Rosa",
-      email: "katrina.delarosa@email.com",
-      mobile: "+63 917 456 7890",
-      destination: "Sagada, Mountain Province",
-      itinerary: "Sagada 5-Day Mountain Adventure",
-      startDate: "2026-06-20",
-      endDate: "2026-06-25",
-      travelers: 3,
-      totalAmount: 27500,
-      paid: 27500,
-      paymentStatus: "Paid",
-      bookedDate: "2024-10-13",
-      bookedDateObj: new Date("2024-10-13"),
+      id: "BV-2025-002",
+      customer: "Juan Dela Cruz",
+      email: "juan.delacruz@email.com",
+      mobile: "+63 918 234 5678",
+      destination: "El Nido, Palawan",
+      itinerary: "El Nido 5-Day Exploration",
+      startDate: "2026-01-15",
+      endDate: "2026-01-20",
+      travelers: 2,
+      totalAmount: 62000,
+      paid: 31000,
+      paymentStatus: "Partial",
+      bookedDate: "2025-11-08",
+      bookedDateObj: new Date("2025-11-08"),
       status: "active",
       bookingType: "Customized",
+      modeOfPayment: "Gcash",
+      itineraryDetails: [
+        {
+          day: 1,
+          title: "Arrival & Town Exploration",
+          activities: [
+            { time: "11:00 AM", icon: Plane, title: "Arrival at El Nido Airport", description: "Airport transfer to hotel", location: "El Nido Airport" },
+            { time: "1:00 PM", icon: Hotel, title: "Hotel Check-in", description: "Beach resort check-in", location: "Corong-Corong Beach" },
+            { time: "4:00 PM", icon: Camera, title: "Town Walk", description: "Explore El Nido town", location: "El Nido Town Proper" },
+            { time: "7:00 PM", icon: UtensilsCrossed, title: "Dinner", description: "Local Filipino cuisine", location: "El Nido Town" },
+          ],
+        },
+        {
+          day: 2,
+          title: "Tour A - Lagoons & Beaches",
+          activities: [
+            { time: "7:00 AM", icon: UtensilsCrossed, title: "Early Breakfast", description: "Packed breakfast", location: "Hotel" },
+            { time: "8:00 AM", icon: Plane, title: "Big Lagoon", description: "Kayaking in crystal waters", location: "Miniloc Island" },
+            { time: "10:00 AM", icon: Camera, title: "Small Lagoon", description: "Swimming and snorkeling", location: "Miniloc Island" },
+            { time: "12:00 PM", icon: UtensilsCrossed, title: "Beach Lunch", description: "BBQ lunch on the beach", location: "Shimizu Island" },
+            { time: "2:00 PM", icon: Camera, title: "Secret Lagoon", description: "Hidden lagoon exploration", location: "Secret Beach" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "BV-2025-003",
+      customer: "Ana Reyes",
+      email: "ana.reyes@email.com",
+      mobile: "+63 919 345 6789",
+      destination: "Baguio City, Benguet",
+      itinerary: "Baguio 3-Day Summer Escape",
+      startDate: "2025-11-28",
+      endDate: "2025-11-30",
+      travelers: 3,
+      totalAmount: 38750,
+      paid: 38750,
+      paymentStatus: "Paid",
+      bookedDate: "2025-11-01",
+      bookedDateObj: new Date("2025-11-01"),
+      status: "active",
+      bookingType: "Standard",
       tourType: "Joiner",
-      itineraryDetails: [
-        {
-          day: 1,
-          title: "Arrival & Cave Exploration",
-          activities: [
-            { time: "6:00 AM", icon: Car, title: "Depart from Baguio", description: "Scenic mountain drive", location: "Baguio City" },
-            { time: "10:00 AM", icon: Hotel, title: "Check-in", description: "Lodge check-in", location: "Sagada Town" },
-            { time: "2:00 PM", icon: Camera, title: "Sumaguing Cave", description: "Cave spelunking adventure", location: "Sumaguing Cave" },
-          ],
-        },
-        {
-          day: 2,
-          title: "Sunrise & Waterfalls",
-          activities: [
-            { time: "5:00 AM", icon: Camera, title: "Kiltepan Sunrise", description: "Sea of clouds viewpoint", location: "Kiltepan Peak" },
-            { time: "9:00 AM", icon: UtensilsCrossed, title: "Breakfast", description: "Breakfast at lodge", location: "Lodge" },
-            { time: "11:00 AM", icon: Camera, title: "Bomod-ok Falls", description: "Waterfall trek", location: "Bomod-ok Falls" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "BK-2026-004",
-      customer: "Ramon Cruz",
-      email: "ramon.cruz@email.com",
-      mobile: "+63 928 901 2345",
-      destination: "Camiguin, Northern Mindanao",
-      itinerary: "Camiguin 7-Day Island Paradise",
-      startDate: "2026-07-05",
-      endDate: "2026-07-12",
-      travelers: 2,
-      totalAmount: 42000,
-      paid: 0,
-      paymentStatus: "Unpaid",
-      bookedDate: "2024-10-14",
-      bookedDateObj: new Date("2024-10-14"),
-      status: "active",
-      bookingType: "Customized",
-      itineraryDetails: [
-        {
-          day: 1,
-          title: "Arrival & Hot Springs",
-          activities: [
-            { time: "11:00 AM", icon: Plane, title: "Arrival at Camiguin Airport", description: "Airport pickup", location: "Camiguin Airport" },
-            { time: "12:30 PM", icon: Hotel, title: "Resort Check-in", description: "Beachfront resort", location: "White Island Area" },
-            { time: "3:00 PM", icon: Camera, title: "Ardent Hot Springs", description: "Natural hot spring pools", location: "Ardent Hot Springs" },
-          ],
-        },
-        {
-          day: 2,
-          title: "Waterfalls & Sunken Cemetery",
-          activities: [
-            { time: "8:00 AM", icon: UtensilsCrossed, title: "Breakfast", description: "Breakfast at resort", location: "Resort" },
-            { time: "10:00 AM", icon: Camera, title: "Katibawasan Falls", description: "Majestic waterfall visit", location: "Katibawasan Falls" },
-            { time: "2:00 PM", icon: Camera, title: "Sunken Cemetery", description: "Unique underwater cemetery", location: "Bonbon" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "BK-2026-005",
-      customer: "Elena Martinez",
-      email: "elena.martinez@email.com",
-      mobile: "+63 919 012 3456",
-      destination: "Coron, Palawan",
-      itinerary: "Coron 5-Day Diving Experience",
-      startDate: "2026-08-12",
-      endDate: "2026-08-17",
-      travelers: 2,
-      totalAmount: 38500,
-      paid: 19250,
-      paymentStatus: "Partial",
-      bookedDate: "2024-10-14",
-      bookedDateObj: new Date("2024-10-14"),
-      status: "active",
-      bookingType: "Standard",
-      itineraryDetails: [
-        {
-          day: 1,
-          title: "Arrival & Orientation",
-          activities: [
-            { time: "10:00 AM", icon: Plane, title: "Arrival at Busuanga Airport", description: "Transfer to Coron town", location: "Busuanga Airport" },
-            { time: "12:00 PM", icon: Hotel, title: "Hotel Check-in", description: "Waterfront hotel", location: "Coron Town" },
-            { time: "3:00 PM", icon: Camera, title: "Mt. Tapyas Sunset Climb", description: "360-degree views", location: "Mt. Tapyas" },
-          ],
-        },
-        {
-          day: 2,
-          title: "Wreck Diving Day",
-          activities: [
-            { time: "7:00 AM", icon: UtensilsCrossed, title: "Early Breakfast", description: "Pre-dive meal", location: "Hotel" },
-            { time: "8:30 AM", icon: Plane, title: "Wreck Diving", description: "Japanese shipwrecks exploration", location: "Coron Bay" },
-            { time: "1:00 PM", icon: UtensilsCrossed, title: "Lunch on Boat", description: "Fresh seafood", location: "Dive Boat" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "BK-2026-006",
-      customer: "Patrick Lim",
-      email: "patrick.lim@email.com",
-      mobile: "+63 920 123 4567",
-      destination: "Banaue, Ifugao",
-      itinerary: "Banaue 4-Day Rice Terraces Trek",
-      startDate: "2026-09-08",
-      endDate: "2026-09-12",
-      travelers: 1,
-      totalAmount: 24500,
-      paid: 24500,
-      paymentStatus: "Paid",
-      bookedDate: "2024-10-13",
-      bookedDateObj: new Date("2024-10-13"),
-      status: "active",
-      bookingType: "Requested",
-      itineraryDetails: [
-        {
-          day: 1,
-          title: "Arrival & Viewpoint",
-          activities: [
-            { time: "6:00 AM", icon: Car, title: "Depart from Manila", description: "9-hour scenic drive", location: "Manila" },
-            { time: "3:00 PM", icon: Hotel, title: "Check-in at Inn", description: "Traditional Ifugao inn", location: "Banaue Town" },
-            { time: "5:00 PM", icon: Camera, title: "Banaue Viewpoint", description: "UNESCO World Heritage Site", location: "Banaue Rice Terraces" },
-          ],
-        },
-        {
-          day: 2,
-          title: "Batad Rice Terraces Trek",
-          activities: [
-            { time: "7:00 AM", icon: UtensilsCrossed, title: "Breakfast", description: "Traditional breakfast", location: "Inn" },
-            { time: "8:30 AM", icon: Car, title: "Travel to Batad Junction", description: "Jeepney ride", location: "Batad" },
-            { time: "10:00 AM", icon: Camera, title: "Batad Terraces Trek", description: "Hike through ancient terraces", location: "Batad Amphitheater" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "BK-2026-007",
-      customer: "Jessica Ramos",
-      email: "jessica.ramos@email.com",
-      mobile: "+63 927 234 5678",
-      destination: "Hundred Islands, Pangasinan",
-      itinerary: "Hundred Islands 3-Day Beach Hopping",
-      startDate: "2026-10-15",
-      endDate: "2026-10-18",
-      travelers: 5,
-      totalAmount: 52500,
-      paid: 26250,
-      paymentStatus: "Partial",
-      bookedDate: "2024-10-14",
-      bookedDateObj: new Date("2024-10-14"),
-      status: "active",
-      bookingType: "Standard",
-      itineraryDetails: [
-        {
-          day: 1,
-          title: "Arrival & Island Hopping",
-          activities: [
-            { time: "7:00 AM", icon: Car, title: "Depart from Manila", description: "Travel to Alaminos", location: "Manila" },
-            { time: "12:00 PM", icon: Hotel, title: "Check-in", description: "Beachfront hotel", location: "Lucap Wharf" },
-            { time: "2:00 PM", icon: Plane, title: "Island Hopping", description: "Visit Governor's, Quezon, Children's Islands", location: "Hundred Islands" },
-          ],
-        },
-        {
-          day: 2,
-          title: "Water Activities",
-          activities: [
-            { time: "8:00 AM", icon: UtensilsCrossed, title: "Breakfast", description: "Hotel breakfast", location: "Hotel" },
-            { time: "9:30 AM", icon: Camera, title: "Snorkeling & Kayaking", description: "Water sports at various islands", location: "Hundred Islands" },
-            { time: "1:00 PM", icon: UtensilsCrossed, title: "Lunch", description: "Picnic lunch on island", location: "Marcos Island" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "BK-2026-008",
-      customer: "Daniel Aquino",
-      email: "daniel.aquino@email.com",
-      mobile: "+63 918 345 6789",
-      destination: "Davao City, Davao del Sur",
-      itinerary: "Davao 6-Day Food and Adventure",
-      startDate: "2026-11-22",
-      endDate: "2026-11-28",
-      travelers: 3,
-      totalAmount: 39000,
-      paid: 39000,
-      paymentStatus: "Paid",
-      bookedDate: "2024-10-13",
-      bookedDateObj: new Date("2024-10-13"),
-      status: "active",
-      bookingType: "Customized",
+      modeOfPayment: "Cash",
       itineraryDetails: [
         {
           day: 1,
           title: "Arrival & City Tour",
           activities: [
-            { time: "10:00 AM", icon: Plane, title: "Arrival at Davao Airport", description: "Meet tour guide", location: "Francisco Bangoy Airport" },
-            { time: "12:00 PM", icon: Hotel, title: "Hotel Check-in", description: "City center hotel", location: "Davao City" },
-            { time: "2:00 PM", icon: Camera, title: "People's Park", description: "Visit cultural park", location: "People's Park" },
-            { time: "6:00 PM", icon: UtensilsCrossed, title: "Durian Tasting", description: "Try the king of fruits", location: "Roxas Night Market" },
+            { time: "8:00 AM", icon: Car, title: "Departure from Manila", description: "Comfortable bus ride", location: "Manila" },
+            { time: "2:00 PM", icon: Hotel, title: "Hotel Check-in", description: "City center hotel", location: "Baguio City" },
+            { time: "3:30 PM", icon: Camera, title: "Burnham Park", description: "Boat ride and park tour", location: "Burnham Park" },
+            { time: "5:00 PM", icon: Camera, title: "Session Road", description: "Shopping and street food", location: "Session Road" },
           ],
         },
         {
           day: 2,
-          title: "Philippine Eagle & Samal Island",
+          title: "Nature & Culture",
           activities: [
-            { time: "8:00 AM", icon: UtensilsCrossed, title: "Breakfast", description: "Hotel breakfast", location: "Hotel" },
-            { time: "9:30 AM", icon: Camera, title: "Philippine Eagle Center", description: "See the national bird", location: "Malagos" },
-            { time: "1:00 PM", icon: Plane, title: "Samal Island", description: "Beach resort day trip", location: "Island Garden City of Samal" },
+            { time: "6:00 AM", icon: UtensilsCrossed, title: "Breakfast", description: "Hotel breakfast", location: "Hotel" },
+            { time: "7:30 AM", icon: Camera, title: "Mines View Park", description: "Panoramic mountain views", location: "Mines View Park" },
+            { time: "9:00 AM", icon: Camera, title: "Botanical Garden", description: "Igorot village visit", location: "Botanical Garden" },
+            { time: "11:00 AM", icon: UtensilsCrossed, title: "Strawberry Farm", description: "Strawberry picking & lunch", location: "La Trinidad" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "BV-2025-004",
+      customer: "Carlos Mendoza",
+      email: "carlos.mendoza@email.com",
+      mobile: "+63 920 456 7890",
+      destination: "Oslob, Cebu",
+      itinerary: "Oslob 3-Day Whale Shark Experience",
+      startDate: "2026-02-10",
+      endDate: "2026-02-13",
+      travelers: 2,
+      totalAmount: 45200,
+      paid: 0,
+      paymentStatus: "Unpaid",
+      bookedDate: "2025-11-05",
+      bookedDateObj: new Date("2025-11-05"),
+      status: "active",
+      bookingType: "Customized",
+      modeOfPayment: "",
+      itineraryDetails: [
+        {
+          day: 1,
+          title: "Arrival & Beach Relaxation",
+          activities: [
+            { time: "10:00 AM", icon: Plane, title: "Arrival at Mactan Airport", description: "Transfer to Oslob", location: "Mactan-Cebu Airport" },
+            { time: "1:00 PM", icon: Hotel, title: "Resort Check-in", description: "Beachfront resort", location: "Oslob" },
+            { time: "3:00 PM", icon: Camera, title: "Beach Time", description: "Relax by the sea", location: "Oslob Beach" },
+            { time: "6:00 PM", icon: UtensilsCrossed, title: "Dinner", description: "Fresh seafood", location: "Resort Restaurant" },
+          ],
+        },
+        {
+          day: 2,
+          title: "Whale Shark Encounter",
+          activities: [
+            { time: "5:00 AM", icon: UtensilsCrossed, title: "Early Breakfast", description: "Light breakfast", location: "Resort" },
+            { time: "6:00 AM", icon: Camera, title: "Whale Shark Watching", description: "Swim with whale sharks", location: "Oslob Whale Shark Sanctuary" },
+            { time: "9:00 AM", icon: Camera, title: "Tumalog Falls", description: "Waterfall visit", location: "Tumalog Falls" },
+            { time: "12:00 PM", icon: UtensilsCrossed, title: "Lunch", description: "Local restaurant", location: "Oslob Town" },
+            { time: "2:00 PM", icon: Camera, title: "Sumilon Island", description: "Island hopping", location: "Sumilon Island" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "BV-2025-005",
+      customer: "Elena Rodriguez",
+      email: "elena.rodriguez@email.com",
+      mobile: "+63 921 567 8901",
+      destination: "Siargao Island, Surigao del Norte",
+      itinerary: "Siargao 5-Day Surf & Island Adventure",
+      startDate: "2025-12-10",
+      endDate: "2025-12-15",
+      travelers: 3,
+      totalAmount: 72000,
+      paid: 72000,
+      paymentStatus: "Paid",
+      bookedDate: "2025-10-20",
+      bookedDateObj: new Date("2025-10-20"),
+      status: "active",
+      bookingType: "Requested",
+      modeOfPayment: "Gcash",
+      itineraryDetails: [
+        {
+          day: 1,
+          title: "Arrival & Surf Lesson",
+          activities: [
+            { time: "12:00 PM", icon: Plane, title: "Arrival at Siargao Airport", description: "Transfer to resort", location: "Siargao Airport" },
+            { time: "2:00 PM", icon: Hotel, title: "Resort Check-in", description: "Beachfront surf resort", location: "General Luna" },
+            { time: "4:00 PM", icon: Camera, title: "Beginner Surf Lesson", description: "2-hour surf instruction", location: "Cloud 9" },
+            { time: "7:00 PM", icon: UtensilsCrossed, title: "Dinner", description: "Beachfront dining", location: "General Luna" },
+          ],
+        },
+        {
+          day: 2,
+          title: "Island Hopping Tour",
+          activities: [
+            { time: "8:00 AM", icon: UtensilsCrossed, title: "Breakfast", description: "Resort breakfast", location: "Resort" },
+            { time: "9:00 AM", icon: Plane, title: "Naked Island", description: "Sandbar paradise", location: "Naked Island" },
+            { time: "10:30 AM", icon: Camera, title: "Daku Island", description: "Beach lunch stop", location: "Daku Island" },
+            { time: "2:00 PM", icon: Camera, title: "Guyam Island", description: "Coconut island visit", location: "Guyam Island" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "BV-2025-006",
+      customer: "Miguel Santos",
+      email: "miguel.santos@email.com",
+      mobile: "+63 922 678 9012",
+      destination: "Vigan, Ilocos Sur",
+      itinerary: "Vigan 3-Day Heritage Tour",
+      startDate: "2025-11-05",
+      endDate: "2025-11-08",
+      travelers: 4,
+      totalAmount: 52000,
+      paid: 52000,
+      paymentStatus: "Paid",
+      bookedDate: "2025-10-01",
+      bookedDateObj: new Date("2025-10-01"),
+      status: "active",
+      bookingType: "Standard",
+      tourType: "Private",
+      modeOfPayment: "Cash",
+      itineraryDetails: [
+        {
+          day: 1,
+          title: "Arrival & Heritage Walk",
+          activities: [
+            { time: "8:00 AM", icon: Car, title: "Departure from Manila", description: "Comfortable van transfer", location: "Manila" },
+            { time: "4:00 PM", icon: Hotel, title: "Heritage Hotel Check-in", description: "Spanish colonial hotel", location: "Calle Crisologo" },
+            { time: "6:00 PM", icon: Camera, title: "Kalesa Ride", description: "Horse-drawn carriage tour", location: "Heritage Village" },
+            { time: "8:00 PM", icon: UtensilsCrossed, title: "Dinner", description: "Ilocano cuisine", location: "Cafe Leona" },
+          ],
+        },
+        {
+          day: 2,
+          title: "Cultural Exploration",
+          activities: [
+            { time: "7:00 AM", icon: UtensilsCrossed, title: "Breakfast", description: "Traditional Ilocano breakfast", location: "Hotel" },
+            { time: "8:30 AM", icon: Camera, title: "Bantay Bell Tower", description: "Historic watchtower", location: "Bantay" },
+            { time: "10:00 AM", icon: Camera, title: "Pottery Making", description: "Jar-making demonstration", location: "Pagburnayan" },
+            { time: "12:00 PM", icon: UtensilsCrossed, title: "Lunch", description: "Empanada tasting", location: "Plaza Burgos" },
+            { time: "2:00 PM", icon: Camera, title: "Crisologo Museum", description: "Historical artifacts", location: "Calle Crisologo" },
           ],
         },
       ],
@@ -421,25 +388,42 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
     if (savedAdminBookings) {
       const adminBookings = JSON.parse(savedAdminBookings);
       // Convert to Booking format
-      const converted: Booking[] = adminBookings.map((booking: any) => ({
-        id: booking.id,
-        customer: booking.customer,
-        email: booking.email,
-        mobile: booking.mobile,
-        destination: booking.destination,
-        itinerary: booking.itinerary,
-        startDate: booking.dates.split(' – ')[0],
-        endDate: booking.dates.split(' – ')[1] || booking.dates.split(' – ')[0],
-        travelers: booking.travelers,
-        totalAmount: parseInt(booking.amount.replace(/[₱,]/g, '')),
-        paid: 0,
-        paymentStatus: "Unpaid",
-        bookedDate: booking.bookingDate,
-        bookedDateObj: new Date(booking.bookingDate),
-        status: "active",
-        bookingType: "Standard" as const,
-        tourType: booking.tourType,
-      }));
+      const converted: Booking[] = adminBookings.map((booking: any) => {
+        const totalPaid = booking.totalPaid || 0;
+        const totalAmount = parseInt(booking.amount.replace(/[₱,]/g, ''));
+        let paymentStatus = "Unpaid";
+        
+        if (totalPaid >= totalAmount) {
+          paymentStatus = "Paid";
+        } else if (totalPaid > 0) {
+          paymentStatus = "Partial";
+        }
+
+        return {
+          id: booking.id,
+          customer: booking.customer,
+          email: booking.email,
+          mobile: booking.mobile,
+          destination: booking.destination,
+          itinerary: booking.itinerary,
+          startDate: booking.dates.split(' – ')[0],
+          endDate: booking.dates.split(' – ')[1] || booking.dates.split(' – ')[0],
+          travelers: booking.travelers,
+          totalAmount: totalAmount,
+          paid: totalPaid,
+          paymentStatus: paymentStatus,
+          bookedDate: booking.bookingDate,
+          bookedDateObj: new Date(booking.bookingDate),
+          status: "active",
+          bookingType: "Standard" as const,
+          tourType: booking.tourType,
+          modeOfPayment: booking.paymentHistory && booking.paymentHistory.length > 0 
+            ? booking.paymentHistory[booking.paymentHistory.length - 1].modeOfPayment 
+            : "",
+          paymentHistory: booking.paymentHistory || [],
+          totalPaid: totalPaid,
+        };
+      });
       setStandardBookingsFromUser(converted);
     }
   }, []);
@@ -455,6 +439,50 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       });
     }
   }, [createdBookings, standardBookingsFromUser]);
+
+  // Sync payment updates from user side periodically
+  useEffect(() => {
+    const syncPaymentData = () => {
+      const savedAdminBookings = localStorage.getItem('adminStandardBookings');
+      if (savedAdminBookings) {
+        const adminBookings = JSON.parse(savedAdminBookings);
+        
+        setBookings(prevBookings => {
+          return prevBookings.map(booking => {
+            const updatedBooking = adminBookings.find((ab: any) => ab.id === booking.id);
+            if (updatedBooking && updatedBooking.paymentHistory) {
+              const totalPaid = updatedBooking.totalPaid || 0;
+              const totalAmount = booking.totalAmount;
+              let paymentStatus = "Unpaid";
+              
+              if (totalPaid >= totalAmount) {
+                paymentStatus = "Paid";
+              } else if (totalPaid > 0) {
+                paymentStatus = "Partial";
+              }
+
+              return {
+                ...booking,
+                paid: totalPaid,
+                totalPaid: totalPaid,
+                paymentStatus: paymentStatus,
+                paymentHistory: updatedBooking.paymentHistory,
+                modeOfPayment: updatedBooking.paymentHistory.length > 0 
+                  ? updatedBooking.paymentHistory[updatedBooking.paymentHistory.length - 1].modeOfPayment 
+                  : booking.modeOfPayment,
+              };
+            }
+            return booking;
+          });
+        });
+      }
+    };
+
+    // Sync immediately and then every 2 seconds
+    syncPaymentData();
+    const interval = setInterval(syncPaymentData, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Check for completed bookings (past travel dates) automatically
   useEffect(() => {
@@ -758,11 +786,13 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
   const handleViewDetails = (bookingId: string) => {
     setSelectedBookingId(bookingId);
     setViewMode("detail");
+    setEditingPayment(false);
   };
 
   const handleBackToList = () => {
     setViewMode("list");
     setSelectedBookingId(null);
+    setEditingPayment(false);
   };
 
   const handleMoveToApprovalsClick = (booking: Booking) => {
@@ -893,7 +923,8 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
             <h2 className="text-[#1A2B4F] dark:text-white font-semibold">{selectedBooking.itinerary}</h2>     
             <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">Booking Details</p>   
           </div> 
-        </div> 
+        </div>
+
         {/* Booking Header Card */}
         <div className="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
           <div className="flex items-start justify-between mb-6">
@@ -978,56 +1009,42 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
                     <CreditCard className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="font-semibold text-[#1A2B4F]">Payment Details</h3>
+                  <h3 className="font-semibold text-[#1A2B4F]">Payment Information</h3>
                 </div>
               </div>
               <div className="p-6 space-y-4">
+                {/* Payment Status Display */}
                 <div>
-                  <Label htmlFor="payment-status" className="text-[#1A2B4F] mb-2 block">Payment Status</Label>
-                  <Select 
-                    value={selectedBooking.paymentStatus} 
-                    onValueChange={(value) => handlePaymentStatusChange(selectedBooking.id, value)}
-                  >
-                    <SelectTrigger id="payment-status" className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Paid">Paid</SelectItem>
-                      <SelectItem value="Partial">Partial</SelectItem>
-                      <SelectItem value="Unpaid">Unpaid</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-[#1A2B4F] mb-2 block">Payment Status</Label>
+                  <div className={`inline-flex px-3 py-1 rounded-full text-sm font-medium border ${getPaymentStatusColor(selectedBooking.paymentStatus)}`}>
+                    {selectedBooking.paymentStatus}
+                  </div>
                 </div>
 
-                <div className="pt-4 border-t border-[#E5E7EB]">
-                  <div className="flex justify-between items-center mb-2">
+                {/* Mode of Payment Display */}
+                {selectedBooking.modeOfPayment && (
+                  <div>
+                    <Label className="text-[#1A2B4F] mb-2 block">Mode of Payment</Label>
+                    <div className="flex items-center gap-2">
+                      {selectedBooking.modeOfPayment === "Cash" ? (
+                        <Banknote className="w-4 h-4 text-[#10B981]" />
+                      ) : (
+                        <Smartphone className="w-4 h-4 text-[#0A7AFF]" />
+                      )}
+                      <span className="text-[#334155] font-medium">{selectedBooking.modeOfPayment}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Payment Summary */}
+                <div className="pt-4 border-t border-[#E5E7EB] space-y-2">
+                  <div className="flex justify-between items-center">
                     <span className="text-sm text-[#64748B]">Total Amount</span>
                     <span className="font-semibold text-[#1A2B4F]">₱{selectedBooking.totalAmount.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="flex justify-between items-center">
                     <span className="text-sm text-[#64748B]">Amount Paid</span>
-                    {selectedBooking.paymentStatus === "Partial" ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-[#64748B]">₱</span>
-                        <Input
-                          type="number"
-                          value={selectedBooking.paid}
-                          onChange={(e) => {
-                            const newPaid = Math.min(Number(e.target.value), selectedBooking.totalAmount);
-                            setBookings(bookings.map(b => 
-                              b.id === selectedBooking.id 
-                                ? { ...b, paid: Math.max(0, newPaid) }
-                                : b
-                            ));
-                          }}
-                          className="w-32 h-8 text-sm font-semibold text-[#10B981] text-right"
-                          min="0"
-                          max={selectedBooking.totalAmount}
-                        />
-                      </div>
-                    ) : (
-                      <span className="font-semibold text-[#10B981]">₱{selectedBooking.paid.toLocaleString()}</span>
-                    )}
+                    <span className="font-semibold text-[#10B981]">₱{selectedBooking.paid.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-[#E5E7EB]">
                     <span className="text-sm font-medium text-[#1A2B4F]">Balance</span>
@@ -1046,6 +1063,100 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                       className="h-full bg-gradient-to-r from-[#10B981] to-[#14B8A6] transition-all duration-300"
                       style={{ width: `${(selectedBooking.paid / selectedBooking.totalAmount) * 100}%` }}
                     />
+                  </div>
+                </div>
+
+                {/* Payment History */}
+                {selectedBooking.paymentHistory && selectedBooking.paymentHistory.length > 0 && (
+                  <div className="pt-4 border-t border-[#E5E7EB]">
+                    <Label className="text-[#1A2B4F] mb-3 block">Payment History</Label>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {selectedBooking.paymentHistory.map((payment, index) => (
+                        <div key={payment.id} className="bg-[#F8FAFB] rounded-lg p-3 border border-[#E5E7EB]">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="text-sm font-medium text-[#1A2B4F]">
+                                Payment #{index + 1} - {payment.paymentType}
+                              </p>
+                              <p className="text-xs text-[#64748B]">
+                                {new Date(payment.submittedAt).toLocaleDateString('en-PH', { 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                            <span className="text-sm font-semibold text-[#10B981]">
+                              ₱{payment.amount.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            {payment.modeOfPayment === "Cash" ? (
+                              <Banknote className="w-3 h-3 text-[#10B981]" />
+                            ) : (
+                              <Smartphone className="w-3 h-3 text-[#0A7AFF]" />
+                            )}
+                            <span className="text-[#64748B]">{payment.modeOfPayment}</span>
+                            {(payment.proofOfPayment || payment.cashConfirmation) && (
+                              <span className="ml-auto flex items-center gap-1 text-[#10B981]">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Proof of Payment Preview */}
+                          {(payment.proofOfPayment || payment.cashConfirmation) && (
+                            <div className="mt-2 pt-2 border-t border-[#E5E7EB]">
+                              <p className="text-xs text-[#64748B] mb-1">Proof of Payment:</p>
+                              <div className="border border-[#E5E7EB] rounded-lg overflow-hidden">
+                                <img 
+                                  src={payment.proofOfPayment || payment.cashConfirmation} 
+                                  alt="Proof of payment" 
+                                  className="w-full h-32 object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => {
+                                    // Open image in modal for larger view
+                                    const img = new Image();
+                                    img.src = payment.proofOfPayment || payment.cashConfirmation || '';
+                                    img.style.maxWidth = '90vw';
+                                    img.style.maxHeight = '90vh';
+                                    img.style.objectFit = 'contain';
+                                    
+                                    const modal = document.createElement('div');
+                                    modal.style.position = 'fixed';
+                                    modal.style.top = '0';
+                                    modal.style.left = '0';
+                                    modal.style.width = '100vw';
+                                    modal.style.height = '100vh';
+                                    modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+                                    modal.style.display = 'flex';
+                                    modal.style.alignItems = 'center';
+                                    modal.style.justifyContent = 'center';
+                                    modal.style.zIndex = '9999';
+                                    modal.style.cursor = 'pointer';
+                                    
+                                    modal.appendChild(img);
+                                    modal.onclick = () => document.body.removeChild(modal);
+                                    
+                                    document.body.appendChild(modal);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sync Status */}
+                <div className="pt-4 border-t border-[#E5E7EB]">
+                  <div className="flex items-center gap-2 text-xs text-[#64748B]">
+                    <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></div>
+                    <span>Synced with user payments</span>
                   </div>
                 </div>
               </div>
@@ -1661,7 +1772,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                             {booking.bookingType}
                           </span>
                         )}
-                        {booking.bookingType === "Standard" && booking.tourType && (
+                        {booking.tourType && (
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${
                             booking.tourType === "Joiner"
                               ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"

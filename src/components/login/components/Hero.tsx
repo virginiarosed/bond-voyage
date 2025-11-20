@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "./ui/button";
+import logo from "../assets/BondVoyage Logo only.png"
 
 interface HeroProps {
   onStartPlanningClick: () => void;
@@ -64,23 +65,10 @@ export function Hero({ onStartPlanningClick }: HeroProps) {
                 transition={{ duration: 0.8, ease: "easeInOut" }}
                 className="w-32 h-32 flex items-center justify-center"
               >
-                <motion.svg
-                  viewBox="0 0 200 120"
+                <motion.img
+                src={logo}
                   className="w-full h-auto"
-                >
-                  <defs>
-                    <linearGradient id="mountainGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" style={{ stopColor: "#0A7AFF" }} />
-                      <stop offset="50%" style={{ stopColor: "#3B9EFF" }} />
-                      <stop offset="100%" style={{ stopColor: "#14B8A6" }} />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M 10 110 L 70 10 L 100 60 L 130 10 L 190 110 Z"
-                    fill="url(#mountainGradient)"
-                  />
-                  <circle cx="100" cy="75" r="12" fill="white" opacity="0.9" />
-                </motion.svg>
+               />
               </motion.div>
             ) : (
               <motion.div
