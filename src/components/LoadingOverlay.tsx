@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
-import { Mountain } from "lucide-react";
+import logo from "./login/assets/BondVoyage Logo only.png"
+
 
 export function LoadingOverlay() {
   return (
@@ -146,14 +147,7 @@ export function LoadingOverlay() {
                 ease: "easeInOut",
               }}
             >
-              <Mountain
-                style={{
-                  width: "4rem",
-                  height: "4rem",
-                  color: "#0A7AFF",
-                }}
-                strokeWidth={2}
-              />
+              <img src={logo} alt="Bond Voyage" className="h-16 w-16"/>
             </motion.div>
           </div>
         </motion.div>
