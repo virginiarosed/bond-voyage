@@ -2,49 +2,67 @@ import { create } from "zustand";
 import api from "../api/axios";
 
 interface User {
-  id: number;
+  id: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  first_name: string;
-  last_name: string;
   role: string;
 }
 
-interface AuthStore {
-  isAuthenticated: boolean;
+interface AuthState {
   user: User | null;
   token: string | null;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  //  register: (data: any) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
-  checkAuth: () => void;
+  setUser: (user: User | null) => void;
 }
 
-const useAuthStore = create<AuthStore>((set) => ({
-  isAuthenticated: !!localStorage.getItem('token'),
-  user: null,
-  token: localStorage.getItem('token'),
+interface RegisterData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  employeeId: string;
+  phoneNumber: string;
+  password: string;
+}
 
-  login: async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', res.data.token);
-    set({ isAuthenticated: true, token: res.data.token, user: res.data.user });
+const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  token: localStorage.getItem('accessToken'),
+  isAuthenticated: !!localStorage.getItem('accessToken'),
+
+  login: async (email: string, password: string) => {
+    const response = await api.post('/auth/login', { email, password });
+    const { user, accessToken } = response.data.data;
+    
+    localStorage.setItem('accessToken', accessToken);
+    set({ user, token: accessToken, isAuthenticated: true });
   },
 
-  register: async (data) => {
-    const res = await api.post('/auth/register', data);
-    localStorage.setItem('token', res.data.token);
-    set({ isAuthenticated: true, token: res.data.token, user: res.data.user });
+  register: async (data: RegisterData) => {
+    const response = await api.post('/auth/register', data);
+    const { user, accessToken } = response.data.data;
+    
+    localStorage.setItem('accessToken', accessToken);
+    set({ user, token: accessToken, isAuthenticated: true });
+  },
+
+  forgotPassword: async (email: string) => {
+    await api.post('/auth/forgot-password', { email });
   },
 
   logout: () => {
-    localStorage.removeItem('token');
-    set({ isAuthenticated: false, user: null, token: null });
+    localStorage.removeItem('accessToken');
+    set({ user: null, token: null, isAuthenticated: false });
   },
 
-  checkAuth: () => {
-    const token = localStorage.getItem('token');
-    set({ isAuthenticated: !!token, token });
-  }
+  setUser: (user: User | null) => {
+    set({ user });
+  },
 }));
 
 export default useAuthStore;

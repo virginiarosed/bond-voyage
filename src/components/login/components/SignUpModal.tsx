@@ -13,7 +13,7 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
-import * as DialogPrimitive from "@radix-ui/react-dialog@1.1.6";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { DialogTitle, DialogDescription } from "./ui/dialog";
 import bondVoyageLogo from "../assets/40755770f782ee2806bf45fc8b364947bbbe25e5.png";
 

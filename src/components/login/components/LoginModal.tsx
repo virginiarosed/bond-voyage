@@ -12,8 +12,10 @@ import {
   X,
 } from "lucide-react";
 import { DialogTitle, DialogDescription } from "./ui/dialog";
-import * as DialogPrimitive from "@radix-ui/react-dialog@1.1.6";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import bondVoyageLogo from "../assets/40755770f782ee2806bf45fc8b364947bbbe25e5.png";
+import { useNavigate } from "react-router-dom";
+import useAuthStore from "../../../store/authStore";
 
 
 interface LoginModalProps {
@@ -68,8 +70,12 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignUp, onForgotPassword
     setPasswordTouched(true);
     setPasswordError(validatePassword(password));
   };
+// 74 - 132
+// ... inside LoginModal component
+  const navigate = useNavigate();
+  const { login } = useAuthStore(); // Get the real login action
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const emailErr = validateEmail(email);
@@ -81,32 +87,48 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignUp, onForgotPassword
     setPasswordTouched(true);
 
     if (emailErr || passwordErr) {
-      setShowToast({
-        type: "error",
-        title: "Login Failed",
-        message:
-          "Invalid email or password. Please check your credentials and try again.",
-      });
-      setTimeout(() => setShowToast(null), 6000);
-      return;
+      return; // Stop if errors exist
     }
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // 1. CALL THE REAL BACKEND
+      await login(email, password);
+
+      // 2. SUCCESS HANDLING
       setShowToast({
         type: "success",
         title: "Login Successful!",
         message: "Redirecting to your dashboard...",
       });
 
+      // 3. DETERMINE REDIRECT PATH BASED ON ROLE
+      // We get the role from the store (which was updated by login())
+      // Note: Since state updates might be async, we can also check the user object directly if returned, 
+      // but Zustand usually updates synchronously enough for this flow.
+      const user = useAuthStore.getState().user;
+      const redirectPath = user?.role === "ADMIN" ? "/" : "/user/home";
+
       setTimeout(() => {
         setShowToast(null);
-        console.log("Redirecting to dashboard...");
         onClose();
-      }, 2000);
-    }, 1500);
+        navigate(redirectPath); // <--- THE MISSING PIECE
+      }, 1500);
+
+    } catch (error: any) {
+      // 4. ERROR HANDLING
+      console.error("Login error:", error);
+      const errorMessage = error.response?.data?.message || "Invalid email or password.";
+      
+      setShowToast({
+        type: "error",
+        title: "Login Failed",
+        message: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const emailIsValid = email && !validateEmail(email);
