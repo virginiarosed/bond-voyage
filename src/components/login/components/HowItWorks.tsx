@@ -63,10 +63,10 @@ export function HowItWorks({ onStartYourTripClick }: HowItWorksProps) {
               <motion.div
                 key={step.number}
                 className="flex flex-col items-center text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.2, duration: 0.5 }}
+                transition={{ delay: index * 0.5, duration: 0.5 }}
               >
                 {/* Numbered Circle */}
                 <div
