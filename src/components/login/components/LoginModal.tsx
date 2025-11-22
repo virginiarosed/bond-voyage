@@ -261,7 +261,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignUp, onForgotPassword
                         onChange={(e) => setEmail(e.target.value)}
                         onBlur={handleEmailBlur}
                         placeholder="you@example.com"
-                        className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none ${
+                        className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                           emailTouched && emailError
                             ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                             : emailIsValid
@@ -271,7 +271,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignUp, onForgotPassword
                         style={{ fontSize: "15px" }}
                       />
                       {emailIsValid && (
-                        <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#10B981]" />
+                        <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#1A2B4F]" />
                       )}
                     </div>
                     {emailTouched && emailError && (
@@ -300,7 +300,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignUp, onForgotPassword
                         onChange={(e) => setPassword(e.target.value)}
                         onBlur={handlePasswordBlur}
                         placeholder="Enter your password"
-                        className={`w-full h-12 px-4 pr-12 rounded-xl transition-all duration-200 outline-none ${
+                        className={`w-full h-12 px-4 pr-12 rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                           passwordTouched && passwordError
                             ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                             : "border-2 border-[#E5E7EB] bg-[#F8FAFB]"

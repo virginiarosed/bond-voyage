@@ -3,7 +3,7 @@ import { Plane, Hotel, Camera, UtensilsCrossed, Car, Download, QrCode, Keyboard,
 
 import { ItineraryDetailDisplay } from "../../components/ItineraryDetailDisplay";
 import { exportBookingDetailToPDF, exportBookingDetailToExcel } from "../../utils/exportUtils";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { useState, useEffect, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Label } from "../../components/ui/label";
@@ -35,7 +35,7 @@ interface Booking {
   bookingDate: string;
   image: string;
   itinerary: string;
-  bookingType: "Standard" | "Customized";
+  bookingType: "Standard" | "Customized" | "Requested";
   paymentType?: "Full Payment" | "Partial Payment" | "";
   modeOfPayment?: "Cash" | "Gcash" | "";
   amountPaid?: number;
@@ -81,7 +81,7 @@ const bookingsData: Booking[] = [
     email: "ana.reyes@email.com",
     mobile: "+63 919 345 6789",
     destination: "Baguio City, Benguet",
-    dates: "November 28, 2025 – November 30, 2025",
+    dates: "November 28, 2025 - November 30, 2025",
     travelers: 3,
     amount: "₱38,750",
     status: "pending",

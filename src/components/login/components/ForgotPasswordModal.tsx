@@ -341,7 +341,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
                           setEmailError("");
                         }}
                         placeholder="you@example.com"
-                        className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none ${
+                        className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                           emailError
                             ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                             : "border-2 border-[#E5E7EB] bg-[#F8FAFB]"
@@ -415,7 +415,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
                           value={digit}
                           onChange={(e) => handleOTPChange(index, e.target.value)}
                           onKeyDown={(e) => handleOTPKeyDown(index, e)}
-                          className={`w-12 h-12 text-center rounded-xl transition-all duration-200 outline-none ${
+                          className={`w-12 h-12 text-center rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                             otpError
                               ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                               : "border-2 border-[#E5E7EB] bg-[#F8FAFB]"

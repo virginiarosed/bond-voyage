@@ -565,7 +565,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                                 onChange={(e) => setFirstName(e.target.value)}
                                 onBlur={() => handleBlur("firstName")}
                                 placeholder="John"
-                                className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none ${
+                                className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                                   touched.firstName && errors.firstName
                                     ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                                     : "border-2 border-[#E5E7EB] bg-[#F8FAFB]"
@@ -593,7 +593,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                                 onChange={(e) => setLastName(e.target.value)}
                                 onBlur={() => handleBlur("lastName")}
                                 placeholder="Doe"
-                                className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none ${
+                                className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                                   touched.lastName && errors.lastName
                                     ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                                     : "border-2 border-[#E5E7EB] bg-[#F8FAFB]"
@@ -625,7 +625,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                                 onChange={(e) => setEmail(e.target.value)}
                                 onBlur={() => handleBlur("email")}
                                 placeholder="you@example.com"
-                                className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none ${
+                                className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                                   touched.email && errors.email
                                     ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                                     : email && !errors.email
@@ -662,7 +662,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                                 onChange={(e) => setMobile(e.target.value)}
                                 onBlur={() => handleBlur("mobile")}
                                 placeholder="09*********"
-                                className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none ${
+                                className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                                   touched.mobile && errors.mobile
                                     ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                                     : "border-2 border-[#E5E7EB] bg-[#F8FAFB]"
@@ -689,7 +689,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                                 value={birthday}
                                 onChange={(e) => setBirthday(e.target.value)}
                                 onBlur={() => handleBlur("birthday")}
-                                className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none ${
+                                className={`w-full h-12 px-4 rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                                   touched.birthday && errors.birthday
                                     ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                                     : "border-2 border-[#E5E7EB] bg-[#F8FAFB]"
@@ -725,7 +725,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                                   handleBlur("password");
                                 }}
                                 placeholder="Enter your password"
-                                className={`w-full h-12 px-4 pr-12 rounded-xl transition-all duration-200 outline-none ${
+                                className={`w-full h-12 px-4 pr-12 rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                                   touched.password && errors.password
                                     ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                                     : "border-2 border-[#E5E7EB] bg-[#F8FAFB]"
@@ -783,7 +783,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                                 onChange={(e) => setPasswordConfirmation(e.target.value)}
                                 onBlur={() => handleBlur("passwordConfirmation")}
                                 placeholder="Confirm your password"
-                                className={`w-full h-12 px-4 pr-12 rounded-xl transition-all duration-200 outline-none ${
+                                className={`w-full h-12 px-4 pr-12 rounded-xl transition-all duration-200 outline-none text-[#1A2B4F] ${
                                   touched.passwordConfirmation && errors.passwordConfirmation
                                     ? "border-2 border-[#FF6B6B] bg-white shadow-[0_0_0_4px_rgba(255,107,107,0.08)]"
                                     : passwordConfirmation && password === passwordConfirmation
@@ -996,7 +996,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin }: SignUpModalPro
                           <button
                             type="submit"
                             disabled={isLoading || otpInput.length !== 6}
-                            className={`w-full h-12 px-6 rounded-xl border-none text-white transition-all flex items-center justify-center ${
+                            className={`w-full h-12 px-6 rounded-xl border-none text-white transition-all flex items-center justify-center text-[#1A2B4F] ${
                               isLoading || otpInput.length !== 6
                                 ? "opacity-50 cursor-not-allowed"
                                 : "hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.98]"
