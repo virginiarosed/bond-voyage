@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+  useCallback,
+} from "react";
 
 interface ProfileData {
   firstName: string;
@@ -69,20 +76,22 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     return defaultProfileData;
   });
 
-  const [userProfileData, setUserProfileData] = useState<UserProfileData>(() => {
-    // Load from localStorage on mount
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(USER_STORAGE_KEY);
-      if (saved) {
-        try {
-          return { ...defaultUserProfileData, ...JSON.parse(saved) };
-        } catch (e) {
-          console.error("Failed to parse user profile data:", e);
+  const [userProfileData, setUserProfileData] = useState<UserProfileData>(
+    () => {
+      // Load from localStorage on mount
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(USER_STORAGE_KEY);
+        if (saved) {
+          try {
+            return { ...defaultUserProfileData, ...JSON.parse(saved) };
+          } catch (e) {
+            console.error("Failed to parse user profile data:", e);
+          }
         }
       }
+      return defaultUserProfileData;
     }
-    return defaultUserProfileData;
-  });
+  );
 
   // Save to localStorage whenever profile data changes
   useEffect(() => {
@@ -118,7 +127,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ProfileContext.Provider value={{ profileData, updateProfile, setCustomerRatingFromFeedback, userProfileData, updateUserProfile }}>
+    <ProfileContext.Provider
+      value={{
+        profileData,
+        updateProfile,
+        setCustomerRatingFromFeedback,
+        userProfileData,
+        updateUserProfile,
+      }}
+    >
       {children}
     </ProfileContext.Provider>
   );

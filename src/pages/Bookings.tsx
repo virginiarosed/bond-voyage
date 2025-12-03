@@ -1,6 +1,6 @@
-import { Calendar, MapPin, User, Users, Globe, Eye, Edit, RotateCcw, X, ChevronLeft, ChevronRight, Phone, Mail, CreditCard, CheckCircle2, Package, Clock, Plane, Hotel, Camera, UtensilsCrossed, Car, Briefcase, FileCheck, ClipboardList, BookOpen, Download, Pen, Save, Banknote, Smartphone } from "lucide-react";
+import { Calendar, MapPin, User, Users, Globe, Eye, Edit, RotateCcw, X, ChevronLeft, ChevronRight, Phone, Mail, CreditCard, CheckCircle2, Package, Clock, Plane, Hotel, Camera, UtensilsCrossed, Car, Briefcase, FileCheck, ClipboardList, BookOpen, Download, Pen, Save, Banknote, Smartphone, Wallet, TrendingUp, Receipt, ChevronDown, AlertCircle, Shield, Copy } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Button as ShadcnButton } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -27,6 +27,10 @@ interface PaymentSubmission {
   proofOfPayment?: string;
   cashConfirmation?: string;
   submittedAt: string;
+  status?: "pending" | "verified" | "rejected";
+  verifiedBy?: string;
+  verifiedAt?: string;
+  rejectionReason?: string;
 }
 
 type Booking = {
@@ -44,13 +48,14 @@ type Booking = {
   paymentStatus: string;
   bookedDate: string;
   bookedDateObj: Date;
-  status: string;
+  status: string; // Changed from "active" or "pending" to "confirmed"
   bookingType?: "Customized" | "Requested" | "Standard";
   tourType?: "Joiner" | "Private";
   itineraryDetails?: ItineraryDay[];
   modeOfPayment?: "Cash" | "Gcash" | "";
   paymentHistory?: PaymentSubmission[];
   totalPaid?: number;
+  tripStatus?: string;
 };
 
 type ItineraryDay = {
@@ -75,6 +80,7 @@ interface BookingsProps {
 
 export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory, createdBookings = [], onBookingsCountChange }: BookingsProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -96,7 +102,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10; // Increased from 5 to 10 to show all bookings
 
   // State for standard bookings from UserStandardItinerary
   const [standardBookingsFromUser, setStandardBookingsFromUser] = useState<Booking[]>([]);
@@ -127,7 +133,26 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
   const [bookingToMoveToRequested, setBookingToMoveToRequested] = useState<Booking | null>(null);
   const [cancellationReason, setCancellationReason] = useState("");
 
+  // Payment detail modal state
+  const [selectedPayment, setSelectedPayment] = useState<PaymentSubmission | null>(null);
+  const [paymentDetailModalOpen, setPaymentDetailModalOpen] = useState(false);
+
+  // Payment verification states
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+
+  // Payment settings from localStorage (admin EditProfile)
+  const [paymentSettings, setPaymentSettings] = useState(() => {
+    const saved = localStorage.getItem('paymentSettings');
+    return saved ? JSON.parse(saved) : {
+      accountName: "4B'S TRAVEL AND TOURS",
+      gcashMobile: '0994 631 1233',
+      gcashQrCode: ''
+    };
+  });
+
   const [bookings, setBookings] = useState<Booking[]>([
+    // BV-2025-001 - Maria Santos - Boracay
     {
       id: "BV-2025-001",
       customer: "Maria Santos",
@@ -139,14 +164,16 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       endDate: "2025-12-25",
       travelers: 4,
       totalAmount: 85500,
-      paid: 85500,
-      paymentStatus: "Paid",
+      paid: 0,
+      paymentStatus: "Unpaid",
       bookedDate: "2025-11-10",
       bookedDateObj: new Date("2025-11-10"),
-      status: "active",
+      status: "confirmed",
       bookingType: "Standard",
       tourType: "Private",
-      modeOfPayment: "Cash",
+      modeOfPayment: "",
+      paymentHistory: [],
+      totalPaid: 0,
       itineraryDetails: [
         {
           day: 1,
@@ -170,6 +197,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         },
       ],
     },
+    // BV-2025-002 - Juan Dela Cruz - El Nido
     {
       id: "BV-2025-002",
       customer: "Juan Dela Cruz",
@@ -185,9 +213,21 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       paymentStatus: "Partial",
       bookedDate: "2025-11-08",
       bookedDateObj: new Date("2025-11-08"),
-      status: "active",
+      status: "confirmed",
       bookingType: "Customized",
       modeOfPayment: "Gcash",
+      paymentHistory: [
+        {
+          id: "PAY-2025-002-1",
+          paymentType: "Partial Payment",
+          amount: 31000,
+          modeOfPayment: "Gcash",
+          proofOfPayment: "https://example.com/proof1.jpg",
+          submittedAt: "2025-11-08T10:30:00Z",
+          status: "pending"
+        }
+      ],
+      totalPaid: 31000,
       itineraryDetails: [
         {
           day: 1,
@@ -212,6 +252,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         },
       ],
     },
+    // BV-2025-003 - Ana Reyes - Baguio
     {
       id: "BV-2025-003",
       customer: "Ana Reyes",
@@ -219,18 +260,32 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       mobile: "+63 919 345 6789",
       destination: "Baguio City, Benguet",
       itinerary: "Baguio 3-Day Summer Escape",
-      startDate: "2025-11-28",
-      endDate: "2025-11-30",
+      startDate: "2025-12-28",
+      endDate: "2025-12-30",
       travelers: 3,
       totalAmount: 38750,
       paid: 38750,
       paymentStatus: "Paid",
       bookedDate: "2025-11-01",
       bookedDateObj: new Date("2025-11-01"),
-      status: "active",
+      status: "confirmed",
       bookingType: "Standard",
       tourType: "Joiner",
       modeOfPayment: "Cash",
+      paymentHistory: [
+        {
+          id: "PAY-2025-003-1",
+          paymentType: "Full Payment",
+          amount: 38750,
+          modeOfPayment: "Cash",
+          cashConfirmation: "https://example.com/cash1.jpg",
+          submittedAt: "2025-11-01T14:20:00Z",
+          status: "verified",
+          verifiedBy: "Admin User",
+          verifiedAt: "2025-11-01T15:00:00Z"
+        }
+      ],
+      totalPaid: 38750,
       itineraryDetails: [
         {
           day: 1,
@@ -254,6 +309,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         },
       ],
     },
+    // BV-2025-004 - Carlos Mendoza - Oslob
     {
       id: "BV-2025-004",
       customer: "Carlos Mendoza",
@@ -265,13 +321,25 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       endDate: "2026-02-13",
       travelers: 2,
       totalAmount: 45200,
-      paid: 0,
-      paymentStatus: "Unpaid",
+      paid: 22600,
+      paymentStatus: "Partial",
       bookedDate: "2025-11-05",
       bookedDateObj: new Date("2025-11-05"),
-      status: "active",
+      status: "confirmed",
       bookingType: "Customized",
-      modeOfPayment: "",
+      modeOfPayment: "Gcash",
+      paymentHistory: [
+        {
+          id: "PAY-2025-004-1",
+          paymentType: "Partial Payment",
+          amount: 22600,
+          modeOfPayment: "Gcash",
+          proofOfPayment: "https://example.com/proof2.jpg",
+          submittedAt: "2025-11-05T09:15:00Z",
+          status: "pending"
+        }
+      ],
+      totalPaid: 22600,
       itineraryDetails: [
         {
           day: 1,
@@ -296,6 +364,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         },
       ],
     },
+    // BV-2025-005 - Elena Rodriguez - Siargao
     {
       id: "BV-2025-005",
       customer: "Elena Rodriguez",
@@ -307,13 +376,15 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       endDate: "2025-12-15",
       travelers: 3,
       totalAmount: 72000,
-      paid: 72000,
-      paymentStatus: "Paid",
+      paid: 0,
+      paymentStatus: "Unpaid",
       bookedDate: "2025-10-20",
       bookedDateObj: new Date("2025-10-20"),
-      status: "active",
+      status: "confirmed",
       bookingType: "Requested",
-      modeOfPayment: "Gcash",
+      modeOfPayment: "",
+      paymentHistory: [],
+      totalPaid: 0,
       itineraryDetails: [
         {
           day: 1,
@@ -337,6 +408,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         },
       ],
     },
+    // BV-2025-006 - Miguel Santos - Vigan
     {
       id: "BV-2025-006",
       customer: "Miguel Santos",
@@ -348,14 +420,16 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       endDate: "2025-11-08",
       travelers: 4,
       totalAmount: 52000,
-      paid: 52000,
-      paymentStatus: "Paid",
+      paid: 0,
+      paymentStatus: "Unpaid",
       bookedDate: "2025-10-01",
       bookedDateObj: new Date("2025-10-01"),
-      status: "active",
+      status: "confirmed",
       bookingType: "Standard",
       tourType: "Private",
-      modeOfPayment: "Cash",
+      modeOfPayment: "",
+      paymentHistory: [],
+      totalPaid: 0,
       itineraryDetails: [
         {
           day: 1,
@@ -381,6 +455,77 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       ],
     },
   ]);
+
+  // Handle redirection
+  useEffect(() => {
+    if (location.state?.scrollToId && location.state?.highlightBooking) {
+      const bookingId = location.state.scrollToId;
+      const bookingExists = bookings.some(b => b.id === bookingId);
+      
+      if (bookingExists) {
+        // Add a slight delay for better UX (like SmartTrip.tsx uses 800ms)
+        setTimeout(() => {
+          const element = document.getElementById(`booking-${bookingId}`);
+          if (element) {
+            // Smooth scroll to the element with offset for header
+            const headerOffset = 120;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+            
+            // Enhanced highlight effect
+            element.classList.add('booking-highlight');
+            
+            // Add a subtle scale animation
+            element.style.transform = 'scale(1.01)';
+            element.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            
+            // After animation completes, remove the highlight gradually
+            setTimeout(() => {
+              element.style.transform = 'scale(1)';
+              setTimeout(() => {
+                element.classList.remove('booking-highlight');
+              }, 2000); // Keep highlight for 2 seconds
+            }, 800);
+            
+            // Clear URL state to prevent re-triggering
+            navigate(location.pathname, { replace: true, state: {} });
+          }
+        }, 300); // Match SmartTrip.tsx timing pattern
+      }
+    }
+  }, [location.state, bookings, navigate, location.pathname]);
+
+  // Add CSS for highlight effect (exact pattern from UserTravel.tsx)
+  useEffect(() => {
+  const style = document.createElement('style');
+  style.textContent = `
+    .booking-highlight {
+      animation: highlight 2s ease-in-out;
+      border-radius: 1rem;
+    }
+    
+    @keyframes highlight {
+      0%, 100% {
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 0 3px rgba(10, 122, 255, 0.3), 0 4px 6px rgba(10, 122, 255, 0.1);
+        transform: scale(1.005);
+      }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  return () => {
+    document.head.removeChild(style);
+  };
+}, []);
 
   // Load standard bookings from localStorage that were created in UserStandardItinerary
   useEffect(() => {
@@ -414,7 +559,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
           paymentStatus: paymentStatus,
           bookedDate: booking.bookingDate,
           bookedDateObj: new Date(booking.bookingDate),
-          status: "active",
+          status: "confirmed", // Always set to "confirmed" for bookings in this page
           bookingType: "Standard" as const,
           tourType: booking.tourType,
           modeOfPayment: booking.paymentHistory && booking.paymentHistory.length > 0 
@@ -435,7 +580,14 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       setBookings(prevBookings => {
         const existingIds = new Set(prevBookings.map(b => b.id));
         const newBookings = allNewBookings.filter(b => !existingIds.has(b.id));
-        return [...newBookings, ...prevBookings];
+        
+        // Ensure all new bookings have "confirmed" status
+        const confirmedNewBookings = newBookings.map(b => ({
+          ...b,
+          status: "confirmed" // Ensure status is "confirmed"
+        }));
+        
+        return [...confirmedNewBookings, ...prevBookings];
       });
     }
   }, [createdBookings, standardBookingsFromUser]);
@@ -451,7 +603,9 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
           return prevBookings.map(booking => {
             const updatedBooking = adminBookings.find((ab: any) => ab.id === booking.id);
             if (updatedBooking && updatedBooking.paymentHistory) {
-              const totalPaid = updatedBooking.totalPaid || 0;
+              // Calculate total paid from verified payments only
+              const verifiedPayments = updatedBooking.paymentHistory.filter((p: any) => p.status === "verified");
+              const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
               const totalAmount = booking.totalAmount;
               let paymentStatus = "Unpaid";
               
@@ -470,6 +624,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                 modeOfPayment: updatedBooking.paymentHistory.length > 0 
                   ? updatedBooking.paymentHistory[updatedBooking.paymentHistory.length - 1].modeOfPayment 
                   : booking.modeOfPayment,
+                status: "confirmed", // Maintain "confirmed" status
               };
             }
             return booking;
@@ -545,6 +700,10 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
 
   const getFilteredBookings = () => {
     let filtered = bookings;
+
+    // All bookings in this page should have "confirmed" status
+    // Filter to ensure only confirmed bookings are shown
+    filtered = filtered.filter(b => b.status === "confirmed");
 
     if (selectedStatus !== "all") {
       filtered = filtered.filter(b => b.paymentStatus.toLowerCase() === selectedStatus.toLowerCase());
@@ -649,6 +808,18 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
     }
   };
 
+  const getPaymentVerificationStatusColor = (status?: string) => {
+    switch (status) {
+      case "verified":
+        return "bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[#10B981]/20";
+      case "rejected":
+        return "bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[#FF6B6B]/20";
+      case "pending":
+      default:
+        return "bg-[rgba(255,184,77,0.1)] text-[#FFB84D] border-[#FFB84D]/20";
+    }
+  };
+
   const totalBookings = bookings.length;  // Total bookings count (non-filtered)
   const activeBookingsCount = filteredBookings.length;
   const customizedCount = filteredBookings.filter(b => b.bookingType === "Customized").length;
@@ -711,8 +882,9 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       totalamount: `₱${booking.totalAmount.toLocaleString()}`,
       paymentstatus: booking.paymentStatus,
       bookingtype: booking.bookingType || 'N/A',
+      status: booking.status, // Include status in export
     }));
-    exportToPDF(exportData, "Bookings Report", ["ID", "Customer", "Email", "Mobile", "Destination", "Start Date", "End Date", "Travelers", "Total Amount", "Payment Status", "Booking Type"]);
+    exportToPDF(exportData, "Bookings Report", ["ID", "Customer", "Email", "Mobile", "Destination", "Start Date", "End Date", "Travelers", "Total Amount", "Payment Status", "Booking Type", "Status"]);
     toast.success("Exporting bookings as PDF...");
   };
 
@@ -729,8 +901,9 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       totalamount: `₱${booking.totalAmount.toLocaleString()}`,
       paymentstatus: booking.paymentStatus,
       bookingtype: booking.bookingType || 'N/A',
+      status: booking.status, // Include status in export
     }));
-    exportToExcel(exportData, "Bookings Report", ["ID", "Customer", "Email", "Mobile", "Destination", "Start Date", "End Date", "Travelers", "Total Amount", "Payment Status", "Booking Type"]);
+    exportToExcel(exportData, "Bookings Report", ["ID", "Customer", "Email", "Mobile", "Destination", "Start Date", "End Date", "Travelers", "Total Amount", "Payment Status", "Booking Type", "Status"]);
     toast.success("Exporting bookings as Excel...");
   };
 
@@ -764,6 +937,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
           endDate: editFormData.travelDateTo,
           travelers: parseInt(editFormData.travelers),
           totalAmount: b.totalAmount / b.travelers * parseInt(editFormData.travelers),
+          status: "confirmed", // Maintain "confirmed" status
         };
       }
       return b;
@@ -893,7 +1067,8 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         ? { 
             ...b, 
             paymentStatus: newStatus,
-            paid: newStatus === "Paid" ? b.totalAmount : newStatus === "Partial" ? b.totalAmount / 2 : 0
+            paid: newStatus === "Paid" ? b.totalAmount : newStatus === "Partial" ? b.totalAmount / 2 : 0,
+            status: "confirmed", // Maintain "confirmed" status
           }
         : b
     ));
@@ -907,8 +1082,194 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
     ));
   };
 
+  // Handle payment history item click
+  const handlePaymentItemClick = (payment: PaymentSubmission) => {
+    setSelectedPayment(payment);
+    setPaymentDetailModalOpen(true);
+  };
+
+  // Handle payment verification
+  const handleVerifyPayment = (payment: PaymentSubmission) => {
+    const updatedBookings = bookings.map(booking => {
+      if (booking.paymentHistory) {
+        const updatedPaymentHistory = booking.paymentHistory.map(p => 
+          p.id === payment.id 
+            ? { 
+                ...p, 
+                status: "verified" as const,
+                verifiedBy: "Admin User",
+                verifiedAt: new Date().toISOString()
+              }
+            : p
+        );
+        
+        // Recalculate total paid amount from verified payments only
+        const verifiedPayments = updatedPaymentHistory.filter(p => p.status === "verified");
+        const totalPaid = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
+        
+        let paymentStatus: "Paid" | "Partial" | "Unpaid" = "Unpaid";
+        if (totalPaid >= booking.totalAmount) {
+          paymentStatus = "Paid";
+        } else if (totalPaid > 0) {
+          paymentStatus = "Partial";
+        }
+        
+        return {
+          ...booking,
+          paymentHistory: updatedPaymentHistory,
+          totalPaid: totalPaid,
+          paymentStatus: paymentStatus,
+          paid: totalPaid,
+          status: "confirmed", // Maintain "confirmed" status
+        };
+      }
+      return booking;
+    });
+
+    setBookings(updatedBookings);
+    
+    // Sync to localStorage
+    const adminBookings = localStorage.getItem('adminStandardBookings');
+    if (adminBookings) {
+      const parsedAdminBookings = JSON.parse(adminBookings);
+      const updatedAdminBookings = parsedAdminBookings.map((b: any) => {
+        const updatedBooking = updatedBookings.find(ub => ub.id === b.id);
+        if (updatedBooking) {
+          // Calculate total paid from verified payments only
+          const verifiedPayments = updatedBooking.paymentHistory?.filter((p: any) => p.status === "verified") || [];
+          const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
+          
+          return {
+            ...b,
+            paymentHistory: updatedBooking.paymentHistory,
+            totalPaid: totalPaid,
+            paymentStatus: updatedBooking.paymentStatus
+          };
+        }
+        return b;
+      });
+      localStorage.setItem('adminStandardBookings', JSON.stringify(updatedAdminBookings));
+    }
+    
+    setPaymentDetailModalOpen(false);
+    toast.success("Payment verified successfully!");
+  };
+
+  // Handle payment rejection - UPDATED VERSION
+  const handleRejectPayment = (payment: PaymentSubmission) => {
+    if (!rejectionReason.trim()) {
+      toast.error("Please provide a reason for rejection");
+      return;
+    }
+
+    const updatedBookings = bookings.map(booking => {
+      if (booking.paymentHistory) {
+        const updatedPaymentHistory = booking.paymentHistory.map(p => 
+          p.id === payment.id 
+            ? { 
+                ...p, 
+                status: "rejected" as const,
+                verifiedBy: "Admin User",
+                verifiedAt: new Date().toISOString(),
+                rejectionReason: rejectionReason
+              }
+            : p
+        );
+        
+        // Recalculate total paid - only count verified payments (exclude rejected payments)
+        const verifiedPayments = updatedPaymentHistory.filter(p => p.status === "verified");
+        const totalPaid = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
+        
+        // Determine payment status based on verified payments only
+        let paymentStatus: "Paid" | "Partial" | "Unpaid" = "Unpaid";
+        if (totalPaid >= booking.totalAmount) {
+          paymentStatus = "Paid";
+        } else if (totalPaid > 0) {
+          paymentStatus = "Partial";
+        }
+        
+        return {
+          ...booking,
+          paymentHistory: updatedPaymentHistory,
+          totalPaid: totalPaid,
+          paymentStatus: paymentStatus,
+          paid: totalPaid,
+          status: "confirmed", // Maintain "confirmed" status
+        };
+      }
+      return booking;
+    });
+
+    setBookings(updatedBookings);
+    
+    // Sync to localStorage
+    const adminBookings = localStorage.getItem('adminStandardBookings');
+    if (adminBookings) {
+      const parsedAdminBookings = JSON.parse(adminBookings);
+      const updatedAdminBookings = parsedAdminBookings.map((b: any) => {
+        const updatedBooking = updatedBookings.find(ub => ub.id === b.id);
+        if (updatedBooking) {
+          // Calculate total paid from verified payments only (exclude rejected payments)
+          const verifiedPayments = updatedBooking.paymentHistory?.filter((p: any) => p.status === "verified") || [];
+          const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
+          
+          // Determine payment status based on verified payments only
+          let paymentStatus = "Unpaid";
+          const totalAmount = parseInt(b.amount.replace(/[₱,]/g, ''));
+          
+          if (totalPaid >= totalAmount) {
+            paymentStatus = "Paid";
+          } else if (totalPaid > 0) {
+            paymentStatus = "Partial";
+          }
+          
+          return {
+            ...b,
+            paymentHistory: updatedBooking.paymentHistory,
+            totalPaid: totalPaid,
+            paymentStatus: paymentStatus
+          };
+        }
+        return b;
+      });
+      localStorage.setItem('adminStandardBookings', JSON.stringify(updatedAdminBookings));
+    }
+    
+    setVerificationModalOpen(false);
+    setPaymentDetailModalOpen(false);
+    setRejectionReason("");
+    toast.success("Payment rejected successfully! Amount returned to outstanding balance.");
+  };
+
+  // Open verification modal
+  const handleOpenVerificationModal = (payment: PaymentSubmission) => {
+    setSelectedPayment(payment);
+    setVerificationModalOpen(true);
+  };
+
+  // Calculate payment progress
+  const calculatePaymentProgress = (booking: Booking) => {
+    const totalAmount = booking.totalAmount;
+    const paidAmount = booking.totalPaid || 0;
+    const balance = totalAmount - paidAmount;
+    const progressPercent = Math.round((paidAmount / totalAmount) * 100);
+    
+    return { totalAmount, paidAmount, balance, progressPercent };
+  };
+
+  // Get pending payments count
+  const getPendingPaymentsCount = (booking: Booking) => {
+    if (!booking.paymentHistory) return 0;
+    return booking.paymentHistory.filter(payment => payment.status === "pending").length;
+  };
+
   // Render detailed booking view
   if (viewMode === "detail" && selectedBooking) {
+    const { totalAmount, paidAmount, balance, progressPercent } = calculatePaymentProgress(selectedBooking);
+    const paymentSectionState = selectedBooking.paymentStatus === "Paid" ? "fullyPaid" : 
+                               selectedBooking.paymentStatus === "Partial" ? "partial" : "unpaid";
+    const pendingPaymentsCount = getPendingPaymentsCount(selectedBooking);
+
     return (
       <div className="space-y-6">
         {/* Header with back button */} 
@@ -968,7 +1329,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         </div>
 
         <div className="grid grid-cols-3 gap-6">
-          {/* Left Column - Customer & Payment Info */}
+          {/* Left Column - Customer Info & Actions */}
           <div className="space-y-6">
             {/* Customer Information */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
@@ -1002,163 +1363,413 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
               </div>
             </div>
 
-            {/* Payment Information */}
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
-              <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
-                    <CreditCard className="w-5 h-5 text-white" />
+            {/* Payment Information - ADMIN VERSION */}
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-lg overflow-hidden">
+              {/* Header with gradient accent */}
+              <div className="relative p-6 border-b border-[#E5E7EB]">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#10B981]/5 via-[#14B8A6]/5 to-[#0A7AFF]/5" />
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/30">
+                      <CreditCard className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-[#1A2B4F] text-lg">Payment Information</h3>
+                      <p className="text-sm text-[#64748B]">Track customer payment progress</p>
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-[#1A2B4F]">Payment Information</h3>
+                  {pendingPaymentsCount > 0 && (
+                    <div className="bg-[#FFB84D] text-white text-xs font-medium px-2 py-1 rounded-full">
+                      {pendingPaymentsCount} Pending
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="p-6 space-y-4">
-                {/* Payment Status Display */}
-                <div>
-                  <Label className="text-[#1A2B4F] mb-2 block">Payment Status</Label>
-                  <div className={`inline-flex px-3 py-1 rounded-full text-sm font-medium border ${getPaymentStatusColor(selectedBooking.paymentStatus)}`}>
-                    {selectedBooking.paymentStatus}
-                  </div>
-                </div>
-
-                {/* Mode of Payment Display */}
-                {selectedBooking.modeOfPayment && (
-                  <div>
-                    <Label className="text-[#1A2B4F] mb-2 block">Mode of Payment</Label>
-                    <div className="flex items-center gap-2">
-                      {selectedBooking.modeOfPayment === "Cash" ? (
-                        <Banknote className="w-4 h-4 text-[#10B981]" />
-                      ) : (
-                        <Smartphone className="w-4 h-4 text-[#0A7AFF]" />
-                      )}
-                      <span className="text-[#334155] font-medium">{selectedBooking.modeOfPayment}</span>
+              
+              <div className="p-6 space-y-6">
+                {/* UNPAID STATE */}
+                {paymentSectionState === "unpaid" && (
+                  <div className="text-center py-8">
+                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#F8FAFB] to-[#E5E7EB] rounded-full flex items-center justify-center">
+                      <Wallet className="w-8 h-8 text-[#64748B]" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-[#1A2B4F] mb-2">No Payments Made</h4>
+                    <p className="text-sm text-[#64748B] mb-6">
+                      Customer has not made any payments yet
+                    </p>
+                    
+                    {/* Payment Summary Card */}
+                    <div className="bg-gradient-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB] mb-6">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-[#64748B]">Total Package Cost</span>
+                          <span className="font-bold text-[#1A2B4F] text-lg">₱{totalAmount.toLocaleString()}</span>
+                        </div>
+                        
+                        <div className="h-px bg-gradient-to-r from-transparent via-[#E5E7EB] to-transparent" />
+                        
+                        <div className="flex justify-between items-center pt-1">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse" />
+                            <span className="text-sm font-medium text-[#1A2B4F]">Outstanding Balance</span>
+                          </div>
+                          <span className="font-bold text-[#EF4444] text-lg">
+                            ₱{balance.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Payment Summary */}
-                <div className="pt-4 border-t border-[#E5E7EB] space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-[#64748B]">Total Amount</span>
-                    <span className="font-semibold text-[#1A2B4F]">₱{selectedBooking.totalAmount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-[#64748B]">Amount Paid</span>
-                    <span className="font-semibold text-[#10B981]">₱{selectedBooking.paid.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-[#E5E7EB]">
-                    <span className="text-sm font-medium text-[#1A2B4F]">Balance</span>
-                    <span className="font-semibold text-[#FF6B6B]">₱{(selectedBooking.totalAmount - selectedBooking.paid).toLocaleString()}</span>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div>
-                  <div className="flex justify-between text-xs text-[#64748B] mb-2">
-                    <span>Payment Progress</span>
-                    <span>{Math.round((selectedBooking.paid / selectedBooking.totalAmount) * 100)}%</span>
-                  </div>
-                  <div className="h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-[#10B981] to-[#14B8A6] transition-all duration-300"
-                      style={{ width: `${(selectedBooking.paid / selectedBooking.totalAmount) * 100}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Payment History */}
-                {selectedBooking.paymentHistory && selectedBooking.paymentHistory.length > 0 && (
-                  <div className="pt-4 border-t border-[#E5E7EB]">
-                    <Label className="text-[#1A2B4F] mb-3 block">Payment History</Label>
-                    <div className="space-y-3 max-h-60 overflow-y-auto">
-                      {selectedBooking.paymentHistory.map((payment, index) => (
-                        <div key={payment.id} className="bg-[#F8FAFB] rounded-lg p-3 border border-[#E5E7EB]">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <p className="text-sm font-medium text-[#1A2B4F]">
-                                Payment #{index + 1} - {payment.paymentType}
-                              </p>
-                              <p className="text-xs text-[#64748B]">
-                                {new Date(payment.submittedAt).toLocaleDateString('en-PH', { 
-                                  year: 'numeric', 
-                                  month: 'short', 
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </p>
-                            </div>
-                            <span className="text-sm font-semibold text-[#10B981]">
-                              ₱{payment.amount.toLocaleString()}
+                {/* PARTIAL PAYMENT STATE */}
+                {paymentSectionState === "partial" && (
+                  <>
+                    {/* Circular Progress & Stats */}
+                    <div className="flex items-center gap-3">
+                      {/* Circular Progress - Left Side (Larger) */}
+                      <div className="relative flex-shrink-0">
+                        <svg className="w-32 h-32 transform -rotate-90">
+                          <circle
+                            cx="64" cy="64" r="56"
+                            stroke="#E5E7EB"
+                            strokeWidth="10"
+                            fill="none"
+                          />
+                          <circle
+                            cx="64" cy="64" r="56"
+                            stroke="url(#progressGradient)"
+                            strokeWidth="10"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeDasharray={`${progressPercent * 3.52} 352`}
+                            className="transition-all duration-1000 ease-out"
+                          />
+                          <defs>
+                            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#10B981" />
+                              <stop offset="100%" stopColor="#14B8A6" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-2xl font-bold text-[#1A2B4F]">{progressPercent}%</span>
+                          <span className="text-xs text-[#64748B]">Paid</span>
+                        </div>
+                      </div>
+                      {/* Quick Stats - Right Side */}
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div 
+                          className="bg-gradient-to-r from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-3 border border-[#10B981]/20"
+                          style={{ 
+                            background: 'linear-gradient(to right, rgba(16, 185, 129, 0.1), rgba(20, 184, 166, 0.1))',
+                            borderColor: 'rgba(16, 185, 129, 0.2)'
+                          }}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 
+                              className="w-3.5 h-3.5 text-[#10B981]" 
+                              style={{ color: '#10B981' }}
+                            />
+                            <span 
+                              className="text-xs font-medium text-[#10B981]"
+                              style={{ color: '#10B981' }}
+                            >
+                              Amount Paid
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs">
-                            {payment.modeOfPayment === "Cash" ? (
-                              <Banknote className="w-3 h-3 text-[#10B981]" />
-                            ) : (
-                              <Smartphone className="w-3 h-3 text-[#0A7AFF]" />
-                            )}
-                            <span className="text-[#64748B]">{payment.modeOfPayment}</span>
-                            {(payment.proofOfPayment || payment.cashConfirmation) && (
-                              <span className="ml-auto flex items-center gap-1 text-[#10B981]">
-                                <CheckCircle2 className="w-3 h-3" />
-                                Verified
-                              </span>
-                            )}
+                          <p 
+                            className="text-lg font-bold text-[#10B981]"
+                            style={{ color: '#10B981' }}
+                          >
+                            ₱{paidAmount.toLocaleString()}
+                          </p>
+                        </div>
+                        <div 
+                          className="bg-gradient-to-r from-[#EF4444]/10 to-[#F87171]/10 rounded-xl p-3 border border-[#EF4444]/20"
+                          style={{ 
+                            background: 'linear-gradient(to right, rgba(239, 68, 68, 0.1), rgba(248, 113, 113, 0.1))',
+                            borderColor: 'rgba(239, 68, 68, 0.2)'
+                          }}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <Wallet 
+                              className="w-3.5 h-3.5 text-[#EF4444]" 
+                              style={{ color: '#EF4444' }}
+                            />
+                            <span 
+                              className="text-xs font-medium text-[#EF4444]"
+                              style={{ color: '#EF4444' }}
+                            >
+                              Remaining Balance
+                            </span>
                           </div>
-                          
-                          {/* Proof of Payment Preview */}
-                          {(payment.proofOfPayment || payment.cashConfirmation) && (
-                            <div className="mt-2 pt-2 border-t border-[#E5E7EB]">
-                              <p className="text-xs text-[#64748B] mb-1">Proof of Payment:</p>
-                              <div className="border border-[#E5E7EB] rounded-lg overflow-hidden">
-                                <img 
-                                  src={payment.proofOfPayment || payment.cashConfirmation} 
-                                  alt="Proof of payment" 
-                                  className="w-full h-32 object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                                  onClick={() => {
-                                    // Open image in modal for larger view
-                                    const img = new Image();
-                                    img.src = payment.proofOfPayment || payment.cashConfirmation || '';
-                                    img.style.maxWidth = '90vw';
-                                    img.style.maxHeight = '90vh';
-                                    img.style.objectFit = 'contain';
-                                    
-                                    const modal = document.createElement('div');
-                                    modal.style.position = 'fixed';
-                                    modal.style.top = '0';
-                                    modal.style.left = '0';
-                                    modal.style.width = '100vw';
-                                    modal.style.height = '100vh';
-                                    modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
-                                    modal.style.display = 'flex';
-                                    modal.style.alignItems = 'center';
-                                    modal.style.justifyContent = 'center';
-                                    modal.style.zIndex = '9999';
-                                    modal.style.cursor = 'pointer';
-                                    
-                                    modal.appendChild(img);
-                                    modal.onclick = () => document.body.removeChild(modal);
-                                    
-                                    document.body.appendChild(modal);
-                                  }}
-                                />
+                          <p 
+                            className="text-lg font-bold text-[#EF4444]"
+                            style={{ color: '#EF4444' }}
+                          >
+                            ₱{balance.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payment Breakdown Card */}
+                    <div className="bg-gradient-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB]">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Receipt className="w-5 h-5 text-[#64748B]" />
+                        <h4 className="font-semibold text-[#1A2B4F]">Payment Breakdown</h4>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-[#64748B]">Total Package Cost</span>
+                          <span className="font-bold text-[#1A2B4F] text-lg">₱{totalAmount.toLocaleString()}</span>
+                        </div>
+                        
+                        <div className="h-px bg-gradient-to-r from-transparent via-[#E5E7EB] to-transparent" />
+                        
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-[#10B981]" />
+                            <span className="text-sm text-[#64748B]">Total Paid</span>
+                          </div>
+                          <span className="font-semibold text-[#10B981]">- ₱{paidAmount.toLocaleString()}</span>
+                        </div>
+                        
+                        <div className="h-px bg-gradient-to-r from-transparent via-[#E5E7EB] to-transparent" />
+                        
+                        <div className="flex justify-between items-center pt-1">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse"
+                              style={{ backgroundColor: '#EF4444' }}
+                            />
+                            <span className="text-sm font-medium text-[#1A2B4F]">Outstanding Balance</span>
+                          </div>
+                          <span className="font-bold text-[#EF4444] text-lg" style={{ color: '#EF4444' }}>
+                            ₱{balance.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Linear Progress with milestones */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-[#0A7AFF]" />
+                          <span className="text-sm font-medium text-[#1A2B4F]">Payment Progress</span>
+                        </div>
+                        <span className="text-sm font-bold text-[#1A2B4F]">{progressPercent}%</span>
+                      </div>
+                      
+                      <div className="relative">
+                        <div className="h-3 bg-[#E5E7EB] rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-[#10B981] via-[#14B8A6] to-[#0A7AFF] rounded-full transition-all duration-1000 relative"
+                          style={{ 
+                            width: `${progressPercent}%`,
+                            background: 'linear-gradient(to right, #10B981, #14B8A6, #0A7AFF)'
+                          }}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 animate-pulse" />
+                          </div>
+                        </div>
+                        
+                        {/* Milestone markers */}
+                        <div className="absolute top-0 left-0 right-0 h-3 flex items-center pointer-events-none">
+                          {[25, 50, 75].map((milestone) => (
+                            <div 
+                              key={milestone}
+                              className="absolute w-0.5 h-3 bg-[#CBD5E1]/50"
+                              style={{ left: `${milestone}%` }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between text-xs text-[#94A3B8]">
+                        <span>₱0</span>
+                        <span>₱{(totalAmount / 2).toLocaleString()}</span>
+                        <span>₱{totalAmount.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Payment History */}
+                    {selectedBooking.paymentHistory && selectedBooking.paymentHistory.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-[#64748B]" />
+                            <h4 className="font-semibold text-[#1A2B4F]">Recent Payments</h4>
+                          </div>
+                          <span className="text-xs text-[#94A3B8] bg-[#F1F5F9] px-2 py-1 rounded-full">{selectedBooking.paymentHistory.length} transactions</span>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {selectedBooking.paymentHistory.map((payment, index) => (
+                            <div 
+                              key={payment.id}
+                              onClick={() => handlePaymentItemClick(payment)}
+                              className="group bg-white rounded-xl p-4 border border-[#E5E7EB] hover:border-[#0A7AFF] hover:shadow-md cursor-pointer transition-all duration-200"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                    payment.modeOfPayment === "Gcash" 
+                                      ? "bg-[#0A7AFF]/10 text-[#0A7AFF]" 
+                                      : "bg-[#10B981]/10 text-[#10B981]"
+                                  }`}>
+                                    {payment.modeOfPayment === "Gcash" ? (
+                                      <Smartphone className="w-5 h-5" />
+                                    ) : (
+                                      <Banknote className="w-5 h-5" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-[#1A2B4F]">
+                                      Payment #{index + 1}
+                                    </p>
+                                    <p className="text-xs text-[#94A3B8]">
+                                      {new Date(payment.submittedAt).toLocaleDateString('en-PH', { 
+                                        month: 'short', 
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="text-right">
+                                    <p className="font-bold text-[#10B981]">₱{payment.amount.toLocaleString()}</p>
+                                    <div className="flex items-center gap-1 justify-end">
+                                      {payment.status === "verified" ? (
+                                        <>
+                                          <CheckCircle2 className="w-3 h-3 text-[#10B981]" />
+                                          <span className="text-xs text-[#10B981]">Verified</span>
+                                        </>
+                                      ) : payment.status === "rejected" ? (
+                                        <>
+                                          <X className="w-3 h-3 text-[#FF6B6B]" />
+                                          <span className="text-xs text-[#FF6B6B]">Rejected</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Clock className="w-3 h-3 text-[#FFB84D]" />
+                                          <span className="text-xs text-[#FFB84D]">Pending</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <ChevronRight className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#0A7AFF] transition-colors" />
+                                </div>
                               </div>
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
-                {/* Sync Status */}
-                <div className="pt-4 border-t border-[#E5E7EB]">
-                  <div className="flex items-center gap-2 text-xs text-[#64748B]">
-                    <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></div>
-                    <span>Synced with user payments</span>
+                {/* FULLY PAID STATE */}
+                {paymentSectionState === "fullyPaid" && (
+                  <div className="text-center py-8">
+                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#10B981] to-[#14B8A6] rounded-full flex items-center justify-center shadow-lg shadow-[#10B981]/30">
+                      <CheckCircle2 className="w-10 h-10 text-white" />
+                    </div>
+                    <h4 className="text-xl font-bold text-[#1A2B4F] mb-2">Fully Paid</h4>
+                    <p className="text-sm text-[#64748B] mb-6">This booking has been completely paid.</p>
+                    
+                    {/* Payment Summary for Fully Paid */}
+                    <div className="bg-gradient-to-br from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-4 border border-[#10B981]/20 mb-6">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-[#64748B]">Total Amount Paid</span>
+                        <span className="text-xl font-bold text-[#10B981]">₱{totalAmount.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Payment History - Still show even when fully paid */}
+                    {selectedBooking.paymentHistory && selectedBooking.paymentHistory.length > 0 && (
+                      <div className="text-left space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-[#64748B]" />
+                            <h4 className="font-semibold text-[#1A2B4F]">Payment History</h4>
+                          </div>
+                          <span className="text-xs text-[#94A3B8] bg-[#F1F5F9] px-2 py-1 rounded-full">{selectedBooking.paymentHistory.length} transactions</span>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {selectedBooking.paymentHistory.map((payment, index) => (
+                            <div 
+                              key={payment.id}
+                              onClick={() => handlePaymentItemClick(payment)}
+                              className="group bg-white rounded-xl p-4 border border-[#E5E7EB] hover:border-[#0A7AFF] hover:shadow-md cursor-pointer transition-all duration-200"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                    payment.modeOfPayment === "Gcash" 
+                                      ? "bg-[#0A7AFF]/10 text-[#0A7AFF]" 
+                                      : "bg-[#10B981]/10 text-[#10B981]"
+                                  }`}>
+                                    {payment.modeOfPayment === "Gcash" ? (
+                                      <Smartphone className="w-5 h-5" />
+                                    ) : (
+                                      <Banknote className="w-5 h-5" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-[#1A2B4F]">
+                                      Payment #{index + 1}
+                                    </p>
+                                    <p className="text-xs text-[#94A3B8]">
+                                      {new Date(payment.submittedAt).toLocaleDateString('en-PH', { 
+                                        month: 'short', 
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      })}
+                                    </p>
+                                    {payment.status && (
+                                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${getPaymentVerificationStatusColor(payment.status)}`}>
+                                        {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="text-right">
+                                    <p className="font-bold text-[#10B981]">₱{payment.amount.toLocaleString()}</p>
+                                    <div className="flex items-center gap-1 justify-end">
+                                      {payment.status === "verified" ? (
+                                        <>
+                                          <CheckCircle2 className="w-3 h-3 text-[#10B981]" />
+                                          <span className="text-xs text-[#10B981]">Verified</span>
+                                        </>
+                                      ) : payment.status === "rejected" ? (
+                                        <>
+                                          <X className="w-3 h-3 text-[#FF6B6B]" />
+                                          <span className="text-xs text-[#FF6B6B]">Rejected</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Clock className="w-3 h-3 text-[#FFB84D]" />
+                                          <span className="text-xs text-[#FFB84D]">Pending</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <ChevronRight className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#0A7AFF] transition-colors" />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -1178,6 +1789,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                       travelers: selectedBooking.travelers,
                       total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
                       bookedDate: selectedBooking.bookedDate,
+                      status: selectedBooking.status,
                     };
                     exportBookingDetailToPDF(bookingData, selectedItinerary);
                     toast.success("Exporting booking as PDF...");
@@ -1199,6 +1811,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                       travelers: selectedBooking.travelers,
                       total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
                       bookedDate: selectedBooking.bookedDate,
+                      status: selectedBooking.status,
                     };
                     exportBookingDetailToExcel(bookingData, selectedItinerary);
                     toast.success("Exporting booking as Excel...");
@@ -1265,6 +1878,287 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
             <ItineraryDetailDisplay itinerary={selectedItinerary} />
           </div>
         </div>
+
+        {/* Payment Detail Modal */}
+        <Dialog open={paymentDetailModalOpen} onOpenChange={setPaymentDetailModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-[#0A7AFF]" />
+                Payment Details
+              </DialogTitle>
+              <DialogDescription>
+                Comprehensive information about the selected payment
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedPayment && (
+              <div className="space-y-6 p-6">
+                {/* Payment Header */}
+                <div className="bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-lg font-semibold">{selectedPayment.paymentType}</h3>
+                      <p className="text-white/80 text-sm">
+                        {new Date(selectedPayment.submittedAt).toLocaleDateString('en-PH', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          weekday: 'long',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-white/80 text-sm">Amount Paid</p>
+                      <p className="text-2xl font-bold">₱{selectedPayment.amount.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Information */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm text-[#64748B]">Payment ID</Label>
+                      <p className="text-sm font-medium text-[#1A2B4F]">{selectedPayment.id}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm text-[#64748B]">Payment Type</Label>
+                      <p className="text-sm font-medium text-[#1A2B4F]">{selectedPayment.paymentType}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm text-[#64748B]">Mode of Payment</Label>
+                      <div className="flex items-center gap-2">
+                        {selectedPayment.modeOfPayment === "Cash" ? (
+                          <Banknote className="w-4 h-4 text-[#10B981]" />
+                        ) : (
+                          <Smartphone className="w-4 h-4 text-[#0A7AFF]" />
+                        )}
+                        <p className="text-sm font-medium text-[#1A2B4F]">{selectedPayment.modeOfPayment}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-sm text-[#64748B]">Status</Label>
+                      <div className="flex items-center gap-2">
+                        {selectedPayment.status === "verified" ? (
+                          <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
+                        ) : selectedPayment.status === "rejected" ? (
+                          <X className="w-4 h-4 text-[#FF6B6B]" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-[#FFB84D]" />
+                        )}
+                        <p className={`text-sm font-medium ${
+                          selectedPayment.status === "verified" 
+                            ? "text-[#10B981]" 
+                            : selectedPayment.status === "rejected" 
+                            ? "text-[#FF6B6B]"
+                            : "text-[#FFB84D]"
+                        }`}>
+                          {selectedPayment.status ? selectedPayment.status.charAt(0).toUpperCase() + selectedPayment.status.slice(1) : "Pending"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Verification Details */}
+                {(selectedPayment.status === "verified" || selectedPayment.status === "rejected") && (
+                  <div className="bg-[#F8FAFB] rounded-lg p-4 border border-[#E5E7EB]">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Shield className="w-5 h-5 text-[#10B981]" />
+                      <h4 className="text-sm font-medium text-[#1A2B4F]">Payment Verification</h4>
+                    </div>
+                    <div className="space-y-2 text-sm text-[#64748B]">
+                      <div className="flex justify-between">
+                        <span>Verified By:</span>
+                        <span className="font-medium text-[#1A2B4F]">{selectedPayment.verifiedBy}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Verified At:</span>
+                        <span className="font-medium text-[#1A2B4F]">
+                          {selectedPayment.verifiedAt ? new Date(selectedPayment.verifiedAt).toLocaleDateString('en-PH', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : 'N/A'}
+                        </span>
+                      </div>
+                      {selectedPayment.status === "rejected" && selectedPayment.rejectionReason && (
+                        <div className="flex justify-between">
+                          <span>Rejection Reason:</span>
+                          <span className="font-medium text-[#FF6B6B] text-right max-w-xs">
+                            {selectedPayment.rejectionReason}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Proof of Payment Section */}
+                <div>
+                  <Label className="text-sm font-medium text-[#1A2B4F] mb-3 block">
+                    Proof of Payment
+                  </Label>
+                  
+                  {selectedPayment.proofOfPayment || selectedPayment.cashConfirmation ? (
+                    <div className="space-y-4">
+                      <div className="border-2 border-[#E5E7EB] rounded-xl overflow-hidden">
+                        <img 
+                          src={selectedPayment.proofOfPayment || selectedPayment.cashConfirmation} 
+                          alt="Proof of payment" 
+                          className="w-full max-h-96 object-contain bg-[#F8FAFB] mx-auto"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 border-2 border-dashed border-[#E5E7EB] rounded-xl">
+                      <AlertCircle className="w-12 h-12 text-[#64748B] mx-auto mb-3" />
+                      <p className="text-sm text-[#64748B]">No proof of payment available</p>
+                      <p className="text-xs text-[#64748B] mt-1">Payment was made without uploaded proof</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Admin Actions for Pending Payments */}
+                {selectedPayment.status === "pending" && (
+                  <div className="flex gap-3 pt-4 border-t border-[#E5E7EB]">
+                    <button
+                      onClick={() => handleVerifyPayment(selectedPayment)}
+                      className="flex-1 h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] text-white font-medium hover:from-[#0DA271] hover:to-[#0F9B8E] transition-all flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Verify Payment
+                    </button>
+                    <button
+                      onClick={() => handleOpenVerificationModal(selectedPayment)}
+                      className="flex-1 h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white font-medium transition-all flex items-center justify-center gap-2"
+                    >
+                      <X className="w-4 h-4" />
+                      Reject Payment
+                    </button>
+                  </div>
+                )}
+
+                {/* Transaction Timeline */}
+                <div className="bg-[#F8FAFB] rounded-lg p-4 border border-[#E5E7EB]">
+                  <h4 className="text-sm font-medium text-[#1A2B4F] mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#0A7AFF]" />
+                    Transaction Timeline
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-[#10B981] rounded-full"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-[#1A2B4F]">Payment Submitted</p>
+                        <p className="text-xs text-[#64748B]">
+                          {new Date(selectedPayment.submittedAt).toLocaleDateString('en-PH', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    {selectedPayment.status === "verified" && selectedPayment.verifiedAt && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-[#10B981] rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-[#1A2B4F]">Payment Verified</p>
+                          <p className="text-xs text-[#64748B]">
+                            {new Date(selectedPayment.verifiedAt).toLocaleDateString('en-PH', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedPayment.status === "rejected" && selectedPayment.verifiedAt && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-[#FF6B6B] rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-[#1A2B4F]">Payment Rejected</p>
+                          <p className="text-xs text-[#64748B]">
+                            {new Date(selectedPayment.verifiedAt).toLocaleDateString('en-PH', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Payment Verification Modal */}
+        <Dialog open={verificationModalOpen} onOpenChange={setVerificationModalOpen}>
+          <DialogContent className="max-w-md p-0 overflow-hidden">
+            <DialogHeader className="px-6 pt-6 pb-4">
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-[#FF6B6B]" />
+                Reject Payment
+              </DialogTitle>
+              <DialogDescription>
+                Provide a reason for rejecting this payment submission.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 px-6 py-8">
+              <div>
+                <Label htmlFor="rejection-reason" className="text-[#1A2B4F] mb-2 block">
+                  Reason for Rejection
+                </Label>
+                <Textarea
+                  id="rejection-reason"
+                  placeholder="Enter reason for rejection..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="min-h-[100px] rounded-xl border-2 border-[#E5E7EB] focus:border-[#FF6B6B] focus:ring-4 focus:ring-[rgba(255,107,107,0.1)] transition-all"
+                  rows={4}
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 p-6 border-t border-[#E5E7EB] bg-[#F8FAFB]">
+              <button
+                onClick={() => {
+                  setVerificationModalOpen(false);
+                  setRejectionReason("");
+                }}
+                className="flex-1 h-11 px-4 rounded-xl border border-[#E5E7EB] text-[#64748B] font-medium hover:bg-[#F8FAFB] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => selectedPayment && handleRejectPayment(selectedPayment)}
+                disabled={!rejectionReason.trim()}
+                className="flex-1 h-11 px-4 rounded-xl bg-[#FF6B6B] text-white font-medium hover:bg-[#FF5252] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Reject Payment
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Complete Trip Modal */}
         <ConfirmationModal
@@ -1683,7 +2577,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       </div>
 
       <ContentCard 
-        title={`All Bookings (${totalBookings})`}
+        title={`Confirmed Bookings (${totalBookings})`}
         footer={
           filteredBookings.length > 0 ? (
             <Pagination
@@ -1735,12 +2629,13 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         <div className="space-y-4">
           {filteredBookings.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-[#64748B]">No bookings to display</p>
+              <p className="text-[#64748B]">No confirmed bookings to display</p>
             </div>
           ) : (
             currentBookings.map((booking) => (
               <div 
                 key={booking.id}
+                id={`booking-${booking.id}`} // Add this line for scroll targeting (exact pattern from UserTravel.tsx)
                 onClick={() => handleViewDetails(booking.id)}
                 className="p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)] cursor-pointer"
               >

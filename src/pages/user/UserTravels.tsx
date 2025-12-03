@@ -1437,6 +1437,9 @@ export function UserTravels() {
             
             if (code) {
               setScannedQRData(code.data);
+              /**
+               * @TODO insert to user's travel through booking id (code.data)
+               */
               setJoinTravelId(code.data);
               toast.success("QR code read successfully!");
             } else {
