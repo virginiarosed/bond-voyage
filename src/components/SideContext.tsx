@@ -1,6 +1,13 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  ReactNode,
+  useEffect,
+} from "react";
 
-type SideType = "admin" | "user";
+export type SideType = "admin" | "user";
 
 interface SideContextType {
   currentSide: SideType;
@@ -10,7 +17,11 @@ interface SideContextType {
 const SideContext = createContext<SideContextType | undefined>(undefined);
 
 export function SideProvider({ children }: { children: ReactNode }) {
-  const [currentSide, setCurrentSide] = useState<SideType>("admin");
+  // Initialize from localStorage if available, otherwise default to "admin"
+  const [currentSide, setCurrentSide] = useState<SideType>(() => {
+    const saved = localStorage.getItem("bondvoyage-side");
+    return (saved as SideType) || "admin";
+  });
 
   const switchSide = useCallback((side: SideType) => {
     setCurrentSide(side);

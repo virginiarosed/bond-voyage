@@ -278,7 +278,6 @@ export function Users() {
       status: user.status,
     }));
     exportToPDF(exportData, "Users Report", ["Name", "Email", "Mobile", "User Since", "Status"]);
-    toast.success("Exporting users as PDF...");
   };
 
   const handleExportExcel = () => {
@@ -290,7 +289,6 @@ export function Users() {
       status: user.status,
     }));
     exportToExcel(exportData, "Users Report", ["Name", "Email", "Mobile", "User Since", "Status"]);
-    toast.success("Exporting users as Excel...");
   };
 
   return (

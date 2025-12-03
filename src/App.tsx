@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { TopNav } from "./components/TopNav";
 import { Dashboard } from "./pages/Dashboard";
@@ -18,7 +25,11 @@ import { EditStandardItinerary } from "./pages/EditStandardItinerary";
 import { EditRequestedItinerary } from "./pages/EditRequestedItinerary";
 import { Toaster } from "./components/ui/sonner";
 import { ProfileProvider } from "./components/ProfileContext";
-import { BreadcrumbProvider, useBreadcrumbs, BreadcrumbItem } from "./components/BreadcrumbContext";
+import {
+  BreadcrumbProvider,
+  useBreadcrumbs,
+  BreadcrumbItem,
+} from "./components/BreadcrumbContext";
 import { SideProvider, useSide } from "./components/SideContext";
 import { BookingProvider } from "./components/BookingContext";
 import { UserSidebar } from "./components/UserSidebar";
@@ -44,20 +55,19 @@ import { UserStandardItinerary } from "./pages/user/UserStandardItinerary";
 import HomePage from "./pages/HomePage";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 
-
 // Utility function to format dates consistently
 export const formatDateRange = (startDate: string, endDate: string): string => {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  
+
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
     });
   };
-  
+
   return `${formatDate(start)} – ${formatDate(end)}`;
 };
 
@@ -72,7 +82,6 @@ export interface ApprovalBooking {
   dates: string;
   total: string;
   travelers: number;
-  urgent: boolean;
   bookedDate: string;
   rejectionReason?: string;
   rejectionResolution?: string;
@@ -112,6 +121,7 @@ export interface BookingData {
   bookedDate: string;
   bookingType: string;
   status?: string;
+  bookingSource?: "Customized" | "Generated";
 }
 
 // Layout Component to handle page config and TopNav
@@ -120,9 +130,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const { currentSide } = useSide();
   const [currentTheme, setCurrentTheme] = useState("light");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const { breadcrumbs: contextBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
+  const { breadcrumbs: contextBreadcrumbs, resetBreadcrumbs } =
+    useBreadcrumbs();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("bondvoyage-theme") || "light";
@@ -137,21 +148,17 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (location.pathname === '/home'){
+    if (location.pathname === "/home") {
       import("./styles/login.index.css");
-      import("./styles/login.globals.css")
-    }
-      else {
-        import("./styles/globals.css")
-        import("./styles/index.css")
+      import("./styles/login.globals.css");
+    } else {
+      import("./styles/globals.css");
+      import("./styles/index.css");
     }
     setTimeout(() => {
-      setIsLoading(false)
-
-    }, 1500)
-
-  }, [location, setIsLoading])
-
+      setIsLoading(false);
+    }, 1500);
+  }, [location, setIsLoading]);
 
   // Close mobile menu on route change, reset breadcrumbs, and scroll to top
   useEffect(() => {
@@ -160,60 +167,45 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     // Scroll to top when route changes
     window.scrollTo(0, 0);
     // Also scroll the main content area to top
-    const mainElement = document.querySelector('main');
+    const mainElement = document.querySelector("main");
     if (mainElement) {
       mainElement.scrollTo(0, 0);
     }
   }, [location.pathname, resetBreadcrumbs]);
 
-  const pageConfig: Record<string, { title: string; subtitle: string; breadcrumbs: BreadcrumbItem[] }> = {
+  const pageConfig: Record<
+    string,
+    { title: string; subtitle: string; breadcrumbs: BreadcrumbItem[] }
+  > = {
     "/": {
       title: "Dashboard Overview",
       subtitle: "Welcome back, Admin! Here's what's happening today.",
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "Dashboard" }
-      ],
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "Dashboard" }],
     },
     "/users": {
       title: "User Management",
       subtitle: "Manage all registered users and their permissions.",
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "Users" }
-      ],
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "Users" }],
     },
     "/bookings": {
       title: "Booking Management",
       subtitle: "View and manage all current and approved bookings.",
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "Bookings" }
-      ],
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "Bookings" }],
     },
     "/approvals": {
       title: "Booking Approvals",
       subtitle: "Review and approve pending booking requests.",
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "Approvals" }
-      ],
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "Approvals" }],
     },
     "/history": {
       title: "Booking History",
       subtitle: "View completed and cancelled bookings.",
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "History" }
-      ],
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "History" }],
     },
     "/itinerary": {
       title: "Standard and Requested Itinerary",
       subtitle: "Manage and create travel itinerary templates.",
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "Itinerary" }
-      ],
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "Itinerary" }],
     },
     "/itinerary/create-standard": {
       title: "Create Standard Itinerary",
@@ -221,7 +213,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/" },
         { label: "Itinerary", path: "/itinerary" },
-        { label: "Create Standard" }
+        { label: "Create Standard" },
       ],
     },
     "/itinerary/create-requested": {
@@ -230,7 +222,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/" },
         { label: "Itinerary", path: "/itinerary" },
-        { label: "Create Requested" }
+        { label: "Create Requested" },
       ],
     },
     "/itinerary/edit-standard/:id": {
@@ -239,7 +231,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/" },
         { label: "Itinerary", path: "/itinerary" },
-        { label: "Edit Standard" }
+        { label: "Edit Standard" },
       ],
     },
     "/itinerary/edit-requested/:id": {
@@ -248,7 +240,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/" },
         { label: "Itinerary", path: "/itinerary" },
-        { label: "Edit Requested" }
+        { label: "Edit Requested" },
       ],
     },
     "/profile/edit": {
@@ -257,55 +249,41 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/" },
         { label: "Profile" },
-        { label: "Edit" }
+        { label: "Edit" },
       ],
     },
     "/inquiries": {
       title: "Client Inquiries",
       subtitle: "Manage and respond to client inquiries and questions.",
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "Inquiries" }
-      ],
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "Inquiries" }],
     },
     "/feedback": {
       title: "Client Feedback",
       subtitle: "Reviews and feedback from travelers.",
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "Feedback" }
-      ],
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "Feedback" }],
     },
     "/notifications": {
       title: "Notifications",
       subtitle: "Stay updated with all activities across the dashboard.",
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "Notifications" }
-      ],
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "Notifications" }],
     },
     "/activity-log": {
       title: "Activity Log",
       subtitle: "Track all administrative actions and system events.",
-      breadcrumbs: [
-        { label: "Home", path: "/" },
-        { label: "Activity Log" }
-      ],
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "Activity Log" }],
     },
     // User Side Pages
     "/user/home": {
       title: "Dashboard",
       subtitle: "Welcome back! Plan your next adventure.",
-      breadcrumbs: [
-        { label: "Home" }
-      ],
+      breadcrumbs: [{ label: "Home" }],
     },
     "/user/travels": {
       title: "Travels",
       subtitle: "Manage your travel plans and bookings.",
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
-        { label: "Travels" }
+        { label: "Travels" },
       ],
     },
     "/user/travels/edit/:id": {
@@ -314,7 +292,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
         { label: "Travels", path: "/user/travels" },
-        { label: "Edit Booking" }
+        { label: "Edit Booking" },
       ],
     },
     "/user/standard-itinerary": {
@@ -323,24 +301,26 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
         { label: "Travels", path: "/user/travels" },
-        { label: "Standard Itinerary" }
+        { label: "Standard Itinerary" },
       ],
     },
     "/user/smart-trip": {
       title: "Smart Trip Generator",
-      subtitle: "Let AI create your perfect itinerary. You’ll be able to edit this generated trip once it’s added to your Travels.",
+      subtitle:
+        "Let AI create your perfect itinerary. You'll be able to edit this generated trip once it's added to your Travels.",
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
-        { label: "Smart Trip" }
+        { label: "Smart Trip" },
       ],
     },
     "/user/create-new-travel": {
       title: "Create New Travel",
-      subtitle: "Build a customized travel plan with detailed day-by-day itinerary.",
+      subtitle:
+        "Build a customized travel plan with detailed day-by-day itinerary.",
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
         { label: "Travels", path: "/user/travels" },
-        { label: "Create New Travel" }
+        { label: "Create New Travel" },
       ],
     },
     "/user/bookings": {
@@ -348,7 +328,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       subtitle: "Track and manage your active bookings.",
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
-        { label: "Bookings" }
+        { label: "Bookings" },
       ],
     },
     "/user/bookings/:id": {
@@ -357,7 +337,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
         { label: "Bookings", path: "/user/bookings" },
-        { label: "Detail" }
+        { label: "Detail" },
       ],
     },
     "/user/history": {
@@ -365,7 +345,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       subtitle: "Your completed trips and memories.",
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
-        { label: "History" }
+        { label: "History" },
       ],
     },
     "/user/history/:id": {
@@ -374,7 +354,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
         { label: "History", path: "/user/history" },
-        { label: "Detail" }
+        { label: "Detail" },
       ],
     },
     "/user/activity": {
@@ -382,7 +362,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       subtitle: "View all your account activities.",
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
-        { label: "Activity" }
+        { label: "Activity" },
       ],
     },
     "/user/inquiries": {
@@ -390,7 +370,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       subtitle: "Manage conversations with our team.",
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
-        { label: "Inquiries" }
+        { label: "Inquiries" },
       ],
     },
     "/user/feedback": {
@@ -398,7 +378,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       subtitle: "Share your travel experiences.",
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
-        { label: "Feedback" }
+        { label: "Feedback" },
       ],
     },
     "/user/weather": {
@@ -407,7 +387,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
         { label: "More" },
-        { label: "Weather" }
+        { label: "Weather" },
       ],
     },
     "/user/translation": {
@@ -416,7 +396,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
         { label: "More" },
-        { label: "Translation" }
+        { label: "Translation" },
       ],
     },
     "/user/spin-wheel": {
@@ -425,7 +405,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
         { label: "More" },
-        { label: "Spin the Wheel" }
+        { label: "Spin the Wheel" },
       ],
     },
     "/user/profile/edit": {
@@ -434,7 +414,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
         { label: "Profile" },
-        { label: "Edit" }
+        { label: "Edit" },
       ],
     },
     "/user/notifications": {
@@ -442,7 +422,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       subtitle: "Stay updated with all activities across your account.",
       breadcrumbs: [
         { label: "Home", path: "/user/home" },
-        { label: "Notifications" }
+        { label: "Notifications" },
       ],
     },
   };
@@ -453,24 +433,25 @@ function AppLayout({ children }: { children: React.ReactNode }) {
    * @TODO change design of this overlay
    */
   if (isLoading) {
-  return <LoadingOverlay/>
+    return <LoadingOverlay />;
   }
-  
+
   // Use context breadcrumbs if set, otherwise use page config breadcrumbs
-  const displayBreadcrumbs = contextBreadcrumbs.length > 0 ? contextBreadcrumbs : config.breadcrumbs;
-  if (location.pathname === '/home') return children
+  const displayBreadcrumbs =
+    contextBreadcrumbs.length > 0 ? contextBreadcrumbs : config.breadcrumbs;
+  if (location.pathname === "/home") return children;
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Conditional Sidebar - Admin or User */}
       {currentSide === "admin" ? (
-        <Sidebar 
+        <Sidebar
           currentTheme={currentTheme}
           onThemeChange={handleThemeChange}
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
       ) : (
-        <UserSidebar 
+        <UserSidebar
           currentTheme={currentTheme}
           onThemeChange={handleThemeChange}
           isMobileMenuOpen={isMobileMenuOpen}
@@ -482,20 +463,18 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 lg:ml-20 overflow-y-auto">
         {/* Top Navigation - Now shown on all pages including Dashboard */}
         <TopNav
-    pageTitle={config.title}
-    pageSubtitle={config.subtitle}
-    breadcrumbs={displayBreadcrumbs}
-    isMobileMenuOpen={isMobileMenuOpen}
-    onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-  />
+          pageTitle={config.title}
+          pageSubtitle={config.subtitle}
+          breadcrumbs={displayBreadcrumbs}
+          isMobileMenuOpen={isMobileMenuOpen}
+          onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        />
 
         {/* Content Area */}
         <main className="p-4 sm:p-6 lg:p-8">
-    <div className="max-w-[1400px] mx-auto">
-      {children}
-    </div>
-  </main>
-</div>
+          <div className="max-w-[1400px] mx-auto">{children}</div>
+        </main>
+      </div>
 
       {/* Toast Notifications */}
       <Toaster position="top-right" />
@@ -507,41 +486,89 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   const navigate = useNavigate();
   const [activeBookingsCount, setActiveBookingsCount] = useState(0);
+  const [bookings, setBookings] = useState<BookingData[]>([]);
+  
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalBooking[]>([
     {
-      id: "BV-2024-091",
+      id: "BV-2024-011",
       customer: "Maria Santos",
       email: "maria.santos@email.com",
       mobile: "+63 917 123 4567",
       destination: "El Nido, Palawan",
       duration: "5 Days",
-      dates: "December 15, 2024 – December 20, 2024",
+      dates: "December 15, 2026 – December 20, 2026",
       total: "₱45,000",
       travelers: 2,
       urgent: true,
       bookedDate: "2024-11-20",
+      bookingSource: "Generated",
     },
     {
-      id: "BV-2024-092",
+      id: "BV-2024-010",
       customer: "Juan Dela Cruz",
       email: "juan.delacruz@email.com",
       mobile: "+63 918 234 5678",
       destination: "Bohol Countryside Tour",
       duration: "4 Days",
-      dates: "December 22, 2024 – December 26, 2024",
+      dates: "December 22, 2026 – December 26, 2026",
       total: "₱38,500",
       travelers: 4,
       urgent: false,
       bookedDate: "2024-11-22",
+      bookingSource: "Customized",
+    },
+    {
+      id: "BV-2024-006",
+      customer: "Catherine Smith",
+      email: "catherine.smith@email.com",
+      mobile: "+63 917 555 1234",
+      destination: "Boracay Island, Aklan",
+      duration: "5 Days",
+      dates: "December 18, 2026 – December 23, 2026",
+      total: "₱55,000",
+      travelers: 3,
+      urgent: false,
+      bookedDate: "2024-11-18",
+      bookingSource: "Generated",
+    },
+    {
+      id: "BV-2024-007",
+      customer: "James Wilson",
+      email: "james.wilson@email.com",
+      mobile: "+63 918 666 2345",
+      destination: "Puerto Princesa, Palawan",
+      duration: "4 Days",
+      dates: "December 20, 2026 – December 24, 2026",
+      total: "₱42,300",
+      travelers: 2,
+      urgent: true,
+      bookedDate: "2024-11-19",
+      bookingSource: "Customized",
+    },
+    {
+      id: "BV-2024-008",
+      customer: "Sophia Garcia",
+      email: "sophia.garcia@email.com",
+      mobile: "+63 919 777 3456",
+      destination: "Siargao Island, Surigao del Norte",
+      duration: "6 Days",
+      dates: "December 25, 2026 – December 31, 2026",
+      total: "₱67,500",
+      travelers: 4,
+      urgent: false,
+      bookedDate: "2024-11-21",
+      bookingSource: "Generated",
     },
   ]);
 
   const [createdBookings, setCreatedBookings] = useState<BookingData[]>([]);
   const [standardItineraries, setStandardItineraries] = useState<any[]>([]);
-  const [requestedBookingsFromBookings, setRequestedBookingsFromBookings] = useState<BookingData[]>([]);
+  const [requestedBookingsFromBookings, setRequestedBookingsFromBookings] =
+    useState<BookingData[]>([]);
   const [drafts, setDrafts] = useState<any[]>([]);
   const [editingItinerary, setEditingItinerary] = useState<any>(null);
-  const [editingRequestedBooking, setEditingRequestedBooking] = useState<any>(null);
+  const [editingRequestedBooking, setEditingRequestedBooking] =
+    useState<any>(null);
   const [editingRequestedDraft, setEditingRequestedDraft] = useState<any>(null);
   const [editingStandardDraft, setEditingStandardDraft] = useState<any>(null);
 
@@ -580,16 +607,70 @@ function AppRoutes() {
     },
   ]);
 
+  // Load bookings from localStorage on initial load
+  useEffect(() => {
+    const savedBookings = localStorage.getItem('approvedBookings');
+    if (savedBookings) {
+      try {
+        const parsedBookings = JSON.parse(savedBookings);
+        setBookings(parsedBookings);
+      } catch (error) {
+        console.error('Error loading bookings from localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Save bookings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('approvedBookings', JSON.stringify(bookings));
+  }, [bookings]);
+
+// In App.tsx, update the handleBookingApproved function:
+const handleBookingApproved = (booking: ApprovalBooking): string => {
+  // Convert ApprovalBooking to BookingData format
+  const startDate = booking.dates.split(" – ")[0];
+  const endDate = booking.dates.split(" – ")[1] || booking.dates.split(" – ")[0];
+  
+  const newBooking: BookingData = {
+    id: booking.id,
+    customer: booking.customer,
+    email: booking.email,
+    mobile: booking.mobile,
+    destination: booking.destination,
+    startDate: startDate,
+    endDate: endDate,
+    travelers: booking.travelers,
+    totalAmount: parseInt(booking.total.replace(/[₱,]/g, '')),
+    paid: 0,
+    bookedDate: booking.bookedDate,
+    bookingType: booking.bookingSource === "Generated" ? "Standard" : "Customized",
+    status: "confirmed",
+    bookingSource: booking.bookingSource,
+  };
+
+  // Add to bookings state
+  setBookings(prev => [newBooking, ...prev]);
+  
+  // Also add to createdBookings if needed
+  setCreatedBookings(prev => [newBooking, ...prev]);
+
+  return booking.id; // Return the booking ID for redirection
+};
+
   // Function to move booking from Bookings to Approvals
   const moveBookingToApprovals = (booking: BookingData) => {
     const start = new Date(booking.startDate);
     const end = new Date(booking.endDate);
-    const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const durationDays = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     const today = new Date();
-    const daysUntilTrip = Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntilTrip = Math.ceil(
+      (start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
     const isUrgent = daysUntilTrip <= 7;
-    
+
     const approvalBooking: ApprovalBooking = {
       id: booking.id,
       customer: booking.customer,
@@ -602,35 +683,37 @@ function AppRoutes() {
       travelers: booking.travelers,
       urgent: isUrgent,
       bookedDate: booking.bookedDate,
+      bookingSource: booking.bookingSource as "Customized" | "Generated" || "Customized",
     };
-    
-    setPendingApprovals(prev => [approvalBooking, ...prev]);
+
+    setPendingApprovals((prev) => [approvalBooking, ...prev]);
     navigate("/approvals");
   };
 
   const moveBookingToRequested = (booking: BookingData) => {
-    setRequestedBookingsFromBookings(prev => [booking, ...prev]);
+    setRequestedBookingsFromBookings((prev) => [booking, ...prev]);
     navigate("/itinerary");
   };
 
   const handleCreateBooking = (newBooking: BookingData) => {
-    setCreatedBookings(prev => [newBooking, ...prev]);
+    setCreatedBookings((prev) => [newBooking, ...prev]);
+    setBookings(prev => [newBooking, ...prev]);
     navigate("/bookings");
   };
 
   const handleCreateStandardItinerary = (newItinerary: any) => {
-    setStandardItineraries(prev => [newItinerary, ...prev]);
+    setStandardItineraries((prev) => [newItinerary, ...prev]);
     // Remove draft if it exists
     if (editingStandardDraft) {
-      setDrafts(prev => prev.filter(d => d.id !== editingStandardDraft.id));
+      setDrafts((prev) => prev.filter((d) => d.id !== editingStandardDraft.id));
       setEditingStandardDraft(null);
     }
     navigate("/itinerary");
   };
 
   const handleSaveDraft = (draft: any) => {
-    setDrafts(prev => {
-      const existingIndex = prev.findIndex(d => d.id === draft.id);
+    setDrafts((prev) => {
+      const existingIndex = prev.findIndex((d) => d.id === draft.id);
       if (existingIndex !== -1) {
         const updated = [...prev];
         updated[existingIndex] = draft;
@@ -646,8 +729,8 @@ function AppRoutes() {
   };
 
   const handleUpdateStandardItinerary = (updatedItinerary: any) => {
-    setStandardItineraries(prev => 
-      prev.map(it => it.id === updatedItinerary.id ? updatedItinerary : it)
+    setStandardItineraries((prev) =>
+      prev.map((it) => (it.id === updatedItinerary.id ? updatedItinerary : it))
     );
     setEditingItinerary(null);
     navigate("/itinerary");
@@ -659,18 +742,20 @@ function AppRoutes() {
   };
 
   const handleUpdateRequestedBooking = (updatedBooking: any) => {
-    setRequestedBookingsFromBookings(prev =>
-      prev.map(b => b.id === updatedBooking.id ? updatedBooking : b)
+    setRequestedBookingsFromBookings((prev) =>
+      prev.map((b) => (b.id === updatedBooking.id ? updatedBooking : b))
     );
     setEditingRequestedBooking(null);
     navigate("/itinerary");
   };
 
   const handleSaveRequestedItinerary = (newBooking: any) => {
-    setRequestedBookingsFromBookings(prev => [newBooking, ...prev]);
+    setRequestedBookingsFromBookings((prev) => [newBooking, ...prev]);
     // Remove draft if it exists
     if (editingRequestedDraft) {
-      setDrafts(prev => prev.filter(d => d.id !== editingRequestedDraft.id));
+      setDrafts((prev) =>
+        prev.filter((d) => d.id !== editingRequestedDraft.id)
+      );
     }
     setEditingRequestedDraft(null);
     navigate("/itinerary");
@@ -687,12 +772,20 @@ function AppRoutes() {
   };
 
   const handleDeleteDraft = (draftId: string) => {
-    setDrafts(prev => prev.filter(d => d.id !== draftId));
+    setDrafts((prev) => prev.filter((d) => d.id !== draftId));
   };
 
-  const moveBookingToHistory = (booking: BookingData, status: "completed" | "cancelled", cancellationReason?: string) => {
-    const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    
+  const moveBookingToHistory = (
+    booking: BookingData,
+    status: "completed" | "cancelled",
+    cancellationReason?: string
+  ) => {
+    const today = new Date().toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
     const historyBooking: HistoryBooking = {
       id: booking.id,
       customer: booking.customer,
@@ -708,14 +801,15 @@ function AppRoutes() {
       status: status,
       completedDate: status === "completed" ? today : undefined,
       cancelledDate: status === "cancelled" ? today : undefined,
-      cancellationReason: status === "cancelled" ? cancellationReason : undefined,
+      cancellationReason:
+        status === "cancelled" ? cancellationReason : undefined,
       bookingType: booking.bookingType,
     };
-    
-    setHistoryBookings(prev => {
-      const exists = prev.some(b => b.id === booking.id);
+
+    setHistoryBookings((prev) => {
+      const exists = prev.some((b) => b.id === booking.id);
       if (exists) {
-        return prev.map(b => b.id === booking.id ? historyBooking : b);
+        return prev.map((b) => (b.id === booking.id ? historyBooking : b));
       }
       return [historyBooking, ...prev];
     });
@@ -723,77 +817,111 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/home" element={<HomePage />}/>
-      <Route path="/" element={
-        <Dashboard 
-          pendingApprovalsCount={pendingApprovals.length} 
-          historyBookings={historyBookings} 
-          createdBookings={createdBookings} 
-          activeBookingsCount={activeBookingsCount} 
-        />
-      } />
+      <Route path="/home" element={<HomePage />} />
+      <Route
+        path="/"
+        element={
+          <Dashboard
+            pendingApprovalsCount={pendingApprovals.length}
+            historyBookings={historyBookings}
+            createdBookings={createdBookings}
+            activeBookingsCount={activeBookingsCount}
+          />
+        }
+      />
       <Route path="/users" element={<Users />} />
-      <Route path="/bookings" element={
-        <Bookings 
-          onMoveToApprovals={moveBookingToApprovals} 
-          onMoveToRequested={moveBookingToRequested} 
-          onMoveToHistory={moveBookingToHistory} 
-          createdBookings={createdBookings} 
-          onBookingsCountChange={setActiveBookingsCount} 
-        />
-      } />
-      <Route path="/approvals" element={
-        <Approvals 
-          pendingBookings={pendingApprovals} 
-          setPendingBookings={setPendingApprovals} 
-        />
-      } />
-      <Route path="/history" element={
-        <History 
-          historyBookings={historyBookings} 
-          setHistoryBookings={setHistoryBookings} 
-        />
-      } />
-      <Route path="/itinerary" element={
-        <Itinerary 
-          onCreateBooking={handleCreateBooking} 
-          requestedBookingsFromBookings={requestedBookingsFromBookings} 
-          newStandardItineraries={standardItineraries} 
-          drafts={drafts} 
-          onEditItinerary={handleEditStandardItinerary} 
-          onEditRequestedBooking={handleEditRequestedBooking} 
-          onEditRequestedDraft={handleEditRequestedDraft} 
-          onEditStandardDraft={handleEditStandardDraft}
-          onDeleteDraft={handleDeleteDraft}
-        />
-      } />
-      <Route path="/itinerary/create-standard" element={
-        <CreateStandardItinerary 
-          onSave={handleCreateStandardItinerary} 
-          onSaveDraft={handleSaveDraft}
-          initialData={editingStandardDraft || undefined}
-        />
-      } />
-      <Route path="/itinerary/edit-standard/:id" element={<EditStandardItinerary />} />
-      <Route path="/itinerary/edit-requested/:id" element={<EditRequestedItinerary />} />
-      <Route path="/itinerary/create-requested" element={
-        <CreateRequestedItinerary 
-          onSave={handleSaveRequestedItinerary}
-          onSaveDraft={handleSaveDraft}
-          initialData={editingRequestedDraft || undefined}
-        />
-      } />
+      <Route
+        path="/bookings"
+        element={
+          <Bookings
+            onMoveToApprovals={moveBookingToApprovals}
+            onMoveToRequested={moveBookingToRequested}
+            onMoveToHistory={moveBookingToHistory}
+            createdBookings={createdBookings}
+            onBookingsCountChange={setActiveBookingsCount}
+          />
+        }
+      />
+      <Route
+        path="/approvals"
+        element={
+          <Approvals
+            pendingBookings={pendingApprovals}
+            setPendingBookings={setPendingApprovals}
+            onApprove={handleBookingApproved}
+          />
+        }
+      />
+      <Route
+        path="/history"
+        element={
+          <History
+            historyBookings={historyBookings}
+            setHistoryBookings={setHistoryBookings}
+          />
+        }
+      />
+      <Route
+        path="/itinerary"
+        element={
+          <Itinerary
+            onCreateBooking={handleCreateBooking}
+            requestedBookingsFromBookings={requestedBookingsFromBookings}
+            newStandardItineraries={standardItineraries}
+            drafts={drafts}
+            onEditItinerary={handleEditStandardItinerary}
+            onEditRequestedBooking={handleEditRequestedBooking}
+            onEditRequestedDraft={handleEditRequestedDraft}
+            onEditStandardDraft={handleEditStandardDraft}
+            onDeleteDraft={handleDeleteDraft}
+          />
+        }
+      />
+      <Route
+        path="/itinerary/create-standard"
+        element={
+          <CreateStandardItinerary
+            onSave={handleCreateStandardItinerary}
+            onSaveDraft={handleSaveDraft}
+            initialData={editingStandardDraft || undefined}
+          />
+        }
+      />
+      <Route
+        path="/itinerary/edit-standard/:id"
+        element={<EditStandardItinerary />}
+      />
+      <Route
+        path="/itinerary/edit-requested/:id"
+        element={<EditRequestedItinerary />}
+      />
+      <Route
+        path="/itinerary/create-requested"
+        element={
+          <CreateRequestedItinerary
+            onSave={handleSaveRequestedItinerary}
+            onSaveDraft={handleSaveDraft}
+            initialData={editingRequestedDraft || undefined}
+          />
+        }
+      />
       <Route path="/profile/edit" element={<EditProfile />} />
       <Route path="/inquiries" element={<Inquiries />} />
       <Route path="/feedback" element={<Feedback />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/activity-log" element={<ActivityLog />} />
-      
+
       {/* User Side Routes */}
       <Route path="/user/home" element={<UserHome />} />
       <Route path="/user/travels" element={<UserTravels />} />
-      <Route path="/user/travels/edit/:id" element={<EditCustomizedBooking />} />
-      <Route path="/user/standard-itinerary" element={<UserStandardItinerary />} />
+      <Route
+        path="/user/travels/edit/:id"
+        element={<EditCustomizedBooking />}
+      />
+      <Route
+        path="/user/standard-itinerary"
+        element={<UserStandardItinerary />}
+      />
       <Route path="/user/smart-trip" element={<SmartTrip />} />
       <Route path="/user/create-new-travel" element={<CreateNewTravel />} />
       <Route path="/user/bookings" element={<UserBookings />} />
@@ -808,7 +936,7 @@ function AppRoutes() {
       <Route path="/user/spin-wheel" element={<SpinTheWheel />} />
       <Route path="/user/profile/edit" element={<UserEditProfile />} />
       <Route path="/user/notifications" element={<UserNotifications />} />
-      
+
       {/* Catch-all route - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

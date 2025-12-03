@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Phone, MapPin, Camera, Lock, Eye, EyeOff, Check, X } from "lucide-react";
+import { User, Mail, Phone, MapPin, Camera, Lock, Eye, EyeOff, Check, X, ChevronLeft } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 import { useProfile } from "../../components/ProfileContext";
 import { ImageCropModal } from "../../components/ImageCropModal";
@@ -9,6 +9,7 @@ export function UserEditProfile() {
   const navigate = useNavigate();
   const { userProfileData, updateUserProfile } = useProfile();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -72,6 +73,18 @@ export function UserEditProfile() {
     setIsEditingProfile(false);
   };
 
+  const handleCancelProfile = () => {
+    // Reset form to original values
+    setProfileForm({
+      firstName: userProfileData.firstName,
+      lastName: userProfileData.lastName,
+      email: userProfileData.email,
+      phone: userProfileData.phone,
+      address: userProfileData.address,
+    });
+    setIsEditingProfile(false);
+  };
+
   const handleChangePassword = () => {
     // Validation
     if (!passwordForm.currentPassword) {
@@ -101,12 +114,24 @@ export function UserEditProfile() {
       description: "Your password has been updated securely.",
     });
 
-    // Reset form
+    // Reset form and close editing mode
     setPasswordForm({
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
     });
+    setIsEditingPassword(false);
+  };
+
+  const handleCancelPassword = () => {
+    // Reset password form
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setIsEditingPassword(false);
+    setShowPasswordRequirements(false);
   };
 
   // Handle profile picture upload
@@ -159,16 +184,19 @@ export function UserEditProfile() {
 
   return (
     <div className="space-y-6">
-      {/* Back Button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
-      >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        <span className="font-medium">Back</span>
-      </button>
+      {/* Back Button - Updated to match the provided design */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 rounded-xl bg-white border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] flex items-center justify-center transition-all"
+        >
+          <ChevronLeft className="w-5 h-5 text-[#64748B]" />
+        </button>
+        <div>
+          <h2 className="text-[#1A2B4F] font-semibold">Edit Profile</h2>
+          <p className="text-sm text-[#64748B]">Manage your account settings</p>
+        </div>
+      </div>
 
       {/* Profile Card */}
       <div className="bg-card rounded-2xl shadow-[0_0_20px_var(--shadow-color)] border border-border overflow-hidden">
@@ -209,17 +237,39 @@ export function UserEditProfile() {
               </h2>
               <p className="text-muted-foreground">Traveler</p>
             </div>
-            <button
-              onClick={() => setIsEditingProfile(!isEditingProfile)}
-              className={`px-6 py-3 rounded-xl font-medium transition-all shadow-md ${
-                isEditingProfile
-                  ? "bg-secondary text-muted-foreground hover:bg-secondary-hover"
-                  : "text-white hover:opacity-90"
-              }`}
-              style={!isEditingProfile ? { background: `linear-gradient(90deg, var(--gradient-from), var(--gradient-to))` } : {}}
-            >
-              {isEditingProfile ? "Cancel" : "Edit Profile"}
-            </button>
+            <div className="flex gap-3">
+              {isEditingProfile ? (
+                <>
+                  <button
+                    onClick={handleCancelProfile}
+                    className="px-6 py-3 rounded-xl font-medium transition-all shadow-md bg-secondary text-muted-foreground hover:bg-secondary-hover"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveProfile}
+                    className="px-6 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-all shadow-lg"
+                    style={{ 
+                      background: `linear-gradient(90deg, var(--gradient-from), var(--gradient-to))`,
+                      boxShadow: `0 4px 20px var(--shadow-color-strong)`
+                    }}
+                  >
+                    Save Changes
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setIsEditingProfile(true)}
+                  className="px-6 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-all shadow-lg"
+                  style={{ 
+                    background: `linear-gradient(90deg, var(--gradient-from), var(--gradient-to))`,
+                    boxShadow: `0 4px 20px var(--shadow-color-strong)`
+                  }}
+                >
+                  Edit Profile
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Profile Form */}
@@ -299,34 +349,54 @@ export function UserEditProfile() {
               </div>
             </div>
           </div>
-
-          {/* Save Button */}
-          {isEditingProfile && (
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={handleSaveProfile}
-                className="px-8 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-all shadow-lg"
-                style={{ 
-                  background: `linear-gradient(90deg, var(--gradient-from), var(--gradient-to))`,
-                  boxShadow: `0 4px 20px var(--shadow-color-strong)`
-                }}
-              >
-                Save Changes
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Change Password Card */}
       <div className="bg-card rounded-2xl shadow-[0_0_20px_var(--shadow-color)] border border-border p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Lock className="w-6 h-6 text-primary" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Lock className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-foreground text-xl font-semibold">Change Password</h3>
+              <p className="text-muted-foreground text-sm">Keep your account secure with a strong password</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-foreground text-xl font-semibold">Change Password</h3>
-            <p className="text-muted-foreground text-sm">Keep your account secure with a strong password</p>
+          <div className="flex gap-3">
+            {isEditingPassword ? (
+              <>
+                <button
+                  onClick={handleCancelPassword}
+                  className="px-6 py-3 rounded-xl font-medium transition-all shadow-md bg-secondary text-muted-foreground hover:bg-secondary-hover"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleChangePassword}
+                  disabled={!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || !allRequirementsMet || passwordForm.newPassword !== passwordForm.confirmPassword}
+                  className="px-6 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ 
+                    background: `linear-gradient(90deg, var(--gradient-from), var(--gradient-to))`,
+                    boxShadow: `0 4px 20px var(--shadow-color-strong)`
+                  }}
+                >
+                  Save Changes
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsEditingPassword(true)}
+                className="px-6 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-all shadow-lg"
+                style={{ 
+                  background: `linear-gradient(90deg, var(--gradient-from), var(--gradient-to))`,
+                  boxShadow: `0 4px 20px var(--shadow-color-strong)`
+                }}
+              >
+                Change Password
+              </button>
+            )}
           </div>
         </div>
 
@@ -341,7 +411,8 @@ export function UserEditProfile() {
                 value={passwordForm.currentPassword}
                 onChange={(e) => handlePasswordChange("currentPassword", e.target.value)}
                 placeholder="Enter your current password"
-                className="w-full h-12 pl-12 pr-12 rounded-xl border border-border bg-input-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                disabled={!isEditingPassword}
+                className="w-full h-12 pl-12 pr-12 rounded-xl border border-border bg-input-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
                 type="button"
@@ -365,7 +436,8 @@ export function UserEditProfile() {
                 onFocus={() => setShowPasswordRequirements(true)}
                 onBlur={() => setShowPasswordRequirements(false)}
                 placeholder="Enter your new password"
-                className="w-full h-12 pl-12 pr-12 rounded-xl border border-border bg-input-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                disabled={!isEditingPassword}
+                className="w-full h-12 pl-12 pr-12 rounded-xl border border-border bg-input-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
                 type="button"
@@ -377,7 +449,7 @@ export function UserEditProfile() {
             </div>
 
             {/* Password Requirements */}
-            {showPasswordRequirements && (
+            {showPasswordRequirements && isEditingPassword && (
               <div className="mt-3 p-3 bg-muted rounded-lg border border-border">
                 <p className="text-foreground mb-2" style={{ fontSize: "13px", fontWeight: 600 }}>
                   Password must contain:
@@ -412,11 +484,12 @@ export function UserEditProfile() {
                 value={passwordForm.confirmPassword}
                 onChange={(e) => handlePasswordChange("confirmPassword", e.target.value)}
                 placeholder="Confirm your new password"
+                disabled={!isEditingPassword}
                 className={`w-full h-12 pl-12 pr-12 rounded-xl border transition-all ${
                   passwordForm.confirmPassword && passwordForm.newPassword === passwordForm.confirmPassword
                     ? "border-2 border-success bg-card"
                     : "border border-border bg-input-background"
-                } text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
+                } text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed`}
               />
               <button
                 type="button"
@@ -435,21 +508,6 @@ export function UserEditProfile() {
                 Passwords do not match
               </p>
             )}
-          </div>
-
-          {/* Change Password Button */}
-          <div className="flex justify-end pt-4">
-            <button
-              onClick={handleChangePassword}
-              disabled={!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || !allRequirementsMet || passwordForm.newPassword !== passwordForm.confirmPassword}
-              className="px-8 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ 
-                background: `linear-gradient(90deg, var(--gradient-from), var(--gradient-to))`,
-                boxShadow: `0 4px 20px var(--shadow-color-strong)`
-              }}
-            >
-              Change Password
-            </button>
           </div>
         </div>
       </div>
