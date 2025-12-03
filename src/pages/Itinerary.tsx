@@ -301,7 +301,7 @@ export function Itinerary({ onCreateBooking, requestedBookingsFromBookings = [],
   const defaultTemplates = [
     {
       id: 1,
-      title: "Boracay 5-Day Beach Escape",
+      title: "Boracay, Aklan",
       destination: "Boracay, Aklan",
       days: 5,
       category: "Standard",
@@ -310,7 +310,7 @@ export function Itinerary({ onCreateBooking, requestedBookingsFromBookings = [],
     },
     {
       id: 2,
-      title: "Palawan 7-Day Island Hopping",
+      title: "Palawan, Puerto Princesa",
       destination: "Palawan, Puerto Princesa",
       days: 7,
       category: "Requested",
@@ -318,37 +318,37 @@ export function Itinerary({ onCreateBooking, requestedBookingsFromBookings = [],
     },
     {
       id: 3,
-      title: "Baguio 4-Day Summer Capital",
+      title: "Baguio City, Benguet",
       destination: "Baguio City, Benguet",
       days: 4,
       category: "Standard",
       pricePerPax: 4875,
-      image: "https://images.unsplash.com/photo-1609137144813-7d9921338f24?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxCYWd1aW8lMjBQaGlsaXBwaW5lcyUyMG1vdW50YWluc3xlbnwxfHx8fDE3NjAyNjEwNzV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+      image: "https://images.unsplash.com/photo-1609137144813-7d9921338f24?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxCYWd1aW8lMjBQaGlsaXBwaW5lcyUyMG1vdW50YWluc3xlbnwxfHx8fDE3NjAyNjEwNzV8MA&ixlib=rb-4.0.3&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
       id: 4,
-      title: "Siargao 6-Day Surfing Adventure",
+      title: "Siargao, Surigao del Norte",
       destination: "Siargao, Surigao del Norte",
       days: 6,
       category: "Requested",
-      image: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxTaWFyZ2FvJTIwUGhpbGlwcGluZXMlMjBzdXJmaW5nfGVufDF8fHx8MTc2MDI2MTA3NXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+      image: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxTaWFyZ2FvJTIwUGhpbGlwcGluZXMlMjBzdXJmaW5nfGVufDF8fHx8MTc2MDI2MTA3NXww&ixlib=rb-4.0.3&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
       id: 5,
-      title: "Cebu 5-Day Heritage Tour",
+      title: "Cebu City, Cebu",
       destination: "Cebu City, Cebu",
       days: 5,
       category: "Standard",
       pricePerPax: 4800,
-      image: "https://images.unsplash.com/photo-1580837119756-563d608dd119?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxDZWJ1JTIwUGhpbGlwcGluZXMlMjBjaXR5fGVufDF8fHx8MTc2MDI2MTA3NXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+      image: "https://images.unsplash.com/photo-1580837119756-563d608dd119?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxDZWJ1JTIwUGhpbGlwcGluZXMlMjBjaXR5fGVufDF8fHx8MTc2MDI2MTA3NXww&ixlib=rb-4.0.3&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
       id: 6,
-      title: "Vigan 7-Day Cultural Immersion",
+      title: "Vigan, Ilocos Sur",
       destination: "Vigan, Ilocos Sur",
       days: 7,
       category: "Requested",
-      image: "https://images.unsplash.com/photo-1597074866923-dc0589150215?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxWaWdhbiUyMFBoaWxpcHBpbmVzJTIwaGVyaXRhZ2V8ZW58MXx8fHwxNzYwMjYxMDc1fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+      image: "https://images.unsplash.com/photo-1597074866923-dc0589150215?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxWaWdhbiUyMFBoaWxpcHBpbmVzJTIwaGVyaXRhZ2V8ZW58MXx8fHwxNzYwMjYxMDc1fDA&ixlib=rb-4.0.3&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
   ];
 
@@ -974,9 +974,8 @@ export function Itinerary({ onCreateBooking, requestedBookingsFromBookings = [],
           <div className="p-5">
             <div className="mb-2">
               <h3 className="text-lg text-[#1A2B4F] font-semibold mb-1 group-hover:text-[#0A7AFF] transition-colors">
-                {template.title}
+                {template.destination}
               </h3>
-              <p className="text-sm text-[#64748B]">{template.destination}</p>
             </div>
 
             <div className="flex items-center gap-3 mb-4">
@@ -1920,7 +1919,7 @@ export function Itinerary({ onCreateBooking, requestedBookingsFromBookings = [],
               <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                 <span className="text-sm text-[#64748B]">Itinerary:</span>
                 <span className="text-sm font-medium text-[#1A2B4F]">
-                  {templates.find(t => t.id === deleteStandardConfirm)?.title || "Unknown"}
+                  {templates.find(t => t.id === deleteStandardConfirm)?.destination || "Unknown"}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">

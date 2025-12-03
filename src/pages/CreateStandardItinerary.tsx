@@ -31,7 +31,6 @@ interface Day {
 }
 
 interface ItineraryFormData {
-  title: string;
   destination: string;
   days: number;
   pricePerPax: string;
@@ -149,7 +148,6 @@ const getIconComponent = (iconName: string) => {
 export function CreateStandardItinerary({ onSave, onSaveDraft, initialData }: CreateStandardItineraryProps) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<ItineraryFormData>({
-    title: "",
     destination: "",
     days: 1,
     pricePerPax: "",
@@ -219,7 +217,6 @@ export function CreateStandardItinerary({ onSave, onSaveDraft, initialData }: Cr
   useEffect(() => {
     if (initialData) {
       setFormData({
-        title: initialData.title || "",
         destination: initialData.destination || "",
         days: initialData.days || 1,
         pricePerPax: initialData.pricePerPax?.toString() || "",
@@ -252,7 +249,7 @@ export function CreateStandardItinerary({ onSave, onSaveDraft, initialData }: Cr
 
   // Track changes
   useEffect(() => {
-    const hasData = formData.title || formData.destination || formData.pricePerPax || formData.imageUrl || itineraryDays.some(day => day.title || day.activities.length > 0);
+    const hasData = formData.destination || formData.pricePerPax || formData.imageUrl || itineraryDays.some(day => day.title || day.activities.length > 0);
     setHasUnsavedChanges(hasData);
   }, [formData, itineraryDays]);
 
@@ -506,12 +503,6 @@ export function CreateStandardItinerary({ onSave, onSaveDraft, initialData }: Cr
 
   // Validate form
   const validateForm = () => {
-    if (!formData.title.trim()) {
-      toast.error("Missing Required Field", {
-        description: "Please enter an itinerary title to continue.",
-      });
-      return false;
-    }
     if (!formData.destination.trim()) {
       toast.error("Missing Required Field", {
         description: "Please enter a destination for your itinerary.",
@@ -570,7 +561,7 @@ export function CreateStandardItinerary({ onSave, onSaveDraft, initialData }: Cr
   const handleSave = () => {
     const newItinerary = {
       id: initialData?.id || Date.now(),
-      title: formData.title,
+      title: formData.destination, // Use destination as title
       destination: formData.destination,
       days: formData.days,
       category: "Standard" as const,
@@ -591,7 +582,7 @@ export function CreateStandardItinerary({ onSave, onSaveDraft, initialData }: Cr
     };
 
     toast.success(initialData ? "Itinerary Updated!" : "Standard Itinerary Created!", {
-      description: `${formData.title} has been successfully ${initialData ? "updated" : "added to your standard itineraries"}.`,
+      description: `${formData.destination} has been successfully ${initialData ? "updated" : "added to your standard itineraries"}.`,
     });
 
     setSaveConfirmOpen(false);
@@ -613,7 +604,7 @@ export function CreateStandardItinerary({ onSave, onSaveDraft, initialData }: Cr
     const draft = {
       id: initialData?.id || `DRAFT-STD-${Date.now()}`,
       type: "standard" as const,
-      title: formData.title || "Untitled Draft",
+      title: formData.destination || "Untitled Draft",
       destination: formData.destination || "No destination set",
       days: formData.days,
       pricePerPax: formData.pricePerPax ? parseFloat(formData.pricePerPax) : 0,
@@ -674,19 +665,6 @@ export function CreateStandardItinerary({ onSave, onSaveDraft, initialData }: Cr
           <h2 className="text-lg text-[#1A2B4F] font-semibold">Itinerary Information</h2>
         </div>
         <div className="grid grid-cols-2 gap-6">
-          <div className="col-span-2">
-            <Label htmlFor="title" className="text-[#1A2B4F] mb-2 block">
-              Itinerary Title <span className="text-[#FF6B6B]">*</span>
-            </Label>
-            <Input
-              id="title"
-              placeholder="e.g., Boracay 5-Day Beach Escape"
-              value={formData.title}
-              onChange={(e) => handleFormChange("title", e.target.value)}
-              className="h-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
-            />
-          </div>
-
           <div>
             <Label htmlFor="destination" className="text-[#1A2B4F] mb-2 block">
               Destination <span className="text-[#FF6B6B]">*</span>
@@ -1055,10 +1033,6 @@ export function CreateStandardItinerary({ onSave, onSaveDraft, initialData }: Cr
         contentBorder="border-[#10B981]/20"
         content={
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-[#64748B]">Title:</span>
-              <span className="text-sm text-[#1A2B4F] font-medium">{formData.title || "Untitled"}</span>
-            </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-[#64748B]">Destination:</span>
               <span className="text-sm text-[#1A2B4F] font-medium">{formData.destination || "N/A"}</span>
