@@ -49,12 +49,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 interface Booking extends ApprovalBooking {
   paymentStatus?: string;
   tourType?: string;
+  bookingSource?: string;
 }
 
 interface ApprovalsProps {
   pendingBookings: ApprovalBooking[];
   setPendingBookings: React.Dispatch<React.SetStateAction<ApprovalBooking[]>>;
-  onApprove?: (booking: ApprovalBooking) => string;
+  onApprove?: (booking: ApprovalBooking & { paymentStatus?: string; tourType?: string; bookingSource?: string }) => string;
 }
 
 type ItineraryDay = {
@@ -106,45 +107,85 @@ export function Approvals({
   const [pendingBookings, setPendingBookings] = useState<Booking[]>(() => {
     return initialPendingBookings.map(booking => ({
       ...booking,
-      paymentStatus: "Unpaid",
-      tourType: "Private"
+      paymentStatus: booking.paymentStatus || "Unpaid",
+      tourType: booking.tourType || "Private",
+      bookingSource: booking.bookingSource || "Generated"
     }));
   });
 
-  // Initialize rejected bookings with paymentStatus and tourType
+  // Initialize rejected bookings with the same structure as pending bookings
   const [rejectedBookings, setRejectedBookings] = useState<Booking[]>([
     {
-      id: "BV-2024-045",
-      customer: "Ana Reyes",
-      email: "ana.reyes@email.com",
-      mobile: "+63 919 876 5432",
-      destination: "Bohol, Tagbilaran",
-      duration: "3 Days",
-      dates: "February 10, 2026 – February 13, 2026",
-      total: "₱15,750",
-      rejectionReason: "Incomplete payment documentation",
-      rejectionResolution:
-        "Please submit proof of payment or valid payment method. Contact our support team for assistance.",
-      resolutionStatus: "resolved",
-      paymentStatus: "Unpaid",
-      tourType: "Private"
-    },
-    {
-      id: "BV-2024-032",
-      customer: "Roberto Garcia",
-      email: "roberto.garcia@email.com",
-      mobile: "+63 920 345 6789",
-      destination: "Coron, Palawan",
-      duration: "6 Days",
-      dates: "January 20, 2026 – January 26, 2026",
-      total: "₱28,300",
-      rejectionReason:
-        "Invalid travel dates - destination unavailable during specified period",
-      rejectionResolution:
-        "Please select alternative dates. Our customer service will contact you with available options.",
+      id: "BV-2025-007",
+      customer: "Isabella Cruz",
+      email: "isabella.cruz@email.com",
+      mobile: "+63 923 789 0123",
+      destination: "Cebu City, Cebu",
+      duration: "4 Days",
+      dates: "February 15, 2026 – February 19, 2026",
+      total: "₱48,500",
+      travelers: 2,
+      bookedDate: "2025-11-02",
+      rejectionReason: "Missing passport copies for international travelers",
+      rejectionResolution: "Please submit clear copies of valid passports for all travelers.",
       resolutionStatus: "unresolved",
       paymentStatus: "Unpaid",
-      tourType: "Private"
+      tourType: "Private",
+      bookingSource: "Generated"
+    },
+    {
+      id: "BV-2025-008",
+      customer: "Daniel Lim",
+      email: "daniel.lim@email.com",
+      mobile: "+63 924 890 1234",
+      destination: "Davao City, Davao del Sur",
+      duration: "5 Days",
+      dates: "March 5, 2026 – March 10, 2026",
+      total: "₱52,800",
+      travelers: 3,
+      bookedDate: "2025-11-03",
+      rejectionReason: "Travel dates conflict with local festival - accommodation unavailable",
+      rejectionResolution: "Please select alternative dates or consider different destination.",
+      resolutionStatus: "resolved",
+      paymentStatus: "Partial",
+      tourType: "Joiner",
+      bookingSource: "Customized"
+    },
+    {
+      id: "BV-2025-009",
+      customer: "Sofia Hernandez",
+      email: "sofia.hernandez@email.com",
+      mobile: "+63 925 901 2345",
+      destination: "Puerto Galera, Mindoro",
+      duration: "3 Days",
+      dates: "January 25, 2026 – January 28, 2026",
+      total: "₱32,400",
+      travelers: 4,
+      bookedDate: "2025-10-28",
+      rejectionReason: "Insufficient payment - 50% deposit not met",
+      rejectionResolution: "Please complete the required 50% deposit to confirm your booking.",
+      resolutionStatus: "resolved",
+      paymentStatus: "Partial",
+      tourType: "Private",
+      bookingSource: "Generated"
+    },
+    {
+      id: "BV-2025-010",
+      customer: "James Wilson",
+      email: "james.wilson@email.com",
+      mobile: "+63 926 012 3456",
+      destination: "Coron, Palawan",
+      duration: "6 Days",
+      dates: "February 28, 2026 – March 5, 2026",
+      total: "₱67,200",
+      travelers: 2,
+      bookedDate: "2025-11-01",
+      rejectionReason: "Medical certificate required for senior traveler",
+      rejectionResolution: "Please submit medical clearance certificate for traveler aged 65+.",
+      resolutionStatus: "unresolved",
+      paymentStatus: "Unpaid",
+      tourType: "Private",
+      bookingSource: "Customized"
     },
   ]);
 
@@ -207,7 +248,8 @@ export function Approvals({
     const updatedBookings = initialPendingBookings.map(booking => ({
       ...booking,
       paymentStatus: booking.paymentStatus || "Unpaid",
-      tourType: booking.tourType || "Private"
+      tourType: booking.tourType || "Private",
+      bookingSource: booking.bookingSource || "Generated"
     }));
     setPendingBookings(updatedBookings);
   }, [initialPendingBookings]);
@@ -356,6 +398,122 @@ export function Approvals({
             title: "Beach Exploration",
             description: "Explore the famous Cloud 9 area",
             location: "Cloud 9",
+          },
+        ],
+      },
+    ],
+    "BV-2025-007": [
+      {
+        day: 1,
+        title: "Arrival & City Tour",
+        activities: [
+          {
+            time: "9:00 AM",
+            icon: Plane,
+            title: "Arrival at Mactan-Cebu Airport",
+            description: "Meet and greet with tour guide",
+            location: "Mactan-Cebu Airport",
+          },
+          {
+            time: "11:00 AM",
+            icon: Hotel,
+            title: "Hotel Check-in",
+            description: "Check-in at city center hotel",
+            location: "Cebu City",
+          },
+          {
+            time: "2:00 PM",
+            icon: Camera,
+            title: "City Heritage Tour",
+            description: "Visit Magellan's Cross and Basilica",
+            location: "Cebu City Heritage Sites",
+          },
+        ],
+      },
+    ],
+    "BV-2025-008": [
+      {
+        day: 1,
+        title: "Arrival & Nature Exploration",
+        activities: [
+          {
+            time: "10:00 AM",
+            icon: Plane,
+            title: "Arrival at Davao Airport",
+            description: "Airport transfer to hotel",
+            location: "Davao Airport",
+          },
+          {
+            time: "12:00 PM",
+            icon: Hotel,
+            title: "Hotel Check-in",
+            description: "Check-in at mountain view resort",
+            location: "Davao City",
+          },
+          {
+            time: "3:00 PM",
+            icon: Camera,
+            title: "Eden Nature Park",
+            description: "Nature walk and bird watching",
+            location: "Eden Nature Park",
+          },
+        ],
+      },
+    ],
+    "BV-2025-009": [
+      {
+        day: 1,
+        title: "Arrival & Beach Welcome",
+        activities: [
+          {
+            time: "8:00 AM",
+            icon: Car,
+            title: "Departure from Manila",
+            description: "Van transfer to Batangas Port",
+            location: "Manila",
+          },
+          {
+            time: "11:00 AM",
+            icon: Plane,
+            title: "Boat to Puerto Galera",
+            description: "Ferry ride to Puerto Galera",
+            location: "Batangas Port",
+          },
+          {
+            time: "1:00 PM",
+            icon: Hotel,
+            title: "Resort Check-in",
+            description: "Check-in at beachfront resort",
+            location: "White Beach",
+          },
+        ],
+      },
+    ],
+    "BV-2025-010": [
+      {
+        day: 1,
+        title: "Arrival & Island Welcome",
+        activities: [
+          {
+            time: "11:00 AM",
+            icon: Plane,
+            title: "Arrival at Coron Airport",
+            description: "Airport pickup and transfer",
+            location: "Coron Airport",
+          },
+          {
+            time: "1:00 PM",
+            icon: Hotel,
+            title: "Resort Check-in",
+            description: "Check-in at island resort",
+            location: "Coron Town",
+          },
+          {
+            time: "4:00 PM",
+            icon: Camera,
+            title: "Mt. Tapyas Viewing",
+            description: "Sunset view from Mt. Tapyas",
+            location: "Mt. Tapyas",
           },
         ],
       },
@@ -512,9 +670,16 @@ const handleApproveConfirm = () => {
   const customerName = selectedBooking.customer;
   
   // Call onApprove prop to move booking to Bookings page
+  // Pass the complete booking object with all properties including paymentStatus and tourType
   let approvedBookingId = bookingId;
   if (onApprove) {
-    approvedBookingId = onApprove(selectedBooking);
+    approvedBookingId = onApprove({
+      ...selectedBooking,
+      // Ensure these properties are included
+      paymentStatus: selectedBooking.paymentStatus || "Unpaid",
+      tourType: selectedBooking.tourType || "Private",
+      bookingSource: selectedBooking.bookingSource || "Generated"
+    });
   }
 
   setSelectedBooking(null);
@@ -664,51 +829,6 @@ const getFilteredBookings = () => {
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-3xl font-semibold">{currentBooking.destination}</h1>
-                  {/* Badges in header */}
-                  <div className="flex items-center gap-2">
-                    {currentBooking.paymentStatus && (
-                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getPaymentStatusColor(currentBooking.paymentStatus)}`}>
-                        {currentBooking.paymentStatus}
-                      </span>
-                    )}
-                    {currentBooking.bookingSource && (
-                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${
-                        currentBooking.bookingSource === "Customized"
-                          ? "bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border-[rgba(139,92,246,0.2)]"
-                          : "bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]"
-                      }`}>
-                        {currentBooking.bookingSource}
-                      </span>
-                    )}
-                    {currentBooking.tourType && (
-                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${
-                        currentBooking.tourType === "Joiner"
-                          ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
-                          : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]"
-                      }`}>
-                        {currentBooking.tourType}
-                      </span>
-                    )}
-                    {activeTab === "rejected" && (
-                      <>
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] text-xs font-medium border border-[rgba(255,107,107,0.2)]">
-                          <XCircle className="w-3 h-3" />
-                          Rejected
-                        </span>
-                        {currentBooking.resolutionStatus === "resolved" ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)]">
-                            <CheckCircle className="w-3 h-3" />
-                            Resolved
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)]">
-                            <AlertTriangle className="w-3 h-3" />
-                            Unresolved
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
                 </div>
                 <div className="flex items-center gap-2 text-white/90">
                   <MapPin className="w-4 h-4" />
@@ -949,11 +1069,6 @@ const getFilteredBookings = () => {
                       <p className="text-xs text-[#64748B] mb-1">Total Amount</p>
                       <p className="text-sm font-semibold text-[#1A2B4F]">{selectedBooking.total}</p>
                     </div>
-                  </div>
-                  <div className="mt-4 p-3 bg-[#10B981]/10 border border-[#10B981]/20 rounded-lg">
-                    <p className="text-xs text-[#10B981]">
-                      ✅ This booking will be moved to the Bookings page with "confirmed" status.
-                    </p>
                   </div>
                 </>
               )
@@ -1237,13 +1352,6 @@ const getFilteredBookings = () => {
                       resolutionStatus: booking.resolutionStatus,
                       statusBadges: (
                         <>
-                          {/* Payment Status Badge - First */}
-                          {booking.paymentStatus && (
-                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getPaymentStatusColor(booking.paymentStatus)}`}>
-                              {booking.paymentStatus}
-                            </span>
-                          )}
-                          
                           {/* Booking Source Badge - Second */}
                           {booking.bookingSource && (
                             <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -1339,11 +1447,6 @@ const getFilteredBookings = () => {
                     <p className="text-xs text-[#64748B] mb-1">Total Amount</p>
                     <p className="text-sm font-semibold text-[#1A2B4F]">{selectedBooking.total}</p>
                   </div>
-                </div>
-                <div className="mt-4 p-3 bg-[#10B981]/10 border border-[#10B981]/20 rounded-lg">
-                  <p className="text-xs text-[#10B981]">
-                    ✅ This booking will be moved to the Bookings page with "confirmed" status.
-                  </p>
                 </div>
               </>
             )

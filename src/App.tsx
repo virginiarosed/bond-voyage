@@ -83,9 +83,12 @@ export interface ApprovalBooking {
   total: string;
   travelers: number;
   bookedDate: string;
+  urgent?: boolean;
   rejectionReason?: string;
   rejectionResolution?: string;
   bookingSource?: "Customized" | "Generated"; // Added for booking source tracking
+  paymentStatus?: string; // Added for payment status tracking
+  tourType?: string; // Added for tour type tracking
 }
 
 export interface HistoryBooking {
@@ -105,6 +108,8 @@ export interface HistoryBooking {
   cancelledDate?: string;
   cancellationReason?: string;
   bookingType: string;
+  paymentStatus?: string; // Added for payment status tracking
+  tourType?: string; // Added for tour type tracking
 }
 
 export interface BookingData {
@@ -122,6 +127,8 @@ export interface BookingData {
   bookingType: string;
   status?: string;
   bookingSource?: "Customized" | "Generated";
+  paymentStatus?: string; // Added for payment status tracking
+  tourType?: string; // Added for tour type tracking
 }
 
 // Layout Component to handle page config and TopNav
@@ -502,13 +509,15 @@ function AppRoutes() {
       urgent: true,
       bookedDate: "2024-11-20",
       bookingSource: "Generated",
+      paymentStatus: "Unpaid", // Added
+      tourType: "Private", // Added
     },
     {
       id: "BV-2024-010",
       customer: "Juan Dela Cruz",
       email: "juan.delacruz@email.com",
       mobile: "+63 918 234 5678",
-      destination: "Bohol Countryside Tour",
+      destination: "Bohol",
       duration: "4 Days",
       dates: "December 22, 2026 – December 26, 2026",
       total: "₱38,500",
@@ -516,6 +525,8 @@ function AppRoutes() {
       urgent: false,
       bookedDate: "2024-11-22",
       bookingSource: "Customized",
+      paymentStatus: "Unpaid", // Added
+      tourType: "Joiner", // Added
     },
     {
       id: "BV-2024-006",
@@ -530,6 +541,8 @@ function AppRoutes() {
       urgent: false,
       bookedDate: "2024-11-18",
       bookingSource: "Generated",
+      paymentStatus: "Partial", // Added
+      tourType: "Private", // Added
     },
     {
       id: "BV-2024-007",
@@ -544,6 +557,8 @@ function AppRoutes() {
       urgent: true,
       bookedDate: "2024-11-19",
       bookingSource: "Customized",
+      paymentStatus: "Unpaid", // Added
+      tourType: "Private", // Added
     },
     {
       id: "BV-2024-008",
@@ -558,6 +573,8 @@ function AppRoutes() {
       urgent: false,
       bookedDate: "2024-11-21",
       bookingSource: "Generated",
+      paymentStatus: "Unpaid", // Added
+      tourType: "Joiner", // Added
     },
   ]);
 
@@ -588,6 +605,8 @@ function AppRoutes() {
       status: "completed",
       completedDate: "2024-08-14",
       bookingType: "Requested",
+      paymentStatus: "Paid", // Added
+      tourType: "Private", // Added
     },
     {
       id: "BV-2024-076",
@@ -604,6 +623,8 @@ function AppRoutes() {
       status: "cancelled",
       cancelledDate: "2024-06-25",
       bookingType: "Standard",
+      paymentStatus: "Partial", // Added
+      tourType: "Joiner", // Added
     },
   ]);
 
@@ -625,37 +646,64 @@ function AppRoutes() {
     localStorage.setItem('approvedBookings', JSON.stringify(bookings));
   }, [bookings]);
 
-// In App.tsx, update the handleBookingApproved function:
-const handleBookingApproved = (booking: ApprovalBooking): string => {
-  // Convert ApprovalBooking to BookingData format
-  const startDate = booking.dates.split(" – ")[0];
-  const endDate = booking.dates.split(" – ")[1] || booking.dates.split(" – ")[0];
-  
-  const newBooking: BookingData = {
-    id: booking.id,
-    customer: booking.customer,
-    email: booking.email,
-    mobile: booking.mobile,
-    destination: booking.destination,
-    startDate: startDate,
-    endDate: endDate,
-    travelers: booking.travelers,
-    totalAmount: parseInt(booking.total.replace(/[₱,]/g, '')),
-    paid: 0,
-    bookedDate: booking.bookedDate,
-    bookingType: booking.bookingSource === "Generated" ? "Standard" : "Customized",
-    status: "confirmed",
-    bookingSource: booking.bookingSource,
+  // Helper function to convert ApprovalBooking to BookingData format
+  const convertApprovalToBooking = (approvalBooking: ApprovalBooking): BookingData => {
+    const totalAmount = parseInt(approvalBooking.total.replace(/[₱,]/g, '')) || 0;
+    
+    // Calculate paid amount based on payment status
+    let paid = 0;
+    if (approvalBooking.paymentStatus === "Paid") {
+      paid = totalAmount;
+    } else if (approvalBooking.paymentStatus === "Partial") {
+      paid = Math.floor(totalAmount / 2);
+    }
+    
+    // Parse dates from the format "February 10, 2026 – February 13, 2026"
+    const dateParts = approvalBooking.dates.split(' – ');
+    const startDate = dateParts[0] ? new Date(dateParts[0]).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    const endDate = dateParts[1] ? new Date(dateParts[1]).toISOString().split('T')[0] : startDate;
+    
+    // Determine booking type from booking source
+    let bookingType = "Standard";
+    if (approvalBooking.bookingSource === "Customized") {
+      bookingType = "Customized";
+    } else if (approvalBooking.bookingSource === "Generated") {
+      bookingType = "Standard";
+    }
+    
+    return {
+      id: approvalBooking.id,
+      customer: approvalBooking.customer,
+      email: approvalBooking.email,
+      mobile: approvalBooking.mobile,
+      destination: approvalBooking.destination,
+      startDate: startDate,
+      endDate: endDate,
+      travelers: approvalBooking.travelers || 1,
+      totalAmount: totalAmount,
+      paid: paid,
+      bookedDate: approvalBooking.bookedDate || new Date().toISOString().split('T')[0],
+      bookingType: bookingType,
+      status: "confirmed",
+      bookingSource: approvalBooking.bookingSource || "Generated",
+      paymentStatus: approvalBooking.paymentStatus || "Unpaid",
+      tourType: approvalBooking.tourType || "Private",
+    };
   };
 
-  // Add to bookings state
-  setBookings(prev => [newBooking, ...prev]);
-  
-  // Also add to createdBookings if needed
-  setCreatedBookings(prev => [newBooking, ...prev]);
+  // In App.tsx, update the handleBookingApproved function:
+  const handleBookingApproved = (booking: ApprovalBooking): string => {
+    // Convert ApprovalBooking to BookingData format
+    const newBooking = convertApprovalToBooking(booking);
 
-  return booking.id; // Return the booking ID for redirection
-};
+    // Add to bookings state
+    setBookings(prev => [newBooking, ...prev]);
+    
+    // Also add to createdBookings if needed
+    setCreatedBookings(prev => [newBooking, ...prev]);
+
+    return booking.id; // Return the booking ID for redirection
+  };
 
   // Function to move booking from Bookings to Approvals
   const moveBookingToApprovals = (booking: BookingData) => {
@@ -683,7 +731,9 @@ const handleBookingApproved = (booking: ApprovalBooking): string => {
       travelers: booking.travelers,
       urgent: isUrgent,
       bookedDate: booking.bookedDate,
-      bookingSource: booking.bookingSource as "Customized" | "Generated" || "Customized",
+      bookingSource: booking.bookingSource as "Customized" | "Generated" || (booking.bookingType === "Customized" ? "Customized" : "Generated"),
+      paymentStatus: booking.paymentStatus || "Unpaid",
+      tourType: booking.tourType || "Private",
     };
 
     setPendingApprovals((prev) => [approvalBooking, ...prev]);
@@ -804,6 +854,8 @@ const handleBookingApproved = (booking: ApprovalBooking): string => {
       cancellationReason:
         status === "cancelled" ? cancellationReason : undefined,
       bookingType: booking.bookingType,
+      paymentStatus: booking.paymentStatus, // Added
+      tourType: booking.tourType, // Added
     };
 
     setHistoryBookings((prev) => {

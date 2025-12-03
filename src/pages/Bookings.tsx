@@ -56,6 +56,7 @@ type Booking = {
   paymentHistory?: PaymentSubmission[];
   totalPaid?: number;
   tripStatus?: string;
+  bookingSource?: "Standard" | "Customized"; // Added for compatibility with Approvals
 };
 
 type ItineraryDay = {
@@ -76,9 +77,11 @@ interface BookingsProps {
   onMoveToHistory: (booking: Booking, status: "completed" | "cancelled", cancellationReason?: string) => void;
   createdBookings?: Booking[];
   onBookingsCountChange?: (count: number) => void;
+  // Add prop to receive bookings from Approvals
+  approvedBookings?: any[];
 }
 
-export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory, createdBookings = [], onBookingsCountChange }: BookingsProps) {
+export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory, createdBookings = [], onBookingsCountChange, approvedBookings = [] }: BookingsProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
@@ -102,7 +105,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Increased from 5 to 10 to show all bookings
+  const itemsPerPage = 10;
 
   // State for standard bookings from UserStandardItinerary
   const [standardBookingsFromUser, setStandardBookingsFromUser] = useState<Booking[]>([]);
@@ -151,6 +154,58 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
     };
   });
 
+  // Helper function to convert ApprovalBooking to Booking format
+  const convertApprovalToBooking = (approvalBooking: any): Booking => {
+    const totalAmount = parseInt(approvalBooking.total.replace(/[₱,]/g, '')) || 0;
+    const paid = approvalBooking.paymentStatus === "Paid" ? totalAmount : 
+                 approvalBooking.paymentStatus === "Partial" ? totalAmount / 2 : 0;
+    const totalPaid = paid;
+    
+    // Parse dates from the format "February 10, 2026 – February 13, 2026"
+    let startDate, endDate;
+    if (approvalBooking.dates && approvalBooking.dates.includes(' – ')) {
+      const dateParts = approvalBooking.dates.split(' – ');
+      startDate = dateParts[0] ? new Date(dateParts[0]).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      endDate = dateParts[1] ? new Date(dateParts[1]).toISOString().split('T')[0] : startDate;
+    } else {
+      // Handle cases where dates might be in different format
+      startDate = approvalBooking.startDate || new Date().toISOString().split('T')[0];
+      endDate = approvalBooking.endDate || startDate;
+    }
+    
+    // Determine booking type from bookingSource
+    let bookingType: "Customized" | "Requested" | "Standard" = "Standard";
+    if (approvalBooking.bookingSource === "Customized") {
+      bookingType = "Customized";
+    } else if (approvalBooking.bookingType === "Requested") {
+      bookingType = "Requested";
+    }
+    
+    return {
+      id: approvalBooking.id,
+      customer: approvalBooking.customer,
+      email: approvalBooking.email,
+      mobile: approvalBooking.mobile,
+      destination: approvalBooking.destination,
+      itinerary: approvalBooking.destination || approvalBooking.itinerary || "Itinerary",
+      startDate: startDate,
+      endDate: endDate,
+      travelers: approvalBooking.travelers || 1,
+      totalAmount: totalAmount,
+      paid: paid,
+      paymentStatus: approvalBooking.paymentStatus || "Unpaid",
+      bookedDate: approvalBooking.bookedDate || new Date().toISOString().split('T')[0],
+      bookedDateObj: new Date(approvalBooking.bookedDate || new Date()),
+      status: "confirmed",
+      bookingType: bookingType,
+      tourType: approvalBooking.tourType || "Private",
+      modeOfPayment: approvalBooking.modeOfPayment || "",
+      paymentHistory: approvalBooking.paymentHistory || [],
+      totalPaid: totalPaid,
+      bookingSource: approvalBooking.bookingSource || "Standard",
+    };
+  };
+
   const [bookings, setBookings] = useState<Booking[]>([
     // BV-2025-001 - Maria Santos - Boracay
     {
@@ -174,6 +229,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       modeOfPayment: "",
       paymentHistory: [],
       totalPaid: 0,
+      bookingSource: "Standard",
       itineraryDetails: [
         {
           day: 1,
@@ -215,6 +271,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       bookedDateObj: new Date("2025-11-08"),
       status: "confirmed",
       bookingType: "Customized",
+      tourType: "Private",
       modeOfPayment: "Gcash",
       paymentHistory: [
         {
@@ -228,6 +285,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         }
       ],
       totalPaid: 31000,
+      bookingSource: "Customized",
       itineraryDetails: [
         {
           day: 1,
@@ -286,6 +344,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         }
       ],
       totalPaid: 38750,
+      bookingSource: "Standard",
       itineraryDetails: [
         {
           day: 1,
@@ -327,6 +386,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       bookedDateObj: new Date("2025-11-05"),
       status: "confirmed",
       bookingType: "Customized",
+      tourType: "Private",
       modeOfPayment: "Gcash",
       paymentHistory: [
         {
@@ -340,6 +400,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         }
       ],
       totalPaid: 22600,
+      bookingSource: "Customized",
       itineraryDetails: [
         {
           day: 1,
@@ -382,9 +443,11 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       bookedDateObj: new Date("2025-10-20"),
       status: "confirmed",
       bookingType: "Requested",
+      tourType: "Private",
       modeOfPayment: "",
       paymentHistory: [],
       totalPaid: 0,
+      bookingSource: "Customized",
       itineraryDetails: [
         {
           day: 1,
@@ -430,6 +493,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       modeOfPayment: "",
       paymentHistory: [],
       totalPaid: 0,
+      bookingSource: "Standard",
       itineraryDetails: [
         {
           day: 1,
@@ -463,11 +527,9 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       const bookingExists = bookings.some(b => b.id === bookingId);
       
       if (bookingExists) {
-        // Add a slight delay for better UX (like SmartTrip.tsx uses 800ms)
         setTimeout(() => {
           const element = document.getElementById(`booking-${bookingId}`);
           if (element) {
-            // Smooth scroll to the element with offset for header
             const headerOffset = 120;
             const elementPosition = element.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
@@ -477,62 +539,57 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
               behavior: 'smooth'
             });
             
-            // Enhanced highlight effect
             element.classList.add('booking-highlight');
             
-            // Add a subtle scale animation
             element.style.transform = 'scale(1.01)';
             element.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
             
-            // After animation completes, remove the highlight gradually
             setTimeout(() => {
               element.style.transform = 'scale(1)';
               setTimeout(() => {
                 element.classList.remove('booking-highlight');
-              }, 2000); // Keep highlight for 2 seconds
+              }, 2000);
             }, 800);
             
-            // Clear URL state to prevent re-triggering
             navigate(location.pathname, { replace: true, state: {} });
           }
-        }, 300); // Match SmartTrip.tsx timing pattern
+        }, 300);
       }
     }
   }, [location.state, bookings, navigate, location.pathname]);
 
-  // Add CSS for highlight effect (exact pattern from UserTravel.tsx)
+  // Add CSS for highlight effect
   useEffect(() => {
-  const style = document.createElement('style');
-  style.textContent = `
-    .booking-highlight {
-      animation: highlight 2s ease-in-out;
-      border-radius: 1rem;
-    }
+    const style = document.createElement('style');
+    style.textContent = `
+      .booking-highlight {
+        animation: highlight 2s ease-in-out;
+        border-radius: 1rem;
+      }
+      
+      @keyframes highlight {
+        0%, 100% {
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+          transform: scale(1);
+        }
+        50% {
+          box-shadow: 0 0 0 3px rgba(10, 122, 255, 0.3), 0 4px 6px rgba(10, 122, 255, 0.1);
+          transform: scale(1.005);
+        }
+      }
+    `;
+    document.head.appendChild(style);
     
-    @keyframes highlight {
-      0%, 100% {
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        transform: scale(1);
-      }
-      50% {
-        box-shadow: 0 0 0 3px rgba(10, 122, 255, 0.3), 0 4px 6px rgba(10, 122, 255, 0.1);
-        transform: scale(1.005);
-      }
-    }
-  `;
-  document.head.appendChild(style);
-  
-  return () => {
-    document.head.removeChild(style);
-  };
-}, []);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // Load standard bookings from localStorage that were created in UserStandardItinerary
   useEffect(() => {
     const savedAdminBookings = localStorage.getItem('adminStandardBookings');
     if (savedAdminBookings) {
       const adminBookings = JSON.parse(savedAdminBookings);
-      // Convert to Booking format
       const converted: Booking[] = adminBookings.map((booking: any) => {
         const totalPaid = booking.totalPaid || 0;
         const totalAmount = parseInt(booking.amount.replace(/[₱,]/g, ''));
@@ -559,7 +616,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
           paymentStatus: paymentStatus,
           bookedDate: booking.bookingDate,
           bookedDateObj: new Date(booking.bookingDate),
-          status: "confirmed", // Always set to "confirmed" for bookings in this page
+          status: "confirmed",
           bookingType: "Standard" as const,
           tourType: booking.tourType,
           modeOfPayment: booking.paymentHistory && booking.paymentHistory.length > 0 
@@ -567,11 +624,25 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
             : "",
           paymentHistory: booking.paymentHistory || [],
           totalPaid: totalPaid,
+          bookingSource: "Standard",
         };
       });
       setStandardBookingsFromUser(converted);
     }
   }, []);
+
+  // Handle approved bookings from Approvals page
+  useEffect(() => {
+    if (approvedBookings && approvedBookings.length > 0) {
+      const convertedBookings = approvedBookings.map(convertApprovalToBooking);
+      
+      setBookings(prevBookings => {
+        const existingIds = new Set(prevBookings.map(b => b.id));
+        const newBookings = convertedBookings.filter(b => !existingIds.has(b.id));
+        return [...newBookings, ...prevBookings];
+      });
+    }
+  }, [approvedBookings]);
 
   // Merge created bookings from Itinerary page and standard bookings from users
   useEffect(() => {
@@ -581,10 +652,9 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         const existingIds = new Set(prevBookings.map(b => b.id));
         const newBookings = allNewBookings.filter(b => !existingIds.has(b.id));
         
-        // Ensure all new bookings have "confirmed" status
         const confirmedNewBookings = newBookings.map(b => ({
           ...b,
-          status: "confirmed" // Ensure status is "confirmed"
+          status: "confirmed"
         }));
         
         return [...confirmedNewBookings, ...prevBookings];
@@ -603,7 +673,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
           return prevBookings.map(booking => {
             const updatedBooking = adminBookings.find((ab: any) => ab.id === booking.id);
             if (updatedBooking && updatedBooking.paymentHistory) {
-              // Calculate total paid from verified payments only
               const verifiedPayments = updatedBooking.paymentHistory.filter((p: any) => p.status === "verified");
               const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
               const totalAmount = booking.totalAmount;
@@ -624,7 +693,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                 modeOfPayment: updatedBooking.paymentHistory.length > 0 
                   ? updatedBooking.paymentHistory[updatedBooking.paymentHistory.length - 1].modeOfPayment 
                   : booking.modeOfPayment,
-                status: "confirmed", // Maintain "confirmed" status
+                status: "confirmed",
               };
             }
             return booking;
@@ -633,7 +702,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       }
     };
 
-    // Sync immediately and then every 2 seconds
     syncPaymentData();
     const interval = setInterval(syncPaymentData, 2000);
     return () => clearInterval(interval);
@@ -701,7 +769,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
   const getFilteredBookings = () => {
     let filtered = bookings;
 
-    // All bookings in this page should have "confirmed" status
     // Filter to ensure only confirmed bookings are shown
     filtered = filtered.filter(b => b.status === "confirmed");
 
@@ -820,7 +887,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
     }
   };
 
-  const totalBookings = bookings.length;  // Total bookings count (non-filtered)
+  const totalBookings = bookings.length;
   const activeBookingsCount = filteredBookings.length;
   const customizedCount = filteredBookings.filter(b => b.bookingType === "Customized").length;
   const standardCount = filteredBookings.filter(b => b.bookingType === "Standard").length;
@@ -842,7 +909,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
   // Handle stat card click for filtering
   const handleStatCardClick = (type: string | null) => {
     if (selectedTypeFilter === type) {
-      setSelectedTypeFilter(null); // Deselect if clicking the same filter
+      setSelectedTypeFilter(null);
     } else {
       setSelectedTypeFilter(type);
     }
@@ -882,7 +949,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       totalamount: `₱${booking.totalAmount.toLocaleString()}`,
       paymentstatus: booking.paymentStatus,
       bookingtype: booking.bookingType || 'N/A',
-      status: booking.status, // Include status in export
+      status: booking.status,
     }));
     exportToPDF(exportData, "Bookings Report", ["ID", "Customer", "Email", "Mobile", "Destination", "Start Date", "End Date", "Travelers", "Total Amount", "Payment Status", "Booking Type", "Status"]);
     toast.success("Exporting bookings as PDF...");
@@ -901,7 +968,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
       totalamount: `₱${booking.totalAmount.toLocaleString()}`,
       paymentstatus: booking.paymentStatus,
       bookingtype: booking.bookingType || 'N/A',
-      status: booking.status, // Include status in export
+      status: booking.status,
     }));
     exportToExcel(exportData, "Bookings Report", ["ID", "Customer", "Email", "Mobile", "Destination", "Start Date", "End Date", "Travelers", "Total Amount", "Payment Status", "Booking Type", "Status"]);
     toast.success("Exporting bookings as Excel...");
@@ -937,7 +1004,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
           endDate: editFormData.travelDateTo,
           travelers: parseInt(editFormData.travelers),
           totalAmount: b.totalAmount / b.travelers * parseInt(editFormData.travelers),
-          status: "confirmed", // Maintain "confirmed" status
+          status: "confirmed",
         };
       }
       return b;
@@ -1051,7 +1118,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
         setSelectedBookingId(null);
       }
       
-      // Redirect to History page with cancelled tab and scroll to the booking
       navigate("/history", {
         state: {
           scrollToId: cancelledBookingId,
@@ -1068,7 +1134,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
             ...b, 
             paymentStatus: newStatus,
             paid: newStatus === "Paid" ? b.totalAmount : newStatus === "Partial" ? b.totalAmount / 2 : 0,
-            status: "confirmed", // Maintain "confirmed" status
+            status: "confirmed",
           }
         : b
     ));
@@ -1103,7 +1169,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
             : p
         );
         
-        // Recalculate total paid amount from verified payments only
         const verifiedPayments = updatedPaymentHistory.filter(p => p.status === "verified");
         const totalPaid = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
         
@@ -1120,7 +1185,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
           totalPaid: totalPaid,
           paymentStatus: paymentStatus,
           paid: totalPaid,
-          status: "confirmed", // Maintain "confirmed" status
+          status: "confirmed",
         };
       }
       return booking;
@@ -1128,14 +1193,12 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
 
     setBookings(updatedBookings);
     
-    // Sync to localStorage
     const adminBookings = localStorage.getItem('adminStandardBookings');
     if (adminBookings) {
       const parsedAdminBookings = JSON.parse(adminBookings);
       const updatedAdminBookings = parsedAdminBookings.map((b: any) => {
         const updatedBooking = updatedBookings.find(ub => ub.id === b.id);
         if (updatedBooking) {
-          // Calculate total paid from verified payments only
           const verifiedPayments = updatedBooking.paymentHistory?.filter((p: any) => p.status === "verified") || [];
           const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
           
@@ -1155,7 +1218,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
     toast.success("Payment verified successfully!");
   };
 
-  // Handle payment rejection - UPDATED VERSION
+  // Handle payment rejection
   const handleRejectPayment = (payment: PaymentSubmission) => {
     if (!rejectionReason.trim()) {
       toast.error("Please provide a reason for rejection");
@@ -1176,11 +1239,9 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
             : p
         );
         
-        // Recalculate total paid - only count verified payments (exclude rejected payments)
         const verifiedPayments = updatedPaymentHistory.filter(p => p.status === "verified");
         const totalPaid = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
         
-        // Determine payment status based on verified payments only
         let paymentStatus: "Paid" | "Partial" | "Unpaid" = "Unpaid";
         if (totalPaid >= booking.totalAmount) {
           paymentStatus = "Paid";
@@ -1194,7 +1255,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
           totalPaid: totalPaid,
           paymentStatus: paymentStatus,
           paid: totalPaid,
-          status: "confirmed", // Maintain "confirmed" status
+          status: "confirmed",
         };
       }
       return booking;
@@ -1202,18 +1263,15 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
 
     setBookings(updatedBookings);
     
-    // Sync to localStorage
     const adminBookings = localStorage.getItem('adminStandardBookings');
     if (adminBookings) {
       const parsedAdminBookings = JSON.parse(adminBookings);
       const updatedAdminBookings = parsedAdminBookings.map((b: any) => {
         const updatedBooking = updatedBookings.find(ub => ub.id === b.id);
         if (updatedBooking) {
-          // Calculate total paid from verified payments only (exclude rejected payments)
           const verifiedPayments = updatedBooking.paymentHistory?.filter((p: any) => p.status === "verified") || [];
           const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
           
-          // Determine payment status based on verified payments only
           let paymentStatus = "Unpaid";
           const totalAmount = parseInt(b.amount.replace(/[₱,]/g, ''));
           
@@ -1281,7 +1339,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
             <ChevronLeft className="w-5 h-5 text-[#64748B] dark:text-[#94A3B8]" />   
           </button>   
           <div>     
-            <h2 className="text-[#1A2B4F] dark:text-white font-semibold">{selectedBooking.itinerary}</h2>     
+            <h2 className="text-[#1A2B4F] dark:text-white font-semibold">{selectedBooking.destination}</h2>     
             <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">Booking Details</p>   
           </div> 
         </div>
@@ -1291,7 +1349,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
           <div className="flex items-start justify-between mb-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-semibold">{selectedBooking.itinerary}</h1>
+                <h1 className="text-3xl font-semibold">{selectedBooking.destination}</h1>
               </div>
               <div className="flex items-center gap-2 text-white/90">
                 <MapPin className="w-4 h-4" />
@@ -1365,7 +1423,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
 
             {/* Payment Information - ADMIN VERSION */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-lg overflow-hidden">
-              {/* Header with gradient accent */}
               <div className="relative p-6 border-b border-[#E5E7EB]">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#10B981]/5 via-[#14B8A6]/5 to-[#0A7AFF]/5" />
                 <div className="relative flex items-center justify-between">
@@ -1398,7 +1455,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                       Customer has not made any payments yet
                     </p>
                     
-                    {/* Payment Summary Card */}
                     <div className="bg-gradient-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB] mb-6">
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
@@ -1425,9 +1481,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                 {/* PARTIAL PAYMENT STATE */}
                 {paymentSectionState === "partial" && (
                   <>
-                    {/* Circular Progress & Stats */}
                     <div className="flex items-center gap-3">
-                      {/* Circular Progress - Left Side (Larger) */}
                       <div className="relative flex-shrink-0">
                         <svg className="w-32 h-32 transform -rotate-90">
                           <circle
@@ -1457,7 +1511,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                           <span className="text-xs text-[#64748B]">Paid</span>
                         </div>
                       </div>
-                      {/* Quick Stats - Right Side */}
                       <div className="flex-1 min-w-0 space-y-2">
                         <div 
                           className="bg-gradient-to-r from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-3 border border-[#10B981]/20"
@@ -1514,7 +1567,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                       </div>
                     </div>
 
-                    {/* Payment Breakdown Card */}
                     <div className="bg-gradient-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB]">
                       <div className="flex items-center gap-2 mb-4">
                         <Receipt className="w-5 h-5 text-[#64748B]" />
@@ -1554,7 +1606,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                       </div>
                     </div>
 
-                    {/* Linear Progress with milestones */}
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
@@ -1576,7 +1627,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                           </div>
                         </div>
                         
-                        {/* Milestone markers */}
                         <div className="absolute top-0 left-0 right-0 h-3 flex items-center pointer-events-none">
                           {[25, 50, 75].map((milestone) => (
                             <div 
@@ -1595,7 +1645,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                       </div>
                     </div>
 
-                    {/* Payment History */}
                     {selectedBooking.paymentHistory && selectedBooking.paymentHistory.length > 0 && (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
@@ -1681,7 +1730,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                     <h4 className="text-xl font-bold text-[#1A2B4F] mb-2">Fully Paid</h4>
                     <p className="text-sm text-[#64748B] mb-6">This booking has been completely paid.</p>
                     
-                    {/* Payment Summary for Fully Paid */}
                     <div className="bg-gradient-to-br from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-4 border border-[#10B981]/20 mb-6">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-[#64748B]">Total Amount Paid</span>
@@ -1689,7 +1737,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                       </div>
                     </div>
                     
-                    {/* Payment History - Still show even when fully paid */}
                     {selectedBooking.paymentHistory && selectedBooking.paymentHistory.length > 0 && (
                       <div className="text-left space-y-3">
                         <div className="flex items-center justify-between">
@@ -1775,7 +1822,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
 
             {/* Actions */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 space-y-3">
-              {/* Export Buttons */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
@@ -1894,7 +1940,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
 
             {selectedPayment && (
               <div className="space-y-6 p-6">
-                {/* Payment Header */}
                 <div className="bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
                   <div className="flex justify-between items-center">
                     <div>
@@ -1917,7 +1962,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                   </div>
                 </div>
 
-                {/* Payment Information */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <div>
@@ -1965,7 +2009,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                   </div>
                 </div>
 
-                {/* Verification Details */}
                 {(selectedPayment.status === "verified" || selectedPayment.status === "rejected") && (
                   <div className="bg-[#F8FAFB] rounded-lg p-4 border border-[#E5E7EB]">
                     <div className="flex items-center gap-3 mb-3">
@@ -2001,7 +2044,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                   </div>
                 )}
 
-                {/* Proof of Payment Section */}
                 <div>
                   <Label className="text-sm font-medium text-[#1A2B4F] mb-3 block">
                     Proof of Payment
@@ -2026,7 +2068,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                   )}
                 </div>
 
-                {/* Admin Actions for Pending Payments */}
                 {selectedPayment.status === "pending" && (
                   <div className="flex gap-3 pt-4 border-t border-[#E5E7EB]">
                     <button
@@ -2046,7 +2087,6 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                   </div>
                 )}
 
-                {/* Transaction Timeline */}
                 <div className="bg-[#F8FAFB] rounded-lg p-4 border border-[#E5E7EB]">
                   <h4 className="text-sm font-medium text-[#1A2B4F] mb-3 flex items-center gap-2">
                     <Clock className="w-4 h-4 text-[#0A7AFF]" />
@@ -2635,7 +2675,7 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
             currentBookings.map((booking) => (
               <div 
                 key={booking.id}
-                id={`booking-${booking.id}`} // Add this line for scroll targeting (exact pattern from UserTravel.tsx)
+                id={`booking-${booking.id}`}
                 onClick={() => handleViewDetails(booking.id)}
                 className="p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)] cursor-pointer"
               >
@@ -2648,9 +2688,12 @@ export function Bookings({ onMoveToApprovals, onMoveToRequested, onMoveToHistory
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-lg text-[#1A2B4F] font-semibold">Booking #{booking.id}</h3>
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getPaymentStatusColor(booking.paymentStatus)}`}>
-                          {booking.paymentStatus}
-                        </span>
+                        {/* Updated to show all badges */}
+                        {booking.paymentStatus && (
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                            {booking.paymentStatus}
+                          </span>
+                        )}
                         {booking.tripStatus && (
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getTripStatusColor(booking.tripStatus)}`}>
                             {booking.tripStatus.charAt(0).toUpperCase() + booking.tripStatus.slice(1)}
