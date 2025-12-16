@@ -843,7 +843,6 @@ export function UserStandardItinerary() {
           </button>
         </div>
         </div>
-
       </div>
     </div>
   ))}
