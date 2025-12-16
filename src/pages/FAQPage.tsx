@@ -8,7 +8,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { StatCard } from "../components/StatCard";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface FAQ {
   id: string;
