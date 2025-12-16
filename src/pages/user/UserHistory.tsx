@@ -5,6 +5,7 @@ import { ContentCard } from "../../components/ContentCard";
 import { StatCard } from "../../components/StatCard";
 import { BookingListCard } from "../../components/BookingListCard";
 import { Pagination } from "../../components/Pagination";
+import { FAQAssistant } from "../../components/FAQAssistant";
 
 interface CompletedTrip {
   id: string;
@@ -399,6 +400,7 @@ export function UserHistory() {
           </>
         )}
       </ContentCard>
+      <FAQAssistant />
     </div>
   );
 }

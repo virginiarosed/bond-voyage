@@ -1,4 +1,4 @@
-import { Users, Clock, TrendingUp, CheckCircle, MapPin } from "lucide-react";
+import { Users, Clock, TrendingUp, CheckCircle, MapPin, HelpCircle, MessageCircle, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../components/StatCard";
 import { ContentCard } from "../components/ContentCard";
@@ -143,16 +143,51 @@ export function Dashboard({
     },
   ].filter((item) => item.value > 0);
 
-  // Top 5 destinations - Dummy data
-  const topDestinations = [
-    { name: "Boracay", value: 45 },
-    { name: "Palawan", value: 38 },
-    { name: "Siargao", value: 32 },
-    { name: "Bohol", value: 28 },
-    { name: "Cebu", value: 25 },
+  // Frequently Asked Questions data - Simplified version
+  const faqData = [
+    {
+      id: "FAQ-001",
+      question: "How do I create a new booking for a customer?",
+      answer: "Go to the Bookings page and click 'Create Booking'. Fill in customer details, select itinerary, and confirm payment. You can also create bookings directly from the Itinerary page.",
+    },
+    {
+      id: "FAQ-002",
+      question: "What's the difference between Standard and Requested itineraries?",
+      answer: "Standard itineraries are pre-built templates for popular destinations. Requested itineraries are custom plans created specifically for individual customer requests with detailed day-by-day activities.",
+    },
+    {
+      id: "FAQ-003",
+      question: "How do I manage pending approvals?",
+      answer: "Pending approvals appear on your dashboard and in the Bookings page. You can review, approve, or reject requests with comments. Notifications are sent to customers upon approval.",
+    },
+    {
+      id: "FAQ-004",
+      question: "Can I edit a booking after it's confirmed?",
+      answer: "Yes, bookings can be edited from the Bookings page. Changes are tracked in the activity log, and customers receive notifications for significant modifications.",
+    },
+    {
+      id: "FAQ-005",
+      question: "How do I handle customer refunds?",
+      answer: "Refunds can be processed through the Bookings page. Select the booking, click 'Manage Payment', then 'Process Refund'. Refunds take 3-5 business days to reflect in customer accounts.",
+    },
+    {
+      id: "FAQ-006",
+      question: "What are the cancellation policies?",
+      answer: "Cancellations made 30+ days before travel receive full refund. 15-29 days: 50% refund. 0-14 days: non-refundable. Emergency cases are reviewed individually.",
+    },
+    {
+      id: "FAQ-007",
+      question: "How do I customize itineraries?",
+      answer: "Go to the Itinerary page, select 'Create New Itinerary', and choose between Standard or Requested templates. You can add activities, set schedules, and include pricing details.",
+    },
+    {
+      id: "FAQ-008",
+      question: "What payment methods are accepted?",
+      answer: "We accept credit cards (Visa, Mastercard, Amex), bank transfers, GCash, Maya, and PayPal. All payments are secured with SSL encryption.",
+    },
   ];
 
-  // Generate recent activities from actual data
+  // Generate recent activities from actual data - UPDATED TO SHOW 4 ENTRIES
   const generateRecentActivities = () => {
     const activities = [];
 
@@ -162,11 +197,9 @@ export function Dashboard({
       .slice(0, 2);
 
     recentCompleted.forEach((booking, index) => {
-      const daysAgo = index + 1;
       activities.push({
         id: `completed-${booking.id}`,
         text: `Booking ${booking.id} for ${booking.customer} was completed`,
-        time: daysAgo === 1 ? "1 day ago" : `${daysAgo} days ago`,
         icon: "check",
       });
     });
@@ -180,7 +213,6 @@ export function Dashboard({
       activities.push({
         id: `cancelled-${booking.id}`,
         text: `Booking ${booking.id} for ${booking.customer} was cancelled`,
-        time: "3 days ago",
         icon: "cancel",
       });
     });
@@ -192,28 +224,39 @@ export function Dashboard({
         text: `${pendingApprovalsCount} booking${
           pendingApprovalsCount > 1 ? "s" : ""
         } pending approval`,
-        time: "5 hours ago",
         icon: "clock",
       });
     }
 
-    // Add standard itinerary activity
-    activities.push({
-      id: "standard-itinerary",
-      text: "New standard itinerary template created",
-      time: "1 week ago",
-      icon: "itinerary",
-    });
+    // Ensure we have exactly 4 activities by adding more if needed
+    if (activities.length < 4) {
+      // Add standard itinerary activity
+      activities.push({
+        id: "standard-itinerary",
+        text: "New standard itinerary template created",
+        icon: "itinerary",
+      });
+    }
 
-    // Add user activity
-    activities.push({
-      id: "user-activity",
-      text: "New user registration completed",
-      time: "2 weeks ago",
-      icon: "user",
-    });
+    if (activities.length < 4) {
+      // Add user activity
+      activities.push({
+        id: "user-activity",
+        text: "New user registration completed",
+        icon: "user",
+      });
+    }
 
-    return activities.slice(0, 5); // Return max 5 activities
+    if (activities.length < 4) {
+      // Add payment activity
+      activities.push({
+        id: "payment-activity",
+        text: "New payment processed successfully",
+        icon: "payment",
+      });
+    }
+
+    return activities.slice(0, 4); // Return exactly 4 activities
   };
 
   const recentActivities = generateRecentActivities();
@@ -780,69 +823,84 @@ export function Dashboard({
         </ContentCard>
       </div>
 
-      {/* Top Destinations and Recent Activity */}
+      {/* FAQ and Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        {/* Top Destinations */}
-        <ContentCard title="Top 5 Destinations">
-          <div className="space-y-5 pt-2">
-            {topDestinations.length > 0 ? (
-              topDestinations.map((dest, index) => {
-                const percentage =
-                  (dest.value /
-                    Math.max(...topDestinations.map((d) => d.value))) *
-                  100;
-                const colors = [
-                  { from: "#0A7AFF", to: "#14B8A6" },
-                  { from: "#14B8A6", to: "#10B981" },
-                  { from: "#10B981", to: "#0A7AFF" },
-                  { from: "#A78BFA", to: "#8B5CF6" },
-                  { from: "#FFB84D", to: "#FF9800" },
-                ];
-                const color = colors[index];
+        {/* Frequently Asked Questions - Simplified */}
+        <ContentCard 
+          title="Frequently Asked Questions"
+          action={
+            <button 
+              onClick={() => navigate("/faq")}
+              className="h-10 px-5 rounded-[20px] text-white text-sm font-medium shadow-[0_2px_8px_rgba(10,122,255,0.25)] flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5"
+              style={{ background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))` }}
+            >
+              <Plus className="w-4 h-4" />
+              New FAQ
+            </button>
+          }
+          footer={
+            <div className="flex justify-center">
+              <button
+                onClick={() => navigate("/faq")}
+                className="text-sm text-primary hover:underline cursor-pointer flex items-center gap-1"
+              >
+                View All FAQs
+              </button>
+            </div>
+          }
+        >
+          <div className="space-y-4 pt-2">
+            {faqData.slice(0, 2).map((faq, index) => {
+              const colors = [
+                { from: "#0A7AFF", to: "#14B8A6" },
+                { from: "#FFB84D", to: "#FF9800" },
+                { from: "#A78BFA", to: "#8B5CF6" },
+                { from: "#14B8A6", to: "#10B981" },
+              ];
+              const color = colors[index % colors.length];
 
-                return (
-                  <div key={dest.name} className="group">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div
-                        className="flex items-center justify-center w-10 h-10 rounded-xl text-white font-bold text-m shadow-md transition-transform group-hover:scale-110"
-                        style={{
-                          background: `linear-gradient(135deg, ${color.from}, ${color.to})`,
-                        }}
-                      >
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <p className="text-sm text-card-foreground font-semibold group-hover:text-primary transition-colors">
-                            {dest.name}
-                          </p>
-                          <p className="text-sm text-muted-foreground font-medium">
-                            {dest.value} bookings
-                          </p>
-                        </div>
-                        <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="absolute inset-y-0 left-0 rounded-full transition-all duration-500 group-hover:shadow-md"
-                            style={{
-                              width: `${percentage}%`,
-                              background: `linear-gradient(90deg, ${color.from}, ${color.to})`,
-                            }}
-                          />
-                        </div>
-                      </div>
+              return (
+                <div
+                  key={faq.id}
+                  className="group rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] bg-white hover:shadow-md transition-all duration-200 p-4 cursor-pointer"
+                  onClick={() => navigate("/faq")}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-md"
+                      style={{
+                        background: `linear-gradient(135deg, ${color.from}, ${color.to})`,
+                      }}
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-[#1A2B4F] group-hover:text-primary transition-colors line-clamp-2 mb-2">
+                        {faq.question}
+                      </h3>
+                      <p className="text-sm text-[#64748B] line-clamp-3">
+                        {faq.answer}
+                      </p>
                     </div>
                   </div>
-                );
-              })
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No destination data available yet
-              </p>
+                </div>
+              );
+            })}
+            
+            {/* Empty state if no FAQs */}
+            {faqData.length === 0 && (
+              <div className="text-center py-6">
+                <div className="w-12 h-12 mx-auto rounded-xl bg-[#F8FAFB] flex items-center justify-center mb-3">
+                  <HelpCircle className="w-6 h-6 text-[#94A3B8]" />
+                </div>
+                <p className="text-sm text-[#64748B] mb-2">No FAQs yet</p>
+                <p className="text-xs text-[#94A3B8]">Create your first FAQ to help users</p>
+              </div>
             )}
           </div>
         </ContentCard>
 
-        {/* Recent Activity */}
+        {/* Recent Activity - UPDATED DESIGN */}
         <ContentCard
           title="Recent Activity"
           footer={
@@ -856,21 +914,68 @@ export function Dashboard({
             </div>
           }
         >
-          <div className="space-y-4">
-            {recentActivities.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-start gap-3 pb-4 border-b border-border last:border-0 last:pb-0 cursor-default"
-              >
-                <div className="w-2 h-2 mt-2 bg-primary rounded-full" />
-                <div className="flex-1">
-                  <p className="text-card-foreground">{activity.text}</p>
+          <div className="space-y-3 pt-2">
+            {recentActivities.map((activity) => {
+              // Define colors and icons based on activity type
+              let iconBgColor = "bg-blue-50";
+              let iconColor = "text-blue-600";
+              let IconComponent = CheckCircle;
+              
+              if (activity.icon === "clock") {
+                iconBgColor = "bg-yellow-50";
+                iconColor = "text-yellow-600";
+                IconComponent = Clock;
+              } else if (activity.icon === "cancel") {
+                iconBgColor = "bg-red-50";
+                iconColor = "text-red-600";
+                IconComponent = Clock; // Using clock as placeholder for cancel icon
+              } else if (activity.icon === "itinerary") {
+                iconBgColor = "bg-purple-50";
+                iconColor = "text-purple-600";
+                IconComponent = MapPin;
+              } else if (activity.icon === "user") {
+                iconBgColor = "bg-green-50";
+                iconColor = "text-green-600";
+                IconComponent = Users;
+              } else if (activity.icon === "payment") {
+                iconBgColor = "bg-emerald-50";
+                iconColor = "text-emerald-600";
+                IconComponent = TrendingUp;
+              }
+
+              return (
+                <div
+                  key={activity.id}
+                  className="group rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] bg-white hover:shadow-md transition-all duration-200 p-3 cursor-pointer"
+                  onClick={() => navigate("/activity-log")}
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Smaller icon */}
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-lg ${iconBgColor} flex items-center justify-center`}>
+                      <IconComponent className={`w-4 h-4 ${iconColor}`} />
+                    </div>
+                    
+                    {/* Text centered vertically */}
+                    <div className="flex-1 min-w-0 flex items-center">
+                      <p className="text-sm font-medium text-[#1A2B4F] line-clamp-2">
+                        {activity.text}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  {activity.time}
-                </span>
+              );
+            })}
+            
+            {/* Empty state if no activities */}
+            {recentActivities.length === 0 && (
+              <div className="text-center py-6">
+                <div className="w-12 h-12 mx-auto rounded-xl bg-[#F8FAFB] flex items-center justify-center mb-3">
+                  <Clock className="w-6 h-6 text-[#94A3B8]" />
+                </div>
+                <p className="text-sm text-[#64748B] mb-2">No recent activity</p>
+                <p className="text-xs text-[#94A3B8]">Activity will appear here</p>
               </div>
-            ))}
+            )}
           </div>
         </ContentCard>
       </div>

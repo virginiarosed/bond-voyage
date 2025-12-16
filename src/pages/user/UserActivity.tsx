@@ -10,7 +10,7 @@ import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { toast } from "sonner@2.0.3";
 import { useProfile } from "../../components/ProfileContext";
-
+import { FAQAssistant } from "../../components/FAQAssistant";
 interface ActivityLogEntry {
   id: string;
   timestamp: Date;
@@ -510,6 +510,7 @@ export function UserActivity() {
           </div>
         )}
       </ContentCard>
+      <FAQAssistant />
     </div>
   );
 }

@@ -37,6 +37,16 @@ interface DayAnalysis {
   routeAnalysis: RouteAnalysis;
 }
 
+// Add MapInstance interface
+interface MapInstance {
+  map: any;
+  L: any;
+  originalMarkers: any[];
+  optimizedMarkers: any[];
+  originalPolyline: any;
+  optimizedPolyline: any;
+}
+
 // Philippine location coordinates
 const LOCATION_COORDS: { [key: string]: [number, number] } = {
   manila: [14.5995, 120.9842],
@@ -96,7 +106,8 @@ export function RouteOptimizationPanel({
   const [mapView, setMapView] = useState<"list" | "map">("list");
   const [showOriginalRoute, setShowOriginalRoute] = useState(true);
   const [showOptimizedRoute, setShowOptimizedRoute] = useState(true);
-  const mapRef = useRef<any>(null);
+  const [isMapLoading, setIsMapLoading] = useState(false);
+  const mapRef = useRef<MapInstance | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Get days with locations - memoized
@@ -269,20 +280,42 @@ export function RouteOptimizationPanel({
     if (!mapContainerRef.current || mapRef.current) return;
 
     try {
+      setIsMapLoading(true);
       const L = await import('leaflet');
       
-      const map = L.map(mapContainerRef.current).setView([12.8797, 121.7740], 6);
+      // Import Leaflet CSS dynamically
+      await import('leaflet/dist/leaflet.css');
+      
+      const map = L.map(mapContainerRef.current, {
+        preferCanvas: true,
+        zoomControl: true,
+      }).setView([12.8797, 121.7740], 6);
       
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 18,
       }).addTo(map);
 
-      mapRef.current = { map, L, originalMarkers: [], optimizedMarkers: [], originalPolyline: null, optimizedPolyline: null };
-      
-      setTimeout(() => updateMapRoutes(), 100);
+      mapRef.current = { 
+        map, 
+        L, 
+        originalMarkers: [], 
+        optimizedMarkers: [], 
+        originalPolyline: null, 
+        optimizedPolyline: null 
+      };
+
+      // Force map to resize and update
+      setTimeout(() => {
+        if (mapRef.current?.map) {
+          mapRef.current.map.invalidateSize();
+          updateMapRoutes();
+        }
+        setIsMapLoading(false);
+      }, 100);
     } catch (error) {
       console.error("Error initializing map:", error);
+      setIsMapLoading(false);
       toast.error("Map Error", {
         description: "Could not load map. Please try again.",
       });
@@ -291,18 +324,36 @@ export function RouteOptimizationPanel({
 
   // Update map with routes
   const updateMapRoutes = () => {
-    if (!mapRef.current || !activeTab) return;
+    if (!mapRef.current || !activeTab || !mapRef.current.map) {
+      console.log('Map not ready for update:', {
+        hasMapRef: !!mapRef.current,
+        activeTab,
+        hasMap: mapRef.current?.map
+      });
+      return;
+    }
 
-    const { map, L, originalMarkers, optimizedMarkers, originalPolyline, optimizedPolyline } = mapRef.current;
+    const { map, L } = mapRef.current;
     const analysis = dayAnalyses.get(activeTab);
     
-    if (!analysis) return;
+    if (!analysis) {
+      console.log('No analysis for active tab:', activeTab);
+      return;
+    }
 
-    originalMarkers.forEach((marker: any) => marker.remove());
-    optimizedMarkers.forEach((marker: any) => marker.remove());
-    if (originalPolyline) originalPolyline.remove();
-    if (optimizedPolyline) optimizedPolyline.remove();
+    // Clear existing layers
+    mapRef.current.originalMarkers?.forEach((marker: any) => marker.remove());
+    mapRef.current.optimizedMarkers?.forEach((marker: any) => marker.remove());
     
+    if (mapRef.current.originalPolyline) {
+      mapRef.current.originalPolyline.remove();
+    }
+    
+    if (mapRef.current.optimizedPolyline) {
+      mapRef.current.optimizedPolyline.remove();
+    }
+
+    // Reset references
     mapRef.current.originalMarkers = [];
     mapRef.current.optimizedMarkers = [];
     mapRef.current.originalPolyline = null;
@@ -414,14 +465,30 @@ export function RouteOptimizationPanel({
 
   // Initialize map when switching to map view
   useEffect(() => {
-    if (mapView === "map" && mapContainerRef.current && !mapRef.current) {
-      initializeMap();
-    }
-    
-    if (mapView === "map" && mapRef.current && activeTab) {
-      updateMapRoutes();
+    if (mapView === "map") {
+      if (!mapRef.current) {
+        initializeMap();
+      } else if (mapRef.current.map) {
+        // Ensure map is properly sized and updated
+        setTimeout(() => {
+          if (mapRef.current?.map) {
+            mapRef.current.map.invalidateSize();
+            updateMapRoutes();
+          }
+        }, 50);
+      }
     }
   }, [mapView, activeTab, dayAnalyses, showOriginalRoute, showOptimizedRoute]);
+
+  // Cleanup map on component unmount
+  useEffect(() => {
+    return () => {
+      if (mapRef.current?.map) {
+        mapRef.current.map.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
 
   const handleAcceptOptimization = (dayId: string) => {
     const analysis = dayAnalyses.get(dayId);
@@ -742,7 +809,7 @@ export function RouteOptimizationPanel({
                       className="w-full h-[450px] rounded-xl overflow-hidden border-2 border-[#E5E7EB]"
                       style={{ background: '#F8FAFB' }}
                     />
-                    {!mapRef.current && (
+                    {isMapLoading && (
                       <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-xl">
                         <div className="text-center">
                           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center mx-auto mb-2 animate-pulse">
@@ -754,7 +821,7 @@ export function RouteOptimizationPanel({
                     )}
                     
                     {/* Map Legend */}
-                    {mapRef.current && analysis.routeAnalysis.timeSaved > 0 && (
+                    {mapRef.current?.map && analysis.routeAnalysis.timeSaved > 0 && (
                       <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-[#E5E7EB] z-[1000]">
                         <p className="text-xs text-[#64748B] mb-2">Route Comparison</p>
                         {showOriginalRoute && (

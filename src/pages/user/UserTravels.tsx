@@ -22,6 +22,9 @@ import {
   X,
   Copy,
   Type,
+  AlertTriangle,
+  XCircle,
+  ChevronLeft,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ContentCard } from "../../components/ContentCard";
@@ -34,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { useBreadcrumbs } from "../../components/BreadcrumbContext";
 import { useBookings } from "../../components/BookingContext";
 import { toast } from "sonner@2.0.3";
+import { FAQAssistant } from "../../components/FAQAssistant";
 
 interface TravelPlan {
   id: string;
@@ -45,8 +49,7 @@ interface TravelPlan {
   bookingType: "Standard" | "Customized";
   ownership: "owned" | "collaborated" | "requested";
   owner: string;
-  collaborators: string[]
-;
+  collaborators: string[];
   createdOn: string;
   rejectionReason?: string;
   rejectionResolution?: string;
@@ -714,157 +717,6 @@ export function UserTravels() {
           },
         ],
       },
-      {
-        day: 3,
-        title: "Adventure & Relaxation",
-        activities: [
-          {
-            time: "7:00 AM",
-            icon: UtensilsCrossed,
-            title: "Breakfast",
-            description: "Healthy breakfast at resort",
-            location: "Resort",
-          },
-          {
-            time: "9:00 AM",
-            icon: Camera,
-            title: "Parasailing Adventure",
-            description: "Aerial view of Boracay",
-            location: "Bulabog Beach",
-          },
-          {
-            time: "11:00 AM",
-            icon: Camera,
-            title: "Helmet Diving",
-            description: "Underwater walking experience",
-            location: "Station 1",
-          },
-          {
-            time: "1:00 PM",
-            icon: UtensilsCrossed,
-            title: "Lunch",
-            description: "Beachside lunch buffet",
-            location: "White Beach",
-          },
-          {
-            time: "3:00 PM",
-            icon: Hotel,
-            title: "Spa & Massage",
-            description: "Relaxing massage therapy",
-            location: "Resort Spa",
-          },
-          {
-            time: "6:00 PM",
-            icon: Camera,
-            title: "Sunset Sailing",
-            description: "Traditional paraw sailing at sunset",
-            location: "White Beach",
-          },
-          {
-            time: "8:00 PM",
-            icon: UtensilsCrossed,
-            title: "Beach BBQ Dinner",
-            description: "Special beachfront barbecue",
-            location: "Resort Beach Area",
-          },
-        ],
-      },
-      {
-        day: 4,
-        title: "Cultural & Nature Tour",
-        activities: [
-          {
-            time: "8:00 AM",
-            icon: UtensilsCrossed,
-            title: "Breakfast",
-            description: "Continental breakfast",
-            location: "Resort",
-          },
-          {
-            time: "9:30 AM",
-            icon: Camera,
-            title: "Mt. Luho Viewpoint",
-            description: "Highest point in Boracay with panoramic views",
-            location: "Mt. Luho",
-          },
-          {
-            time: "11:00 AM",
-            icon: Camera,
-            title: "Motag Living Museum",
-            description: "Learn about local culture and traditions",
-            location: "Motag",
-          },
-          {
-            time: "1:00 PM",
-            icon: UtensilsCrossed,
-            title: "Local Lunch",
-            description: "Authentic Aklanon cuisine",
-            location: "Local Restaurant",
-          },
-          {
-            time: "3:00 PM",
-            icon: Camera,
-            title: "Puka Shell Beach",
-            description: "Quieter beach with puka shells",
-            location: "Puka Beach",
-          },
-          {
-            time: "6:00 PM",
-            icon: UtensilsCrossed,
-            title: "Farewell Dinner",
-            description: "Special dinner with live entertainment",
-            location: "D'Mall",
-          },
-          {
-            time: "9:00 PM",
-            icon: Camera,
-            title: "Night Beach Walk",
-            description: "Final stroll along White Beach",
-            location: "White Beach",
-          },
-        ],
-      },
-      {
-        day: 5,
-        title: "Departure Day",
-        activities: [
-          {
-            time: "7:00 AM",
-            icon: UtensilsCrossed,
-            title: "Breakfast",
-            description: "Last breakfast in paradise",
-            location: "Resort",
-          },
-          {
-            time: "9:00 AM",
-            icon: Camera,
-            title: "Final Beach Time",
-            description: "Last swim and photos",
-            location: "White Beach",
-          },
-          {
-            time: "11:00 AM",
-            icon: Hotel,
-            title: "Check-out",
-            description: "Resort check-out and departure prep",
-            location: "Resort",
-          },
-          {
-            time: "12:00 PM",
-            icon: Car,
-            title: "Ferry to Caticlan",
-            description: "Boat transfer back to mainland",
-            location: "Boracay Jetty Port",
-          },
-          {
-            time: "1:00 PM",
-            icon: Plane,
-            title: "Departure from Caticlan",
-            description: "End of island adventure",
-            location: "Caticlan Airport",
-          },
-        ],
-      },
     ],
     "BV-2025-007": [
       {
@@ -912,185 +764,6 @@ export function UserTravels() {
             title: "Welcome Dinner",
             description: "Vigan empanada and longganisa",
             location: "Plaza Burgos Food Park",
-          },
-        ],
-      },
-      {
-        day: 2,
-        title: "Heritage & Cultural Tour",
-        activities: [
-          {
-            time: "7:00 AM",
-            icon: UtensilsCrossed,
-            title: "Breakfast",
-            description: "Traditional Filipino breakfast",
-            location: "Hotel",
-          },
-          {
-            time: "8:30 AM",
-            icon: Camera,
-            title: "St. Paul's Cathedral",
-            description: "Visit UNESCO World Heritage church",
-            location: "Vigan City",
-          },
-          {
-            time: "9:30 AM",
-            icon: Camera,
-            title: "Crisologo Museum",
-            description: "Learn about Vigan's history",
-            location: "Crisologo Street",
-          },
-          {
-            time: "11:00 AM",
-            icon: Camera,
-            title: "Syquia Mansion",
-            description: "Historic ancestral house tour",
-            location: "Quirino Boulevard",
-          },
-          {
-            time: "12:30 PM",
-            icon: UtensilsCrossed,
-            title: "Lunch",
-            description: "Authentic Ilocano cuisine",
-            location: "Cafe Leona",
-          },
-          {
-            time: "2:00 PM",
-            icon: Camera,
-            title: "Pottery Making",
-            description: "Traditional Pagburnayan pottery experience",
-            location: "Pagburnayan District",
-          },
-          {
-            time: "4:00 PM",
-            icon: Camera,
-            title: "Bantay Bell Tower",
-            description: "Panoramic view of Vigan",
-            location: "Bantay, Ilocos Sur",
-          },
-          {
-            time: "6:00 PM",
-            icon: Camera,
-            title: "Calesa Ride",
-            description: "Horse-drawn carriage tour",
-            location: "Calle Crisologo",
-          },
-          {
-            time: "7:30 PM",
-            icon: UtensilsCrossed,
-            title: "Dinner",
-            description: "Heritage house dining",
-            location: "Uno Grille",
-          },
-        ],
-      },
-      {
-        day: 3,
-        title: "Crafts & Markets",
-        activities: [
-          {
-            time: "7:00 AM",
-            icon: UtensilsCrossed,
-            title: "Breakfast",
-            description: "Local delicacies breakfast",
-            location: "Hotel",
-          },
-          {
-            time: "8:00 AM",
-            icon: Camera,
-            title: "Abel Weaving",
-            description: "Traditional hand-loom weaving demonstration",
-            location: "Cristy Loom Weaving",
-          },
-          {
-            time: "10:00 AM",
-            icon: Camera,
-            title: "Vigan Market",
-            description: "Shop for local products and souvenirs",
-            location: "Public Market",
-          },
-          {
-            time: "12:00 PM",
-            icon: UtensilsCrossed,
-            title: "Lunch",
-            description: "Bagnet and pinakbet special",
-            location: "Hidden Garden",
-          },
-          {
-            time: "2:00 PM",
-            icon: Camera,
-            title: "Baluarte Zoo",
-            description: "Wildlife and animal encounter",
-            location: "Baluarte",
-          },
-          {
-            time: "4:30 PM",
-            icon: Camera,
-            title: "Mindoro Beach",
-            description: "Coastal beach visit",
-            location: "Mindoro Beach",
-          },
-          {
-            time: "7:00 PM",
-            icon: UtensilsCrossed,
-            title: "Farewell Dinner",
-            description: "Special Ilocano feast",
-            location: "Kusina Felicitas",
-          },
-        ],
-      },
-      {
-        day: 4,
-        title: "Final Exploration",
-        activities: [
-          {
-            time: "7:00 AM",
-            icon: UtensilsCrossed,
-            title: "Breakfast",
-            description: "Last Vigan breakfast",
-            location: "Hotel",
-          },
-          {
-            time: "8:30 AM",
-            icon: Camera,
-            title: "Vigan Public Cemetery",
-            description: "Historic colonial-era cemetery",
-            location: "Vigan City",
-          },
-          {
-            time: "10:00 AM",
-            icon: Camera,
-            title: "Last Minute Shopping",
-            description: "Final souvenir purchases",
-            location: "Calle Crisologo",
-          },
-          {
-            time: "12:00 PM",
-            icon: UtensilsCrossed,
-            title: "Lunch",
-            description: "Last taste of Ilocano food",
-            location: "Lampong's Restaurant",
-          },
-          {
-            time: "2:00 PM",
-            icon: Hotel,
-            title: "Check-out",
-            description: "Hotel checkout and preparation",
-            location: "Hotel",
-          },
-          {
-            time: "3:00 PM",
-            icon: Car,
-            title: "Departure to Manila",
-            description: "Bus ride back to Manila",
-            location: "Vigan",
-          },
-          {
-            time: "9:00 PM",
-            icon: Plane,
-            title: "Arrival in Manila",
-            description: "End of heritage tour",
-            location: "Manila",
           },
         ],
       },
@@ -1496,11 +1169,311 @@ export function UserTravels() {
       "Rejected Bookings";
     
     const isOwner = selectedBooking.owner === currentUser;
+    const currentResolutionStatus = travelResolutionStatus[selectedBooking.id] || selectedBooking.resolutionStatus;
 
     // Get itinerary - check if it's from context first (has itinerary property), otherwise use mock data
     const travelInContext = userTravels.find(t => t.id === selectedBookingId);
     const itinerary = travelInContext?.itinerary || itineraryData[selectedBooking.id] || [];
 
+    // Render detail view manually instead of using BookingDetailView
+    if (selectedTab === "rejected") {
+      return (
+        <>
+          <style>{`
+            @keyframes highlight {
+              0%, 100% {
+                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                transform: scale(1);
+              }
+              50% {
+                box-shadow: 0 0 0 3px rgba(255,107,107,0.3), 0 4px 6px rgba(255,107,107,0.1);
+                transform: scale(1.005);
+              }
+            }
+            
+            .highlight-animation {
+              animation: highlight 2s ease-in-out;
+              border-radius: 1rem;
+            }
+          `}</style>
+          
+          <div className="space-y-6">
+            {/* Header with back button */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleBackToList}
+                className="w-10 h-10 rounded-xl bg-white border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] flex items-center justify-center transition-all"
+              >
+                <ChevronLeft className="w-5 h-5 text-[#64748B]" />
+              </button>
+              <div>
+                <h2 className="text-[#1A2B4F] font-semibold">{selectedBooking.destination}</h2>
+              </div>
+            </div>
+            
+            {/* Booking Header Card */}
+            <div className="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] rounded-2xl p-8 text-white shadow-lg">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-3xl font-semibold">{selectedBooking.destination}</h1>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/90">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-lg">{selectedBooking.destination}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-white/80 text-sm mb-1">Booking ID</p>
+                  <p className="text-2xl font-semibold">{selectedBooking.id}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <Calendar className="w-5 h-5 mb-2 text-white/80" />
+                  <p className="text-white/80 text-xs mb-1">Travel Dates</p>
+                  <p className="font-medium">{selectedBooking.dates}</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <Users className="w-5 h-5 mb-2 text-white/80" />
+                  <p className="text-white/80 text-xs mb-1">Travelers</p>
+                  <p className="font-medium">
+                    {selectedBooking.travelers} {selectedBooking.travelers > 1 ? "People" : "Person"}
+                  </p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <BookOpen className="w-5 h-5 mb-2 text-white/80" />
+                  <p className="text-white/80 text-xs mb-1">Budget</p>
+                  <p className="font-medium">{selectedBooking.budget}</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <Calendar className="w-5 h-5 mb-2 text-white/80" />
+                  <p className="text-white/80 text-xs mb-1">Created On</p>
+                  <p className="font-medium">{selectedBooking.createdOn}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-6">
+              {/* Left Column - Customer Info & Rejection Details */}
+              <div className="space-y-6">
+                {/* Customer Information */}
+                <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
+                  <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                        <Users className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-[#1A2B4F]">Customer Information</h3>
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <p className="text-xs text-[#64748B] mb-1">Full Name</p>
+                      <p className="text-[#1A2B4F] font-medium">{selectedBooking.owner}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#64748B] mb-1">Collaborators</p>
+                      <p className="text-[#334155]">
+                        {selectedBooking.collaborators.length > 0 
+                          ? selectedBooking.collaborators.join(", ")
+                          : "No collaborators"
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#64748B] mb-1">Booking Type</p>
+                      <p className="text-[#334155]">{selectedBooking.bookingType}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#64748B] mb-1">Ownership</p>
+                      <p className="text-[#334155]">
+                        {selectedBooking.ownership === "owned" ? "Owned" : 
+                         selectedBooking.ownership === "collaborated" ? "Collaborated" : "Requested"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rejection Details Section - BELOW Customer Information */}
+                {selectedBooking.rejectionReason && selectedBooking.rejectionResolution && (
+                  <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
+                    <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[rgba(255,107,107,0.05)] to-white">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+                          <AlertTriangle className="w-5 h-5 text-white" />
+                        </div>
+                        <h3 className="font-semibold text-[#FF6B6B]">Rejection Details</h3>
+                      </div>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Rejection Reason:</p>
+                        <p className="text-sm text-[#334155]">{selectedBooking.rejectionReason}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Required Action:</p>
+                        <p className="text-sm text-[#334155]">{selectedBooking.rejectionResolution}</p>
+                      </div>
+                      <div className="flex items-center justify-between pt-3 border-t border-[#E5E7EB]">
+                        <p className="text-xs font-semibold text-[#64748B]">Action Status:</p>
+                        {currentResolutionStatus === "resolved" ? (
+                          <button
+                            onClick={() => handleMarkAsUnresolved(selectedBooking.id)}
+                            className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)] hover:bg-[rgba(16,185,129,0.15)] transition-all"
+                          >
+                            <CheckCircle className="w-3 h-3 inline mr-1" />
+                            Resolved - Click to mark Unresolved
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleMarkAsResolved(selectedBooking.id)}
+                            className="px-3 py-1.5 rounded-lg bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)] hover:bg-[rgba(255,152,0,0.15)] transition-all"
+                          >
+                            <AlertTriangle className="w-3 h-3 inline mr-1" />
+                            Unresolved - Click to mark Resolved
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 space-y-3">
+                  {currentResolutionStatus === "unresolved" && isOwner && (
+                    <button
+                      onClick={handleEditBooking}
+                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit Booking
+                    </button>
+                  )}
+                  <button
+                    onClick={handleBackToList}
+                    className="w-full h-11 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-[#334155] font-medium transition-all"
+                  >
+                    Back to List
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Column - Itinerary */}
+              <div className="col-span-2">
+                <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
+                  <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8B5CF6] to-[#A78BFA] flex items-center justify-center shadow-lg shadow-[#8B5CF6]/20">
+                        <Calendar className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-[#1A2B4F]">Travel Itinerary</h3>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    {itinerary.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Calendar className="w-16 h-16 text-[#E5E7EB] mx-auto mb-4" />
+                        <p className="text-[#64748B]">No itinerary details available</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {itinerary.map((day) => (
+                          <div key={day.day} className="border border-[#E5E7EB] rounded-xl overflow-hidden">
+                            <div className="p-4 bg-gradient-to-r from-[#F8FAFB] to-white border-b border-[#E5E7EB]">
+                              <h4 className="font-semibold text-[#1A2B4F]">
+                                Day {day.day}: {day.title}
+                              </h4>
+                            </div>
+                            <div className="p-4 space-y-4">
+                              {day.activities.map((activity: any, index: number) => {
+                                const IconComponent = activity.icon || Clock;
+                                return (
+                                  <div key={index} className="flex gap-4">
+                                    <div className="flex-shrink-0">
+                                      <div className="w-10 h-10 rounded-lg bg-[rgba(10,122,255,0.1)] border border-[rgba(10,122,255,0.2)] flex items-center justify-center">
+                                        <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
+                                      </div>
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <p className="font-medium text-[#1A2B4F]">{activity.title}</p>
+                                        <p className="text-sm text-[#64748B]">{activity.time}</p>
+                                      </div>
+                                      <p className="text-sm text-[#64748B] mb-1">{activity.description}</p>
+                                      {activity.location && (
+                                        <div className="flex items-center gap-1 text-xs text-[#0A7AFF]">
+                                          <MapPin className="w-3 h-3" />
+                                          <span>{activity.location}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Delete Customized Booking Confirmation Modal */}
+            <ConfirmationModal
+              open={showDeleteConfirmModal}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setShowDeleteConfirmModal(false);
+                }
+              }}
+              title="Delete Customized Booking"
+              description="Are you sure you want to delete this customized booking? This action cannot be undone."
+              icon={<Trash2 className="w-5 h-5 text-white" />}
+              iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
+              iconShadow="shadow-[#FF6B6B]/30"
+              contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.05)] to-[rgba(255,82,82,0.05)]"
+              contentBorder="border-[rgba(255,107,107,0.2)]"
+              content={
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                    <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Customer:</span>
+                    <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
+                      {selectedBooking.owner}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                    <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Booking Type:</span>
+                    <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
+                      {selectedBooking.bookingType}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                    <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Destination:</span>
+                    <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
+                      {selectedBooking.destination}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8] pt-2">
+                    This will permanently remove the customized booking from your list.
+                  </p>
+                </div>
+              }
+              onConfirm={handleConfirmDelete}
+              onCancel={() => setShowDeleteConfirmModal(false)}
+              confirmText="Delete Booking"
+              cancelText="Cancel"
+              confirmVariant="destructive"
+            />
+          </div>
+        </>
+      );
+    }
+
+    // For non-rejected bookings, use the BookingDetailView
     return (
       <>
         <BookingDetailView
@@ -1514,9 +1487,7 @@ export function UserTravels() {
             travelers: selectedBooking.travelers,
             total: selectedBooking.budget,
             bookedDate: selectedBooking.createdOn,
-            rejectionReason: selectedBooking.rejectionReason,
-            rejectionResolution: selectedBooking.rejectionResolution,
-            resolutionStatus: travelResolutionStatus[selectedBooking.id] || selectedBooking.resolutionStatus,
+            resolutionStatus: currentResolutionStatus,
           }}
           itinerary={itinerary}
           onBack={handleBackToList}
@@ -1530,171 +1501,144 @@ export function UserTravels() {
           actionButtons={
             selectedTab === "pending" ? undefined : (
               <>
-                {selectedTab === "rejected" ? (
-                  <>
-                    {(travelResolutionStatus[selectedBooking.id] || selectedBooking.resolutionStatus) === "unresolved" && (
-                      <>
-                        {isOwner && (
-                          <button
-                            onClick={handleEditBooking}
-                            className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Edit Booking
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleMarkAsResolved(selectedBooking.id)}
-                          className="w-full px-6 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Mark as Resolved
-                        </button>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {/* Conversation Section for Requested Bookings */}
-                    {selectedBooking.ownership === "requested" && (
-                      <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden mb-3">
-                        <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                              <Send className="w-5 h-5 text-white" />
-                            </div>
-                            <h3 className="font-semibold text-[#1A2B4F]">Conversation</h3>
-                          </div>
+                {/* Conversation Section for Requested Bookings */}
+                {selectedBooking.ownership === "requested" && (
+                  <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden mb-3">
+                    <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                          <Send className="w-5 h-5 text-white" />
                         </div>
-                        <div className="p-6">
-                          <div className="space-y-3 p-4 bg-accent/50 rounded-xl max-h-64 overflow-y-auto mb-4">
-                            {(conversations[selectedBooking.id] || []).length === 0 ? (
-                              <div className="text-center py-8 text-muted-foreground text-sm">
-                                No messages yet. Start the conversation!
-                              </div>
-                            ) : (
-                              (conversations[selectedBooking.id] || []).map((msg, index) => (
-                                <div key={index} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-                                  <div className={`max-w-[75%] p-4 rounded-xl shadow-sm ${
-                                    msg.sender === "user" 
-                                      ? "bg-primary text-primary-foreground" 
-                                      : "bg-card border border-border"
-                                  }`}>
-                                    <p className="text-sm leading-relaxed">{msg.message}</p>
-                                    <p className={`text-xs mt-2 ${msg.sender === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                                      {msg.time}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              placeholder="Type your message..."
-                              value={currentMessage[selectedBooking.id] || ""}
-                              onChange={(e) => setCurrentMessage({ ...currentMessage, [selectedBooking.id]: e.target.value })}
-                              onKeyPress={(e) => {
-                                if (e.key === "Enter" && currentMessage[selectedBooking.id]?.trim()) {
-                                  const newMsg = {
-                                    sender: "user" as const,
-                                    message: currentMessage[selectedBooking.id].trim(),
-                                    time: new Date().toLocaleString("en-US", {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    }),
-                                  };
-                                  setConversations({
-                                    ...conversations,
-                                    [selectedBooking.id]: [...(conversations[selectedBooking.id] || []), newMsg],
-                                  });
-                                  setCurrentMessage({ ...currentMessage, [selectedBooking.id]: "" });
-                                  toast.success("Message sent!", {
-                                    description: "Your message has been sent to the admin."
-                                  });
-                                }
-                              }}
-                              className="flex-1 px-4 py-3 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                            />
-                            <button
-                              onClick={() => {
-                                if (currentMessage[selectedBooking.id]?.trim()) {
-                                  const newMsg = {
-                                    sender: "user" as const,
-                                    message: currentMessage[selectedBooking.id].trim(),
-                                    time: new Date().toLocaleString("en-US", {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    }),
-                                  };
-                                  setConversations({
-                                    ...conversations,
-                                    [selectedBooking.id]: [...(conversations[selectedBooking.id] || []), newMsg],
-                                  });
-                                  setCurrentMessage({ ...currentMessage, [selectedBooking.id]: "" });
-                                  toast.success("Message sent!", {
-                                    description: "Your message has been sent to the admin."
-                                  });
-                                }
-                              }}
-                              className="px-5 py-3 rounded-xl transition-all shadow-md hover:shadow-lg bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
-                            >
-                              <Send className="w-5 h-5" strokeWidth={2} />
-                            </button>
-                          </div>
-                        </div>
+                        <h3 className="font-semibold text-[#1A2B4F]">Conversation</h3>
                       </div>
-                    )}
+                    </div>
+                    <div className="p-6">
+                      <div className="space-y-3 p-4 bg-accent/50 rounded-xl max-h-64 overflow-y-auto mb-4">
+                        {(conversations[selectedBooking.id] || []).length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            No messages yet. Start the conversation!
+                          </div>
+                        ) : (
+                          (conversations[selectedBooking.id] || []).map((msg, index) => (
+                            <div key={index} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                              <div className={`max-w-[75%] p-4 rounded-xl shadow-sm ${
+                                msg.sender === "user" 
+                                  ? "bg-primary text-primary-foreground" 
+                                  : "bg-card border border-border"
+                              }`}>
+                                <p className="text-sm leading-relaxed">{msg.message}</p>
+                                <p className={`text-xs mt-2 ${msg.sender === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                                  {msg.time}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Type your message..."
+                          value={currentMessage[selectedBooking.id] || ""}
+                          onChange={(e) => setCurrentMessage({ ...currentMessage, [selectedBooking.id]: e.target.value })}
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter" && currentMessage[selectedBooking.id]?.trim()) {
+                              const newMsg = {
+                                sender: "user" as const,
+                                message: currentMessage[selectedBooking.id].trim(),
+                                time: new Date().toLocaleString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                }),
+                              };
+                              setConversations({
+                                ...conversations,
+                                [selectedBooking.id]: [...(conversations[selectedBooking.id] || []), newMsg],
+                              });
+                              setCurrentMessage({ ...currentMessage, [selectedBooking.id]: "" });
+                              toast.success("Message sent!", {
+                                description: "Your message has been sent to the admin."
+                              });
+                            }
+                          }}
+                          className="flex-1 px-4 py-3 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                        />
+                        <button
+                          onClick={() => {
+                            if (currentMessage[selectedBooking.id]?.trim()) {
+                              const newMsg = {
+                                sender: "user" as const,
+                                message: currentMessage[selectedBooking.id].trim(),
+                                time: new Date().toLocaleString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                }),
+                              };
+                              setConversations({
+                                ...conversations,
+                                [selectedBooking.id]: [...(conversations[selectedBooking.id] || []), newMsg],
+                              });
+                              setCurrentMessage({ ...currentMessage, [selectedBooking.id]: "" });
+                              toast.success("Message sent!", {
+                                description: "Your message has been sent to the admin."
+                              });
+                            }
+                          }}
+                          className="px-5 py-3 rounded-xl transition-all shadow-md hover:shadow-lg bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
+                        >
+                          <Send className="w-5 h-5" strokeWidth={2} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                    {/* Action Buttons */}
-                    {/* Confirm button for requested + unconfirmed bookings */}
-                    {selectedBooking.ownership === "requested" && selectedBooking.confirmationStatus === "unconfirmed" && (
-                      <button
-                        onClick={() => setShowConfirmStatusModal(true)}
-                        className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        Confirm Booking
-                      </button>
-                    )}
-                    {isOwner && (
-                      <button
-                        onClick={handleBookThisTrip}
-                        className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
-                      >
-                        <BookOpen className="w-4 h-4" />
-                        Book This Trip
-                      </button>
-                    )}
-                    {/* Only show Edit Booking button if NOT a requested booking OR if requested but no confirmation status */}
-                    {!(selectedBooking.ownership === "requested" && (selectedBooking.confirmationStatus === "unconfirmed" || selectedBooking.confirmationStatus === "confirmed")) && (
-                      <button
-                        onClick={handleEditBooking}
-                        className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
-                      >
-                        <Edit className="w-4 h-4" />
-                        Edit Booking
-                      </button>
-                    )}
-                    {isOwner && (
-                      <button
-                        onClick={handleDeleteBooking}
-                        className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete Booking
-                      </button>
-                    )}
-                  </>
+                {/* Action Buttons */}
+                {/* Confirm button for requested + unconfirmed bookings */}
+                {selectedBooking.ownership === "requested" && selectedBooking.confirmationStatus === "unconfirmed" && (
+                  <button
+                    onClick={() => setShowConfirmStatusModal(true)}
+                    className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Confirm Booking
+                  </button>
+                )}
+                {isOwner && (
+                  <button
+                    onClick={handleBookThisTrip}
+                    className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    Book This Trip
+                  </button>
+                )}
+                {/* Only show Edit Booking button if NOT a requested booking OR if requested but no confirmation status */}
+                {!(selectedBooking.ownership === "requested" && (selectedBooking.confirmationStatus === "unconfirmed" || selectedBooking.confirmationStatus === "confirmed")) && (
+                  <button
+                    onClick={handleEditBooking}
+                    className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Booking
+                  </button>
+                )}
+                {isOwner && (
+                  <button
+                    onClick={handleDeleteBooking}
+                    className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Booking
+                  </button>
                 )}
               </>
             )
@@ -2063,15 +2007,11 @@ export function UserTravels() {
                         travelers: travel.travelers,
                         total: travel.budget,
                         bookedDate: travel.createdOn,
-                        rejectionReason: travel.rejectionReason,
-                        rejectionResolution: travel.rejectionResolution,
                         resolutionStatus: currentResolutionStatus,
                       }}
                       onViewDetails={handleViewDetails}
                       onShare={selectedTab === "in-progress" ? handleShareBooking : undefined}
                       variant={travel.status === "rejected" ? "rejected" : "default"}
-                      onMarkAsResolved={handleMarkAsResolved}
-                      onMarkAsUnresolved={handleMarkAsUnresolved}
                       userSide={true}
                       additionalBadges={
                         <>
@@ -2462,6 +2402,7 @@ export function UserTravels() {
           </div>
         </DialogContent>
       </Dialog>
+      <FAQAssistant />
     </div>
   );
 }

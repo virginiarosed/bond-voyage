@@ -22,6 +22,7 @@ import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { Checkbox } from "../../components/ui/checkbox";
 import { toast } from "sonner@2.0.3";
+import { FAQAssistant } from "../../components/FAQAssistant";
 
 type NotificationType = 
   | "booking_confirmed" 
@@ -660,6 +661,7 @@ export function UserNotifications() {
         confirmVariant="destructive"
         onConfirm={handleConfirmDelete}
       />
+      <FAQAssistant />
     </div>
   );
 }

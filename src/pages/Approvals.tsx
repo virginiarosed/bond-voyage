@@ -911,7 +911,7 @@ const getFilteredBookings = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-6">
-            {/* Left Column - Customer Info */}
+            {/* Left Column - Customer Info & Rejection Details */}
             <div className="space-y-6">
               {/* Customer Information */}
               <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
@@ -944,6 +944,52 @@ const getFilteredBookings = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Rejection Info for Rejected Bookings - MOVED TO HERE */}
+              {activeTab === "rejected" &&
+                currentBooking.rejectionReason &&
+                currentBooking.rejectionResolution && (
+                  <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
+                    <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[rgba(255,107,107,0.05)] to-white">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+                          <AlertTriangle className="w-5 h-5 text-white" />
+                        </div>
+                        <h3 className="font-semibold text-[#FF6B6B]">Rejection Details</h3>
+                      </div>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Rejection Reason:</p>
+                        <p className="text-sm text-[#334155]">{currentBooking.rejectionReason}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Required Action:</p>
+                        <p className="text-sm text-[#334155]">{currentBooking.rejectionResolution}</p>
+                      </div>
+                      <div className="flex items-center justify-between pt-3 border-t border-[#E5E7EB]">
+                        <p className="text-xs font-semibold text-[#64748B]">Client Action Status:</p>
+                        {currentBooking.resolutionStatus === "resolved" ? (
+                          <button
+                            onClick={() => handleMarkAsUnresolvedClick(currentBooking)}
+                            className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)] hover:bg-[rgba(16,185,129,0.15)] transition-all"
+                          >
+                            <CheckCircle className="w-3 h-3 inline mr-1" />
+                            Resolved - Click to mark Unresolved
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleMarkAsResolved(currentBooking.id)}
+                            className="px-3 py-1.5 rounded-lg bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)] hover:bg-[rgba(255,152,0,0.15)] transition-all"
+                          >
+                            <AlertTriangle className="w-3 h-3 inline mr-1" />
+                            Unresolved - Click to mark Resolved
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               {/* Actions */}
               <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 space-y-3">
@@ -989,52 +1035,6 @@ const getFilteredBookings = () => {
             </div>
           </div>
 
-          {/* Rejection Info for Rejected Bookings */}
-          {activeTab === "rejected" &&
-            currentBooking.rejectionReason &&
-            currentBooking.rejectionResolution && (
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
-                <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[rgba(255,107,107,0.05)] to-white">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
-                      <AlertTriangle className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#FF6B6B]">Rejection Details</h3>
-                  </div>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Rejection Reason:</p>
-                    <p className="text-sm text-[#334155]">{currentBooking.rejectionReason}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Required Action:</p>
-                    <p className="text-sm text-[#334155]">{currentBooking.rejectionResolution}</p>
-                  </div>
-                  <div className="flex items-center justify-between pt-3 border-t border-[#E5E7EB]">
-                    <p className="text-xs font-semibold text-[#64748B]">Client Action Status:</p>
-                    {currentBooking.resolutionStatus === "resolved" ? (
-                      <button
-                        onClick={() => handleMarkAsUnresolvedClick(currentBooking)}
-                        className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)] hover:bg-[rgba(16,185,129,0.15)] transition-all"
-                      >
-                        <CheckCircle className="w-3 h-3 inline mr-1" />
-                        Resolved - Click to mark Unresolved
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleMarkAsResolved(currentBooking.id)}
-                        className="px-3 py-1.5 rounded-lg bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)] hover:bg-[rgba(255,152,0,0.15)] transition-all"
-                      >
-                        <AlertTriangle className="w-3 h-3 inline mr-1" />
-                        Unresolved - Click to mark Resolved
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          
           {/* Approve Dialog */}
           <ConfirmationModal
             open={isApproveDialogOpen}
@@ -1347,8 +1347,9 @@ const getFilteredBookings = () => {
                       travelers: booking.travelers,
                       total: booking.total,
                       bookedDate: booking.bookedDate,
-                      rejectionReason: booking.rejectionReason,
-                      rejectionResolution: booking.rejectionResolution,
+                      // REMOVED: rejectionReason and rejectionResolution from being passed
+                      // rejectionReason: booking.rejectionReason,
+                      // rejectionResolution: booking.rejectionResolution,
                       resolutionStatus: booking.resolutionStatus,
                       statusBadges: (
                         <>

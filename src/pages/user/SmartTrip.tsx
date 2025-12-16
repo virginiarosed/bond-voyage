@@ -1,10 +1,28 @@
 import { useState } from "react";
-import { Sparkles, MapPin, Calendar, Users, Heart, Utensils, Camera, Waves, Mountain, Palmtree, Loader2, Check, Plane, Hotel, Car, AlertTriangle } from "lucide-react";
+import {
+  Sparkles,
+  MapPin,
+  Calendar,
+  Users,
+  Heart,
+  Utensils,
+  Camera,
+  Waves,
+  Mountain,
+  Palmtree,
+  Loader2,
+  Check,
+  Plane,
+  Hotel,
+  Car,
+  AlertTriangle,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ContentCard } from "../../components/ContentCard";
 import { toast } from "sonner@2.0.3";
 import { useBookings } from "../../components/BookingContext";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { FAQAssistant } from "../../components/FAQAssistant";
 
 export function SmartTrip() {
   const navigate = useNavigate();
@@ -23,10 +41,8 @@ export function SmartTrip() {
     budget: "",
     preferences: [] as string[],
     accommodationType: "hotel",
-    travelPace: ""
+    travelPace: "",
   });
-
-
 
   const preferenceOptions = [
     { id: "beach", label: "Beach & Islands", icon: Waves },
@@ -34,22 +50,25 @@ export function SmartTrip() {
     { id: "culture", label: "Culture & Heritage", icon: Camera },
     { id: "food", label: "Food & Cuisine", icon: Utensils },
     { id: "adventure", label: "Adventure Sports", icon: Palmtree },
-    { id: "relaxation", label: "Relaxation & Spa", icon: Heart }
+    { id: "relaxation", label: "Relaxation & Spa", icon: Heart },
   ];
 
   const handlePreferenceToggle = (id: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       preferences: prev.preferences.includes(id)
-        ? prev.preferences.filter(p => p !== id)
-        : [...prev.preferences, id]
+        ? prev.preferences.filter((p) => p !== id)
+        : [...prev.preferences, id],
     }));
   };
 
   const calculateDaysAndNights = (start: string, end: string) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
-    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const days =
+      Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      ) + 1;
     const nights = days - 1;
     return { days, nights };
   };
@@ -57,12 +76,20 @@ export function SmartTrip() {
   const handleSaveToTravels = () => {
     // Generate unique ID
     const newTripId = `TP-${Date.now().toString().slice(-6)}`;
-    
+
     // Calculate date range string
     const startDate = new Date(formData.startDate);
     const endDate = new Date(formData.endDate);
-    const dateRange = `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} – ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
-    
+    const dateRange = `${startDate.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })} – ${endDate.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })}`;
+
     // Create new travel with full itinerary structure
     const newTravel = {
       id: newTripId,
@@ -70,34 +97,40 @@ export function SmartTrip() {
       startDate: formData.startDate,
       endDate: formData.endDate,
       travelers: parseInt(formData.travelers),
-      budget: formData.budget ? `₱${parseInt(formData.budget).toLocaleString()}` : generatedTrip?.totalCost || "₱0",
+      budget: formData.budget
+        ? `₱${parseInt(formData.budget).toLocaleString()}`
+        : generatedTrip?.totalCost || "₱0",
       status: "in-progress" as const,
       bookingType: "Customized" as const,
       bookingSource: "Generated" as const,
       ownership: "owned" as const,
       owner: "Maria Santos",
       collaborators: [],
-      createdOn: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      createdOn: new Date().toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
       itinerary: generatedTrip?.itinerary || [],
     };
-    
+
     // Add to context
     addUserTravel(newTravel);
-    
+
     // Store the ID for navigation
     setSavedTripId(newTripId);
-    
+
     toast.success("Trip saved to your travels!", {
-      description: "Redirecting to In Progress tab..."
+      description: "Redirecting to In Progress tab...",
     });
-    
+
     // Navigate to UserTravels after a short delay
     setTimeout(() => {
-      navigate("/user/travels", { state: { scrollToId: newTripId, tab: "in-progress" } });
+      navigate("/user/travels", {
+        state: { scrollToId: newTripId, tab: "in-progress" },
+      });
     }, 800);
   };
-
-
 
   const handleGenerate = () => {
     if (!formData.destination || !formData.startDate || !formData.endDate) {
@@ -105,15 +138,18 @@ export function SmartTrip() {
       return;
     }
 
-    const { days, nights } = calculateDaysAndNights(formData.startDate, formData.endDate);
+    const { days, nights } = calculateDaysAndNights(
+      formData.startDate,
+      formData.endDate
+    );
 
     setIsGenerating(true);
-    
+
     setTimeout(() => {
       // Generate itinerary based on calculated days
       const generatedItinerary = Array.from({ length: days }, (_, index) => {
         const dayNum = index + 1;
-        
+
         if (dayNum === 1) {
           return {
             day: dayNum,
@@ -153,8 +189,8 @@ export function SmartTrip() {
                 title: "Welcome Dinner",
                 description: "Fresh seafood at local restaurant",
                 location: "Seaside Restaurant",
-              }
-            ]
+              },
+            ],
           };
         } else if (dayNum === days) {
           return {
@@ -181,8 +217,8 @@ export function SmartTrip() {
                 title: "Airport Transfer",
                 description: "Transfer to airport for departure",
                 location: "Airport",
-              }
-            ]
+              },
+            ],
           };
         } else if (dayNum === 2) {
           return {
@@ -223,8 +259,8 @@ export function SmartTrip() {
                 title: "Sunset Viewing Point",
                 description: "Panoramic sunset view",
                 location: "Hilltop Viewpoint",
-              }
-            ]
+              },
+            ],
           };
         } else if (dayNum === 3) {
           return {
@@ -258,8 +294,8 @@ export function SmartTrip() {
                 title: "Night Market Exploration",
                 description: "Browse local crafts and street food",
                 location: "Night Market",
-              }
-            ]
+              },
+            ],
           };
         } else {
           return {
@@ -293,26 +329,27 @@ export function SmartTrip() {
                 title: "Fine Dining Experience",
                 description: "Gourmet dinner at resort restaurant",
                 location: "Fine Dining Restaurant",
-              }
-            ]
+              },
+            ],
           };
         }
       });
-      
 
       setGeneratedTrip({
         title: `${formData.destination}`,
-        duration: `${days} ${days > 1 ? 'Days' : 'Day'}, ${nights} ${nights > 1 ? 'Nights' : 'Night'}`,
+        duration: `${days} ${days > 1 ? "Days" : "Day"}, ${nights} ${
+          nights > 1 ? "Nights" : "Night"
+        }`,
         totalCost: "₱" + (parseInt(formData.budget) || 45000).toLocaleString(),
         itinerary: generatedItinerary,
         inclusions: [
-          `${nights} ${nights > 1 ? 'nights' : 'night'} accommodation`,
+          `${nights} ${nights > 1 ? "nights" : "night"} accommodation`,
           "Daily breakfast",
           "Airport transfers",
           "Island hopping tour",
           "Entrance fees",
-          "Tour guide services"
-        ]
+          "Tour guide services",
+        ],
       });
       setIsGenerating(false);
       setStep(2);
@@ -331,7 +368,7 @@ export function SmartTrip() {
       budget: "",
       preferences: [],
       accommodationType: "hotel",
-      travelPace: ""
+      travelPace: "",
     });
   };
 
@@ -347,12 +384,17 @@ export function SmartTrip() {
                   Destination <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" strokeWidth={2} />
+                  <MapPin
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
+                    strokeWidth={2}
+                  />
                   <input
                     type="text"
                     placeholder="e.g., Palawan, Boracay, Cebu"
                     value={formData.destination}
-                    onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, destination: e.target.value })
+                    }
                     className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                   />
                 </div>
@@ -363,12 +405,16 @@ export function SmartTrip() {
                   Budget (PHP)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₱</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    ₱
+                  </span>
                   <input
                     type="number"
                     placeholder="Total budget for all travelers"
                     value={formData.budget}
-                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, budget: e.target.value })
+                    }
                     className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                   />
                 </div>
@@ -379,11 +425,16 @@ export function SmartTrip() {
                   Start Date <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" strokeWidth={2} />
+                  <Calendar
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
+                    strokeWidth={2}
+                  />
                   <input
                     type="date"
                     value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, startDate: e.target.value })
+                    }
                     className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                   />
                 </div>
@@ -394,11 +445,16 @@ export function SmartTrip() {
                   End Date <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" strokeWidth={2} />
+                  <Calendar
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
+                    strokeWidth={2}
+                  />
                   <input
                     type="date"
                     value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, endDate: e.target.value })
+                    }
                     className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                   />
                 </div>
@@ -409,13 +465,18 @@ export function SmartTrip() {
                   Number of Travelers
                 </label>
                 <div className="relative">
-                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" strokeWidth={2} />
+                  <Users
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
+                    strokeWidth={2}
+                  />
                   <input
                     type="number"
                     min="1"
                     placeholder="e.g., 2"
                     value={formData.travelers}
-                    onChange={(e) => setFormData({ ...formData, travelers: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, travelers: e.target.value })
+                    }
                     className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                   />
                 </div>
@@ -427,12 +488,16 @@ export function SmartTrip() {
                 </label>
                 <select
                   value={formData.travelPace}
-                  onChange={(e) => setFormData({ ...formData, travelPace: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, travelPace: e.target.value })
+                  }
                   className="w-full px-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none transition-all"
                 >
                   <option value="">Choose your own pace</option>
                   <option value="relaxed">Relaxed - Lots of free time</option>
-                  <option value="moderate">Moderate - Balanced itinerary</option>
+                  <option value="moderate">
+                    Moderate - Balanced itinerary
+                  </option>
                   <option value="packed">Packed - See everything</option>
                 </select>
               </div>
@@ -454,16 +519,35 @@ export function SmartTrip() {
                         ? "border-primary shadow-md"
                         : "border-border hover:border-primary/50 hover:shadow-sm"
                     }`}
-                    style={isSelected ? {
-                      background: 'linear-gradient(135deg, var(--primary-rgb-10), transparent)'
-                    } : undefined}
+                    style={
+                      isSelected
+                        ? {
+                            background:
+                              "linear-gradient(135deg, var(--primary-rgb-10), transparent)",
+                          }
+                        : undefined
+                    }
                   >
-                    <Icon className={`w-7 h-7 mx-auto mb-2 ${isSelected ? "text-primary" : "text-muted-foreground"} transition-colors`} strokeWidth={2} />
-                    <p className={`text-sm text-center ${isSelected ? "text-primary" : "text-card-foreground"} transition-colors`}>{pref.label}</p>
+                    <Icon
+                      className={`w-7 h-7 mx-auto mb-2 ${
+                        isSelected ? "text-primary" : "text-muted-foreground"
+                      } transition-colors`}
+                      strokeWidth={2}
+                    />
+                    <p
+                      className={`text-sm text-center ${
+                        isSelected ? "text-primary" : "text-card-foreground"
+                      } transition-colors`}
+                    >
+                      {pref.label}
+                    </p>
                     {isSelected && (
                       <div className="mt-2 flex justify-center">
                         <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                          <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                          <Check
+                            className="w-3 h-3 text-white"
+                            strokeWidth={3}
+                          />
                         </div>
                       </div>
                     )}
@@ -480,8 +564,10 @@ export function SmartTrip() {
               disabled={isGenerating}
               className="px-8 py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: isGenerating ? '#9CA3AF' : 'linear-gradient(135deg, #0A7AFF, #14B8A6)',
-                color: 'white'
+                background: isGenerating
+                  ? "#9CA3AF"
+                  : "linear-gradient(135deg, #0A7AFF, #14B8A6)",
+                color: "white",
               }}
             >
               {isGenerating ? (
@@ -503,9 +589,12 @@ export function SmartTrip() {
       {step === 2 && generatedTrip && (
         <>
           {/* Generated Trip Header */}
-          <div className="rounded-2xl p-6 sm:p-8 text-white shadow-lg" style={{
-            background: 'linear-gradient(135deg, #10B981, #059669)'
-          }}>
+          <div
+            className="rounded-2xl p-6 sm:p-8 text-white shadow-lg"
+            style={{
+              background: "linear-gradient(135deg, #10B981, #059669)",
+            }}
+          >
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -515,7 +604,8 @@ export function SmartTrip() {
                 <h2 className="text-2xl mb-2">{generatedTrip.title}</h2>
                 <p className="text-white/90">{generatedTrip.duration}</p>
                 <p className="text-xs text-white/70 mt-3 italic">
-                  💡 You can edit this generated trip once you add this to Travels
+                  💡 You can edit this generated trip once you add this to
+                  Travels
                 </p>
               </div>
               <div className="text-right">
@@ -529,29 +619,47 @@ export function SmartTrip() {
           <ContentCard title="Your Itinerary" icon={Calendar}>
             <div className="space-y-4">
               {generatedTrip.itinerary.map((day: any, index: number) => (
-                <div key={index} className="border border-border rounded-xl p-5 hover:border-primary/50 hover:shadow-md transition-all">
+                <div
+                  key={index}
+                  className="border border-border rounded-xl p-5 hover:border-primary/50 hover:shadow-md transition-all"
+                >
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-md">
                       <span className="text-lg">{day.day}</span>
                     </div>
-                    <h3 className="text-base text-card-foreground flex-1">{day.title}</h3>
+                    <h3 className="text-base text-card-foreground flex-1">
+                      {day.title}
+                    </h3>
                   </div>
                   <div className="space-y-3">
                     {day.activities.map((activity: any, i: number) => {
                       const ActivityIcon = activity.icon;
                       return (
-                        <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors">
+                        <div
+                          key={i}
+                          className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
+                        >
                           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white flex-shrink-0 shadow-sm">
                             <ActivityIcon className="w-5 h-5" strokeWidth={2} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs text-primary">{activity.time}</span>
-                              <span className="text-xs text-muted-foreground">•</span>
-                              <span className="text-xs text-muted-foreground truncate">{activity.location}</span>
+                              <span className="text-xs text-primary">
+                                {activity.time}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                •
+                              </span>
+                              <span className="text-xs text-muted-foreground truncate">
+                                {activity.location}
+                              </span>
                             </div>
-                            <h4 className="text-sm text-card-foreground mb-1">{activity.title}</h4>
-                            <p className="text-xs text-muted-foreground">{activity.description}</p>
+                            <h4 className="text-sm text-card-foreground mb-1">
+                              {activity.title}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                              {activity.description}
+                            </p>
                           </div>
                         </div>
                       );
@@ -566,9 +674,15 @@ export function SmartTrip() {
           <ContentCard title="Package Inclusions" icon={Check}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {generatedTrip.inclusions.map((item: string, index: number) => (
-                <div key={index} className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors">
+                <div
+                  key={index}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
+                >
                   <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                    <Check className="w-4 h-4 text-green-500" strokeWidth={2.5} />
+                    <Check
+                      className="w-4 h-4 text-green-500"
+                      strokeWidth={2.5}
+                    />
                   </div>
                   <span className="text-sm text-card-foreground">{item}</span>
                 </div>
@@ -591,8 +705,8 @@ export function SmartTrip() {
               onClick={handleSaveToTravels}
               className="px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center"
               style={{
-                background: 'linear-gradient(135deg, #0A7AFF, #14B8A6)',
-                color: 'white'
+                background: "linear-gradient(135deg, #0A7AFF, #14B8A6)",
+                color: "white",
               }}
             >
               Save to My Travels
@@ -615,7 +729,8 @@ export function SmartTrip() {
         content={
           <div className="text-card-foreground space-y-3">
             <p className="mb-3">
-              Are you sure you want to generate another trip? Your current itinerary will be discarded and cannot be recovered.
+              Are you sure you want to generate another trip? Your current
+              itinerary will be discarded and cannot be recovered.
             </p>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -633,7 +748,8 @@ export function SmartTrip() {
             </div>
             <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
               <p className="text-xs text-amber-600 dark:text-amber-400">
-                💡 Tip: You can save this trip to "My Travels" before generating a new one to keep it for later.
+                💡 Tip: You can save this trip to "My Travels" before generating
+                a new one to keep it for later.
               </p>
             </div>
           </div>
@@ -644,6 +760,8 @@ export function SmartTrip() {
         cancelText="Keep This Trip"
         confirmVariant="default"
       />
+
+      <FAQAssistant />
     </div>
   );
 }

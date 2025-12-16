@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Plane, Hotel, Camera, UtensilsCrossed, Car, Package } from "lucide-react";
 import { BookingDetailView } from "../../components/BookingDetailView";
+import { FAQAssistant } from "../../components/FAQAssistant";
 
 interface CompletedTrip {
   id: string;
@@ -330,6 +331,7 @@ export function UserHistoryDetail() {
           <p className="text-sm text-[#334155] leading-relaxed">{trip.cancellationReason}</p>
         </div>
       )}
+      <FAQAssistant />
     </div>
   );
 

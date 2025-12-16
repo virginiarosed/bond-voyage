@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import html2canvas from "html2canvas";
 import confetti from 'canvas-confetti';
 import { useProfile } from "../../components/ProfileContext";
+import { FAQAssistant } from "../../components/FAQAssistant";
 
 interface PaymentSubmission {
   id: string;
@@ -3082,6 +3083,7 @@ export function UserBookingDetail() {
           </div>
         </DialogContent>
       </Dialog>
+      <FAQAssistant />
     </div>
   );
 }

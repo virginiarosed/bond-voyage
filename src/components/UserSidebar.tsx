@@ -64,13 +64,11 @@ export function UserSidebar({
     { id: "/user/smart-trip", icon: Sparkles, label: "Smart Trip" },
     { id: "/user/bookings", icon: Calendar, label: "Bookings" },
     { id: "/user/history", icon: Archive, label: "History" },
-    { id: "/user/inquiries", icon: MessageSquare, label: "Inquiries" },
     { id: "/user/feedback", icon: Star, label: "Feedback" },
   ];
 
   const moreMenuItems = [
     { id: "/user/weather", icon: CloudRain, label: "Weather Forecast" },
-    { id: "/user/translation", icon: Languages, label: "Translation" },
     { id: "/user/spin-wheel", icon: Disc, label: "Spin the Wheel" },
   ];
 
