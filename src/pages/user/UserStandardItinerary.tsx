@@ -11,6 +11,7 @@ import { Input } from "../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { toast } from "sonner@2.0.3";
+import { FAQAssistant } from "../../components/FAQAssistant";
 
 interface ItineraryActivity {
   time: string;
@@ -846,6 +847,7 @@ export function UserStandardItinerary() {
       </div>
     </div>
   ))}
+  <FAQAssistant />
 </div>
 
 {sortedTemplates.length === 0 && (

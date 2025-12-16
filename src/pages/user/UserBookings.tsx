@@ -4,6 +4,7 @@ import { Calendar, DollarSign, BookOpen, Briefcase, FileCheck, ClipboardList, Ey
 import { ContentCard } from "../../components/ContentCard";
 import { StatCard } from "../../components/StatCard";
 import { BookingListCard } from "../../components/BookingListCard";
+import { FAQAssistant } from "../../components/FAQAssistant";
 
 interface PaymentSubmission {
   id: string;
@@ -503,6 +504,7 @@ export function UserBookings() {
           </div>
         )}
       </ContentCard>
+      <FAQAssistant />
     </div>
   );
 }

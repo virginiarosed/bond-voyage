@@ -54,6 +54,7 @@
             "react-easy-crop": "*",
             "react-emoji-render": "^2.0.1",
             "react-hook-form": "^7.55.0",
+            "react-markdown": "^10.1.0",
             "react-resizable-panels": "^2.1.7",
             "react-router-dom": "*",
             "recharts": "^2.15.2",

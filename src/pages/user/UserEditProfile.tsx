@@ -4,6 +4,7 @@ import { User, Mail, Phone, MapPin, Camera, Lock, Eye, EyeOff, Check, X, Chevron
 import { toast } from "sonner@2.0.3";
 import { useProfile } from "../../components/ProfileContext";
 import { ImageCropModal } from "../../components/ImageCropModal";
+import { FAQAssistant } from "../../components/FAQAssistant";
 
 export function UserEditProfile() {
   const navigate = useNavigate();
@@ -398,6 +399,7 @@ export function UserEditProfile() {
               </button>
             )}
           </div>
+          <FAQAssistant />
         </div>
 
         <div className="space-y-6">

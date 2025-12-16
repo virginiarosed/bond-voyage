@@ -60,10 +60,8 @@ export function Sidebar({
     { id: "/users", icon: Users, label: "Users" },
     { id: "/itinerary", icon: FileText, label: "Itinerary" },
     { id: "/approvals", icon: CheckCircle, label: "Approvals", badge: true },
-
     { id: "/bookings", icon: Calendar, label: "Bookings" },
     { id: "/history", icon: Archive, label: "History" },
-    { id: "/inquiries", icon: HelpCircle, label: "Inquiries" },
     { id: "/feedback", icon: MessageSquare, label: "Feedback" },
   ];
 

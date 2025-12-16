@@ -54,6 +54,7 @@ import { UserHistoryDetail } from "./pages/user/UserHistoryDetail";
 import { UserStandardItinerary } from "./pages/user/UserStandardItinerary";
 import HomePage from "./pages/HomePage";
 import { LoadingOverlay } from "./components/LoadingOverlay";
+import { FaqPage } from "./pages/FaqPage";
 
 // Utility function to format dates consistently
 export const formatDateRange = (startDate: string, endDate: string): string => {
@@ -131,6 +132,15 @@ export interface BookingData {
   tourType?: string; // Added for tour type tracking
 }
 
+// FAQ Types for assistant
+export interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  lastUpdated: string;
+  tags: string[];
+}
+
 // Layout Component to handle page config and TopNav
 function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -146,6 +156,90 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     const savedTheme = localStorage.getItem("bondvoyage-theme") || "light";
     setCurrentTheme(savedTheme);
     document.documentElement.classList.toggle("dark", savedTheme === "dark");
+  }, []);
+
+  // Initialize FAQ system on app load
+  useEffect(() => {
+    const initializeFAQSystem = () => {
+      if (!localStorage.getItem('bondvoyage-faqs')) {
+        const defaultFAQs: FAQ[] = [
+          {
+            id: "FAQ-SYS-001",
+            question: "How do I navigate the system?",
+            answer: "Use the sidebar menu to access different sections. You can also use the FAQ Assistant (floating help button) for quick navigation.",
+            lastUpdated: new Date().toISOString().split('T')[0],
+            tags: ["navigation", "system", "help"]
+          },
+          {
+            id: "FAQ-SYS-002",
+            question: "What is the Smart Trip feature?",
+            answer: "Smart Trip uses AI to generate personalized travel itineraries based on your preferences. You can edit and customize the generated trips.",
+            lastUpdated: new Date().toISOString().split('T')[0],
+            tags: ["smart trip", "ai", "itinerary"]
+          },
+          {
+            id: "FAQ-SYS-003",
+            question: "How do I create a new booking?",
+            answer: "Go to Travels → Create New Travel, or browse Standard Itineraries to book pre-designed packages.",
+            lastUpdated: new Date().toISOString().split('T')[0],
+            tags: ["booking", "create", "travel"]
+          },
+          {
+            id: "FAQ-SYS-004",
+            question: "How do I update my profile information?",
+            answer: "Click on your profile picture in the top right corner and select 'Edit Profile' from the dropdown menu.",
+            lastUpdated: new Date().toISOString().split('T')[0],
+            tags: ["profile", "account", "settings"]
+          },
+          {
+            id: "FAQ-SYS-005",
+            question: "Where can I view my booking history?",
+            answer: "Navigate to the History page from the sidebar to see all your completed and cancelled trips.",
+            lastUpdated: new Date().toISOString().split('T')[0],
+            tags: ["history", "bookings", "past trips"]
+          },
+          {
+            id: "FAQ-SYS-006",
+            question: "How do I check weather forecasts?",
+            answer: "Go to the Weather Forecast page to see 7-day forecasts for your destinations. You can add weather info to your itineraries.",
+            lastUpdated: new Date().toISOString().split('T')[0],
+            tags: ["weather", "forecast", "planning"]
+          },
+          {
+            id: "FAQ-SYS-007",
+            question: "What are Standard Itineraries?",
+            answer: "Standard Itineraries are pre-designed travel packages created by our experts. They offer complete itineraries for popular destinations.",
+            lastUpdated: new Date().toISOString().split('T')[0],
+            tags: ["standard", "packages", "pre-designed"]
+          },
+          {
+            id: "FAQ-SYS-008",
+            question: "How do I provide feedback?",
+            answer: "Navigate to the Feedback page to share your travel experiences and suggestions. Your feedback helps us improve our services.",
+            lastUpdated: new Date().toISOString().split('T')[0],
+            tags: ["feedback", "reviews", "suggestions"]
+          },
+          {
+            id: "FAQ-SYS-009",
+            question: "Where can I see my notifications?",
+            answer: "All system notifications are available in the Notifications page. You can manage notification preferences there.",
+            lastUpdated: new Date().toISOString().split('T')[0],
+            tags: ["notifications", "alerts", "updates"]
+          },
+          {
+            id: "FAQ-SYS-010",
+            question: "How do I use the translation tool?",
+            answer: "The Translation Tool helps you translate between English and local dialects. It's available in the More section.",
+            lastUpdated: new Date().toISOString().split('T')[0],
+            tags: ["translation", "language", "tools"]
+          }
+        ];
+        localStorage.setItem('bondvoyage-faqs', JSON.stringify(defaultFAQs));
+        console.log('FAQ system initialized with default FAQs');
+      }
+    };
+
+    initializeFAQSystem();
   }, []);
 
   const handleThemeChange = (theme: string) => {
@@ -278,6 +372,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       title: "Activity Log",
       subtitle: "Track all administrative actions and system events.",
       breadcrumbs: [{ label: "Home", path: "/" }, { label: "Activity Log" }],
+    },
+    "/faq": {
+      title: "Frequently Asked Questions",
+      subtitle: "Manage FAQs for the user assistant system.",
+      breadcrumbs: [{ label: "Home", path: "/" }, { label: "FAQ Management" }],
     },
     // User Side Pages
     "/user/home": {
@@ -988,6 +1087,9 @@ function AppRoutes() {
       <Route path="/user/spin-wheel" element={<SpinTheWheel />} />
       <Route path="/user/profile/edit" element={<UserEditProfile />} />
       <Route path="/user/notifications" element={<UserNotifications />} />
+
+      {/* FAQ Management Route */}
+      <Route path="/faq" element={<FaqPage />} />
 
       {/* Catch-all route - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />

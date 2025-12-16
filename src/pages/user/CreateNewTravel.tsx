@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, GripVertical, Save, Plane, Hotel, Camera, UtensilsCrossed, Car, Package, MapPin, Compass, TreePine, Building2, Ship, Train, Coffee, ShoppingBag, Music, Sunset, Clock, AlertCircle, Sparkles, CheckCircle2, FileText, Calendar, Users, DollarSign, Waves, Mountain, Palmtree, Tent, Bike, Bus, Anchor, Film, Ticket, Wine, IceCream, Pizza, Fish, Salad, Utensils, Home, Landmark, Church, Castle, Globe, Backpack, Luggage, Umbrella, Sun, Moon, Star, Heart, Gift, ShoppingCart, Search, Bot } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GripVertical, Save, Clock } from "lucide-react";
 import { ContentCard } from "../../components/ContentCard";
-import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
-import { RouteOptimizationPanel } from "../../components/RouteOptimizationPanel";
 import { AITravelAssistant } from "../../components/AITravelAssistant";
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
@@ -13,6 +11,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { toast } from "sonner@2.0.3";
 import { useBookings } from "../../components/BookingContext";
+
+// Import all icons
+import {
+  Plane, Hotel, Camera, UtensilsCrossed, Car, Package, MapPin, Compass, TreePine, Building2,
+  Ship, Train, Coffee, ShoppingBag, Music, Sunset, AlertCircle, Sparkles, CheckCircle2,
+  FileText, Calendar, Users, DollarSign, Waves, Mountain, Palmtree, Tent, Bike, Bus,
+  Anchor, Film, Ticket, Wine, IceCream, Pizza, Fish, Salad, Utensils, Home, Landmark,
+  Church, Castle, Globe, Backpack, Luggage, Umbrella, Sun, Moon, Star, Heart, Gift,
+  ShoppingCart, Search
+} from "lucide-react";
 
 interface Activity {
   id: string;
@@ -153,7 +161,7 @@ export function CreateNewTravel() {
 
   const [itineraryDays, setItineraryDays] = useState<Day[]>([
     {
-      id: "day-1",
+      id: `day-${Date.now()}-1`,
       day: 1,
       title: "",
       activities: [],
@@ -175,9 +183,6 @@ export function CreateNewTravel() {
 
   // Icon search state
   const [iconSearchQuery, setIconSearchQuery] = useState("");
-
-  // Route Optimization state
-  const [selectedDayForRoute, setSelectedDayForRoute] = useState<string | null>(null);
 
   // Generate unique ID
   const generateId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -416,6 +421,7 @@ export function CreateNewTravel() {
     }
     setIconPickerOpen(false);
     setCurrentActivityForIcon(null);
+    setIconSearchQuery("");
   };
 
   // Move activity up
@@ -582,45 +588,40 @@ export function CreateNewTravel() {
     navigate("/user/travels");
   };
 
-  // Handle route optimization acceptance
-  const handleAcceptOptimization = (dayId: string, optimizedActivities: Activity[]) => {
-    setItineraryDays(prev =>
-      prev.map(day =>
-        day.id === dayId
-          ? { ...day, activities: optimizedActivities }
-          : day
-      )
-    );
-  };
+  // Filtered icons based on search
+  const filteredIcons = ICON_OPTIONS.filter(option => 
+    iconSearchQuery ? 
+      option.label.toLowerCase().includes(iconSearchQuery.toLowerCase()) ||
+      option.value.toLowerCase().includes(iconSearchQuery.toLowerCase())
+    : true
+  );
 
   return (
-    <div className="gap-6" style={{paddingBottom: 50}}>
-      {/* Main Content */}
-      <div className="space-y-6">
-        {/* Header */}
-        <ContentCard>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleBackClick}
-              className="w-11 h-11 rounded-xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white hover:bg-[rgba(10,122,255,0.05)] flex items-center justify-center transition-all group"
-            >
-              <ArrowLeft className="w-5 h-5 text-[#64748B] group-hover:text-[#0A7AFF] transition-colors" />
-            </button>
-            <div className="flex-1">
-              <h1 className="text-[#1A2B4F] mb-1">Create New Travel</h1>
-              <p className="text-sm text-[#64748B]">
-                Build a customized travel plan with detailed day-by-day itinerary
-              </p>
-            </div>
+    <div className="space-y-6 pb-20">
+      {/* Header */}
+      <ContentCard>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleBackClick}
+            className="w-11 h-11 rounded-xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white hover:bg-[rgba(10,122,255,0.05)] flex items-center justify-center transition-all group"
+          >
+            <ArrowLeft className="w-5 h-5 text-[#64748B] group-hover:text-[#0A7AFF] transition-colors" />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-[#1A2B4F] mb-1 text-lg font-semibold">Create New Travel</h1>
+            <p className="text-sm text-[#64748B]">
+              Build a customized travel plan with detailed day-by-day itinerary
+            </p>
           </div>
-        </ContentCard>
+        </div>
+      </ContentCard>
 
       {/* Travel Information */}
       <ContentCard>
         <div className="mb-6">
           <h2 className="text-lg text-[#1A2B4F] font-semibold">Travel Information</h2>
         </div>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label htmlFor="destination" className="text-[#1A2B4F] mb-2 block">
               Destination <span className="text-[#FF6B6B]">*</span>
@@ -687,7 +688,7 @@ export function CreateNewTravel() {
             </div>
           </div>
 
-          <div className="col-span-2">
+          <div className="md:col-span-2">
             <Label htmlFor="totalAmount" className="text-[#1A2B4F] mb-2 block">
               Budget (₱) <span className="text-[#FF6B6B]">*</span>
             </Label>
@@ -708,15 +709,6 @@ export function CreateNewTravel() {
         </div>
       </ContentCard>
 
-      {/* Route Optimization Panel */}
-      {itineraryDays.some(day => day.activities.filter(a => a.location).length >= 2) && (
-        <RouteOptimizationPanel
-          itineraryDays={itineraryDays}
-          selectedDayId={selectedDayForRoute || itineraryDays.find(d => d.activities.filter(a => a.location).length >= 2)?.id}
-          onAcceptOptimization={handleAcceptOptimization}
-        />
-      )}
-
       {/* Day-by-Day Itinerary */}
       <ContentCard>
         <div className="mb-6">
@@ -730,7 +722,7 @@ export function CreateNewTravel() {
               className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-gradient-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
             >
               {/* Day Header */}
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                   <span className="text-white font-bold">D{day.day}</span>
                 </div>
@@ -748,7 +740,7 @@ export function CreateNewTravel() {
                 </div>
                 <button
                   onClick={() => addActivity(day.id)}
-                  className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
+                  className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all w-full md:w-auto justify-center"
                 >
                   <Plus className="w-4 h-4" />
                   Add Activity
@@ -800,42 +792,46 @@ export function CreateNewTravel() {
                           </div>
 
                           {/* Form Fields */}
-                          <div className="flex-1 grid grid-cols-12 gap-4">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4">
                             {/* Time */}
-                            <div className="col-span-2">
+                            <div className="md:col-span-2">
                               <Label className="text-xs text-[#64748B] mb-1 block">Time</Label>
                               <Input
                                 type="time"
                                 value={activity.time}
                                 onChange={(e) => updateActivity(day.id, activity.id, "time", e.target.value)}
-                                className="h-9 rounded-lg border-[#E5E7EB] text-sm"
+                                className="h-9 rounded-lg border-[#E5E7EB] text-sm w-full"
                               />
                             </div>
 
                             {/* Icon */}
-                            <div className="col-span-2">
+                            <div className="md:col-span-2">
                               <Label className="text-xs text-[#64748B] mb-1 block">Icon</Label>
                               <button
                                 onClick={() => openIconPicker(day.id, activity.id)}
                                 className="w-full h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white flex items-center justify-center transition-all"
                               >
-                                <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
+                                {activity.icon ? (
+                                  <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
+                                ) : (
+                                  <span className="text-xs text-[#64748B]">Select</span>
+                                )}
                               </button>
                             </div>
 
                             {/* Title */}
-                            <div className="col-span-8">
+                            <div className="md:col-span-8">
                               <Label className="text-xs text-[#64748B] mb-1 block">Activity Title *</Label>
                               <Input
                                 placeholder="e.g., Arrival at the Hotel"
                                 value={activity.title}
                                 onChange={(e) => updateActivity(day.id, activity.id, "title", e.target.value)}
-                                className="h-9 rounded-lg border-[#E5E7EB] text-sm"
+                                className="h-9 rounded-lg border-[#E5E7EB] text-sm w-full"
                               />
                             </div>
 
                             {/* Location */}
-                            <div className="col-span-12 relative">
+                            <div className="md:col-span-12 relative">
                               <Label className="text-xs text-[#64748B] mb-1 block">Location</Label>
                               <div className="relative">
                                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
@@ -858,7 +854,7 @@ export function CreateNewTravel() {
                                       setActiveLocationInput(null);
                                     }, 200);
                                   }}
-                                  className="h-9 pl-9 rounded-lg border-[#E5E7EB] text-sm"
+                                  className="h-9 pl-9 rounded-lg border-[#E5E7EB] text-sm w-full"
                                 />
                               </div>
 
@@ -883,13 +879,13 @@ export function CreateNewTravel() {
                             </div>
 
                             {/* Description */}
-                            <div className="col-span-12">
+                            <div className="md:col-span-12">
                               <Label className="text-xs text-[#64748B] mb-1 block">Description</Label>
                               <Textarea
                                 placeholder="Add activity details..."
                                 value={activity.description}
                                 onChange={(e) => updateActivity(day.id, activity.id, "description", e.target.value)}
-                                className="rounded-lg border-[#E5E7EB] text-sm resize-none"
+                                className="rounded-lg border-[#E5E7EB] text-sm resize-none w-full"
                                 rows={2}
                               />
                             </div>
@@ -915,34 +911,30 @@ export function CreateNewTravel() {
       </ContentCard>
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-[80px] right-0 h-20 bg-white border-t-2 border-[#E5E7EB] z-40">
-        <div className="h-full max-w-[1400px] mx-auto px-8 flex items-center justify-end gap-3">
+      <div className="fixed bottom-0 left-0 md:left-[80px] right-0 h-16 bg-white border-t-2 border-[#E5E7EB] z-40">
+        <div className="h-full max-w-[1400px] mx-auto px-4 md:px-8 flex items-center justify-end gap-3">
           <button
             onClick={handleBackClick}
-            className="h-12 px-6 rounded-xl border-2 border-[#E5E7EB] hover:border-[#CBD5E1] bg-white hover:bg-[#F8FAFB] text-[#334155] font-medium transition-all"
+            className="h-10 md:h-12 px-4 md:px-6 rounded-xl border-2 border-[#E5E7EB] hover:border-[#CBD5E1] bg-white hover:bg-[#F8FAFB] text-[#334155] font-medium transition-all text-sm md:text-base"
           >
             Cancel
           </button>
           <button
             onClick={handleSaveClick}
-            className="h-12 px-8 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all flex items-center gap-2"
+            className="h-10 md:h-12 px-4 md:px-8 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all flex items-center gap-2 text-sm md:text-base"
           >
             <Save className="w-4 h-4" />
             Save Travel Plan
           </button>
         </div>
       </div>
-      </div>
-
-      {/* AI Travel Assistant */}
-      <div className="hidden xl:block">
-        <AITravelAssistant />
-      </div>
 
       {/* Icon Picker Dialog */}
       <Dialog open={iconPickerOpen} onOpenChange={(open) => {
-        setIconPickerOpen(open);
-        if (!open) setIconSearchQuery("");
+        if (!open) {
+          setIconPickerOpen(false);
+          setIconSearchQuery("");
+        }
       }}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
@@ -971,22 +963,19 @@ export function CreateNewTravel() {
           </div>
 
           <ScrollArea className="max-h-[400px] px-6">
-            <div className="grid grid-cols-4 gap-3 py-4">
-              {ICON_OPTIONS.filter(option => 
-                option.label.toLowerCase().includes(iconSearchQuery.toLowerCase()) ||
-                option.value.toLowerCase().includes(iconSearchQuery.toLowerCase())
-              ).map((option) => {
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 py-4">
+              {filteredIcons.map((option) => {
                 const Icon = option.icon;
                 return (
                   <button
                     key={option.value}
                     onClick={() => selectIcon(option.value)}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] transition-all group"
+                    className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] transition-all group"
                   >
-                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                       <Icon className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-xs text-center text-[#64748B] group-hover:text-[#0A7AFF] font-medium transition-colors leading-tight">
+                    <span className="text-xs text-center text-[#64748B] group-hover:text-[#0A7AFF] font-medium transition-colors leading-tight line-clamp-2">
                       {option.label}
                     </span>
                   </button>
