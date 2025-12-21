@@ -15,10 +15,8 @@ import { DialogTitle, DialogDescription } from "./ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog@1.1.6";
 import bondVoyageLogo from "../assets/40755770f782ee2806bf45fc8b364947bbbe25e5.png";
 import { SideType, useSide } from "../../SideContext";
-import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { login } from "../utils/api/auth";
+import { useLogin } from "../../../hooks/useAuth";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -38,7 +36,6 @@ export function LoginModal({
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
   const { switchSide } = useSide();
@@ -48,6 +45,41 @@ export function LoginModal({
     title: string;
     message: string;
   } | null>(null);
+
+  const loginMutation = useLogin({
+    onSuccess: (response) => {
+      if (response.data?.user) {
+        const role = response.data.user.role.toLowerCase() as SideType;
+        switchSide(role);
+
+        setShowToast({
+          type: "success",
+          title: "Login Successful!",
+          message: "Welcome to BondVoyage. Redirecting to your dashboard...",
+        });
+
+        setTimeout(() => {
+          setShowToast(null);
+          if (role === "admin") navigate("/");
+          else navigate("/user/home");
+          onClose();
+        }, 2000);
+      }
+    },
+    onError: (error: any) => {
+      setShowToast({
+        type: "error",
+        title: "Login Failed",
+        message:
+          error.response?.data?.message ||
+          "Invalid email or password. Please check your credentials and try again.",
+      });
+
+      setTimeout(() => {
+        setShowToast(null);
+      }, 2000);
+    },
+  });
 
   const validateEmail = (value: string) => {
     if (!value) {
@@ -91,59 +123,23 @@ export function LoginModal({
     setEmailTouched(true);
     setPasswordTouched(true);
 
-    setIsLoading(true);
-
-    try {
-      if (emailErr || passwordErr) {
-        setShowToast({
-          type: "error",
-          title: "Login Failed",
-          message:
-            "Invalid email or password. Please check your credentials and try again.",
-        });
-        setTimeout(() => setShowToast(null), 6000);
-        return;
-      }
-
-      const response = await login(email, password);
-
-      if (response.status === 200) {
-        const role = response.data.data.user.role.toLowerCase() as SideType;
-        switchSide(role);
-
-        setIsLoading(false);
-        setShowToast({
-          type: "success",
-          title: "Login Successful!",
-          message: "Welcome to BondVoyage. Redirecting to your dashboard...",
-        });
-
-        setTimeout(() => {
-          setShowToast(null);
-          if (role === "admin") navigate("/");
-          else navigate("/user/home");
-          onClose();
-        }, 2000);
-      }
-    } catch (error) {
+    if (emailErr || passwordErr) {
       setShowToast({
         type: "error",
-        title: "Invalid Credentials",
-        message: "Please try again.",
+        title: "Validation Error",
+        message: "Please fix the errors in the form before submitting.",
       });
-
-      setIsLoading(false);
-
-      setTimeout(() => {
-        setShowToast(null);
-      }, 2000);
+      setTimeout(() => setShowToast(null), 6000);
+      return;
     }
+
+    loginMutation.mutate({ email, password });
   };
 
   const emailIsValid = email && !validateEmail(email);
   const isFormValid = emailIsValid && password.length >= 8;
+  const isLoading = loginMutation.isPending;
 
-  // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
       setEmail("");
