@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Bot,
   Send,
   HelpCircle,
   BookOpen,
