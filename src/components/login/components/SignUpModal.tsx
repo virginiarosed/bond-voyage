@@ -275,14 +275,14 @@ export function SignUpModal({
     }
 
     // Send OTP and move to step 2
-    sendOTPMutation.mutate({ email });
+    sendOTPMutation.mutate({ email, firstName });
     setStep(2);
   };
 
   const handleResendOTP = () => {
     setOtpInput("");
     setOtpError("");
-    sendOTPMutation.mutate({ email });
+    sendOTPMutation.mutate({ email, firstName });
   };
 
   const handleVerifyOTP = (e: React.FormEvent) => {

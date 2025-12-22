@@ -123,10 +123,10 @@ export const useChangePassword = (
 };
 
 export const useSendOTP = (
-  options?: UseMutationOptions<ApiResponse, AxiosError, { email: string }>
+  options?: UseMutationOptions<ApiResponse, AxiosError, { email: string; firstName: string }>
 ) => {
   return useMutation({
-    mutationFn: async (data: { email: string }) => {
+    mutationFn: async (data: { email: string; firstName: string }) => {
       const response = await apiClient.post<ApiResponse>(
         "/auth/send-otp",
         data
