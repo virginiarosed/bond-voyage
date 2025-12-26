@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
+import { ApiResponse } from "../../types/types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -29,10 +30,12 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+      const accessToken = localStorage.get("accessToken");
+
       try {
         const { data } = await axios.post<ApiResponse<{ accessToken: string }>>(
           `${BASE_URL}/auth/refresh-token`,
-          {},
+          { accessToken },
           { withCredentials: true }
         );
 
