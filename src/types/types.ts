@@ -112,15 +112,16 @@ export interface Feedback {
 
 export interface ActivityLog {
   id: string;
-  actorId: string;
-  actorType: string;
   action: string;
-  entityType: string;
-  entityId?: string;
-  metadata?: any;
-  ipAddress?: string;
-  userAgent?: string;
-  createdAt: string;
+  details: string;
+  timestamp: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  userId: string;
 }
 
 export interface WeatherResponse {
@@ -163,14 +164,31 @@ export interface ChatbotResponse {
 }
 
 export interface DashboardStats {
-  totalBookings?: number;
-  pendingBookings?: number;
-  confirmedBookings?: number;
-  completedBookings?: number;
-  totalRevenue?: number;
-  totalUsers?: number;
-  activeUsers?: number;
-  recentBookings?: any[];
-  bookingsByMonth?: any[];
-  revenueByMonth?: any[];
+  cards: {
+    activeBookings: number;
+    completedTrips: number;
+    pendingApprovals: number;
+    totalUsers: number;
+  };
+
+  distributions: {
+    status: {
+      active: number;
+      cancelled: number;
+      completed: number;
+      pending: number;
+    };
+    type: {
+      customized: number;
+      requested: number;
+      standard: number;
+    };
+  };
+
+  trends: {
+    historical: number[];
+    labels: string[];
+    predicted: number[];
+    year: number;
+  };
 }

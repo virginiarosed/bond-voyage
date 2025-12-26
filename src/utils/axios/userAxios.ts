@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
+import { ApiResponse } from "../../types/types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -22,7 +23,9 @@ apiClient.interceptors.request.use(
 );
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
 

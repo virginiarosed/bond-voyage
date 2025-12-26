@@ -1,4 +1,14 @@
-import { MapPin, Calendar, Users, Clock, Eye, AlertTriangle, XCircle, CheckCircle, Share2 } from "lucide-react";
+import {
+  MapPin,
+  Calendar,
+  Users,
+  Clock,
+  Eye,
+  AlertTriangle,
+  XCircle,
+  CheckCircle,
+  Share2,
+} from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 
 interface BookingListCardProps {
@@ -32,9 +42,9 @@ interface BookingListCardProps {
   userSide?: boolean;
 }
 
-export function BookingListCard({ 
-  booking, 
-  onViewDetails, 
+export function BookingListCard({
+  booking,
+  onViewDetails,
   onShare,
   actionButtons,
   additionalBadges,
@@ -46,29 +56,35 @@ export function BookingListCard({
   userSide = false,
 }: BookingListCardProps) {
   return (
-    <div 
+    <div
       onClick={() => onViewDetails(booking.id)}
       className="p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)] cursor-pointer"
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-            variant === "rejected" 
-              ? "bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]" 
-              : "bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
-          }`}>
+          <div
+            className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              variant === "rejected"
+                ? "bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
+                : "bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
+            }`}
+          >
             <span className="text-white text-lg">🎫</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg text-[#1A2B4F] font-semibold">Booking #{booking.id}</h3>
+              <h3 className="text-lg text-[#1A2B4F] font-semibold">
+                Booking #{booking.id}
+              </h3>
               {booking.tourType && (
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                  booking.tourType === "Joiner"
-                    ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border border-[rgba(255,152,0,0.2)]"
-                    : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border border-[rgba(167,139,250,0.2)]"
-                }`}>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                    booking.tourType === "Joiner"
+                      ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border border-[rgba(255,152,0,0.2)]"
+                      : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border border-[rgba(167,139,250,0.2)]"
+                  }`}
+                >
                   {booking.tourType}
                 </span>
               )}
@@ -85,8 +101,7 @@ export function BookingListCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
-         
-          <button 
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onViewDetails(booking.id);
@@ -95,9 +110,9 @@ export function BookingListCard({
           >
             <Eye className="w-4 h-4" />
             View Details
-          </button> 
+          </button>
           {onShare && (
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 onShare(booking.id);
@@ -117,17 +132,17 @@ export function BookingListCard({
           <Users className="w-4 h-4 text-[#64748B]" />
           <span className="text-sm text-[#334155] font-medium">
             {(() => {
-              const names = booking.customer.split(', ').map(n => n.trim());
+              const names = booking.customer.split(", ").map((n) => n.trim());
               if (names.length >= 4) {
                 const othersCount = names.length - 2;
                 const hiddenNames = names.slice(2);
                 return (
                   <>
-                    {names[0]}, {names[1]} and{' '}
+                    {names[0]}, {names[1]} and{" "}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="cursor-help underline decoration-dotted">
-                          {othersCount} other{othersCount > 1 ? 's' : ''}
+                          {othersCount} other{othersCount > 1 ? "s" : ""}
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-xs">
@@ -165,96 +180,119 @@ export function BookingListCard({
           <MapPin className="w-4 h-4 text-[#0A7AFF]" />
           <div>
             <p className="text-xs text-[#64748B]">Destination</p>
-            <p className="text-sm text-[#334155] font-medium">{booking.destination}</p>
+            <p className="text-sm text-[#334155] font-medium">
+              {booking.destination}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-[#14B8A6]" />
           <div>
             <p className="text-xs text-[#64748B]">Travel Dates</p>
-            <p className="text-sm text-[#334155] font-medium">{booking.dates}</p>
+            <p className="text-sm text-[#334155] font-medium">
+              {booking.dates}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-[#64748B]" />
           <div>
             <p className="text-xs text-[#64748B]">Travelers</p>
-            <p className="text-sm text-[#334155] font-medium">{booking.travelers} {booking.travelers > 1 ? 'People' : 'Person'}</p>
+            <p className="text-sm text-[#334155] font-medium">
+              {booking.travelers} {booking.travelers > 1 ? "People" : "Person"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[#10B981] text-lg">₱</span>
           <div>
             <p className="text-xs text-[#64748B]">Total</p>
-            <p className="text-sm text-[#334155] font-medium">{booking.total}</p>
+            <p className="text-sm text-[#334155] font-medium">
+              {booking.total}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-[#64748B]" />
           <div>
-            <p className="text-xs text-[#64748B]">{booking.bookingType ? "Booked On" : "Created On"}</p>
-            <p className="text-sm text-[#334155] font-medium">{booking.bookedDate}</p>
+            <p className="text-xs text-[#64748B]">
+              {booking.bookingType ? "Booked On" : "Created On"}
+            </p>
+            <p className="text-sm text-[#334155] font-medium">
+              {booking.bookedDate}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Status Message for Pending - Below Trip Details */}
       {pendingStatusMessage && (
-        <div className="mb-4">
-          {pendingStatusMessage}
-        </div>
+        <div className="mb-4">{pendingStatusMessage}</div>
       )}
 
       {/* Rejection Info for Rejected Bookings */}
-      {variant === "rejected" && booking.rejectionReason && booking.rejectionResolution && (
-        <div className="mb-4 p-4 rounded-xl bg-[rgba(255,107,107,0.05)] border border-[rgba(255,107,107,0.2)]">
-          <div className="mb-3">
-            <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Rejection Reason:</p>
-            <p className="text-sm text-[#334155]">{booking.rejectionReason}</p>
-          </div>
-          <div className="mb-3">
-            <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Required Action:</p>
-            <p className="text-sm text-[#334155]">{booking.rejectionResolution}</p>
-          </div>
-          <div className="flex items-center justify-between pt-3 border-t border-[rgba(255,107,107,0.2)]">
-            <p className="text-xs font-semibold text-[#64748B]">Client Action Status:</p>
-            {booking.resolutionStatus === "resolved" ? (
-              userSide ? (
-                <div className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)]">
-                  <CheckCircle className="w-3 h-3 inline mr-1" />
-                  Resolved - Waiting for Admin to Review the Action/Resolution Made
-                </div>
+      {variant === "rejected" &&
+        booking.rejectionReason &&
+        booking.rejectionResolution && (
+          <div className="mb-4 p-4 rounded-xl bg-[rgba(255,107,107,0.05)] border border-[rgba(255,107,107,0.2)]">
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-[#FF6B6B] mb-1">
+                Rejection Reason:
+              </p>
+              <p className="text-sm text-[#334155]">
+                {booking.rejectionReason}
+              </p>
+            </div>
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-[#FF6B6B] mb-1">
+                Required Action:
+              </p>
+              <p className="text-sm text-[#334155]">
+                {booking.rejectionResolution}
+              </p>
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-[rgba(255,107,107,0.2)]">
+              <p className="text-xs font-semibold text-[#64748B]">
+                Client Action Status:
+              </p>
+              {booking.resolutionStatus === "resolved" ? (
+                userSide ? (
+                  <div className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)]">
+                    <CheckCircle className="w-3 h-3 inline mr-1" />
+                    Resolved - Waiting for Admin to Review the Action/Resolution
+                    Made
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMarkAsUnresolved && onMarkAsUnresolved(booking.id);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)] hover:bg-[rgba(16,185,129,0.15)] transition-all"
+                  >
+                    <CheckCircle className="w-3 h-3 inline mr-1" />
+                    Resolved - Click to mark Unresolved
+                  </button>
+                )
               ) : (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onMarkAsUnresolved && onMarkAsUnresolved(booking.id);
+                    onMarkAsResolved && onMarkAsResolved(booking.id);
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)] hover:bg-[rgba(16,185,129,0.15)] transition-all"
+                  className="px-3 py-1.5 rounded-lg bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)] hover:bg-[rgba(255,152,0,0.15)] transition-all"
                 >
-                  <CheckCircle className="w-3 h-3 inline mr-1" />
-                  Resolved - Click to mark Unresolved
+                  <AlertTriangle className="w-3 h-3 inline mr-1" />
+                  Unresolved - Click to mark Resolved
                 </button>
-              )
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMarkAsResolved && onMarkAsResolved(booking.id);
-                }}
-                className="px-3 py-1.5 rounded-lg bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)] hover:bg-[rgba(255,152,0,0.15)] transition-all"
-              >
-                <AlertTriangle className="w-3 h-3 inline mr-1" />
-                Unresolved - Click to mark Resolved
-              </button>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Action Buttons */}
       {actionButtons && (
-        <div 
+        <div
           onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-3 pt-4 border-t border-[#E5E7EB]"
         >

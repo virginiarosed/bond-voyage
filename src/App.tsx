@@ -991,17 +991,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/home" element={<HomePage />} />
-      <Route
-        path="/"
-        element={
-          <Dashboard
-            pendingApprovalsCount={pendingApprovals.length}
-            historyBookings={historyBookings}
-            createdBookings={createdBookings}
-            activeBookingsCount={activeBookingsCount}
-          />
-        }
-      />
+      <Route path="/" element={<Dashboard />} />
       <Route path="/users" element={<Users />} />
       <Route
         path="/bookings"
