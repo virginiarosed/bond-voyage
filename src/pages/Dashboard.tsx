@@ -58,6 +58,16 @@ export function Dashboard() {
           lastName: "",
           phoneNumber: "",
           role: "USER",
+          avatarUrl: "",
+          middleName: "",
+          mobile: "",
+          isActive: true,
+          createdAt: "",
+          updatedAt: "",
+          lastLogin: "",
+          birthday: "",
+          employeeId: "",
+          customerRating: 0,
         };
   }, [profileResponse?.data?.user]);
 
@@ -229,12 +239,12 @@ export function Dashboard() {
             <div className="relative flex-shrink-0">
               <div
                 className={`w-30 h-30 sm:w-34 sm:h-34 rounded-full border-4 border-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] overflow-hidden ${
-                  profileData && profileData.profilePicture ? "" : "bg-primary"
+                  profileData && profileData.avatarUrl ? "" : "bg-primary"
                 }`}
               >
-                {profileData && profileData.profilePicture ? (
+                {profileData && profileData.avatarUrl ? (
                   <img
-                    src={profileData.profilePicture}
+                    src={profileData.avatarUrl}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
@@ -270,7 +280,7 @@ export function Dashboard() {
                       Years in Operation
                     </p>
                     <p className="text-sm text-white">
-                      {profileData ? profileData.yearsInOperation : ""}
+                      {profileData ? profileData.createdAt.toString() : ""}
                     </p>
                   </div>
                 </div>
