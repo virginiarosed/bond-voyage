@@ -23,19 +23,19 @@ apiClient.interceptors.request.use(
 );
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const accessToken = localStorage.get("accessToken");
-
       try {
         const { data } = await axios.post<ApiResponse<{ accessToken: string }>>(
           `${BASE_URL}/auth/refresh-token`,
-          { accessToken },
+          {},
           { withCredentials: true }
         );
 

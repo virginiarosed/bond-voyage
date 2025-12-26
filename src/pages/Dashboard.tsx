@@ -1,14 +1,22 @@
-import { Users, Clock, TrendingUp, CheckCircle, MapPin, HelpCircle, MessageCircle, Plus } from "lucide-react";
+import {
+  Users,
+  Clock,
+  TrendingUp,
+  CheckCircle,
+  MapPin,
+  HelpCircle,
+  Plus,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../components/StatCard";
 import { ContentCard } from "../components/ContentCard";
 import { BookingListCard } from "../components/BookingListCard";
 import { TravelingAvatar } from "../components/TravelingAvatar";
-import { useProfile } from "../components/ProfileContext";
-import { HistoryBooking, BookingData } from "../App";
+import { useProfile } from "../hooks/useAuth";
+import { useDashboardStats } from "../hooks/useDashboard";
+import { useActivityLogs } from "../hooks/useActivityLogs";
+import { useAdminBookings } from "../hooks/useBookings";
 import {
-  BarChart,
-  Bar,
   LineChart,
   Line,
   PieChart,
@@ -21,296 +29,170 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { useEffect, useMemo } from "react";
+import { transformTrendsData } from "../utils/helpers/transformTrendsData";
+import { User } from "../types/types";
+import { queryKeys } from "../utils/lib/queryKeys";
+import {
+  getDefaultActivities,
+  transformActivityLogs,
+} from "../utils/helpers/transformActivityLogs";
 
-interface DashboardProps {
-  pendingApprovalsCount: number;
-  historyBookings: HistoryBooking[];
-  createdBookings: BookingData[];
-  activeBookingsCount?: number;
-}
-
-export function Dashboard({
-  pendingApprovalsCount,
-  historyBookings,
-  createdBookings,
-  activeBookingsCount: propActiveBookingsCount,
-}: DashboardProps) {
+export function Dashboard() {
   const navigate = useNavigate();
-  const { profileData } = useProfile();
+  const { data: profileResponse } = useProfile();
+  const { data: dashboardStatsResponse, isLoading } = useDashboardStats();
+  const { data: adminBookingsResponse } = useAdminBookings({
+    status: "PENDING",
+  });
 
-  // Get initials from company name
+  const profileData: User = profileResponse?.data?.user
+    ? profileResponse.data?.user
+    : {
+        companyName: "",
+        id: "",
+        email: "",
+        firstName: "",
+        lastName: "",
+        phoneNumber: "",
+        role: "USER",
+      };
+
+  const { data: activityLogsResponse } = useActivityLogs(
+    { actorId: profileData.id, limit: 4 },
+    {
+      enabled: !!profileResponse?.data,
+      queryKey: [queryKeys.activityLogs.all],
+    }
+  );
+
+  const cards = dashboardStatsResponse?.data?.cards || {
+    activeBookings: 0,
+    completedTrips: 0,
+    pendingApprovals: 0,
+    totalUsers: 0,
+  };
+
+  const distributions = dashboardStatsResponse?.data?.distributions || {
+    status: { active: 0, cancelled: 0, completed: 0, pending: 0 },
+    type: { customized: 0, requested: 0, standard: 0 },
+  };
+
+  const trends = dashboardStatsResponse?.data?.trends || {
+    historical: [],
+    labels: [],
+    predicted: [],
+    year: new Date().getFullYear(),
+  };
+
+  const upcomingTrips =
+    adminBookingsResponse?.data && adminBookingsResponse.data.length > 0
+      ? adminBookingsResponse.data
+      : [];
+
   const getInitials = () => {
     if (!profileData) return null;
 
-    if (profileData.profilePicture) return null;
-    const words = profileData.companyName.split(" ");
-    if (words.length >= 2) {
+    const words = profileData.companyName?.split(" ");
+    if (words && words.length >= 2) {
       return (words[0][0] + words[words.length - 1][0]).toUpperCase();
     }
-    return profileData.companyName.substring(0, 2).toUpperCase();
+    return profileData.companyName?.substring(0, 2).toUpperCase();
   };
 
-  // Calculate metrics
-  const completedTripsCount = historyBookings.filter(
-    (booking) => booking.status === "completed"
-  ).length;
-  const cancelledTripsCount = historyBookings.filter(
-    (booking) => booking.status === "cancelled"
-  ).length;
-  const activeBookingsCount =
-    propActiveBookingsCount !== undefined
-      ? propActiveBookingsCount
-      : createdBookings.length;
-  const totalBookings =
-    completedTripsCount +
-    cancelledTripsCount +
-    activeBookingsCount +
-    pendingApprovalsCount;
-
-  // Generate booking trends data for last 12 months + 6 months prediction
-  const generateBookingTrends = () => {
-    const now = new Date();
-    const trends = [];
-
-    // Historical data (last 12 months) - based on system performance
-    // Pattern: Growth trend with seasonal variations
-    const baselineBookings = [4, 5, 7, 6, 9, 11, 13, 12, 15, 14, 18, 16];
-
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = date.toLocaleDateString("en-US", { month: "short" });
-      trends.push({
-        month: monthName,
-        bookings: baselineBookings[11 - i],
-        predicted: false,
-      });
-    }
-
-    // Predicted data (next 6 months) - based on growth trend
-    // Calculate average growth rate from last 6 months
-    const recentGrowth = (baselineBookings[11] - baselineBookings[5]) / 6;
-    let lastValue = baselineBookings[11];
-
-    for (let i = 1; i <= 6; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      const monthName = date.toLocaleDateString("en-US", { month: "short" });
-      // Apply growth with slight randomization for realism
-      lastValue = Math.round(
-        lastValue + recentGrowth + (Math.random() - 0.5) * 2
-      );
-      trends.push({
-        month: monthName,
-        bookings: Math.max(lastValue, 1), // Ensure positive values
-        predicted: true,
-      });
-    }
-
-    return trends;
-  };
-
-  const monthlyData = generateBookingTrends();
-
-  // Booking status distribution
   const statusData = [
-    { name: "Completed", value: completedTripsCount, color: "#10B981" },
-    { name: "Active", value: activeBookingsCount, color: "#0A7AFF" },
-    { name: "Pending", value: pendingApprovalsCount, color: "#FFB84D" },
-    { name: "Cancelled", value: cancelledTripsCount, color: "#EF4444" },
+    {
+      name: "Completed",
+      value: distributions.status.completed,
+      color: "#10B981",
+    },
+    { name: "Active", value: distributions.status.active, color: "#0A7AFF" },
+    { name: "Pending", value: distributions.status.pending, color: "#FFB84D" },
+    {
+      name: "Cancelled",
+      value: distributions.status.cancelled,
+      color: "#EF4444",
+    },
   ];
 
-  // Booking type distribution
   const bookingTypeData = [
     {
       name: "Customized",
-      value:
-        historyBookings.filter((b) => b.bookingType === "Customized").length +
-        createdBookings.filter((b) => b.bookingType === "Customized").length,
+      value: distributions.type.customized,
       color: "#0A7AFF",
     },
     {
       name: "Standard",
-      value:
-        historyBookings.filter((b) => b.bookingType === "Standard").length +
-        createdBookings.filter((b) => b.bookingType === "Standard").length,
+      value: distributions.type.standard,
       color: "#14B8A6",
     },
     {
       name: "Requested",
-      value:
-        historyBookings.filter((b) => b.bookingType === "Requested").length +
-        createdBookings.filter((b) => b.bookingType === "Requested").length,
+      value: distributions.type.requested,
       color: "#A78BFA",
     },
-  ].filter((item) => item.value > 0);
+  ];
 
   // Frequently Asked Questions data - Simplified version
   const faqData = [
     {
       id: "FAQ-001",
       question: "How do I create a new booking for a customer?",
-      answer: "Go to the Bookings page and click 'Create Booking'. Fill in customer details, select itinerary, and confirm payment. You can also create bookings directly from the Itinerary page.",
+      answer:
+        "Go to the Bookings page and click 'Create Booking'. Fill in customer details, select itinerary, and confirm payment. You can also create bookings directly from the Itinerary page.",
     },
     {
       id: "FAQ-002",
-      question: "What's the difference between Standard and Requested itineraries?",
-      answer: "Standard itineraries are pre-built templates for popular destinations. Requested itineraries are custom plans created specifically for individual customer requests with detailed day-by-day activities.",
+      question:
+        "What's the difference between Standard and Requested itineraries?",
+      answer:
+        "Standard itineraries are pre-built templates for popular destinations. Requested itineraries are custom plans created specifically for individual customer requests with detailed day-by-day activities.",
     },
     {
       id: "FAQ-003",
       question: "How do I manage pending approvals?",
-      answer: "Pending approvals appear on your dashboard and in the Bookings page. You can review, approve, or reject requests with comments. Notifications are sent to customers upon approval.",
+      answer:
+        "Pending approvals appear on your dashboard and in the Bookings page. You can review, approve, or reject requests with comments. Notifications are sent to customers upon approval.",
     },
     {
       id: "FAQ-004",
       question: "Can I edit a booking after it's confirmed?",
-      answer: "Yes, bookings can be edited from the Bookings page. Changes are tracked in the activity log, and customers receive notifications for significant modifications.",
+      answer:
+        "Yes, bookings can be edited from the Bookings page. Changes are tracked in the activity log, and customers receive notifications for significant modifications.",
     },
     {
       id: "FAQ-005",
       question: "How do I handle customer refunds?",
-      answer: "Refunds can be processed through the Bookings page. Select the booking, click 'Manage Payment', then 'Process Refund'. Refunds take 3-5 business days to reflect in customer accounts.",
+      answer:
+        "Refunds can be processed through the Bookings page. Select the booking, click 'Manage Payment', then 'Process Refund'. Refunds take 3-5 business days to reflect in customer accounts.",
     },
     {
       id: "FAQ-006",
       question: "What are the cancellation policies?",
-      answer: "Cancellations made 30+ days before travel receive full refund. 15-29 days: 50% refund. 0-14 days: non-refundable. Emergency cases are reviewed individually.",
+      answer:
+        "Cancellations made 30+ days before travel receive full refund. 15-29 days: 50% refund. 0-14 days: non-refundable. Emergency cases are reviewed individually.",
     },
     {
       id: "FAQ-007",
       question: "How do I customize itineraries?",
-      answer: "Go to the Itinerary page, select 'Create New Itinerary', and choose between Standard or Requested templates. You can add activities, set schedules, and include pricing details.",
+      answer:
+        "Go to the Itinerary page, select 'Create New Itinerary', and choose between Standard or Requested templates. You can add activities, set schedules, and include pricing details.",
     },
     {
       id: "FAQ-008",
       question: "What payment methods are accepted?",
-      answer: "We accept credit cards (Visa, Mastercard, Amex), bank transfers, GCash, Maya, and PayPal. All payments are secured with SSL encryption.",
+      answer:
+        "We accept credit cards (Visa, Mastercard, Amex), bank transfers, GCash, Maya, and PayPal. All payments are secured with SSL encryption.",
     },
   ];
 
-  // Generate recent activities from actual data - UPDATED TO SHOW 4 ENTRIES
-  const generateRecentActivities = () => {
-    const activities = [];
-
-    // Add recent completed bookings
-    const recentCompleted = historyBookings
-      .filter((b) => b.status === "completed")
-      .slice(0, 2);
-
-    recentCompleted.forEach((booking, index) => {
-      activities.push({
-        id: `completed-${booking.id}`,
-        text: `Booking ${booking.id} for ${booking.customer} was completed`,
-        icon: "check",
-      });
-    });
-
-    // Add recent cancelled bookings
-    const recentCancelled = historyBookings
-      .filter((b) => b.status === "cancelled")
-      .slice(0, 1);
-
-    recentCancelled.forEach((booking) => {
-      activities.push({
-        id: `cancelled-${booking.id}`,
-        text: `Booking ${booking.id} for ${booking.customer} was cancelled`,
-        icon: "cancel",
-      });
-    });
-
-    // Add pending approvals activity
-    if (pendingApprovalsCount > 0) {
-      activities.push({
-        id: "pending-approvals",
-        text: `${pendingApprovalsCount} booking${
-          pendingApprovalsCount > 1 ? "s" : ""
-        } pending approval`,
-        icon: "clock",
-      });
+  const recentActivities = useMemo(() => {
+    if (!activityLogsResponse?.data) {
+      return getDefaultActivities();
     }
 
-    // Ensure we have exactly 4 activities by adding more if needed
-    if (activities.length < 4) {
-      // Add standard itinerary activity
-      activities.push({
-        id: "standard-itinerary",
-        text: "New standard itinerary template created",
-        icon: "itinerary",
-      });
-    }
-
-    if (activities.length < 4) {
-      // Add user activity
-      activities.push({
-        id: "user-activity",
-        text: "New user registration completed",
-        icon: "user",
-      });
-    }
-
-    if (activities.length < 4) {
-      // Add payment activity
-      activities.push({
-        id: "payment-activity",
-        text: "New payment processed successfully",
-        icon: "payment",
-      });
-    }
-
-    return activities.slice(0, 4); // Return exactly 4 activities
-  };
-
-  const recentActivities = generateRecentActivities();
-
-  const upcomingTrips = createdBookings
-    .filter((b) => b.tripStatus === "upcoming")
-    .slice(0, 4)
-    .map((booking) => ({
-      id: booking.id,
-      customer: booking.customer,
-      destination: booking.destination,
-      date: new Date(booking.startDate).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-      status:
-        booking.paymentStatus === "Paid" ? "confirmed" : "pending-payment",
-    }));
-
-  // If no upcoming trips from data, show placeholder
-  const displayUpcomingTrips =
-    upcomingTrips.length > 0
-      ? upcomingTrips
-      : [
-          {
-            id: "BK-2026-001",
-            customer: "Sofia Villanueva",
-            email: "sofia.villanueva@email.com",
-            mobile: "+63 917 234 5678",
-            destination: "Batanes, Cagayan Valley",
-            dates: "March 15, 2026 – March 20, 2026",
-            travelers: 2,
-            total: "₱55,000",
-            bookedDate: "February 10, 2026",
-            bookingType: "Standard" as const,
-            date: "March 15, 2026",
-            status: "confirmed",
-          },
-          {
-            id: "BK-2026-002",
-            customer: "Miguel Santos",
-            email: "miguel.santos@email.com",
-            mobile: "+63 918 345 6789",
-            destination: "Vigan, Ilocos Sur",
-            dates: "May 10, 2026 – May 15, 2026",
-            travelers: 4,
-            total: "₱48,000",
-            bookedDate: "March 20, 2026",
-            bookingType: "Customized" as const,
-            date: "May 10, 2026",
-            status: "confirmed",
-          },
-        ];
+    return transformActivityLogs(activityLogsResponse.data);
+  }, [activityLogsResponse, isLoading]);
 
   return (
     <div>
@@ -415,31 +297,35 @@ export function Dashboard({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatCard
           icon={Users}
+          value={cards.totalUsers || "0"}
           label="Total Users"
-          value="0"
           gradientFrom="#F472B6"
           gradientTo="#38BDF8"
+          isLoading={isLoading}
         />
         <StatCard
           icon={Clock}
           label="Pending Approvals"
-          value={pendingApprovalsCount.toString()}
+          value={cards.pendingApprovals || "0"}
           gradientFrom="#F97316"
           gradientTo="#EF4444"
+          isLoading={isLoading}
         />
         <StatCard
           icon={TrendingUp}
           label="Active Bookings"
-          value={activeBookingsCount.toString()}
+          value={cards.activeBookings || "0"}
           gradientFrom="#14B8A6"
           gradientTo="#0A7AFF"
+          isLoading={isLoading}
         />
         <StatCard
           icon={CheckCircle}
           label="Completed Trips"
-          value={completedTripsCount.toString()}
+          value={cards.completedTrips || "0"}
           gradientFrom="#22C55E"
           gradientTo="#16A34A"
+          isLoading={isLoading}
         />
       </div>
 
@@ -450,7 +336,13 @@ export function Dashboard({
         >
           <div className="h-[300px] sm:h-[350px] lg:h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData}>
+              <LineChart
+                data={transformTrendsData(
+                  trends.historical,
+                  trends.labels,
+                  trends.predicted
+                )}
+              >
                 <defs>
                   <linearGradient
                     id="colorBookings"
@@ -826,13 +718,15 @@ export function Dashboard({
       {/* FAQ and Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {/* Frequently Asked Questions - Simplified */}
-        <ContentCard 
+        <ContentCard
           title="Frequently Asked Questions"
           action={
-            <button 
+            <button
               onClick={() => navigate("/faq")}
               className="h-10 px-5 rounded-[20px] text-white text-sm font-medium shadow-[0_2px_8px_rgba(10,122,255,0.25)] flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5"
-              style={{ background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))` }}
+              style={{
+                background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))`,
+              }}
             >
               <Plus className="w-4 h-4" />
               New FAQ
@@ -886,7 +780,7 @@ export function Dashboard({
                 </div>
               );
             })}
-            
+
             {/* Empty state if no FAQs */}
             {faqData.length === 0 && (
               <div className="text-center py-6">
@@ -894,7 +788,9 @@ export function Dashboard({
                   <HelpCircle className="w-6 h-6 text-[#94A3B8]" />
                 </div>
                 <p className="text-sm text-[#64748B] mb-2">No FAQs yet</p>
-                <p className="text-xs text-[#94A3B8]">Create your first FAQ to help users</p>
+                <p className="text-xs text-[#94A3B8]">
+                  Create your first FAQ to help users
+                </p>
               </div>
             )}
           </div>
@@ -920,7 +816,7 @@ export function Dashboard({
               let iconBgColor = "bg-blue-50";
               let iconColor = "text-blue-600";
               let IconComponent = CheckCircle;
-              
+
               if (activity.icon === "clock") {
                 iconBgColor = "bg-yellow-50";
                 iconColor = "text-yellow-600";
@@ -951,10 +847,12 @@ export function Dashboard({
                 >
                   <div className="flex items-center gap-3">
                     {/* Smaller icon */}
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-lg ${iconBgColor} flex items-center justify-center`}>
+                    <div
+                      className={`flex-shrink-0 w-8 h-8 rounded-lg ${iconBgColor} flex items-center justify-center`}
+                    >
                       <IconComponent className={`w-4 h-4 ${iconColor}`} />
                     </div>
-                    
+
                     {/* Text centered vertically */}
                     <div className="flex-1 min-w-0 flex items-center">
                       <p className="text-sm font-medium text-[#1A2B4F] line-clamp-2">
@@ -965,15 +863,19 @@ export function Dashboard({
                 </div>
               );
             })}
-            
+
             {/* Empty state if no activities */}
             {recentActivities.length === 0 && (
               <div className="text-center py-6">
                 <div className="w-12 h-12 mx-auto rounded-xl bg-[#F8FAFB] flex items-center justify-center mb-3">
                   <Clock className="w-6 h-6 text-[#94A3B8]" />
                 </div>
-                <p className="text-sm text-[#64748B] mb-2">No recent activity</p>
-                <p className="text-xs text-[#94A3B8]">Activity will appear here</p>
+                <p className="text-sm text-[#64748B] mb-2">
+                  No recent activity
+                </p>
+                <p className="text-xs text-[#94A3B8]">
+                  Activity will appear here
+                </p>
               </div>
             )}
           </div>
@@ -983,7 +885,7 @@ export function Dashboard({
       {/* Upcoming Trips */}
       <div className="grid grid-cols-1 gap-6">
         <ContentCard
-          title={`Upcoming Trips (${displayUpcomingTrips.length})`}
+          title={`Upcoming Trips (${upcomingTrips.length})`}
           footer={
             <button
               onClick={() => navigate("/bookings")}
@@ -994,7 +896,7 @@ export function Dashboard({
           }
         >
           <div className="space-y-4">
-            {displayUpcomingTrips.map((trip) => (
+            {upcomingTrips.map((trip) => (
               <BookingListCard
                 key={trip.id}
                 booking={{
@@ -1011,7 +913,7 @@ export function Dashboard({
                 }}
                 onViewDetails={(id) => navigate("/bookings")}
                 additionalBadges={
-                  trip.status === "confirmed" ? (
+                  trip.status === "CONFIRMED" ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
                       <CheckCircle className="w-3 h-3" />
                       Confirmed
