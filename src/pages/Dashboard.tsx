@@ -16,6 +16,7 @@ import { useProfile } from "../hooks/useAuth";
 import { useDashboardStats } from "../hooks/useDashboard";
 import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useAdminBookings } from "../hooks/useBookings";
+import { getInitials } from "../utils/helpers/getInitials";
 import {
   LineChart,
   Line,
@@ -29,7 +30,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { transformTrendsData } from "../utils/helpers/transformTrendsData";
 import { User } from "../types/types";
 import { queryKeys } from "../utils/lib/queryKeys";
@@ -46,17 +47,107 @@ export function Dashboard() {
     status: "PENDING",
   });
 
-  const profileData: User = profileResponse?.data?.user
-    ? profileResponse.data?.user
-    : {
-        companyName: "",
-        id: "",
-        email: "",
-        firstName: "",
-        lastName: "",
-        phoneNumber: "",
-        role: "USER",
-      };
+  const profileData: User = useMemo(() => {
+    return profileResponse?.data?.user
+      ? profileResponse.data.user
+      : {
+          companyName: "",
+          id: "",
+          email: "",
+          firstName: "",
+          lastName: "",
+          phoneNumber: "",
+          role: "USER",
+          avatarUrl: "",
+          middleName: "",
+          mobile: "",
+          isActive: true,
+          createdAt: "",
+          updatedAt: "",
+          lastLogin: "",
+          birthday: "",
+          employeeId: "",
+          customerRating: 0,
+        };
+  }, [profileResponse?.data?.user]);
+
+  const cards = useMemo(() => {
+    return (
+      dashboardStatsResponse?.data?.cards || {
+        activeBookings: 0,
+        completedTrips: 0,
+        pendingApprovals: 0,
+        totalUsers: 0,
+      }
+    );
+  }, [dashboardStatsResponse?.data?.cards]);
+
+  const distributions = useMemo(() => {
+    return (
+      dashboardStatsResponse?.data?.distributions || {
+        status: { active: 0, cancelled: 0, completed: 0, pending: 0 },
+        type: { customized: 0, requested: 0, standard: 0 },
+      }
+    );
+  }, [dashboardStatsResponse?.data?.distributions]);
+
+  const trends = useMemo(() => {
+    return (
+      dashboardStatsResponse?.data?.trends || {
+        historical: [],
+        labels: [],
+        predicted: [],
+        year: new Date().getFullYear(),
+      }
+    );
+  }, [dashboardStatsResponse?.data?.trends]);
+
+  const upcomingTrips = useMemo(() => {
+    return adminBookingsResponse?.data && adminBookingsResponse.data.length > 0
+      ? adminBookingsResponse.data
+      : [];
+  }, [adminBookingsResponse?.data]);
+
+  const statusData = useMemo(() => {
+    return [
+      {
+        name: "Completed",
+        value: distributions.status.completed,
+        color: "#10B981",
+      },
+      { name: "Active", value: distributions.status.active, color: "#0A7AFF" },
+      {
+        name: "Pending",
+        value: distributions.status.pending,
+        color: "#FFB84D",
+      },
+      {
+        name: "Cancelled",
+        value: distributions.status.cancelled,
+        color: "#EF4444",
+      },
+    ];
+  }, [distributions.status]);
+
+  const bookingTypeData = useMemo(() => {
+    return [
+      {
+        name: "Customized",
+        value: distributions.type.customized,
+        color: "#0A7AFF",
+      },
+      {
+        name: "Standard",
+        value: distributions.type.standard,
+        color: "#14B8A6",
+      },
+      {
+        name: "Requested",
+        value: distributions.type.requested,
+        color: "#A78BFA",
+      },
+    ];
+  }, [distributions.type]);
 
   const { data: activityLogsResponse } = useActivityLogs(
     { actorId: profileData.id, limit: 4 },
@@ -66,72 +157,13 @@ export function Dashboard() {
     }
   );
 
-  const cards = dashboardStatsResponse?.data?.cards || {
-    activeBookings: 0,
-    completedTrips: 0,
-    pendingApprovals: 0,
-    totalUsers: 0,
-  };
-
-  const distributions = dashboardStatsResponse?.data?.distributions || {
-    status: { active: 0, cancelled: 0, completed: 0, pending: 0 },
-    type: { customized: 0, requested: 0, standard: 0 },
-  };
-
-  const trends = dashboardStatsResponse?.data?.trends || {
-    historical: [],
-    labels: [],
-    predicted: [],
-    year: new Date().getFullYear(),
-  };
-
-  const upcomingTrips =
-    adminBookingsResponse?.data && adminBookingsResponse.data.length > 0
-      ? adminBookingsResponse.data
-      : [];
-
-  const getInitials = () => {
-    if (!profileData) return null;
-
-    const words = profileData.companyName?.split(" ");
-    if (words && words.length >= 2) {
-      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  const recentActivities = useMemo(() => {
+    if (!activityLogsResponse?.data) {
+      return getDefaultActivities();
     }
-    return profileData.companyName?.substring(0, 2).toUpperCase();
-  };
 
-  const statusData = [
-    {
-      name: "Completed",
-      value: distributions.status.completed,
-      color: "#10B981",
-    },
-    { name: "Active", value: distributions.status.active, color: "#0A7AFF" },
-    { name: "Pending", value: distributions.status.pending, color: "#FFB84D" },
-    {
-      name: "Cancelled",
-      value: distributions.status.cancelled,
-      color: "#EF4444",
-    },
-  ];
-
-  const bookingTypeData = [
-    {
-      name: "Customized",
-      value: distributions.type.customized,
-      color: "#0A7AFF",
-    },
-    {
-      name: "Standard",
-      value: distributions.type.standard,
-      color: "#14B8A6",
-    },
-    {
-      name: "Requested",
-      value: distributions.type.requested,
-      color: "#A78BFA",
-    },
-  ];
+    return transformActivityLogs(activityLogsResponse.data);
+  }, [activityLogsResponse?.data]);
 
   // Frequently Asked Questions data - Simplified version
   const faqData = [
@@ -186,14 +218,6 @@ export function Dashboard() {
     },
   ];
 
-  const recentActivities = useMemo(() => {
-    if (!activityLogsResponse?.data) {
-      return getDefaultActivities();
-    }
-
-    return transformActivityLogs(activityLogsResponse.data);
-  }, [activityLogsResponse, isLoading]);
-
   return (
     <div>
       {/* Profile Information Section */}
@@ -215,18 +239,18 @@ export function Dashboard() {
             <div className="relative flex-shrink-0">
               <div
                 className={`w-30 h-30 sm:w-34 sm:h-34 rounded-full border-4 border-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] overflow-hidden ${
-                  profileData && profileData.profilePicture ? "" : "bg-primary"
+                  profileData && profileData.avatarUrl ? "" : "bg-primary"
                 }`}
               >
-                {profileData && profileData.profilePicture ? (
+                {profileData && profileData.avatarUrl ? (
                   <img
-                    src={profileData.profilePicture}
+                    src={profileData.avatarUrl}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white">
-                    {getInitials()}
+                    {getInitials(profileData.companyName!)}
                   </div>
                 )}
               </div>
@@ -256,7 +280,7 @@ export function Dashboard() {
                       Years in Operation
                     </p>
                     <p className="text-sm text-white">
-                      {profileData ? profileData.yearsInOperation : ""}
+                      {profileData ? profileData.createdAt.toString() : ""}
                     </p>
                   </div>
                 </div>

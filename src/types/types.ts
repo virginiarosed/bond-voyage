@@ -10,17 +10,24 @@ export interface ApiResponse<T = any> {
   };
 }
 
-export interface User {
+export type User = {
   id: string;
   email: string;
   firstName: string;
+  middleName: string | null;
   lastName: string;
-  phoneNumber: string;
-  role: "USER" | "ADMIN";
-  avatarUrl?: string;
-  companyName?: string;
-  customerRating?: number;
-}
+  mobile: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastLogin: string | null;
+  avatarUrl: string | null;
+  birthday: string | null;
+  companyName: string | null;
+  employeeId: string | null;
+  customerRating: number | null;
+};
 
 export interface AuthResponse {
   user: User;

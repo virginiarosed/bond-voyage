@@ -12,14 +12,17 @@ import { ApiResponse, User } from "../types/types";
 
 export const useUsers = (
   params?: any,
-  options?: UseQueryOptions<ApiResponse<User[]>, AxiosError>
+  options?: UseQueryOptions<ApiResponse<{ users: User[] }>, AxiosError>
 ) => {
   return useQuery({
     queryKey: queryKeys.users.list(params),
     queryFn: async () => {
-      const response = await apiClient.get<ApiResponse<User[]>>("/users", {
-        params,
-      });
+      const response = await apiClient.get<ApiResponse<{ users: User[] }>>(
+        "/users",
+        {
+          params,
+        }
+      );
       return response.data;
     },
     ...options,
@@ -87,7 +90,7 @@ export const useUpdateUser = (
 
 export const useDeactivateUser = (
   id: string,
-  options?: UseMutationOptions<ApiResponse, AxiosError, void>
+  options?: UseMutationOptions<ApiResponse, AxiosError, { id: string }>
 ) => {
   const queryClient = useQueryClient();
 
@@ -107,7 +110,7 @@ export const useDeactivateUser = (
 
 export const useDeleteUser = (
   id: string,
-  options?: UseMutationOptions<ApiResponse, AxiosError, void>
+  options?: UseMutationOptions<ApiResponse, AxiosError, { id: string }>
 ) => {
   const queryClient = useQueryClient();
 

@@ -2,15 +2,23 @@ import { Filter, Calendar } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 interface UserFilterContentProps {
-  statusFilter: string;
-  onStatusFilterChange: (value: string) => void;
-  dateFrom: string;
-  onDateFromChange: (value: string) => void;
-  dateTo: string;
-  onDateToChange: (value: string) => void;
+  roleFilter?: "all" | "USER" | "ADMIN";
+  onRoleFilterChange?: (value: "all" | "USER" | "ADMIN") => void;
+  isActiveFilter?: "all" | "true" | "false";
+  onIsActiveFilterChange?: (value: "all" | "true" | "false") => void;
+  dateFrom?: string;
+  onDateFromChange?: (value: string) => void;
+  dateTo?: string;
+  onDateToChange?: (value: string) => void;
   onApplyFilters: () => void;
   onResetFilters: () => void;
 }
@@ -34,23 +42,53 @@ export function UserFilterContent({
           </div>
           <div>
             <h3 className="font-semibold text-[#1A2B4F]">Filter Users</h3>
-            <p className="text-xs text-[#64748B] mt-0.5">Refine your search results</p>
+            <p className="text-xs text-[#64748B] mt-0.5">
+              Refine your search results
+            </p>
           </div>
         </div>
       </div>
       <div className="p-5 space-y-4">
         <div>
-          <Label htmlFor="status-filter" className="text-sm font-medium text-[#1A2B4F] mb-2.5 block">
+          <Label className="text-sm font-medium text-[#1A2B4F] mb-2.5 block">
+            Role
+          </Label>
+          <Select
+            value={roleFilter ?? "all"}
+            onValueChange={(v) =>
+              onRoleFilterChange &&
+              onRoleFilterChange(v as "all" | "USER" | "ADMIN")
+            }
+          >
+            <SelectTrigger className="w-full h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
+              <SelectValue placeholder="Select role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="USER">User</SelectItem>
+              <SelectItem value="ADMIN">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="text-sm font-medium text-[#1A2B4F] mb-2.5 block">
             Status
           </Label>
-          <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-            <SelectTrigger id="status-filter" className="w-full h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
+          <Select
+            value={isActiveFilter ?? "all"}
+            onValueChange={(v) =>
+              onIsActiveFilterChange &&
+              onIsActiveFilterChange(v as "all" | "true" | "false")
+            }
+          >
+            <SelectTrigger className="w-full h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Users</SelectItem>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Deactivated">Deactivated</SelectItem>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="true">Active</SelectItem>
+              <SelectItem value="false">Deactivated</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -62,26 +100,36 @@ export function UserFilterContent({
           </Label>
           <div className="space-y-3">
             <div>
-              <Label htmlFor="date-from" className="text-xs text-[#64748B] mb-1.5 block">
+              <Label
+                htmlFor="date-from"
+                className="text-xs text-[#64748B] mb-1.5 block"
+              >
                 From
               </Label>
               <Input
                 id="date-from"
                 type="date"
-                value={dateFrom}
-                onChange={(e) => onDateFromChange(e.target.value)}
+                value={dateFrom ?? ""}
+                onChange={(e) =>
+                  onDateFromChange && onDateFromChange(e.target.value)
+                }
                 className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
               />
             </div>
             <div>
-              <Label htmlFor="date-to" className="text-xs text-[#64748B] mb-1.5 block">
+              <Label
+                htmlFor="date-to"
+                className="text-xs text-[#64748B] mb-1.5 block"
+              >
                 To
               </Label>
               <Input
                 id="date-to"
                 type="date"
-                value={dateTo}
-                onChange={(e) => onDateToChange(e.target.value)}
+                value={dateTo ?? ""}
+                onChange={(e) =>
+                  onDateToChange && onDateToChange(e.target.value)
+                }
                 className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
               />
             </div>
