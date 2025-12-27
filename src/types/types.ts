@@ -11,13 +11,17 @@ export interface ApiResponse<T = any> {
 }
 
 export interface QueryParams {
-  page: number;
-  limit: number;
-  q: string;
-  status: string;
-  dateFrom: string;
-  dateTo: string;
-  sort: string;
+  page?: number;
+  limit?: number;
+  q?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sort?: string;
+
+  // user related
+  isActive?: boolean;
+  role?: string;
 }
 
 export type User = {
