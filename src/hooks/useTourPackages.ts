@@ -91,13 +91,12 @@ export const useUpdateTourPackage = (
 };
 
 export const useDeleteTourPackage = (
-  id: string,
-  options?: UseMutationOptions<ApiResponse, AxiosError, void>
+  options?: UseMutationOptions<ApiResponse, AxiosError, { id: string }>
 ) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ id }: { id: string }) => {
       const response = await apiClient.delete<ApiResponse>(
         `/tour-packages/${id}`
       );
