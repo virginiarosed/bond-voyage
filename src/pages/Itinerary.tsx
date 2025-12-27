@@ -14,8 +14,6 @@ import {
   Car,
   BookOpen,
   Clock,
-  GripVertical,
-  Save,
   MapPin,
   Compass,
   TreePine,
@@ -27,14 +25,6 @@ import {
   Music,
   Sunset,
   AlertCircle,
-  Sparkles,
-  FileText,
-  Calendar,
-  Users,
-  DollarSign,
-  Mail,
-  Phone,
-  User,
   Waves,
   Mountain,
   Palmtree,
@@ -65,7 +55,6 @@ import {
   Gift,
   ShoppingCart,
   Search,
-  Send,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -102,6 +91,7 @@ import {
 import { toast } from "sonner@2.0.3";
 import { TourPackage } from "../types/types";
 import { queryKeys } from "../utils/lib/queryKeys";
+import { useCreateBooking } from "../hooks/useBookings";
 
 interface RequestedItineraryBooking {
   id: string;
@@ -122,14 +112,16 @@ interface RequestedItineraryBooking {
 
 interface ItineraryActivity {
   time: string;
-  icon: any;
+  icon: string;
   title: string;
   description: string;
   location?: string;
+  order: number;
 }
 
 interface ItineraryDay {
   day: number;
+  dayNumber: number;
   title: string;
   activities: ItineraryActivity[];
 }
@@ -145,14 +137,9 @@ interface BookingFormData {
 }
 
 interface ItineraryProps {
-  onCreateBooking?: (bookingData: any) => void;
   requestedBookingsFromBookings?: any[];
   newStandardItineraries?: any[];
   drafts?: any[];
-  onNavigateToCreateStandard?: () => void;
-  onNavigateToCreateRequested?: () => void;
-  onEditItinerary?: (itinerary: any) => void;
-  onEditRequestedBooking?: (booking: any) => void;
   onEditRequestedDraft?: (draft: any) => void;
   onEditStandardDraft?: (draft: any) => void;
   onDeleteDraft?: (draftId: string) => void;
@@ -247,48 +234,10 @@ const serializeItineraryData = (data: any) => {
   return serialized;
 };
 
-// Transform API tour package to standard itinerary format
-const transformTourPackageToItinerary = (
-  tourPackage: TourPackage,
-  index: number
-) => {
-  return {
-    id: tourPackage.id,
-    title: tourPackage.title,
-    destination: tourPackage.destination,
-    days: tourPackage.duration,
-    category: "Standard",
-    pricePerPax: tourPackage.price,
-    image: tourPackage.thumbUrl,
-    description: tourPackage.description,
-    apiSource: true, // Mark as API sourced
-  };
-};
-
-// Transform API days to itinerary details format
-const transformApiDaysToItineraryDetails = (days: any[]): ItineraryDay[] => {
-  if (!days || days.length === 0) return [];
-
-  return days.map((day: any, index: number) => ({
-    day: index + 1,
-    title: day.title || `Day ${index + 1}`,
-    activities: (day.activities || []).map((activity: any) => ({
-      time: activity.time || "TBD",
-      icon: getIconComponent(activity.icon || "Clock"),
-      title: activity.title || "Activity",
-      description: activity.description || "",
-      location: activity.location || "",
-    })),
-  }));
-};
-
 export function Itinerary({
-  onCreateBooking,
   requestedBookingsFromBookings = [],
   newStandardItineraries = [],
   drafts = [],
-  onEditItinerary,
-  onEditRequestedBooking,
   onEditRequestedDraft,
   onEditStandardDraft,
   onDeleteDraft,
@@ -311,6 +260,9 @@ export function Itinerary({
     error: packagesError,
     refetch: refetchTourPackages,
   } = useTourPackages({ isActive: true });
+
+  const { mutate: createBooking, isPending: isCreateBookingPending } =
+    useCreateBooking();
 
   // Delete tour package mutation
   const { mutate: deleteTourPackage, isPending } = useDeleteTourPackage({});
@@ -437,14 +389,18 @@ export function Itinerary({
 
     return days.map((day: any, index: number) => ({
       day: index + 1,
+      dayNumber: index + 1,
       title: day.title || `Day ${index + 1}`,
-      activities: (day.activities || []).map((activity: any) => ({
-        time: activity.time || "TBD",
-        icon: getIconComponent(activity.icon || "Clock"),
-        title: activity.title || "Activity",
-        description: activity.description || "",
-        location: activity.location || "",
-      })),
+      activities: (day.activities || []).map(
+        (activity: any, activityIndex: number) => ({
+          time: activity.time || "TBD",
+          icon: activity.icon || "Clock",
+          title: activity.title || "Activity",
+          description: activity.description || "",
+          location: activity.location || "",
+          order: activity.order || activityIndex + 1,
+        })
+      ),
     }));
   };
 
@@ -644,12 +600,10 @@ export function Itinerary({
 
   // Export functions
   const handleExportPDF = () => {
-    console.log("Exporting itineraries as PDF...");
     toast.info("PDF export functionality coming soon");
   };
 
   const handleExportExcel = () => {
-    console.log("Exporting itineraries as Excel...");
     toast.info("Excel export functionality coming soon");
   };
 
@@ -760,40 +714,45 @@ export function Itinerary({
       email: bookingFormData.email,
       mobile: bookingFormData.mobile,
       destination: standard.destination,
-      itinerary: standard.title,
       startDate: bookingFormData.travelDateFrom,
       endDate: bookingFormData.travelDateTo,
       travelers: travelers,
-      totalAmount: totalAmount,
+      totalPrice: totalAmount,
       paid: 0,
       paymentStatus: "Unpaid",
       bookedDate: new Date().toISOString().split("T")[0],
       bookedDateObj: new Date(),
       status: "pending",
-      bookingType: "Standard" as const,
-      tourType: bookingFormData.tourType,
-      itineraryDetails: itineraryDetails,
+      type: "STANDARD" as const,
+      tourType: bookingFormData.tourType.toUpperCase(),
+      itinerary: itineraryDetails,
     };
 
-    if (onCreateBooking) {
-      onCreateBooking(newBooking);
-    }
+    createBooking(newBooking, {
+      onSuccess: () => {
+        setBookingFormData({
+          customerName: "",
+          email: "",
+          mobile: "",
+          travelDateFrom: "",
+          travelDateTo: "",
+          travelers: "1",
+          tourType: "" as any,
+        });
+        setCreateBookingConfirmOpen(false);
+        setStandardBookingModalOpen(false);
+        setSelectedStandardForBooking(null);
 
-    setBookingFormData({
-      customerName: "",
-      email: "",
-      mobile: "",
-      travelDateFrom: "",
-      travelDateTo: "",
-      travelers: "1",
-      tourType: "" as any,
-    });
-    setCreateBookingConfirmOpen(false);
-    setStandardBookingModalOpen(false);
-    setSelectedStandardForBooking(null);
-
-    toast.success("Standard Booking Created!", {
-      description: `Booking ${newBookingId} for ${bookingFormData.customerName} has been successfully created.`,
+        toast.success("Standard Booking Created!", {
+          description: `Booking ${newBookingId} for ${bookingFormData.customerName} has been successfully created.`,
+        });
+        navigate("/bookings");
+      },
+      onError: () => {
+        toast.error("Standard Booking Failed!", {
+          description: `Booking ${newBookingId} for ${bookingFormData.customerName} has failed.`,
+        });
+      },
     });
   };
 
@@ -1687,8 +1646,6 @@ export function Itinerary({
         cancelText="Cancel"
         confirmVariant="destructive"
       />
-
-      {/* ... keep all other existing modals (Create, Booking, etc.) ... */}
     </div>
   );
 }
