@@ -385,7 +385,7 @@ export function Sidebar({
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-12 h-12 rounded-full bg-gradient-to-br to-accent flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 overflow-hidden"
+              className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 overflow-hidden"
               style={{ backgroundColor: "#0c83f3" }}
             >
               {profileData && profileData.avatarUrl ? (
