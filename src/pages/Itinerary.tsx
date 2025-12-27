@@ -1185,6 +1185,453 @@ export function Itinerary({
         </ContentCard>
       )}
 
+      {/* Create Itinerary Modal */}
+      <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 pb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                <Plus className="w-5 h-5 text-white" />
+              </div>
+              Create New Itinerary
+            </DialogTitle>
+            <DialogDescription className="pb-4">
+              Choose the type of itinerary you want to create or continue from a
+              saved draft.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[calc(90vh-180px)]">
+            <div className="px-8 py-2 space-y-4 pb-6">
+              <button
+                onClick={() => {
+                  setCreateModalOpen(false);
+                  navigate("/itinerary/create-standard");
+                }}
+                className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white hover:bg-[rgba(10,122,255,0.02)] transition-all duration-200 text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 group-hover:scale-110 transition-transform">
+                    <Plus className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-[#1A2B4F] mb-1 group-hover:text-[#0A7AFF] transition-colors">
+                      Standard Itinerary
+                    </h3>
+                    <p className="text-sm text-[#64748B] leading-relaxed">
+                      Create a new pre-built template for popular destinations
+                      from scratch.
+                    </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border border-[rgba(10,122,255,0.2)]">
+                        Reusable
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(20,184,166,0.1)] text-[#14B8A6] border border-[rgba(20,184,166,0.2)]">
+                        Template
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCreateModalOpen(false);
+                  navigate("/itinerary/create-requested");
+                }}
+                className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#14B8A6] bg-white hover:bg-[rgba(20,184,166,0.02)] transition-all duration-200 text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#14B8A6] to-[#10B981] flex items-center justify-center shadow-lg shadow-[#14B8A6]/20 group-hover:scale-110 transition-transform">
+                    <Package className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-[#1A2B4F] mb-1 group-hover:text-[#14B8A6] transition-colors">
+                      Requested Itinerary
+                    </h3>
+                    <p className="text-sm text-[#64748B] leading-relaxed">
+                      Create a custom itinerary booking based on specific
+                      customer requests with detailed day-by-day plans.
+                    </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]">
+                        Custom
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border border-[rgba(255,107,107,0.2)]">
+                        Booking
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              {drafts && drafts.length > 0 && (
+                <>
+                  <div className="relative py-3">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-[#E5E7EB]"></div>
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="px-3 text-xs text-[#64748B] bg-white font-medium">
+                        OR CONTINUE FROM DRAFT
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {drafts.map((draft) => (
+                      <div
+                        key={draft.id}
+                        className="relative w-full p-4 rounded-xl border-2 border-[#E5E7EB] hover:border-[#FFB84D] bg-white hover:bg-[rgba(255,184,77,0.02)] transition-all group"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FFB84D] to-[#FF9800] flex items-center justify-center shadow-md flex-shrink-0">
+                            {draft.type === "requested" ? (
+                              <Package className="w-5 h-5 text-white" />
+                            ) : (
+                              <BookOpen className="w-5 h-5 text-white" />
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setCreateModalOpen(false);
+                              if (draft.type === "requested") {
+                                if (onEditRequestedDraft) {
+                                  onEditRequestedDraft(draft);
+                                }
+                              } else {
+                                if (onEditStandardDraft) {
+                                  onEditStandardDraft(draft);
+                                }
+                              }
+                            }}
+                            className="flex-1 min-w-0 text-left"
+                          >
+                            <h4 className="text-sm font-semibold text-[#1A2B4F] mb-1 truncate group-hover:text-[#FFB84D] transition-colors">
+                              {draft.type === "requested"
+                                ? draft.customerName
+                                : draft.title}
+                            </h4>
+                            <p className="text-xs text-[#64748B] mb-2 truncate">
+                              {draft.destination || "No destination set"}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded text-xs bg-[rgba(255,184,77,0.1)] text-[#FFB84D] border border-[rgba(255,184,77,0.2)]">
+                                {draft.type === "requested"
+                                  ? "Requested Draft"
+                                  : "Standard Draft"}
+                              </span>
+                              {draft.savedAt && (
+                                <span className="text-xs text-[#94A3B8]">
+                                  {new Date(draft.savedAt).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDraftToDelete(draft);
+                              setDeleteDraftConfirmOpen(true);
+                            }}
+                            className="flex-shrink-0 w-8 h-8 rounded-lg border border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.1)] flex items-center justify-center transition-all group/delete"
+                            title="Delete Draft"
+                          >
+                            <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B]" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Standard Itinerary Booking Modal */}
+      <ConfirmationModal
+        open={standardBookingModalOpen}
+        onOpenChange={setStandardBookingModalOpen}
+        title="Book Standard Itinerary"
+        description="Please provide the client's details to create a booking for this standard itinerary."
+        icon={<BookOpen className="w-5 h-5 text-white" />}
+        iconGradient="bg-gradient-to-br from-[#14B8A6] to-[#10B981]"
+        iconShadow="shadow-[#14B8A6]/20"
+        contentGradient="bg-gradient-to-br from-[rgba(20,184,166,0.05)] to-[rgba(16,185,129,0.05)]"
+        contentBorder="border-[rgba(20,184,166,0.2)]"
+        content={
+          <div className="space-y-4">
+            <div>
+              <Label
+                htmlFor="customerName"
+                className="text-[#1A2B4F] mb-2 block"
+              >
+                Customer Name <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <Input
+                id="customerName"
+                value={bookingFormData.customerName}
+                onChange={(e) =>
+                  setBookingFormData({
+                    ...bookingFormData,
+                    customerName: e.target.value,
+                  })
+                }
+                placeholder="Enter customer name"
+                className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+              />
+            </div>
+            <div>
+              <Label htmlFor="email" className="text-[#1A2B4F] mb-2 block">
+                Email Address <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={bookingFormData.email}
+                onChange={(e) =>
+                  setBookingFormData({
+                    ...bookingFormData,
+                    email: e.target.value,
+                  })
+                }
+                placeholder="customer@email.com"
+                className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+              />
+            </div>
+            <div>
+              <Label htmlFor="mobile" className="text-[#1A2B4F] mb-2 block">
+                Mobile Number <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <Input
+                id="mobile"
+                type="tel"
+                value={bookingFormData.mobile}
+                onChange={(e) =>
+                  setBookingFormData({
+                    ...bookingFormData,
+                    mobile: e.target.value,
+                  })
+                }
+                placeholder="+63 9XX XXX XXXX"
+                className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label
+                  htmlFor="travelDateFrom"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Travel Start Date <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <Input
+                  id="travelDateFrom"
+                  type="date"
+                  value={bookingFormData.travelDateFrom}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      travelDateFrom: e.target.value,
+                    })
+                  }
+                  className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                />
+              </div>
+              <div>
+                <Label
+                  htmlFor="travelDateTo"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Travel End Date <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <Input
+                  id="travelDateTo"
+                  type="date"
+                  value={bookingFormData.travelDateTo}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      travelDateTo: e.target.value,
+                    })
+                  }
+                  className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="tourType" className="text-[#1A2B4F] mb-2 block">
+                Tour Type <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <Select
+                value={bookingFormData.tourType}
+                onValueChange={(value: "Joiner" | "Private") =>
+                  setBookingFormData({ ...bookingFormData, tourType: value })
+                }
+              >
+                <SelectTrigger className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10">
+                  <SelectValue placeholder="Choose Tour Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Joiner">Joiner</SelectItem>
+                  <SelectItem value="Private">Private Tour</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="travelers" className="text-[#1A2B4F] mb-2 block">
+                Number of Travelers <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <Input
+                id="travelers"
+                type="number"
+                min="1"
+                value={bookingFormData.travelers}
+                onChange={(e) =>
+                  setBookingFormData({
+                    ...bookingFormData,
+                    travelers: e.target.value,
+                  })
+                }
+                className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+              />
+            </div>
+            {selectedStandardForBooking &&
+              templates.find((t) => t.id === selectedStandardForBooking)
+                ?.pricePerPax && (
+                <div className="pt-4 border-t border-[rgba(20,184,166,0.3)]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-[#64748B]">
+                      Price per Pax:
+                    </span>
+                    <span className="text-sm font-medium text-[#1A2B4F]">
+                      ₱
+                      {templates
+                        .find((t) => t.id === selectedStandardForBooking)!
+                        .pricePerPax!.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-[#64748B]">
+                      Number of Travelers:
+                    </span>
+                    <span className="text-sm font-medium text-[#1A2B4F]">
+                      {bookingFormData.travelers || 1}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-[rgba(20,184,166,0.3)]">
+                    <span className="font-semibold text-[#1A2B4F]">Total:</span>
+                    <span className="font-semibold text-[#14B8A6]">
+                      ₱
+                      {(
+                        templates.find(
+                          (t) => t.id === selectedStandardForBooking
+                        )!.pricePerPax! *
+                        parseInt(bookingFormData.travelers || "1")
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              )}
+          </div>
+        }
+        onConfirm={handleShowBookingConfirmation}
+        onCancel={() => {
+          setStandardBookingModalOpen(false);
+          setSelectedStandardForBooking(null);
+          setBookingFormData({
+            customerName: "",
+            email: "",
+            mobile: "",
+            travelDateFrom: "",
+            travelDateTo: "",
+            travelers: "1",
+            tourType: "" as any,
+          });
+        }}
+        confirmText="Create Booking"
+        cancelText="Cancel"
+        confirmVariant="success"
+      />
+
+      {/* Confirmation Modal for Creating Booking */}
+      <ConfirmationModal
+        open={createBookingConfirmOpen}
+        onOpenChange={setCreateBookingConfirmOpen}
+        title="Confirm Booking Creation"
+        description="Are you sure you want to create this booking? This will add a new booking to the system."
+        icon={<CheckCircle2 className="w-5 h-5 text-white" />}
+        iconGradient="bg-gradient-to-br from-[#14B8A6] to-[#10B981]"
+        iconShadow="shadow-[#14B8A6]/20"
+        contentGradient="bg-gradient-to-br from-[rgba(20,184,166,0.05)] to-[rgba(16,185,129,0.05)]"
+        contentBorder="border-[rgba(20,184,166,0.2)]"
+        content={
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-[#64748B]">Customer:</span>
+              <span className="text-sm font-medium text-[#1A2B4F]">
+                {bookingFormData.customerName}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-[#64748B]">Email:</span>
+              <span className="text-sm font-medium text-[#1A2B4F]">
+                {bookingFormData.email}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-[#64748B]">Mobile:</span>
+              <span className="text-sm font-medium text-[#1A2B4F]">
+                {bookingFormData.mobile}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-[#64748B]">Travel Dates:</span>
+              <span className="text-sm font-medium text-[#1A2B4F]">
+                {bookingFormData.travelDateFrom} to{" "}
+                {bookingFormData.travelDateTo}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-[#64748B]">Tour Type:</span>
+              <span className="text-sm font-medium text-[#1A2B4F]">
+                {bookingFormData.tourType}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-[#64748B]">Travelers:</span>
+              <span className="text-sm font-medium text-[#1A2B4F]">
+                {bookingFormData.travelers}
+              </span>
+            </div>
+            {selectedStandardForBooking &&
+              templates.find((t) => t.id === selectedStandardForBooking)
+                ?.pricePerPax && (
+                <div className="flex items-center justify-between py-2 pt-3 border-t border-[rgba(20,184,166,0.3)]">
+                  <span className="font-semibold text-[#1A2B4F]">
+                    Total Amount:
+                  </span>
+                  <span className="font-semibold text-[#14B8A6]">
+                    ₱
+                    {(
+                      templates.find(
+                        (t) => t.id === selectedStandardForBooking
+                      )!.pricePerPax! *
+                      parseInt(bookingFormData.travelers || "1")
+                    ).toLocaleString()}
+                  </span>
+                </div>
+              )}
+          </div>
+        }
+        onConfirm={handleBookStandardItinerary}
+        onCancel={() => setCreateBookingConfirmOpen(false)}
+        confirmText="Yes, Create Booking"
+        cancelText="No, Go Back"
+        confirmVariant="success"
+      />
+
       {/* Delete Confirmation Modal (Unified for both API and local) */}
       <ConfirmationModal
         open={deleteConfirmOpen}
