@@ -93,6 +93,7 @@ export interface TourPackage {
   description?: string;
   thumbUrl?: string;
   days: number;
+  category: string;
 }
 
 export interface Payment {
