@@ -112,14 +112,16 @@ interface RequestedItineraryBooking {
 
 interface ItineraryActivity {
   time: string;
-  icon: any;
+  icon: string;
   title: string;
   description: string;
   location?: string;
+  order: number;
 }
 
 interface ItineraryDay {
   day: number;
+  dayNumber: number;
   title: string;
   activities: ItineraryActivity[];
 }
@@ -135,14 +137,9 @@ interface BookingFormData {
 }
 
 interface ItineraryProps {
-  onCreateBooking?: (bookingData: any) => void;
   requestedBookingsFromBookings?: any[];
   newStandardItineraries?: any[];
   drafts?: any[];
-  onNavigateToCreateStandard?: () => void;
-  onNavigateToCreateRequested?: () => void;
-  onEditItinerary?: (itinerary: any) => void;
-  onEditRequestedBooking?: (booking: any) => void;
   onEditRequestedDraft?: (draft: any) => void;
   onEditStandardDraft?: (draft: any) => void;
   onDeleteDraft?: (draftId: string) => void;
@@ -392,14 +389,18 @@ export function Itinerary({
 
     return days.map((day: any, index: number) => ({
       day: index + 1,
+      dayNumber: index + 1,
       title: day.title || `Day ${index + 1}`,
-      activities: (day.activities || []).map((activity: any) => ({
-        time: activity.time || "TBD",
-        icon: getIconComponent(activity.icon || "Clock"),
-        title: activity.title || "Activity",
-        description: activity.description || "",
-        location: activity.location || "",
-      })),
+      activities: (day.activities || []).map(
+        (activity: any, activityIndex: number) => ({
+          time: activity.time || "TBD",
+          icon: activity.icon || "Clock",
+          title: activity.title || "Activity",
+          description: activity.description || "",
+          location: activity.location || "",
+          order: activity.order || activityIndex + 1,
+        })
+      ),
     }));
   };
 
@@ -599,12 +600,10 @@ export function Itinerary({
 
   // Export functions
   const handleExportPDF = () => {
-    console.log("Exporting itineraries as PDF...");
     toast.info("PDF export functionality coming soon");
   };
 
   const handleExportExcel = () => {
-    console.log("Exporting itineraries as Excel...");
     toast.info("Excel export functionality coming soon");
   };
 
@@ -715,19 +714,18 @@ export function Itinerary({
       email: bookingFormData.email,
       mobile: bookingFormData.mobile,
       destination: standard.destination,
-      itinerary: standard.title,
       startDate: bookingFormData.travelDateFrom,
       endDate: bookingFormData.travelDateTo,
       travelers: travelers,
-      totalAmount: totalAmount,
+      totalPrice: totalAmount,
       paid: 0,
       paymentStatus: "Unpaid",
       bookedDate: new Date().toISOString().split("T")[0],
       bookedDateObj: new Date(),
       status: "pending",
-      bookingType: "Standard" as const,
-      tourType: bookingFormData.tourType,
-      itineraryDetails: itineraryDetails,
+      type: "STANDARD" as const,
+      tourType: bookingFormData.tourType.toUpperCase(),
+      itinerary: itineraryDetails,
     };
 
     createBooking(newBooking, {
@@ -748,6 +746,7 @@ export function Itinerary({
         toast.success("Standard Booking Created!", {
           description: `Booking ${newBookingId} for ${bookingFormData.customerName} has been successfully created.`,
         });
+        navigate("/bookings");
       },
       onError: () => {
         toast.error("Standard Booking Failed!", {
