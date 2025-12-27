@@ -91,6 +91,9 @@ export interface TourPackage {
   duration: number;
   isActive: boolean;
   description?: string;
+  thumbUrl?: string;
+  days: number;
+  category: string;
 }
 
 export interface Payment {
