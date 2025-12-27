@@ -926,7 +926,7 @@ export function Itinerary({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/tour-packages/edit/${template.id}`);
+                          navigate(`/itinerary/edit-standard/${template.id}`);
                         }}
                         className="flex-1 h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-sm text-[#334155] font-medium transition-all"
                       >
