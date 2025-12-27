@@ -19,12 +19,13 @@ import {
   ArrowLeftRight,
   LogOut,
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSide } from "./SideContext";
 import SidebarSkeleton from "./SidebarSkeleton";
-import { useProfile } from "./ProfileContext";
 import bondVoyage from "../assets/BondVoyage Logo White (logo only).png";
+import { useProfile } from "../hooks/useAuth";
+import { User as IUser } from "../types/types";
 
 interface SidebarProps {
   currentTheme: string;
@@ -42,18 +43,36 @@ export function Sidebar({
   const location = useLocation();
   const navigate = useNavigate();
   const { switchSide } = useSide();
-  const { profileData } = useProfile();
+  const { data: profileResponse, isLoading: profileDataIsLoading } =
+    useProfile();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showSideMenu, setShowSideMenu] = useState(false);
-  const [showSkeleton, setShowSkeleton] = useState<boolean>(true);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setShowSkeleton(false);
-    }, 3000);
-  }, [setShowSkeleton]);
+  const profileData: IUser = useMemo(() => {
+    return profileResponse?.data?.user
+      ? profileResponse.data.user
+      : {
+          companyName: "",
+          id: "",
+          email: "",
+          firstName: "",
+          lastName: "",
+          phoneNumber: "",
+          role: "USER",
+          avatarUrl: "",
+          middleName: "",
+          mobile: "",
+          isActive: true,
+          createdAt: "",
+          updatedAt: "",
+          lastLogin: "",
+          birthday: "",
+          employeeId: "",
+          customerRating: 0,
+        };
+  }, [profileResponse?.data?.user]);
 
   const menuItems = [
     { id: "/", icon: LayoutDashboard, label: "Home" },
@@ -193,7 +212,7 @@ export function Sidebar({
             : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        {showSkeleton && <SidebarSkeleton />}
+        {!profileData && <SidebarSkeleton />}
 
         {/* Mountain Logo Brand Button with Side Menu */}
         <div className="relative" ref={sideMenuRef}>

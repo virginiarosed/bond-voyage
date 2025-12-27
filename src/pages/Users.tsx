@@ -94,7 +94,7 @@ export function Users() {
       createdAt: user.createdAt,
       role: user.role,
     }));
-  }, [apiResponse]);
+  }, [apiResponse?.data?.users]);
 
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
@@ -613,7 +613,7 @@ export function Users() {
         />
 
         {/* Data Table - Desktop */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className=" md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-[#F8FAFB] dark:bg-[#1F2937] border-b-2 border-[#E5E7EB] dark:border-[#2A3441]">
