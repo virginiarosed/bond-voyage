@@ -65,10 +65,6 @@ export function Users() {
 
   const { data: apiResponse, isLoading, refetch } = useUsers(queryParams);
 
-  const updateUserMutation = useUpdateUser();
-  const deactivateUserMutation = useDeactivateUser();
-  const deleteUserMutation = useDeleteUser();
-
   const apiUsers: UIUser[] = useMemo(() => {
     if (!apiResponse?.data?.users) return [];
 
@@ -114,6 +110,10 @@ export function Users() {
     mobile: "",
     status: "Active" as "Active" | "Deactivated",
   });
+
+  const updateUserMutation = useUpdateUser();
+  const deactivateUserMutation = useDeactivateUser();
+  const deleteUserMutation = useDeleteUser();
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<

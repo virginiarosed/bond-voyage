@@ -67,21 +67,22 @@ export const useCreateUser = (
 };
 
 export const useUpdateUser = (
-  id: string,
   options?: UseMutationOptions<ApiResponse<{ user: User }>, AxiosError, any>
 ) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const response = await apiClient.patch<ApiResponse<{ user: User }>>(
         `/users/${id}`,
         data
       );
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(id) });
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.users.detail(data.data?.user.id!),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
     ...options,
@@ -89,13 +90,12 @@ export const useUpdateUser = (
 };
 
 export const useDeactivateUser = (
-  id: string,
   options?: UseMutationOptions<ApiResponse, AxiosError, { id: string }>
 ) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ id }: { id: string }) => {
       const response = await apiClient.patch<ApiResponse>(
         `/users/${id}/deactivate`
       );
@@ -107,18 +107,17 @@ export const useDeactivateUser = (
     ...options,
   });
 };
-
 export const useDeleteUser = (
-  id: string,
   options?: UseMutationOptions<ApiResponse, AxiosError, { id: string }>
 ) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ id }: { id: string }) => {
       const response = await apiClient.delete<ApiResponse>(`/users/${id}`);
       return response.data;
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
