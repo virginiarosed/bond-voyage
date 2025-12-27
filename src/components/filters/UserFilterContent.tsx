@@ -13,17 +13,19 @@ import {
 interface UserFilterContentProps {
   roleFilter?: "all" | "USER" | "ADMIN";
   onRoleFilterChange?: (value: "all" | "USER" | "ADMIN") => void;
-  isActiveFilter?: "all" | "true" | "false";
-  onIsActiveFilterChange?: (value: "all" | "true" | "false") => void;
-  dateFrom?: string;
-  onDateFromChange?: (value: string) => void;
-  dateTo?: string;
-  onDateToChange?: (value: string) => void;
+  statusFilter: "all" | "Active" | "Deactivated";
+  onStatusFilterChange: (value: "all" | "Active" | "Deactivated") => void;
+  dateFrom: string;
+  onDateFromChange: (value: string) => void;
+  dateTo: string;
+  onDateToChange: (value: string) => void;
   onApplyFilters: () => void;
   onResetFilters: () => void;
 }
 
 export function UserFilterContent({
+  roleFilter,
+  onRoleFilterChange,
   statusFilter,
   onStatusFilterChange,
   dateFrom,
@@ -55,7 +57,7 @@ export function UserFilterContent({
           </Label>
           <Select
             value={roleFilter ?? "all"}
-            onValueChange={(v) =>
+            onValueChange={(v: string) =>
               onRoleFilterChange &&
               onRoleFilterChange(v as "all" | "USER" | "ADMIN")
             }
@@ -76,10 +78,9 @@ export function UserFilterContent({
             Status
           </Label>
           <Select
-            value={isActiveFilter ?? "all"}
-            onValueChange={(v) =>
-              onIsActiveFilterChange &&
-              onIsActiveFilterChange(v as "all" | "true" | "false")
+            value={statusFilter}
+            onValueChange={(v: string) =>
+              onStatusFilterChange(v as "all" | "Active" | "Deactivated")
             }
           >
             <SelectTrigger className="w-full h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
@@ -87,8 +88,8 @@ export function UserFilterContent({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              <SelectItem value="true">Active</SelectItem>
-              <SelectItem value="false">Deactivated</SelectItem>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Deactivated">Deactivated</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -109,10 +110,8 @@ export function UserFilterContent({
               <Input
                 id="date-from"
                 type="date"
-                value={dateFrom ?? ""}
-                onChange={(e) =>
-                  onDateFromChange && onDateFromChange(e.target.value)
-                }
+                value={dateFrom}
+                onChange={(e) => onDateFromChange(e.target.value)}
                 className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
               />
             </div>
@@ -126,10 +125,8 @@ export function UserFilterContent({
               <Input
                 id="date-to"
                 type="date"
-                value={dateTo ?? ""}
-                onChange={(e) =>
-                  onDateToChange && onDateToChange(e.target.value)
-                }
+                value={dateTo}
+                onChange={(e) => onDateToChange(e.target.value)}
                 className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
               />
             </div>

@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { motion, AnimatePresence } from "motion/react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { exportToPDF, exportToExcel } from "../utils/exportUtils";
 import {
   useUsers,
@@ -34,7 +34,7 @@ import {
   useDeactivateUser,
   useDeleteUser,
 } from "../hooks/useUsers";
-import { User as ApiUser } from "../types/types";
+import { User as ApiUser, QueryParams } from "../types/types";
 
 type UIUser = {
   id: string;
@@ -53,7 +53,7 @@ type UIUser = {
 };
 
 export function Users() {
-  const [queryParams, setQueryParams] = useState({
+  const [queryParams, setQueryParams] = useState<QueryParams>({
     page: 1,
     limit: 5,
     q: "",
@@ -64,10 +64,6 @@ export function Users() {
   });
 
   const { data: apiResponse, isLoading, refetch } = useUsers(queryParams);
-
-  const updateUserMutation = useUpdateUser();
-  const deactivateUserMutation = useDeactivateUser();
-  const deleteUserMutation = useDeleteUser();
 
   const apiUsers: UIUser[] = useMemo(() => {
     if (!apiResponse?.data?.users) return [];
@@ -115,10 +111,15 @@ export function Users() {
     status: "Active" as "Active" | "Deactivated",
   });
 
+  const updateUserMutation = useUpdateUser();
+  const deactivateUserMutation = useDeactivateUser();
+  const deleteUserMutation = useDeleteUser();
+
   const [filterOpen, setFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<
     "all" | "Active" | "Deactivated"
   >("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "USER" | "ADMIN">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -147,44 +148,28 @@ export function Users() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  useEffect(() => {
-    setQueryParams((prev) => ({
-      ...prev,
-      status:
-        statusFilter !== "all"
-          ? statusFilter === "Active"
-            ? "active"
-            : "inactive"
-          : "",
-      page: 1,
-    }));
-  }, [statusFilter]);
-
-  useEffect(() => {
-    setQueryParams((prev) => ({
-      ...prev,
-      dateFrom: dateFrom,
-      dateTo: dateTo,
-      page: 1,
-    }));
-  }, [dateFrom, dateTo]);
-
-  useEffect(() => {
-    let sortValue = "";
-    if (sortOrder === "newest") {
-      sortValue = "createdAt:desc";
-    } else if (sortOrder === "oldest") {
-      sortValue = "createdAt:asc";
-    }
-
-    setQueryParams((prev) => ({
-      ...prev,
-      sort: sortValue,
-      page: 1,
-    }));
-  }, [sortOrder]);
+  const handleRoleFilterChange = (role: "all" | "USER" | "ADMIN") => {
+    setRoleFilter(role);
+  };
 
   const handleApplyFilters = () => {
+    let sortValue = "";
+    if (sortOrder === "newest") {
+      sortValue = "desc";
+    } else if (sortOrder === "oldest") {
+      sortValue = "asc";
+    }
+
+    setQueryParams({
+      page: 1,
+      limit: 5,
+      q: "",
+      isActive: statusFilter === "all" ? undefined : statusFilter === "Active",
+      dateFrom,
+      dateTo,
+      sort: sortValue,
+      role: roleFilter === "all" ? undefined : roleFilter,
+    });
     setFilterOpen(false);
   };
 
@@ -575,14 +560,14 @@ export function Users() {
         title={`All Users (${totalUsers})`}
         footer={
           <Pagination
-            currentPage={currentPage}
+            currentPage={currentPage!}
             totalItems={totalUsers}
             itemsPerPage={itemsPerPage}
             onPageChange={handlePageChange}
             showingStart={
-              totalUsers > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0
+              totalUsers > 0 ? (currentPage! - 1) * itemsPerPage! + 1 : 0
             }
-            showingEnd={Math.min(currentPage * itemsPerPage, totalUsers)}
+            showingEnd={Math.min(currentPage! * itemsPerPage!, totalUsers)}
           />
         }
       >
@@ -598,6 +583,8 @@ export function Users() {
           activeFiltersCount={activeFiltersCount}
           filterContent={
             <UserFilterContent
+              roleFilter={roleFilter}
+              onRoleFilterChange={handleRoleFilterChange}
               statusFilter={statusFilter}
               onStatusFilterChange={setStatusFilter}
               dateFrom={dateFrom}

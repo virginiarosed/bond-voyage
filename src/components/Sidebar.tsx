@@ -26,6 +26,7 @@ import SidebarSkeleton from "./SidebarSkeleton";
 import bondVoyage from "../assets/BondVoyage Logo White (logo only).png";
 import { useProfile } from "../hooks/useAuth";
 import { User as IUser } from "../types/types";
+import { getInitials } from "../utils/helpers/getInitials";
 
 interface SidebarProps {
   currentTheme: string;
@@ -113,19 +114,6 @@ export function Sidebar({
     navigate("/");
     setShowUserMenu(false);
     // You can add actual logout logic here
-  };
-
-  // Get initials from company name
-  const getInitials = () => {
-    if (!profileData) return null;
-
-    if (profileData && profileData.profilePicture) return null;
-    // Extract initials from company name (e.g., "4B's Travel and Tours" -> "4T")
-    const words = profileData.companyName.split(" ");
-    if (words.length >= 2) {
-      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-    }
-    return profileData.companyName.substring(0, 2).toUpperCase();
   };
 
   // Mock notifications data
@@ -397,17 +385,18 @@ export function Sidebar({
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 overflow-hidden"
+              className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 overflow-hidden"
+              style={{ backgroundColor: "#0c83f3" }}
             >
-              {profileData && profileData.profilePicture ? (
+              {profileData && profileData.avatarUrl ? (
                 <img
-                  src={profileData.profilePicture}
+                  src={profileData.avatarUrl}
                   alt="Profile"
                   className="w-full h-full object-cover rounded-[0px]"
                 />
               ) : (
                 <span className="text-white text-lg font-semibold">
-                  {getInitials()}
+                  {getInitials(profileData.companyName!)}
                 </span>
               )}
             </button>
@@ -418,9 +407,9 @@ export function Sidebar({
                 <div className="p-5 border-b border-border/50 bg-gradient-to-br from-primary/5 to-accent/5">
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md overflow-hidden">
-                      {profileData && profileData.profilePicture ? (
+                      {profileData && profileData.avatarUrl ? (
                         <img
-                          src={profileData.profilePicture}
+                          src={profileData.avatarUrl}
                           alt="Profile"
                           className="w-full h-full object-cover rounded-[0px]"
                         />
