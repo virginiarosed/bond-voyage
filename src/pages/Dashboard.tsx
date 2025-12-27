@@ -43,9 +43,7 @@ export function Dashboard() {
   const navigate = useNavigate();
   const { data: profileResponse } = useProfile();
   const { data: dashboardStatsResponse, isLoading } = useDashboardStats();
-  const { data: adminBookingsResponse } = useAdminBookings({
-    status: "PENDING",
-  });
+  const { data: adminBookingsResponse } = useAdminBookings();
 
   const profileData: User = useMemo(() => {
     return profileResponse?.data?.user
@@ -239,7 +237,7 @@ export function Dashboard() {
             <div className="relative flex-shrink-0">
               <div
                 className={`w-30 h-30 sm:w-34 sm:h-34 rounded-full border-4 border-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] overflow-hidden ${
-                  profileData && profileData.avatarUrl ? "" : "bg-primary"
+                  profileData && profileData.avatarUrl ? "" : "bg-blue-500"
                 }`}
               >
                 {profileData && profileData.avatarUrl ? (
@@ -311,7 +309,7 @@ export function Dashboard() {
           </div>
 
           {/* Right Side - Interactive Traveling Avatar */}
-          <div className="flex-shrink-0 w-full lg:w-1/2 min-w-[280px] sm:min-w-[320px] hidden md:block">
+          <div className="flex-shrink-0 w-full lg:w-1/2 min-w-[280px] sm:min-w-[320px] flex-1">
             <TravelingAvatar />
           </div>
         </div>
@@ -920,36 +918,37 @@ export function Dashboard() {
           }
         >
           <div className="space-y-4">
-            {upcomingTrips.map((trip) => (
-              <BookingListCard
-                key={trip.id}
-                booking={{
-                  id: trip.id,
-                  customer: trip.customer,
-                  email: trip.email || "",
-                  mobile: trip.mobile || "",
-                  destination: trip.destination,
-                  dates: trip.dates || trip.date,
-                  travelers: trip.travelers || 2,
-                  total: trip.total || "₱0",
-                  bookedDate: trip.bookedDate || trip.date,
-                  bookingType: trip.bookingType,
-                }}
-                onViewDetails={(id) => navigate("/bookings")}
-                additionalBadges={
-                  trip.status === "CONFIRMED" ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
-                      <CheckCircle className="w-3 h-3" />
-                      Confirmed
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">
-                      Pending Payment
-                    </span>
-                  )
-                }
-              />
-            ))}
+            {false &&
+              upcomingTrips.map((trip) => (
+                <BookingListCard
+                  key={trip.id}
+                  booking={{
+                    id: trip.id,
+                    customer: trip.customer,
+                    email: trip.email || "",
+                    mobile: trip.mobile || "",
+                    destination: trip.destination,
+                    dates: trip.dates || trip.date,
+                    travelers: trip.travelers || 2,
+                    total: trip.total || "₱0",
+                    bookedDate: trip.bookedDate || trip.date,
+                    bookingType: trip.bookingType,
+                  }}
+                  onViewDetails={(id) => navigate("/bookings")}
+                  additionalBadges={
+                    trip.status === "CONFIRMED" ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
+                        <CheckCircle className="w-3 h-3" />
+                        Confirmed
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">
+                        Pending Payment
+                      </span>
+                    )
+                  }
+                />
+              ))}
           </div>
         </ContentCard>
       </div>
