@@ -117,11 +117,21 @@ export interface Inquiry {
   createdAt: string;
 }
 
+type NotificationType =
+  | "BOOKING"
+  | "PAYMENT"
+  | "INQUIRY"
+  | "FEEDBACK"
+  | "SYSTEM";
+
 export interface INotification {
   id: string;
   userId: string;
+  user: User;
+  type: NotificationType;
   title: string;
   message: string;
+  data: any;
   isRead: boolean;
   createdAt: string;
 }
