@@ -12,6 +12,7 @@ import {
   Package,
 } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { getIconByValue } from "../utils/helpers/getIconByValue";
 
 interface ItineraryActivity {
   time: string;
@@ -152,7 +153,7 @@ export function StandardItineraryDetailView({
               {/* Activities */}
               <div className="space-y-3 mb-6">
                 {day.activities.map((activity, idx) => {
-                  const IconComponent = activity.icon;
+                  const IconComponent = getIconByValue(activity.icon);
                   return (
                     <div
                       key={idx}
