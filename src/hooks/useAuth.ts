@@ -39,8 +39,9 @@ export const useLogin = (
         "/auth/login",
         credentials
       );
-      if (response.data.data?.accessToken) {
+      if (response.data.data?.accessToken && response.data.data?.refreshToken) {
         localStorage.setItem("accessToken", response.data.data.accessToken);
+        localStorage.setItem("refreshToken", response.data.data.refreshToken);
       }
       return response.data;
     },
@@ -123,7 +124,11 @@ export const useChangePassword = (
 };
 
 export const useSendOTP = (
-  options?: UseMutationOptions<ApiResponse, AxiosError, { email: string; firstName: string }>
+  options?: UseMutationOptions<
+    ApiResponse,
+    AxiosError,
+    { email: string; firstName: string }
+  >
 ) => {
   return useMutation({
     mutationFn: async (data: { email: string; firstName: string }) => {

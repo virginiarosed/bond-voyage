@@ -196,10 +196,6 @@ const ICON_MAP: Record<string, any> = {
   Search,
 };
 
-const getIconComponent = (iconName: string) => {
-  return ICON_MAP[iconName] || Clock;
-};
-
 // Helper to get icon name from component
 const getIconName = (iconComponent: any): string => {
   if (typeof iconComponent === "string") return iconComponent;

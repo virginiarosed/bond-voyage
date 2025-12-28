@@ -8,7 +8,7 @@ export const apiClient: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true,
+  // withCredentials: true,
 });
 
 apiClient.interceptors.request.use(
@@ -33,10 +33,14 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        const refreshToken = localStorage.get("refreshToken");
         const { data } = await axios.post<ApiResponse<{ accessToken: string }>>(
           `${BASE_URL}/auth/refresh-token`,
           {},
-          { withCredentials: true }
+          {
+            withCredentials: true,
+            headers: { "X-Refresh-Token": refreshToken },
+          }
         );
 
         if (data.data?.accessToken) {
