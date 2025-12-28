@@ -24,10 +24,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSide } from "./SideContext";
 import SidebarSkeleton from "./SidebarSkeleton";
 import bondVoyage from "../assets/BondVoyage Logo White (logo only).png";
-import { useProfile } from "../hooks/useAuth";
+import { useLogout, useProfile } from "../hooks/useAuth";
 import { User as IUser } from "../types/types";
 import { getInitials } from "../utils/helpers/getInitials";
 import { useNotifications } from "../hooks/useNotifications";
+import { toast } from "sonner";
 
 interface SidebarProps {
   currentTheme: string;
@@ -77,6 +78,7 @@ export function Sidebar({
   }, [profileResponse?.data?.user]);
 
   const { data: notificationsResponse } = useNotifications();
+  const { mutate: logout } = useLogout();
 
   const menuItems = [
     { id: "/", icon: LayoutDashboard, label: "Home" },
@@ -114,9 +116,15 @@ export function Sidebar({
 
   // Handle logout
   const handleLogout = () => {
-    navigate("/");
-    setShowUserMenu(false);
-    // You can add actual logout logic here
+    logout(undefined, {
+      onSuccess: () => {
+        navigate("/");
+        setShowUserMenu(false);
+      },
+      onError: () => {
+        toast.error("Logout failed. Please try again");
+      },
+    });
   };
 
   const unreadCount = notificationsResponse?.data?.filter(

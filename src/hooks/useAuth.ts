@@ -61,6 +61,7 @@ export const useLogout = (
     mutationFn: async () => {
       const response = await apiClient.post<ApiResponse>("/auth/logout");
       localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
       return response.data;
     },
     onSuccess: () => {
