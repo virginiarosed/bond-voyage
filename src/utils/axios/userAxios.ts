@@ -36,8 +36,11 @@ apiClient.interceptors.response.use(
         const refreshToken = localStorage.get("refreshToken");
         const { data } = await axios.post<ApiResponse<{ accessToken: string }>>(
           `${BASE_URL}/auth/refresh-token`,
-          { refreshToken },
-          { withCredentials: true }
+          {},
+          {
+            withCredentials: true,
+            headers: { "X-Refresh-Token": refreshToken },
+          }
         );
 
         if (data.data?.accessToken) {

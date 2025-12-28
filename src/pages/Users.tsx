@@ -194,6 +194,10 @@ export function Users() {
     setSortOrder(order);
   };
 
+  useEffect(() => {
+    handleApplyFilters();
+  }, [sortOrder]);
+
   const handlePageChange = (page: number) => {
     setQueryParams((prev) => ({
       ...prev,
