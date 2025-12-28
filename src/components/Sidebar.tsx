@@ -27,6 +27,7 @@ import bondVoyage from "../assets/BondVoyage Logo White (logo only).png";
 import { useProfile } from "../hooks/useAuth";
 import { User as IUser } from "../types/types";
 import { getInitials } from "../utils/helpers/getInitials";
+import { useNotifications } from "../hooks/useNotifications";
 
 interface SidebarProps {
   currentTheme: string;
@@ -75,6 +76,8 @@ export function Sidebar({
         };
   }, [profileResponse?.data?.user]);
 
+  const { data: notificationsResponse } = useNotifications();
+
   const menuItems = [
     { id: "/", icon: LayoutDashboard, label: "Home" },
     { id: "/users", icon: Users, label: "Users" },
@@ -116,35 +119,9 @@ export function Sidebar({
     // You can add actual logout logic here
   };
 
-  // Mock notifications data
-  const recentNotifications = [
-    {
-      id: 1,
-      type: "booking",
-      title: "New Booking Request",
-      message: "Juan Dela Cruz requested a customized trip to Boracay",
-      timestamp: "5 minutes ago",
-      read: false,
-    },
-    {
-      id: 2,
-      type: "approval",
-      title: "Booking Approved",
-      message: "Your approval for booking #BV-2024-089 was processed",
-      timestamp: "1 hour ago",
-      read: false,
-    },
-    {
-      id: 3,
-      type: "feedback",
-      title: "New Feedback Received",
-      message: "Maria Santos left a 5-star review for El Nido trip",
-      timestamp: "2 hours ago",
-      read: true,
-    },
-  ];
-
-  const unreadCount = recentNotifications.filter((n) => !n.read).length;
+  const unreadCount = notificationsResponse?.data?.filter(
+    (n) => !n.isRead
+  ).length;
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -311,9 +288,9 @@ export function Sidebar({
                 className="w-5 h-5 text-sidebar-foreground/60 group-hover:animate-[wiggle_0.5s_ease-in-out]"
                 strokeWidth={2.5}
               />
-              {unreadCount > 0 && (
-                <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-destructive rounded-full border-2 border-sidebar" />
-              )}
+              {/* {unreadCount && unreadCount > 0 && (
+                <div className="absolute top-5 right-5 w-2.5 h-2.5 bg-destructive rounded-full border-2 border-sidebar" />
+              )} */}
             </button>
 
             {/* Notification Overlay */}
@@ -339,31 +316,32 @@ export function Sidebar({
                 </div>
 
                 <div className="max-h-[400px] overflow-y-auto">
-                  {recentNotifications.map((notification) => (
-                    <button
-                      key={notification.id}
-                      className="w-full p-4 hover:bg-accent/30 transition-colors border-b border-border/30 text-left"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                            notification.read ? "bg-muted" : "bg-primary"
-                          }`}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-popover-foreground truncate">
-                            {notification.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-muted-foreground/60 mt-1">
-                            {notification.timestamp}
-                          </p>
+                  {notificationsResponse?.data &&
+                    notificationsResponse?.data?.map((notification) => (
+                      <button
+                        key={notification.id}
+                        className="w-full p-4 hover:bg-accent/30 transition-colors border-b border-border/30 text-left"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                              notification.isRead ? "bg-muted" : "bg-primary"
+                            }`}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-popover-foreground truncate">
+                              {notification.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">
+                              {notification.createdAt}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))}
                 </div>
 
                 <div className="p-3 border-t border-border/50 bg-muted/20">
