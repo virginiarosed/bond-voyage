@@ -70,6 +70,7 @@ import {
 } from "../hooks/useBookings";
 import { useUpdatePaymentStatus } from "../hooks/usePayments";
 import { queryKeys } from "../utils/lib/queryKeys";
+import { capitalize } from "../utils/helpers/capitalize";
 
 interface BookingsProps {
   onMoveToApprovals: (booking: any) => void;
@@ -1763,7 +1764,7 @@ export function Bookings({
                                 : "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]"
                             }`}
                           >
-                            {booking.bookingType}
+                            {capitalize(booking.bookingType)}
                           </span>
                         )}
                         {booking.tourType && (
@@ -1774,7 +1775,7 @@ export function Bookings({
                                 : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]"
                             }`}
                           >
-                            {booking.tourType}
+                            {capitalize(booking.tourType)}
                           </span>
                         )}
                       </div>
