@@ -1000,40 +1000,19 @@ function AppRoutes() {
             onMoveToApprovals={moveBookingToApprovals}
             onMoveToRequested={moveBookingToRequested}
             onMoveToHistory={moveBookingToHistory}
-            createdBookings={createdBookings}
             onBookingsCountChange={setActiveBookingsCount}
           />
         }
       />
-      <Route
-        path="/approvals"
-        element={
-          <Approvals
-            pendingBookings={pendingApprovals}
-            setPendingBookings={setPendingApprovals}
-            onApprove={handleBookingApproved}
-          />
-        }
-      />
-      <Route
-        path="/history"
-        element={
-          <History
-            historyBookings={historyBookings}
-            setHistoryBookings={setHistoryBookings}
-          />
-        }
-      />
+      <Route path="/approvals" element={<Approvals />} />
+      <Route path="/history" element={<History />} />
       <Route
         path="/itinerary"
         element={
           <Itinerary
-            onCreateBooking={handleCreateBooking}
             requestedBookingsFromBookings={requestedBookingsFromBookings}
             newStandardItineraries={standardItineraries}
             drafts={drafts}
-            onEditItinerary={handleEditStandardItinerary}
-            onEditRequestedBooking={handleEditRequestedBooking}
             onEditRequestedDraft={handleEditRequestedDraft}
             onEditStandardDraft={handleEditStandardDraft}
             onDeleteDraft={handleDeleteDraft}
@@ -1042,13 +1021,7 @@ function AppRoutes() {
       />
       <Route
         path="/itinerary/create-standard"
-        element={
-          <CreateStandardItinerary
-            onSave={handleCreateStandardItinerary}
-            onSaveDraft={handleSaveDraft}
-            initialData={editingStandardDraft || undefined}
-          />
-        }
+        element={<CreateStandardItinerary />}
       />
       <Route
         path="/itinerary/edit-standard/:id"
