@@ -22,7 +22,6 @@ import {
   Car,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { useBreadcrumbs } from "../../components/BreadcrumbContext";
 import { useBookingDetail, useMyBookings } from "../../hooks/useBookings";
 import { formatDateRange } from "../../App";
@@ -31,9 +30,11 @@ import { ItineraryDetailDisplay } from "../../components/ItineraryDetailDisplay"
 import { StatCard } from "../../components/StatCard";
 import { capitalize } from "../../utils/helpers/capitalize";
 import { queryKeys } from "../../utils/lib/queryKeys";
+import { useNavigate } from "react-router-dom";
 
 export function UserBookings() {
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
+  const navigate = useNavigate();
 
   const [queryParams, setQueryParams] = useState({
     page: 1,
@@ -246,8 +247,7 @@ export function UserBookings() {
 
   // Handlers
   const handleViewDetails = (bookingId: string) => {
-    setSelectedBookingId(bookingId);
-    setViewMode("detail");
+    navigate(`/user/bookings/${bookingId}`);
   };
 
   const handleBackToList = () => {
