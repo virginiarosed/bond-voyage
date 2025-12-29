@@ -204,7 +204,7 @@ export function Bookings({
 
     // Parse dates from "YYYY-MM-DD - YYYY-MM-DD" format
     const dates = apiBooking.dates?.split(" - ") || [];
-    const startDate = dates[0] || new Date().toISOString().split("T")[0];
+    const startDate = dates[0];
     const endDate = dates[1] || startDate;
 
     // Calculate payment status from badges if available
@@ -225,7 +225,7 @@ export function Bookings({
       totalAmount: totalAmount,
       paid: totalPaid,
       paymentStatus: paymentStatus,
-      bookedDate: new Date(apiBooking.bookedDate).toISOString().split("T")[0],
+      bookedDate: apiBooking.bookedDate,
       bookedDateObj: new Date(apiBooking.bookedDate),
       status: apiBooking.statusBadges,
       bookingType: apiBooking.bookingType,
@@ -236,7 +236,7 @@ export function Bookings({
       paymentHistory: [],
       totalPaid: totalPaid,
       bookingSource: apiBooking.bookingType,
-      itineraryDetails: [],
+      itineraryDetails: apiBooking.itenerary,
     };
   };
 
@@ -269,13 +269,13 @@ export function Bookings({
       mobile: "N/A",
       destination: apiBooking.destination,
       itinerary: apiBooking.destination,
-      startDate: new Date(apiBooking.startDate).toISOString().split("T")[0],
-      endDate: new Date(apiBooking.endDate).toISOString().split("T")[0],
+      startDate: apiBooking.startDate,
+      endDate: apiBooking.endDate,
       travelers: apiBooking.travelers,
       totalAmount: totalAmount,
       paid: totalPaid,
       paymentStatus: paymentStatus,
-      bookedDate: new Date(apiBooking.createdAt).toISOString().split("T")[0],
+      bookedDate: apiBooking.createdAt,
       bookedDateObj: new Date(apiBooking.createdAt),
       status: apiBooking.status,
       bookingType: apiBooking.type,

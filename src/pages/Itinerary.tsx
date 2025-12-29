@@ -88,7 +88,7 @@ import {
   useTourPackageDetail,
   useTourPackages,
 } from "../hooks/useTourPackages";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { TourPackage } from "../types/types";
 import { queryKeys } from "../utils/lib/queryKeys";
 import { useCreateBooking } from "../hooks/useBookings";
@@ -695,9 +695,6 @@ export function Itinerary({
     const standard = templates.find((t) => t.id === selectedStandardForBooking);
     if (!standard) return;
 
-    const newBookingId = `BK-2024-${String(
-      Math.floor(Math.random() * 900) + 100
-    ).padStart(3, "0")}`;
     const travelers = parseInt(bookingFormData.travelers);
     const totalAmount = standard.pricePerPax
       ? standard.pricePerPax * travelers
@@ -705,7 +702,6 @@ export function Itinerary({
     const itineraryDetails = standardItineraryDetails[standard.id] || [];
 
     const newBooking = {
-      id: newBookingId,
       customer: bookingFormData.customerName,
       email: bookingFormData.email,
       mobile: bookingFormData.mobile,
@@ -740,13 +736,13 @@ export function Itinerary({
         setSelectedStandardForBooking(null);
 
         toast.success("Standard Booking Created!", {
-          description: `Booking ${newBookingId} for ${bookingFormData.customerName} has been successfully created.`,
+          description: `Booking for ${bookingFormData.customerName} has been successfully created.`,
         });
         navigate("/bookings");
       },
       onError: () => {
         toast.error("Standard Booking Failed!", {
-          description: `Booking ${newBookingId} for ${bookingFormData.customerName} has failed.`,
+          description: `Booking for ${bookingFormData.customerName} has failed.`,
         });
       },
     });
@@ -1021,7 +1017,7 @@ export function Itinerary({
           onBack={() => setViewMode("grid")}
           onEdit={() => {
             if (selectedStandard.apiSource) {
-              navigate(`/tour-packages/edit/${selectedStandard.id}`);
+              navigate(`/itinerary/edit-standard/${selectedStandard.id}`);
             } else {
               const itineraryData = {
                 ...selectedStandard,
