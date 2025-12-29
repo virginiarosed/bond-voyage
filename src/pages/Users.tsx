@@ -871,7 +871,7 @@ export function Users() {
 
       {/* Edit User Modal */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[540px] max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[540px] max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 flex-shrink-0">
