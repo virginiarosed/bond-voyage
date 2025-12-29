@@ -58,6 +58,7 @@ import { LoadingOverlay } from "./components/LoadingOverlay";
 import { FaqPage } from "./pages/FaqPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ScrollToTop } from "./components/ScrollToTop";
 
 // Utility function to format dates consistently
 export const formatDateRange = (startDate: string, endDate: string): string => {
@@ -580,6 +581,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <div className="flex-1 lg:ml-20 overflow-y-auto">
+        <ScrollToTop />
+
         {/* Top Navigation - Now shown on all pages including Dashboard */}
         <TopNav
           pageTitle={config.title}
