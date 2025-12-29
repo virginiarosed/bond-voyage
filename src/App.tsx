@@ -6,6 +6,7 @@ import {
   useLocation,
   useNavigate,
   Navigate,
+  ScrollRestoration,
 } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { TopNav } from "./components/TopNav";
@@ -57,6 +58,7 @@ import { LoadingOverlay } from "./components/LoadingOverlay";
 import { FaqPage } from "./pages/FaqPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ScrollToTop } from "./components/ScrollToTop";
 
 // Utility function to format dates consistently
 export const formatDateRange = (startDate: string, endDate: string): string => {
@@ -579,6 +581,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <div className="flex-1 lg:ml-20 overflow-y-auto">
+        <ScrollToTop />
+
         {/* Top Navigation - Now shown on all pages including Dashboard */}
         <TopNav
           pageTitle={config.title}
@@ -1000,40 +1004,19 @@ function AppRoutes() {
             onMoveToApprovals={moveBookingToApprovals}
             onMoveToRequested={moveBookingToRequested}
             onMoveToHistory={moveBookingToHistory}
-            createdBookings={createdBookings}
             onBookingsCountChange={setActiveBookingsCount}
           />
         }
       />
-      <Route
-        path="/approvals"
-        element={
-          <Approvals
-            pendingBookings={pendingApprovals}
-            setPendingBookings={setPendingApprovals}
-            onApprove={handleBookingApproved}
-          />
-        }
-      />
-      <Route
-        path="/history"
-        element={
-          <History
-            historyBookings={historyBookings}
-            setHistoryBookings={setHistoryBookings}
-          />
-        }
-      />
+      <Route path="/approvals" element={<Approvals />} />
+      <Route path="/history" element={<History />} />
       <Route
         path="/itinerary"
         element={
           <Itinerary
-            onCreateBooking={handleCreateBooking}
             requestedBookingsFromBookings={requestedBookingsFromBookings}
             newStandardItineraries={standardItineraries}
             drafts={drafts}
-            onEditItinerary={handleEditStandardItinerary}
-            onEditRequestedBooking={handleEditRequestedBooking}
             onEditRequestedDraft={handleEditRequestedDraft}
             onEditStandardDraft={handleEditStandardDraft}
             onDeleteDraft={handleDeleteDraft}
@@ -1042,13 +1025,7 @@ function AppRoutes() {
       />
       <Route
         path="/itinerary/create-standard"
-        element={
-          <CreateStandardItinerary
-            onSave={handleCreateStandardItinerary}
-            onSaveDraft={handleSaveDraft}
-            initialData={editingStandardDraft || undefined}
-          />
-        }
+        element={<CreateStandardItinerary />}
       />
       <Route
         path="/itinerary/edit-standard/:id"

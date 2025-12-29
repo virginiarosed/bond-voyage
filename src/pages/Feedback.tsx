@@ -11,7 +11,7 @@ import { Checkbox } from "../components/ui/checkbox";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { useProfile } from "../components/ProfileContext";
 import { useFeedbackList } from "../hooks/useFeedbackList";
 
