@@ -138,11 +138,25 @@ export interface INotification {
 
 export interface Feedback {
   id: string;
+  userId: string;
+  respondedById?: string;
   rating: number;
   comment: string;
   response?: string;
-  userId: string;
+  respondedAt?: string;
   createdAt: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  respondedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
 }
 
 export interface ActivityLog {
