@@ -93,7 +93,7 @@ export interface TourPackage {
   isActive: boolean;
   description?: string;
   thumbUrl?: string;
-  days: number;
+  days: any[];
   category: string;
 }
 
