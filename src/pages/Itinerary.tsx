@@ -321,6 +321,14 @@ export function Itinerary({
     tourType: "" as any,
   });
 
+  const { data: selectedBookingPackageDetail } = useTourPackageDetail(
+    selectedStandardForBooking || "",
+    {
+      enabled: !!selectedStandardForBooking,
+      queryKey: [queryKeys.tourPackages.detail, selectedStandardForBooking],
+    }
+  );
+
   // Delete states
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{
@@ -690,76 +698,75 @@ export function Itinerary({
 
   // Handle booking from standard itinerary
   const handleBookStandardItinerary = () => {
-  if (!selectedStandardForBooking) return;
+    if (!selectedStandardForBooking) return;
 
-  const standard = templates.find((t) => t.id === selectedStandardForBooking);
-  if (!standard) return;
+    const standard = templates.find((t) => t.id === selectedStandardForBooking);
+    if (!standard) return;
 
-  const travelers = parseInt(bookingFormData.travelers);
-  const totalAmount = standard.pricePerPax
-    ? standard.pricePerPax * travelers
-    : 0;
+    const travelers = parseInt(bookingFormData.travelers);
+    const totalAmount = standard.pricePerPax
+      ? standard.pricePerPax * travelers
+      : 0;
 
-  // Get itinerary details from the booking package detail (fetched via the new hook)
-  let itineraryDetails: any[] = [];
-  
-  if (selectedTourPackageDetail?.data) {
-    const pkg = selectedTourPackageDetail.data;
-    const days = Array.isArray(pkg.days) ? pkg.days : [];
-    // Transform the API days to the itinerary format expected by your backend
-    itineraryDetails = transformApiDaysToItineraryDetails(days);
-  } else if (standardItineraryDetails[standard.id]) {
-    // Fallback to cached details if available
-    itineraryDetails = standardItineraryDetails[standard.id];
-  }
+    // Get itinerary details from the booking package detail (fetched via the new hook)
+    let itineraryDetails: any[] = [];
 
-  const newBooking = {
-    customer: bookingFormData.customerName,
-    email: bookingFormData.email,
-    mobile: bookingFormData.mobile,
-    destination: standard.destination,
-    startDate: bookingFormData.travelDateFrom,
-    endDate: bookingFormData.travelDateTo,
-    travelers: travelers,
-    totalPrice: totalAmount,
-    paid: 0,
-    paymentStatus: "Unpaid",
-    bookedDate: new Date().toISOString().split("T")[0],
-    bookedDateObj: new Date(),
-    status: "pending",
-    type: "STANDARD" as const,
-    tourType: bookingFormData.tourType.toUpperCase(),
-    itinerary: itineraryDetails, 
+    if (selectedBookingPackageDetail?.data?.days) {
+      // Transform the API days to the itinerary format expected by your backend
+      itineraryDetails = transformApiDaysToItineraryDetails(
+        selectedBookingPackageDetail.data.days
+      );
+    } else if (standardItineraryDetails[standard.id]) {
+      // Fallback to cached details if available
+      itineraryDetails = standardItineraryDetails[standard.id];
+    }
+
+    const newBooking = {
+      customer: bookingFormData.customerName,
+      email: bookingFormData.email,
+      mobile: bookingFormData.mobile,
+      destination: standard.destination,
+      startDate: bookingFormData.travelDateFrom,
+      endDate: bookingFormData.travelDateTo,
+      travelers: travelers,
+      totalPrice: totalAmount,
+      paid: 0,
+      paymentStatus: "Unpaid",
+      bookedDate: new Date().toISOString().split("T")[0],
+      bookedDateObj: new Date(),
+      status: "pending",
+      type: "STANDARD" as const,
+      tourType: bookingFormData.tourType.toUpperCase(),
+      itinerary: itineraryDetails, // Now this will have data!
+    };
+
+    createBooking(newBooking, {
+      onSuccess: () => {
+        setBookingFormData({
+          customerName: "",
+          email: "",
+          mobile: "",
+          travelDateFrom: "",
+          travelDateTo: "",
+          travelers: "1",
+          tourType: "" as any,
+        });
+        setCreateBookingConfirmOpen(false);
+        setStandardBookingModalOpen(false);
+        setSelectedStandardForBooking(null);
+
+        toast.success("Standard Booking Created!", {
+          description: `Booking for ${bookingFormData.customerName} has been successfully created.`,
+        });
+        navigate("/bookings");
+      },
+      onError: () => {
+        toast.error("Standard Booking Failed!", {
+          description: `Booking for ${bookingFormData.customerName} has failed.`,
+        });
+      },
+    });
   };
-
-  createBooking(newBooking, {
-    onSuccess: () => {
-      setBookingFormData({
-        customerName: "",
-        email: "",
-        mobile: "",
-        travelDateFrom: "",
-        travelDateTo: "",
-        travelers: "1",
-        tourType: "" as any,
-      });
-      setCreateBookingConfirmOpen(false);
-      setStandardBookingModalOpen(false);
-      setSelectedStandardForBooking(null);
-
-      toast.success("Standard Booking Created!", {
-        description: `Booking for ${bookingFormData.customerName} has been successfully created.`,
-      });
-      navigate("/bookings");
-    },
-    onError: () => {
-      toast.error("Standard Booking Failed!", {
-        description: `Booking for ${bookingFormData.customerName} has failed.`,
-      });
-    },
-  });
-};
-
   // Render Standard Itinerary Grid View
   const renderStandardGridView = () => {
     if (isLoadingPackages) {
