@@ -28,6 +28,7 @@ import { ContentCard } from "../components/ContentCard";
 import { ItineraryDetailDisplay } from "../components/ItineraryDetailDisplay";
 import { Pagination } from "../components/Pagination";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import { capitalize } from "../utils/helpers/capitalize";
 import {
   Dialog,
   DialogContent,
@@ -1120,7 +1121,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                                   : "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
                               }`}
                             >
-                              {booking.bookingType}
+                              {capitalize(booking.bookingType)}
                             </span>
                           )}
                           {booking.tourType && (
@@ -1131,7 +1132,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                                   : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]"
                               }`}
                             >
-                              {booking.tourType}
+                              {capitalize(booking.tourType)}
                             </span>
                           )}
                           {activeTab === "rejected" && (

@@ -277,9 +277,9 @@ export function Dashboard() {
                     <p className="text-xs text-white/70 whitespace-nowrap">
                       Years in Operation
                     </p>
-                    <p className="text-sm text-white">
-                      {profileData ? profileData.createdAt.toString() : ""}
-                    </p>
+                    <p className="text-sm text-white">{`${
+                      new Date().getFullYear() - 2019
+                    } Years`}</p>
                   </div>
                 </div>
 

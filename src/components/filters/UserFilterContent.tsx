@@ -36,7 +36,7 @@ export function UserFilterContent({
   onResetFilters,
 }: UserFilterContentProps) {
   return (
-    <>
+    <div className="overflow-auto" style={{ height: 300 }}>
       <div className="p-5 bg-gradient-to-br from-[#F8FAFB] to-white border-b border-[#E5E7EB]/50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
@@ -148,6 +148,6 @@ export function UserFilterContent({
           Apply Filters
         </Button>
       </div>
-    </>
+    </div>
   );
 }
