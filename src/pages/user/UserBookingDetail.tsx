@@ -64,6 +64,7 @@ import { useBookingDetail } from "../../hooks/useBookings";
 import { useSubmitPayment } from "../../hooks/usePayments";
 import { useProfile } from "../../hooks/useAuth";
 import { Payment, User as IUser } from "../../types/types";
+import { UserPaymentSection } from "./UserPaymentSection";
 
 export function UserBookingDetail() {
   const { id } = useParams<{ id: string }>();
@@ -3099,69 +3100,36 @@ export function UserBookingDetail() {
               </div>
 
               {/* Proof of Payment Section */}
-              <div>
-                <Label className="text-sm font-medium text-[#1A2B4F] mb-3 block">
-                  Proof of Payment
-                </Label>
-
-                {selectedPayment.proofOfPayment ||
-                selectedPayment.cashConfirmation ? (
-                  <div className="space-y-4">
-                    <div className="border-2 border-[#E5E7EB] rounded-xl overflow-hidden">
-                      <img
-                        src={
-                          selectedPayment.proofOfPayment ||
-                          selectedPayment.cashConfirmation
-                        }
-                        alt="Proof of payment"
-                        className="w-full max-h-96 object-contain bg-[#F8FAFB] mx-auto"
-                      />
-                    </div>
-
-                    {/* Payment Verification Details */}
-                    <div className="bg-[#F8FAFB] rounded-lg p-4 border border-[#E5E7EB]">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Shield className="w-5 h-5 text-[#10B981]" />
-                        <h4 className="text-sm font-medium text-[#1A2B4F]">
-                          Payment Verification
-                        </h4>
-                      </div>
-                      <div className="space-y-2 text-sm text-[#64748B]">
-                        <div className="flex justify-between">
-                          <span>Payment Method:</span>
-                          <span className="font-medium text-[#1A2B4F]">
-                            {selectedPayment.modeOfPayment}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Amount Verified:</span>
-                          <span className="font-medium text-[#10B981]">
-                            ₱{selectedPayment.amount.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Submission Date:</span>
-                          <span className="font-medium text-[#1A2B4F]">
-                            {new Date(
-                              selectedPayment.submittedAt
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 border-2 border-dashed border-[#E5E7EB] rounded-xl">
-                    <AlertCircle className="w-12 h-12 text-[#64748B] mx-auto mb-3" />
-                    <p className="text-sm text-[#64748B]">
-                      No proof of payment available
-                    </p>
-                    <p className="text-xs text-[#64748B] mt-1">
-                      Payment was made without uploaded proof
-                    </p>
-                  </div>
-                )}
-              </div>
+              <UserPaymentSection
+                booking={{
+                  id: booking.id,
+                  totalAmount: totalAmount,
+                  totalPaid: totalPaid,
+                  paymentStatus: paymentStatus,
+                  paymentHistory: payments.map((payment) => ({
+                    id: payment.id,
+                    paymentType:
+                      payment.type === "FULL"
+                        ? "Full Payment"
+                        : "Partial Payment",
+                    amount: parseFloat(payment.amount),
+                    modeOfPayment:
+                      payment.method === "GCASH" ? "Gcash" : "Cash",
+                    proofOfPayment: payment.proofImage
+                      ? `data:${
+                          payment.proofMimeType || "image/png"
+                        };base64,${btoa(
+                          String.fromCharCode(
+                            ...new Uint8Array(payment.proofImage.data)
+                          )
+                        )}`
+                      : undefined,
+                    submittedAt: payment.createdAt,
+                    status: payment.status?.toLowerCase(),
+                    transactionId: payment.transactionId,
+                  })),
+                }}
+              />
 
               {/* Transaction Timeline */}
               <div className="bg-[#F8FAFB] rounded-lg p-4 border border-[#E5E7EB]">
