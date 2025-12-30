@@ -64,6 +64,37 @@ export function CreateStandardItinerary() {
   const navigate = useNavigate();
   const { mutate: createTourPackage, isPending } = useCreateTourPackage();
 
+  // Add this missing state variable near your other useState declarations:
+  const [selectedDayForRoute, setSelectedDayForRoute] = useState<string | null>(
+    null
+  );
+
+  // Add this missing function to handle route optimization acceptance:
+  const handleAcceptOptimization = (
+    dayId: string,
+    optimizedActivities: Activity[]
+  ) => {
+    setItineraryDays((prev) =>
+      prev.map((day) =>
+        day.id === dayId
+          ? {
+              ...day,
+              activities: optimizedActivities.map((activity, index) => ({
+                ...activity,
+                order: index,
+              })),
+            }
+          : day
+      )
+    );
+    toast.success("Route Optimized", {
+      description: `Activities for Day ${
+        dayId.split("-")[1]
+      } have been reordered for optimal routing.`,
+    });
+    setHasUnsavedChanges(true);
+  };
+
   const [formData, setFormData] = useState({
     destination: "",
     days: 1,
