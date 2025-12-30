@@ -151,17 +151,38 @@ export function PaymentSection({
           {/* UNPAID STATE */}
           {paymentSectionState === "unpaid" && (
             <div className="text-center py-8">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#F8FAFB] to-[#E5E7EB] rounded-full flex items-center justify-center">
-                <Wallet className="w-8 h-8 text-[#64748B]" />
-              </div>
-              <h4 className="text-lg font-semibold text-[#1A2B4F] mb-2">
-                No Payments Made
-              </h4>
-              <p className="text-sm text-[#64748B] mb-6">
-                Customer has not made any payments yet
-              </p>
+              {paymentHistory.length === 0 ? (
+                // No payments at all
+                <>
+                  <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#F8FAFB] to-[#E5E7EB] rounded-full flex items-center justify-center">
+                    <Wallet className="w-8 h-8 text-[#64748B]" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-[#1A2B4F] mb-2">
+                    No Payments Made
+                  </h4>
+                  <p className="text-sm text-[#64748B] mb-6">
+                    Customer has not made any payments yet
+                  </p>
+                </>
+              ) : (
+                // Has pending payments
+                <>
+                  <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#FFB84D] to-[#FF9800] rounded-full flex items-center justify-center">
+                    <Clock className="w-8 h-8 text-white" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-[#1A2B4F] mb-2">
+                    Pending Payment Verification
+                  </h4>
+                  <p className="text-sm text-[#64748B] mb-6">
+                    {paymentHistory.length} payment
+                    {paymentHistory.length !== 1 ? "s" : ""} awaiting
+                    verification
+                  </p>
+                </>
+              )}
 
-              <div className="bg-gradient-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB]">
+              {/* Balance information stays the same */}
+              <div className="bg-gradient-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB] mb-6">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-[#64748B]">
@@ -171,7 +192,9 @@ export function PaymentSection({
                       ₱{totalAmount.toLocaleString()}
                     </span>
                   </div>
+
                   <div className="h-px bg-gradient-to-r from-transparent via-[#E5E7EB] to-transparent" />
+
                   <div className="flex justify-between items-center pt-1">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse" />
@@ -185,9 +208,81 @@ export function PaymentSection({
                   </div>
                 </div>
               </div>
+
+              {/* ADD THIS: Show payment history if there are payments */}
+              {paymentHistory.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#64748B]" />
+                      <h4 className="font-semibold text-[#1A2B4F]">
+                        Pending Payments
+                      </h4>
+                    </div>
+                    <span className="text-xs text-[#94A3B8] bg-[#F1F5F9] px-2 py-1 rounded-full">
+                      {paymentHistory.length} pending
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {paymentHistory.map((payment, index) => (
+                      <div
+                        key={payment.id}
+                        onClick={() => handlePaymentItemClick(payment)}
+                        className="group bg-white rounded-xl p-4 border border-[#E5E7EB] hover:border-[#0A7AFF] hover:shadow-md cursor-pointer transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                payment.modeOfPayment === "Gcash"
+                                  ? "bg-[#0A7AFF]/10 text-[#0A7AFF]"
+                                  : "bg-[#10B981]/10 text-[#10B981]"
+                              }`}
+                            >
+                              {payment.modeOfPayment === "Gcash" ? (
+                                <Smartphone className="w-5 h-5" />
+                              ) : (
+                                <Banknote className="w-5 h-5" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-[#1A2B4F]">
+                                Payment #{index + 1}
+                              </p>
+                              <p className="text-xs text-[#94A3B8]">
+                                {new Date(
+                                  payment.submittedAt
+                                ).toLocaleDateString("en-PH", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="font-bold text-[#10B981]">
+                                ₱{payment.amount.toLocaleString()}
+                              </p>
+                              <div className="flex items-center gap-1 justify-end">
+                                <Clock className="w-3 h-3 text-[#FFB84D]" />
+                                <span className="text-xs text-[#FFB84D]">
+                                  Pending
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#0A7AFF]" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-
           {/* PARTIAL PAYMENT STATE */}
           {paymentSectionState === "partial" && (
             <>
@@ -351,7 +446,6 @@ export function PaymentSection({
               )}
             </>
           )}
-
           {/* FULLY PAID STATE */}
           {paymentSectionState === "fullyPaid" && (
             <div className="text-center py-8">

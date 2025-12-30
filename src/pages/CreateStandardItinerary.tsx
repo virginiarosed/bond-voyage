@@ -36,6 +36,7 @@ import {
   ICON_OPTIONS,
   PHILIPPINE_LOCATIONS,
 } from "../utils/constants/constants";
+import { RouteOptimizationPanel } from "../components/RouteOptimizationPanel";
 
 const getIconComponent = (iconName: string) => {
   const iconOption = ICON_OPTIONS.find((opt) => opt.value === iconName);
@@ -562,6 +563,21 @@ export function CreateStandardItinerary() {
             </div>
           </div>
         </ContentCard>
+
+        {itineraryDays.some(
+          (day) => day.activities.filter((a) => a.location).length >= 2
+        ) && (
+          <RouteOptimizationPanel
+            itineraryDays={itineraryDays}
+            selectedDayId={
+              selectedDayForRoute ||
+              itineraryDays.find(
+                (d) => d.activities.filter((a) => a.location).length >= 2
+              )?.id
+            }
+            onAcceptOptimization={handleAcceptOptimization}
+          />
+        )}
 
         <ContentCard>
           <div className="mb-6">

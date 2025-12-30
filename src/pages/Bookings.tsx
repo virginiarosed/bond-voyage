@@ -243,11 +243,6 @@ export function Bookings({
 
   // Transform detailed booking data (when fetching single booking)
   const transformDetailedBooking = (apiBooking: any) => {
-    console.log("API Payments:", apiBooking.payments); // Should show 2 payments
-    console.log(
-      "Payment Statuses:",
-      apiBooking.payments?.map((p: any) => p.status)
-    );
     const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
 
     const allPayments = apiBooking.payments || [];
@@ -306,7 +301,7 @@ export function Bookings({
       rejectionReason: apiBooking.rejectionReason,
       rejectionResolution: apiBooking.rejectionResolution,
       resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
-      // Include ALL payments here
+
       paymentHistory: paymentHistory,
       totalPaid: totalPaid,
       bookingSource: apiBooking.type,
@@ -350,7 +345,7 @@ export function Bookings({
     return bookingDetailData?.data
       ? transformDetailedBooking(bookingDetailData.data)
       : null;
-  }, [bookingDetailData?.data?.id]);
+  }, [bookingDetailData?.data]);
 
   // Update breadcrumbs
   useEffect(() => {
