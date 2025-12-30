@@ -71,6 +71,7 @@ import {
 import { useUpdatePaymentStatus } from "../hooks/usePayments";
 import { queryKeys } from "../utils/lib/queryKeys";
 import { capitalize } from "../utils/helpers/capitalize";
+import { PaymentSection } from "../components/PaymentSection";
 
 interface BookingsProps {
   onMoveToApprovals: (booking: any) => void;
@@ -244,9 +245,11 @@ export function Bookings({
   const transformDetailedBooking = (apiBooking: any) => {
     const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
 
-    // Calculate paid amount from verified payments
-    const verifiedPayments =
-      apiBooking.payments?.filter((p: any) => p.status === "VERIFIED") || [];
+    const allPayments = apiBooking.payments || [];
+
+    const verifiedPayments = allPayments.filter(
+      (p: any) => p.status === "VERIFIED"
+    );
     const totalPaid = verifiedPayments.reduce(
       (sum: number, p: any) => sum + parseFloat(p.amount),
       0
@@ -258,6 +261,21 @@ export function Bookings({
     } else if (totalPaid > 0) {
       paymentStatus = "Partial";
     }
+
+    const paymentHistory = allPayments.map((p: any) => ({
+      id: p.id,
+      paymentType: p.type === "FULL" ? "Full Payment" : "Partial Payment",
+      amount: parseFloat(p.amount),
+      modeOfPayment: p.method === "GCASH" ? "Gcash" : "Cash",
+      proofOfPayment: p.proofImage
+        ? p.proofImage.startsWith("data:")
+          ? p.proofImage
+          : `${import.meta.env.VITE_API_BASE_URL}/payments/${p.id}/proof`
+        : undefined,
+      submittedAt: p.createdAt,
+      status: p.status?.toLowerCase(), // "PENDING" → "pending"
+      transactionId: p.transactionId,
+    }));
 
     return {
       id: apiBooking.id,
@@ -283,21 +301,8 @@ export function Bookings({
       rejectionReason: apiBooking.rejectionReason,
       rejectionResolution: apiBooking.rejectionResolution,
       resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
-      paymentHistory:
-        apiBooking.payments?.map((p: any) => ({
-          id: p.id,
-          paymentType: p.type === "FULL" ? "Full Payment" : "Partial Payment",
-          amount: parseFloat(p.amount),
-          modeOfPayment: p.method === "GCASH" ? "Gcash" : "Cash",
-          proofOfPayment: p.proofImage
-            ? `data:${p.proofMimeType};base64,${btoa(
-                String.fromCharCode(...p.proofImage.data)
-              )}`
-            : undefined,
-          submittedAt: p.createdAt,
-          status: p.status?.toLowerCase(),
-          transactionId: p.transactionId,
-        })) || [],
+
+      paymentHistory: paymentHistory,
       totalPaid: totalPaid,
       bookingSource: apiBooking.type,
       itineraryDetails:
@@ -340,7 +345,7 @@ export function Bookings({
     return bookingDetailData?.data
       ? transformDetailedBooking(bookingDetailData.data)
       : null;
-  }, [bookingDetailData?.data?.id]);
+  }, [bookingDetailData?.data]);
 
   // Update breadcrumbs
   useEffect(() => {
@@ -916,75 +921,19 @@ export function Bookings({
             </div>
 
             {/* Payment Information */}
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-lg overflow-hidden">
-              <div className="relative p-6 border-b border-[#E5E7EB]">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#10B981]/5 via-[#14B8A6]/5 to-[#0A7AFF]/5" />
-                <div className="relative flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/30">
-                      <CreditCard className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-[#1A2B4F] text-lg">
-                        Payment Information
-                      </h3>
-                      <p className="text-sm text-[#64748B]">
-                        Track customer payment progress
-                      </p>
-                    </div>
-                  </div>
-                  {pendingPaymentsCount > 0 && (
-                    <div className="bg-[#FFB84D] text-white text-xs font-medium px-2 py-1 rounded-full">
-                      {pendingPaymentsCount} Pending
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              <div className="p-6 space-y-6">
-                {/* Payment states - UNPAID, PARTIAL, PAID */}
-                {paymentSectionState === "unpaid" && (
-                  <div className="text-center py-8">
-                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#F8FAFB] to-[#E5E7EB] rounded-full flex items-center justify-center">
-                      <Wallet className="w-8 h-8 text-[#64748B]" />
-                    </div>
-                    <h4 className="text-lg font-semibold text-[#1A2B4F] mb-2">
-                      No Payments Made
-                    </h4>
-                    <p className="text-sm text-[#64748B] mb-6">
-                      Customer has not made any payments yet
-                    </p>
-
-                    <div className="bg-gradient-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB] mb-6">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-[#64748B]">
-                            Total Package Cost
-                          </span>
-                          <span className="font-bold text-[#1A2B4F] text-lg">
-                            ₱{totalAmount.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="h-px bg-gradient-to-r from-transparent via-[#E5E7EB] to-transparent" />
-                        <div className="flex justify-between items-center pt-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse" />
-                            <span className="text-sm font-medium text-[#1A2B4F]">
-                              Outstanding Balance
-                            </span>
-                          </div>
-                          <span className="font-bold text-[#EF4444] text-lg">
-                            ₱{balance.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Continue with PARTIAL and PAID states... */}
-              </div>
-            </div>
+            <PaymentSection
+              booking={{
+                id: selectedBooking.id,
+                totalAmount: selectedBooking.totalAmount,
+                totalPaid: selectedBooking.totalPaid || 0,
+                paymentStatus: selectedBooking.paymentStatus || "Unpaid",
+                paymentHistory: selectedBooking.paymentHistory || [],
+              }}
+              onPaymentUpdate={() => {
+                refetch();
+              }}
+            />
 
             {/* Actions */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-6 space-y-3">

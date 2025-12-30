@@ -36,6 +36,7 @@ import {
   ICON_OPTIONS,
   PHILIPPINE_LOCATIONS,
 } from "../utils/constants/constants";
+import { RouteOptimizationPanel } from "../components/RouteOptimizationPanel";
 
 const getIconComponent = (iconName: string) => {
   const iconOption = ICON_OPTIONS.find((opt) => opt.value === iconName);
@@ -62,6 +63,37 @@ interface Day {
 export function CreateStandardItinerary() {
   const navigate = useNavigate();
   const { mutate: createTourPackage, isPending } = useCreateTourPackage();
+
+  // Add this missing state variable near your other useState declarations:
+  const [selectedDayForRoute, setSelectedDayForRoute] = useState<string | null>(
+    null
+  );
+
+  // Add this missing function to handle route optimization acceptance:
+  const handleAcceptOptimization = (
+    dayId: string,
+    optimizedActivities: Activity[]
+  ) => {
+    setItineraryDays((prev) =>
+      prev.map((day) =>
+        day.id === dayId
+          ? {
+              ...day,
+              activities: optimizedActivities.map((activity, index) => ({
+                ...activity,
+                order: index,
+              })),
+            }
+          : day
+      )
+    );
+    toast.success("Route Optimized", {
+      description: `Activities for Day ${
+        dayId.split("-")[1]
+      } have been reordered for optimal routing.`,
+    });
+    setHasUnsavedChanges(true);
+  };
 
   const [formData, setFormData] = useState({
     destination: "",
@@ -562,6 +594,21 @@ export function CreateStandardItinerary() {
             </div>
           </div>
         </ContentCard>
+
+        {itineraryDays.some(
+          (day) => day.activities.filter((a) => a.location).length >= 2
+        ) && (
+          <RouteOptimizationPanel
+            itineraryDays={itineraryDays}
+            selectedDayId={
+              selectedDayForRoute ||
+              itineraryDays.find(
+                (d) => d.activities.filter((a) => a.location).length >= 2
+              )?.id
+            }
+            onAcceptOptimization={handleAcceptOptimization}
+          />
+        )}
 
         <ContentCard>
           <div className="mb-6">
