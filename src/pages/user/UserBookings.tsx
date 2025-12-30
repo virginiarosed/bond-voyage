@@ -31,6 +31,7 @@ import { StatCard } from "../../components/StatCard";
 import { capitalize } from "../../utils/helpers/capitalize";
 import { queryKeys } from "../../utils/lib/queryKeys";
 import { useNavigate } from "react-router-dom";
+import { UserPaymentSection } from "./UserPaymentSection";
 
 export function UserBookings() {
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
@@ -458,75 +459,15 @@ export function UserBookings() {
             </div>
 
             {/* Payment Information */}
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-lg overflow-hidden">
-              <div className="relative p-6 border-b border-[#E5E7EB]">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#10B981]/5 via-[#14B8A6]/5 to-[#0A7AFF]/5" />
-                <div className="relative flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/30">
-                    <DollarSign className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#1A2B4F] text-lg">
-                      Payment Summary
-                    </h3>
-                    <p className="text-sm text-[#64748B]">
-                      Track your payment progress
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 space-y-4">
-                <div className="bg-gradient-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB]">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-[#64748B]">
-                        Total Package Cost
-                      </span>
-                      <span className="font-bold text-[#1A2B4F] text-lg">
-                        ₱{totalAmount.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-[#64748B]">
-                        Amount Paid
-                      </span>
-                      <span className="font-bold text-[#10B981] text-lg">
-                        ₱{paidAmount.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="h-px bg-gradient-to-r from-transparent via-[#E5E7EB] to-transparent" />
-                    <div className="flex justify-between items-center pt-1">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse" />
-                        <span className="text-sm font-medium text-[#1A2B4F]">
-                          Outstanding Balance
-                        </span>
-                      </div>
-                      <span className="font-bold text-[#EF4444] text-lg">
-                        ₱{balance.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-[#64748B]">Progress</span>
-                    <span className="text-xs font-medium text-[#1A2B4F]">
-                      {progressPercent}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[#10B981] to-[#14B8A6] rounded-full transition-all duration-500"
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <UserPaymentSection
+              booking={{
+                id: selectedBooking.id,
+                totalAmount: selectedBooking.totalAmount,
+                totalPaid: selectedBooking.totalPaid,
+                paymentStatus: selectedBooking.paymentStatus,
+                paymentHistory: selectedBooking.paymentHistory || [],
+              }}
+            />
 
             {/* Actions */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-6 space-y-3">
