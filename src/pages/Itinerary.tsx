@@ -92,6 +92,7 @@ import { toast } from "sonner";
 import { TourPackage } from "../types/types";
 import { queryKeys } from "../utils/lib/queryKeys";
 import { useCreateBooking } from "../hooks/useBookings";
+import { useAdminBookings } from "../hooks/useBookings";
 
 interface RequestedItineraryBooking {
   id: string;
@@ -248,6 +249,23 @@ export function Itinerary({
     "Standard" | "Requested"
   >("Standard");
   const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  // State for query parameters
+  const [queryParams, setQueryParams] = useState({
+    page: 1,
+    limit: 10,
+  });
+
+  // Fetch admin bookings (REQUESTED type)
+  const {
+    data: bookingsData,
+    isLoading: isLoadingBookings,
+    isError: isBookingsError,
+    refetch: refetchBookings,
+  } = useAdminBookings({
+    ...queryParams,
+    type: "REQUESTED", // Filter only requested bookings
+  });
 
   // Fetch tour packages from API using the hook
   const {
@@ -469,6 +487,37 @@ export function Itinerary({
     }
   }, [newStandardItineraries, standardItineraryUpdates]);
 
+  // Transform API bookings data to RequestedItineraryBooking format
+  useEffect(() => {
+    if (bookingsData?.data) {
+      const transformedBookings: RequestedItineraryBooking[] =
+        bookingsData.data.map((booking: any) => ({
+          id: booking.id,
+          customer: booking.customer,
+          email: booking.email,
+          mobile: booking.mobile || "N/A",
+          destination: booking.destination,
+          itinerary: booking.destination, // Using destination as itinerary for now
+          dates: booking.dates,
+          travelers: booking.travelers,
+          totalAmount: `₱${parseFloat(booking.total || "0").toLocaleString()}`,
+          paid: "₱0", // Assuming no payment data in response
+          bookedDate: booking.bookedDate,
+          status:
+            booking.resolutionStatus === "resolved"
+              ? "completed"
+              : booking.statusBadges === "CONFIRMED"
+              ? "in-progress"
+              : "pending",
+          sentStatus: booking.statusBadges === "CONFIRMED" ? "sent" : "unsent",
+          confirmStatus:
+            booking.statusBadges === "CONFIRMED" ? "confirmed" : "unconfirmed",
+        }));
+
+      setRequestedBookings(transformedBookings);
+    }
+  }, [bookingsData]);
+
   // Merge requested bookings from Bookings page with existing ones
   useEffect(() => {
     if (
@@ -634,10 +683,9 @@ export function Itinerary({
 
   // Filter requested bookings
   const getFilteredRequestedBookings = () => {
-    const updatedBookings = requestedBookings.map(
-      (b) => requestedBookingUpdates[b.id] || b
-    );
-    let filtered = updatedBookings;
+    const allBookings = [...requestedBookings];
+
+    let filtered = allBookings;
 
     if (searchQuery) {
       filtered = filtered.filter(
@@ -767,6 +815,7 @@ export function Itinerary({
       },
     });
   };
+
   // Render Standard Itinerary Grid View
   const renderStandardGridView = () => {
     if (isLoadingPackages) {
@@ -966,64 +1015,128 @@ export function Itinerary({
     );
   };
 
-  // Render Requested Itinerary List View (keep existing)
-  const renderRequestedListView = () => (
-    <div className="space-y-4">
-      {filteredRequestedBookings.map((booking) => (
-        <div
-          key={booking.id}
-          className="relative"
-          ref={(el) => {
-            requestedRefs.current[booking.id] = el;
-          }}
-        >
-          <BookingListCard
-            booking={{
-              id: booking.id,
-              customer: booking.customer,
-              email: booking.email,
-              mobile: booking.mobile,
-              destination: booking.destination,
-              dates: booking.dates,
-              travelers: booking.travelers,
-              total: booking.totalAmount,
-              bookedDate: booking.bookedDate,
+  // Render Requested Itinerary List View with API integration
+  const renderRequestedListView = () => {
+    if (isLoadingBookings) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-[#0A7AFF] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#64748B]">Loading requested bookings...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (isBookingsError) {
+      return (
+        <div className="text-center py-12">
+          <AlertCircle className="w-16 h-16 text-[#FF6B6B] mx-auto mb-4" />
+          <p className="text-[#64748B] text-lg mb-2">
+            Failed to load requested bookings
+          </p>
+          <button
+            onClick={() => refetchBookings()}
+            className="px-4 py-2 bg-[#0A7AFF] text-white rounded-lg hover:bg-[#0A6AE8] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    const filteredBookings = getFilteredRequestedBookings();
+
+    if (filteredBookings.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Package className="w-16 h-16 text-[#94A3B8] mx-auto mb-4" />
+          <p className="text-[#64748B] text-lg mb-2">
+            No requested itineraries found
+          </p>
+          <p className="text-[#94A3B8] text-sm">
+            {searchQuery
+              ? "Try adjusting your search criteria"
+              : "No customer booking requests yet"}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {filteredBookings.map((booking) => (
+          <div
+            key={booking.id}
+            className="relative"
+            ref={(el) => {
+              requestedRefs.current[booking.id] = el;
             }}
-            onViewDetails={() => {
-              setSelectedRequestedId(booking.id);
-              setRequestedViewMode("detail");
-            }}
-            additionalBadges={
-              <div className="flex items-center gap-2">
-                <span
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                    booking.sentStatus === "sent"
-                      ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]"
-                      : "bg-[rgba(100,116,139,0.1)] text-[#64748B] border border-[rgba(100,116,139,0.2)]"
-                  }`}
-                >
-                  {booking.sentStatus === "sent" ? "Sent" : "Unsent"}
-                </span>
-                {booking.sentStatus === "sent" && booking.confirmStatus && (
+          >
+            <BookingListCard
+              booking={{
+                id: booking.id,
+                customer: booking.customer,
+                email: booking.email,
+                mobile: booking.mobile,
+                destination: booking.destination,
+                dates: booking.dates,
+                travelers: booking.travelers,
+                total: booking.totalAmount,
+                bookedDate: booking.bookedDate,
+              }}
+              onViewDetails={() => {
+                setSelectedRequestedId(booking.id);
+                setRequestedViewMode("detail");
+              }}
+              additionalBadges={
+                <div className="flex items-center gap-2">
                   <span
                     className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      booking.confirmStatus === "confirmed"
-                        ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border border-[rgba(10,122,255,0.2)]"
-                        : "bg-[rgba(255,193,7,0.1)] text-[#FFC107] border border-[rgba(255,193,7,0.2)]"
+                      booking.sentStatus === "sent"
+                        ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]"
+                        : "bg-[rgba(100,116,139,0.1)] text-[#64748B] border border-[rgba(100,116,139,0.2)]"
                     }`}
                   >
-                    {booking.confirmStatus === "confirmed"
-                      ? "Confirmed"
-                      : "Unconfirmed"}
+                    {booking.sentStatus === "sent" ? "Sent" : "Unsent"}
                   </span>
-                )}
-              </div>
-            }
-          />
-        </div>
-      ))}
-    </div>
-  );
+                  {booking.sentStatus === "sent" && booking.confirmStatus && (
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        booking.confirmStatus === "confirmed"
+                          ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border border-[rgba(10,122,255,0.2)]"
+                          : "bg-[rgba(255,193,7,0.1)] text-[#FFC107] border border-[rgba(255,193,7,0.2)]"
+                      }`}
+                    >
+                      {booking.confirmStatus === "confirmed"
+                        ? "Confirmed"
+                        : "Unconfirmed"}
+                    </span>
+                  )}
+                  {/* Add status badge */}
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                      booking.status === "completed"
+                        ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]"
+                        : booking.status === "in-progress"
+                        ? "bg-[rgba(255,193,7,0.1)] text-[#FFC107] border border-[rgba(255,193,7,0.2)]"
+                        : "bg-[rgba(100,116,139,0.1)] text-[#64748B] border border-[rgba(100,116,139,0.2)]"
+                    }`}
+                  >
+                    {booking.status === "completed"
+                      ? "Completed"
+                      : booking.status === "in-progress"
+                      ? "In Progress"
+                      : "Pending"}
+                  </span>
+                </div>
+              }
+            />
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -1087,7 +1200,9 @@ export function Itinerary({
           title={
             selectedCategory === "Standard"
               ? `Standard Itineraries (${filteredTemplates.length})`
-              : `Requested Itineraries (${filteredRequestedBookings.length})`
+              : `Requested Itineraries (${
+                  getFilteredRequestedBookings().length
+                })`
           }
           action={
             <button
