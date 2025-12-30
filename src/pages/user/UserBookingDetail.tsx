@@ -646,8 +646,7 @@ export function UserBookingDetail() {
               {paymentSectionState === "unpaid" && (
                 <>
                   {balance > 0 ? (
-                    editingPayment ? (
-                      /* EDITING STATE - Original form fields */
+                    editingPayment /* EDITING STATE - Original form fields */ ? (
                       <>
                         {/* Payment Type Dropdown */}
                         <div>
@@ -969,8 +968,117 @@ export function UserBookingDetail() {
                           Cancel
                         </button>
                       </>
+                    ) : /* Check if there are pending payments to show */
+                    payments.length > 0 ? (
+                      /* Show pending payments */
+                      <>
+                        {/* Pending Payments Header */}
+                        <div className="mb-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Clock className="w-5 h-5 text-[#F59E0B]" />
+                            <h4 className="font-semibold text-[#1A2B4F]">
+                              Pending Payments
+                            </h4>
+                          </div>
+                          <p className="text-sm text-[#64748B]">
+                            You have {payments.length} payment
+                            {payments.length !== 1 ? "s" : ""} awaiting
+                            verification
+                          </p>
+                        </div>
+
+                        {/* Payment History - Show pending payments */}
+                        <div className="space-y-3">
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {payments.map((payment, index) => (
+                              <div
+                                key={payment.id}
+                                onClick={() => handlePaymentItemClick(payment)}
+                                className="group bg-white rounded-xl p-4 border border-[#E5E7EB] hover:border-[#0A7AFF] hover:shadow-md cursor-pointer transition-all duration-200"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                        payment.method === "GCASH"
+                                          ? "bg-[#0A7AFF]/10 text-[#0A7AFF]"
+                                          : "bg-[#10B981]/10 text-[#10B981]"
+                                      }`}
+                                    >
+                                      {payment.method === "GCASH" ? (
+                                        <Smartphone className="w-5 h-5" />
+                                      ) : (
+                                        <Banknote className="w-5 h-5" />
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-semibold text-[#1A2B4F]">
+                                        Payment #{index + 1}
+                                      </p>
+                                      <p className="text-xs text-[#94A3B8]">
+                                        {new Date(
+                                          payment.createdAt || ""
+                                        ).toLocaleDateString("en-PH", {
+                                          month: "short",
+                                          day: "numeric",
+                                          year: "numeric",
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-right">
+                                      <p className="font-bold text-[#10B981]">
+                                        ₱
+                                        {parseFloat(
+                                          payment.amount.toString()
+                                        ).toLocaleString()}
+                                      </p>
+                                      <div className="flex items-center gap-1 justify-end">
+                                        {payment.status === "PENDING" ? (
+                                          <>
+                                            <Clock className="w-3 h-3 text-[#F59E0B]" />
+                                            <span className="text-xs text-[#F59E0B]">
+                                              Pending
+                                            </span>
+                                          </>
+                                        ) : payment.status === "VERIFIED" ? (
+                                          <>
+                                            <CheckCircle2 className="w-3 h-3 text-[#10B981]" />
+                                            <span className="text-xs text-[#10B981]">
+                                              Verified
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <X className="w-3 h-3 text-[#EF4444]" />
+                                            <span className="text-xs text-[#EF4444]">
+                                              Rejected
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#0A7AFF] transition-colors" />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Make Payment CTA - Still show even with pending payments */}
+                        <div className="pt-4 border-t border-[#E5E7EB]">
+                          <button
+                            onClick={() => setEditingPayment(true)}
+                            className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#0A7AFF] via-[#0A7AFF] to-[#14B8A6] text-white font-semibold shadow-lg shadow-[#0A7AFF]/30 hover:shadow-xl hover:shadow-[#0A7AFF]/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group"
+                          >
+                            Make Another Payment
+                          </button>
+                        </div>
+                      </>
                     ) : (
-                      /* INITIAL STATE - No payments made yet */
+                      /* No payments at all - show the original empty state */
                       <>
                         {/* Empty state for unpaid bookings */}
                         <div className="text-center py-8">
@@ -1037,7 +1145,6 @@ export function UserBookingDetail() {
                   )}
                 </>
               )}
-
               {/* PARTIAL PAYMENT STATE - Ongoing payments */}
               {paymentSectionState === "partial" && (
                 <>
