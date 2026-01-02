@@ -9,6 +9,7 @@ import { AxiosError } from "axios";
 import { apiClient } from "../utils/axios/userAxios";
 import { queryKeys } from "../utils/lib/queryKeys";
 import { ApiResponse, Booking } from "../types/types";
+import { useState, useEffect } from "react";
 
 export const useMyBookings = (
   params?: { page?: number; limit?: number; status?: string },
@@ -200,4 +201,69 @@ export const useUpdateBookingStatus = (
     },
     ...options,
   });
+};
+
+export const useBookingPayments = (
+  id: string,
+  options?: UseQueryOptions<ApiResponse<any>, AxiosError>
+) => {
+  return useQuery({
+    queryKey: queryKeys.payments.list(id),
+    queryFn: async () => {
+      const response = await apiClient.get<ApiResponse<any>>(
+        `/bookings/${id}/payments`
+      );
+      return response.data;
+    },
+    enabled: !!id,
+    ...options,
+  });
+};
+
+export const usePaymentProof = (
+  paymentId?: string,
+  options?: UseQueryOptions<Blob, AxiosError>
+) => {
+  return useQuery({
+    queryKey: [queryKeys.payments.proof, paymentId],
+    queryFn: async () => {
+      const response = await apiClient.get<Blob>(
+        `/payments/${paymentId}/proof`,
+        {
+          responseType: "blob",
+        }
+      );
+      return response.data;
+    },
+    enabled: !!paymentId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    ...options,
+  });
+};
+
+export const usePaymentProofImage = (paymentId?: string) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  const { data: blob, isLoading, error, refetch } = usePaymentProof(paymentId);
+
+  useEffect(() => {
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      setImageUrl(url);
+
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setImageUrl(null);
+    }
+  }, [blob]);
+
+  return {
+    data: imageUrl,
+    isLoading,
+    error,
+    refetch,
+  };
 };

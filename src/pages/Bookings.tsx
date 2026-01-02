@@ -94,7 +94,6 @@ export function Bookings({
   const location = useLocation();
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
 
-  // API hooks with server-side filtering
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
@@ -107,8 +106,7 @@ export function Bookings({
     refetch,
   } = useAdminBookings(queryParams);
 
-  // Local state for UI
-  const [selectedStatus, setSelectedStatus] = useState("all"); // Payment status tabs (client-side)
+  const [selectedStatus, setSelectedStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("none");
   const [viewMode, setViewMode] = useState<"list" | "detail">("list");
@@ -116,17 +114,14 @@ export function Bookings({
     null
   );
 
-  // Fetch detailed booking when in detail view
   const { data: bookingDetailData, isLoading: isLoadingDetail } =
     useBookingDetail(selectedBookingId || "", {
       enabled: !!selectedBookingId && viewMode === "detail",
       queryKey: [queryKeys.bookings.detail],
     });
 
-  // Filter states
   const [filterOpen, setFilterOpen] = useState(false);
 
-  // Applied filters (used for querying)
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [travelDateFrom, setTravelDateFrom] = useState("");
@@ -134,7 +129,6 @@ export function Bookings({
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
 
-  // Pending filters (used inside the filter UI until 'Apply' is pressed)
   const [pendingDateFrom, setPendingDateFrom] = useState("");
   const [pendingDateTo, setPendingDateTo] = useState("");
   const [pendingTravelDateFrom, setPendingTravelDateFrom] = useState("");
@@ -146,7 +140,6 @@ export function Bookings({
     null
   );
 
-  // When opening the filter panel, initialize pending values from applied ones
   const handleFilterOpenChange = (open: boolean) => {
     if (open) {
       setPendingDateFrom(dateFrom);
@@ -160,7 +153,6 @@ export function Bookings({
     setFilterOpen(open);
   };
 
-  // Modal states
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [moveToApprovalsDialogOpen, setMoveToApprovalsDialogOpen] =
@@ -175,13 +167,11 @@ export function Bookings({
     useState<any>(null);
   const [cancellationReason, setCancellationReason] = useState("");
 
-  // Payment modal states
   const [paymentDetailModalOpen, setPaymentDetailModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  // Edit modal states
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [bookingToEdit, setBookingToEdit] = useState<any>(null);
   const [editFormData, setEditFormData] = useState({
@@ -196,7 +186,6 @@ export function Bookings({
   const cancelBooking = useCancelBooking(selectedBookingId || "");
   const updatePaymentStatus = useUpdatePaymentStatus(selectedPayment?.id || "");
 
-  // Transform API data to match component structure
   const transformBooking = (apiBooking: any) => {
     const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
 
@@ -268,7 +257,7 @@ export function Bookings({
           : `${import.meta.env.VITE_API_BASE_URL}/payments/${p.id}/proof`
         : undefined,
       submittedAt: p.createdAt,
-      status: p.status?.toLowerCase(), // "PENDING" → "pending"
+      status: p.status?.toLowerCase(),
       transactionId: p.transactionId,
     }));
 
@@ -363,24 +352,20 @@ export function Bookings({
     }
   }, [bookingsData?.meta?.total, onBookingsCountChange]);
 
-  // Build API query params based on filters
   useEffect(() => {
     const params: any = {
       page: 1,
       limit: 10,
     };
 
-    // Search query
     if (searchQuery) {
       params.q = searchQuery;
     }
 
-    // Booking type filter
     if (selectedTypeFilter) {
       params.type = selectedTypeFilter;
     }
 
-    // Date range filter
     if (dateFrom && dateTo) {
       params.dateFrom = dateFrom;
       params.dateTo = dateTo;
@@ -396,18 +381,15 @@ export function Bookings({
     setQueryParams(params);
   }, [searchQuery, selectedTypeFilter, dateFrom, dateTo, sortOrder]);
 
-  // Filter bookings (client-side filtering for payment status only)
   const getFilteredBookings = () => {
     let filtered = bookings;
 
-    // Payment status filter (client-side since API doesn't have payment status filter)
     if (selectedStatus !== "all") {
       filtered = filtered.filter(
         (b) => b.paymentStatus?.toLowerCase() === selectedStatus.toLowerCase()
       );
     }
 
-    // Travel date filters (client-side for now, could be moved to API)
     if (travelDateFrom || travelDateTo) {
       filtered = filtered.filter((b) => {
         const travelDate = new Date(b.startDate);
@@ -425,7 +407,6 @@ export function Bookings({
       });
     }
 
-    // Amount filter (client-side for now, could be moved to API)
     if (minAmount || maxAmount) {
       filtered = filtered.filter((b) => {
         if (minAmount && maxAmount) {
@@ -447,20 +428,16 @@ export function Bookings({
 
   const filteredBookings = getFilteredBookings();
 
-  // Use API pagination
   const totalItems = bookingsData?.meta?.total || 0;
   const totalPages = bookingsData?.meta?.totalPages || 1;
   const currentPage = bookingsData?.meta?.page || 1;
   const itemsPerPage = bookingsData?.meta?.limit || 10;
 
-  // Calculate display indices
   const indexOfFirstBooking = (currentPage - 1) * itemsPerPage + 1;
   const indexOfLastBooking = Math.min(currentPage * itemsPerPage, totalItems);
 
-  // Use filtered bookings for display (server-filtered + client payment filter)
   const currentBookings = filteredBookings;
 
-  // Statistics
   const customizedCount = filteredBookings.filter(
     (b) => b.bookingType === "CUSTOMIZED"
   ).length;
@@ -476,14 +453,12 @@ export function Bookings({
     (travelDateFrom || travelDateTo ? 1 : 0) +
     (minAmount || maxAmount ? 1 : 0);
 
-  // Get pending payments count
   const getPendingPaymentsCount = (booking: any) => {
     if (!booking.paymentHistory) return 0;
     return booking.paymentHistory.filter((p: any) => p.status === "pending")
       .length;
   };
 
-  // Calculate payment progress
   const calculatePaymentProgress = (booking: any) => {
     const totalAmount = booking.totalAmount;
     const paidAmount = booking.totalPaid || 0;
@@ -493,7 +468,6 @@ export function Bookings({
     return { totalAmount, paidAmount, balance, progressPercent };
   };
 
-  // Handlers
   const handleViewDetails = (bookingId: string) => {
     setSelectedBookingId(bookingId);
     setViewMode("detail");
@@ -924,7 +898,6 @@ export function Bookings({
                 totalAmount: selectedBooking.totalAmount,
                 totalPaid: selectedBooking.totalPaid || 0,
                 paymentStatus: selectedBooking.paymentStatus || "Unpaid",
-                paymentHistory: selectedBooking.paymentHistory || [],
               }}
               onPaymentUpdate={() => {
                 refetch();

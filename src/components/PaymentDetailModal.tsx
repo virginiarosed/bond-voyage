@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Smartphone,
   Banknote,
+  Loader2,
 } from "lucide-react";
 import {
   Dialog,
@@ -16,31 +17,39 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import { Button as ShadcnButton } from "./ui/button";
 import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
+import { usePaymentProof } from "../hooks/useBookings";
+import { useQueryClient } from "@tanstack/react-query"; // Add this
+import { useState, useEffect, useMemo } from "react";
+import { queryKeys } from "../utils/lib/queryKeys"; // Import queryKeys
 
 interface PaymentSubmission {
   id: string;
-  paymentType: "Full Payment" | "Partial Payment";
-  amount: number;
-  modeOfPayment: "Cash" | "Gcash";
-  proofOfPayment?: string;
-  submittedAt: string;
-  status?: "pending" | "verified" | "rejected";
+  bookingId: string;
+  submittedById: string;
+  amount: string;
+  method: "GCASH" | "CASH";
+  status: "PENDING" | "VERIFIED" | "REJECTED";
+  type: "FULL" | "PARTIAL";
+  transactionId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  submittedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   verifiedBy?: string;
   verifiedAt?: string;
   rejectionReason?: string;
-  transactionId?: string;
 }
-
-// ==================== PaymentDetailModal ====================
 
 interface PaymentDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   payment: PaymentSubmission | null;
-  onVerify: (payment: PaymentSubmission) => void;
+  onVerify: () => void;
   onReject: (payment: PaymentSubmission) => void;
 }
 
@@ -51,10 +60,65 @@ export function PaymentDetailModal({
   onVerify,
   onReject,
 }: PaymentDetailModalProps) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const queryClient = useQueryClient(); // Get query client
+
+  // Use the simpler hook
+  const {
+    data: proofBlob,
+    isLoading: proofLoading,
+    error: proofError,
+    refetch,
+  } = usePaymentProof(open && payment?.id ? payment.id : undefined);
+
+  // Create object URL from blob
+  const proofImageUrl = useMemo(() => {
+    if (!proofBlob) return null;
+    return URL.createObjectURL(proofBlob);
+  }, [proofBlob]);
+
+  // Cleanup object URL when component unmounts or blob changes
+  useEffect(() => {
+    return () => {
+      if (proofImageUrl) {
+        URL.revokeObjectURL(proofImageUrl);
+      }
+    };
+  }, [proofImageUrl]);
+
+  // Reset cached data when modal closes
+  useEffect(() => {
+    if (!open && payment?.id) {
+      // Remove the cached proof data for this payment
+      queryClient.removeQueries({
+        queryKey: [queryKeys.payments.proof, payment.id],
+      });
+    }
+  }, [open, payment?.id, queryClient]);
+
+  useEffect(() => {
+    if (open && payment) {
+      setImageLoaded(false);
+    }
+  }, [open, payment?.id]);
+
+  useEffect(() => {
+    if (open && payment?.id) {
+      refetch();
+    }
+  }, [open, payment?.id, refetch]);
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  // Check if we should show proof image
+  const shouldShowProofImage = proofImageUrl && !proofLoading && !proofError;
+
   if (!payment) return null;
 
   const getPaymentVerificationStatusColor = (status?: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case "verified":
         return "bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[#10B981]/20";
       case "rejected":
@@ -65,12 +129,21 @@ export function PaymentDetailModal({
     }
   };
 
-  // Construct proof image URL for API endpoint
-  const proofImageUrl = payment.proofOfPayment
-    ? payment.proofOfPayment.startsWith("data:")
-      ? payment.proofOfPayment
-      : `${import.meta.env.VITE_API_BASE_URL}/payments/${payment.id}/proof`
-    : null;
+  const formatPaymentMethod = (method: string) => {
+    return method === "GCASH" ? "Gcash" : "Cash";
+  };
+
+  const formatPaymentType = (type: string) => {
+    return type === "FULL" ? "Full Payment" : "Partial Payment";
+  };
+
+  const getPaymentAmount = (amount: string) => {
+    return parseFloat(amount) || 0;
+  };
+
+  const formatStatus = (status: string) => {
+    return status.charAt(0) + status.slice(1).toLowerCase();
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,9 +163,11 @@ export function PaymentDetailModal({
           <div className="bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-semibold">{payment.paymentType}</h3>
+                <h3 className="text-lg font-semibold">
+                  {formatPaymentType(payment.type)}
+                </h3>
                 <p className="text-white/80 text-sm">
-                  {new Date(payment.submittedAt).toLocaleDateString("en-PH", {
+                  {new Date(payment.createdAt).toLocaleDateString("en-PH", {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
@@ -105,7 +180,7 @@ export function PaymentDetailModal({
               <div className="text-right">
                 <p className="text-white/80 text-sm">Amount Paid</p>
                 <p className="text-2xl font-bold">
-                  ₱{payment.amount.toLocaleString()}
+                  ₱{getPaymentAmount(payment.amount).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -123,7 +198,7 @@ export function PaymentDetailModal({
               <div>
                 <Label className="text-sm text-[#64748B]">Payment Type</Label>
                 <p className="text-sm font-medium text-[#1A2B4F]">
-                  {payment.paymentType}
+                  {formatPaymentType(payment.type)}
                 </p>
               </div>
               {payment.transactionId && (
@@ -143,13 +218,13 @@ export function PaymentDetailModal({
                   Mode of Payment
                 </Label>
                 <div className="flex items-center gap-2">
-                  {payment.modeOfPayment === "Cash" ? (
+                  {payment.method === "CASH" ? (
                     <Banknote className="w-4 h-4 text-[#10B981]" />
                   ) : (
                     <Smartphone className="w-4 h-4 text-[#0A7AFF]" />
                   )}
                   <p className="text-sm font-medium text-[#1A2B4F]">
-                    {payment.modeOfPayment}
+                    {formatPaymentMethod(payment.method)}
                   </p>
                 </div>
               </div>
@@ -160,17 +235,41 @@ export function PaymentDetailModal({
                     payment.status
                   )}`}
                 >
-                  {payment.status
-                    ? payment.status.charAt(0).toUpperCase() +
-                      payment.status.slice(1)
-                    : "Pending"}
+                  {formatStatus(payment.status)}
                 </span>
               </div>
             </div>
           </div>
 
+          {/* Submitted By Information */}
+          {payment.submittedBy && (
+            <div className="bg-[#F8FAFB] rounded-lg p-4 border border-[#E5E7EB]">
+              <div className="flex items-center gap-3 mb-3">
+                <Shield className="w-5 h-5 text-[#0A7AFF]" />
+                <h4 className="text-sm font-medium text-[#1A2B4F]">
+                  Submitted By
+                </h4>
+              </div>
+              <div className="space-y-2 text-sm text-[#64748B]">
+                <div className="flex justify-between">
+                  <span>Name:</span>
+                  <span className="font-medium text-[#1A2B4F]">
+                    {payment.submittedBy.firstName}{" "}
+                    {payment.submittedBy.lastName}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Email:</span>
+                  <span className="font-medium text-[#1A2B4F]">
+                    {payment.submittedBy.email}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Verification Info */}
-          {(payment.status === "verified" || payment.status === "rejected") && (
+          {(payment.status === "VERIFIED" || payment.status === "REJECTED") && (
             <div className="bg-[#F8FAFB] rounded-lg p-4 border border-[#E5E7EB]">
               <div className="flex items-center gap-3 mb-3">
                 <Shield className="w-5 h-5 text-[#10B981]" />
@@ -202,7 +301,7 @@ export function PaymentDetailModal({
                       : "N/A"}
                   </span>
                 </div>
-                {payment.status === "rejected" && payment.rejectionReason && (
+                {payment.status === "REJECTED" && payment.rejectionReason && (
                   <div className="flex justify-between">
                     <span>Rejection Reason:</span>
                     <span className="font-medium text-[#FF6B6B] text-right max-w-xs">
@@ -220,17 +319,36 @@ export function PaymentDetailModal({
               Proof of Payment
             </Label>
 
-            {proofImageUrl ? (
+            {proofLoading ? (
+              <div className="text-center py-12 border-2 border-dashed border-[#E5E7EB] rounded-xl">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 text-[#64748B] animate-spin" />
+                  <p className="text-sm text-[#64748B]">
+                    Loading proof of payment...
+                  </p>
+                </div>
+              </div>
+            ) : shouldShowProofImage ? (
               <div className="space-y-4">
-                <div className="border-2 border-[#E5E7EB] rounded-xl overflow-hidden">
+                <div className="border-2 border-[#E5E7EB] rounded-xl overflow-hidden relative min-h-[200px]">
+                  {!imageLoaded && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-[#F8FAFB]">
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="w-6 h-6 text-[#64748B] animate-spin" />
+                        <p className="text-xs text-[#64748B]">
+                          Loading image...
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <img
                     src={proofImageUrl}
                     alt="Proof of payment"
-                    className="w-full max-h-96 object-contain bg-[#F8FAFB] mx-auto"
-                    onError={(e) => {
-                      // Fallback if image fails to load
-                      e.currentTarget.src = "/placeholder-image.png";
-                    }}
+                    className={`w-full max-h-96 object-contain bg-[#F8FAFB] mx-auto transition-opacity duration-300 ${
+                      imageLoaded ? "opacity-100" : "opacity-0"
+                    }`}
+                    onLoad={handleImageLoad}
+                    loading="lazy"
                   />
                 </div>
               </div>
@@ -238,10 +356,14 @@ export function PaymentDetailModal({
               <div className="text-center py-8 border-2 border-dashed border-[#E5E7EB] rounded-xl">
                 <AlertCircle className="w-12 h-12 text-[#64748B] mx-auto mb-3" />
                 <p className="text-sm text-[#64748B]">
-                  No proof of payment available
+                  {proofError
+                    ? "Failed to load proof"
+                    : "No proof of payment available"}
                 </p>
                 <p className="text-xs text-[#64748B] mt-1">
-                  Payment was made without uploaded proof
+                  {proofError
+                    ? "Could not load the proof image"
+                    : "Payment was made without uploaded proof"}
                 </p>
               </div>
             )}
@@ -261,7 +383,7 @@ export function PaymentDetailModal({
                     Payment Submitted
                   </p>
                   <p className="text-xs text-[#64748B]">
-                    {new Date(payment.submittedAt).toLocaleDateString("en-PH", {
+                    {new Date(payment.createdAt).toLocaleDateString("en-PH", {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
@@ -271,7 +393,7 @@ export function PaymentDetailModal({
                   </p>
                 </div>
               </div>
-              {payment.status === "verified" && payment.verifiedAt && (
+              {payment.status === "VERIFIED" && payment.verifiedAt && (
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-[#10B981] rounded-full"></div>
                   <div className="flex-1">
@@ -293,7 +415,7 @@ export function PaymentDetailModal({
                   </div>
                 </div>
               )}
-              {payment.status === "rejected" && payment.verifiedAt && (
+              {payment.status === "REJECTED" && payment.verifiedAt && (
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-[#FF6B6B] rounded-full"></div>
                   <div className="flex-1">
@@ -319,10 +441,10 @@ export function PaymentDetailModal({
           </div>
 
           {/* Action Buttons */}
-          {payment.status === "pending" && (
+          {payment.status === "PENDING" && (
             <div className="flex gap-3 pt-4 border-t border-[#E5E7EB]">
               <button
-                onClick={() => onVerify(payment)}
+                onClick={onVerify}
                 className="flex-1 h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] text-white font-medium hover:from-[#0DA271] hover:to-[#0F9B8E] transition-all flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-4 h-4" />
