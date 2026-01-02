@@ -8,17 +8,21 @@ import {
 import { AxiosError } from "axios";
 import { apiClient } from "../utils/axios/userAxios";
 import { queryKeys } from "../utils/lib/queryKeys";
-import { ApiResponse, INotification } from "../types/types";
+import { ApiResponse, INotification, PaginatedData } from "../types/types";
 
 export const useNotifications = (
-  options?: UseQueryOptions<ApiResponse<INotification[]>, AxiosError>
+  options?: UseQueryOptions<
+    ApiResponse<PaginatedData<INotification>>,
+    AxiosError
+  >
 ) => {
   return useQuery({
     queryKey: queryKeys.notifications.all,
     queryFn: async () => {
-      const response = await apiClient.get<ApiResponse<INotification[]>>(
-        "/notifications"
-      );
+      const response = await apiClient.get<
+        ApiResponse<PaginatedData<INotification>>
+      >("/notifications");
+
       return response.data;
     },
     ...options,

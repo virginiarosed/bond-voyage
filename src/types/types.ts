@@ -10,6 +10,16 @@ export interface ApiResponse<T = any> {
   };
 }
 
+export interface PaginatedData<T> {
+  items: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface QueryParams {
   page?: number;
   limit?: number;
@@ -49,13 +59,68 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
+export interface IActivity {
+  id: string;
+  time: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  icon: string | null;
+  order: number;
+}
+
+export interface Day {
+  id: string;
+  dayNumber: number;
+  date: string | null;
+  activities: IActivity[];
+}
+
+export interface Collaborator {
+  id: string;
+  userId: string;
+  invitedById: string;
+  role: string;
+  addedAt: string;
+  user: any | null;
+}
+
+export interface Itinerary {
+  id: string;
+  userId: string;
+  title: string | null;
+  destination: string;
+  startDate: string | null;
+  endDate: string | null;
+  travelers: number;
+  estimatedCost: number | null;
+  type: "STANDARD" | "CUSTOMIZED" | "REQUESTED";
+  status: string;
+  tourType: "PRIVATE" | "GROUP" | string;
+  sentStatus: string | null;
+  requestedStatus: string | null;
+  sentAt: string | null;
+  confirmedAt: string | null;
+  rejectionReason: string | null;
+  rejectionResolution: string | null;
+  isResolved: boolean;
+  collaborators: Collaborator[];
+  days: Day[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Booking {
   id: string;
+  bookingCode: string;
+  itineraryId: string;
+  userId: string;
   destination: string;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  endDate: string | null;
   travelers: number;
   totalPrice: number;
+  type: "STANDARD" | "CUSTOMIZED" | "REQUESTED";
   status:
     | "DRAFT"
     | "PENDING"
@@ -63,25 +128,19 @@ export interface Booking {
     | "REJECTED"
     | "COMPLETED"
     | "CANCELLED";
-  type: "STANDARD" | "CUSTOMIZED" | "REQUESTED";
-  tourType?: string;
-  itinerary?: ItineraryDay[];
-  userId: string;
+  tourType: "PRIVATE" | "GROUP" | string;
+  paymentStatus: "PENDING" | "PAID" | "FAILED" | "REFUNDED" | string;
+  paymentReceiptUrl: string | null;
+  rejectionReason: string | null;
+  rejectionResolution: string | null;
+  isResolved: boolean;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerMobile: string | null;
+  bookedDate: string;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface ItineraryDay {
-  dayNumber: number;
-  date: string;
-  activities: Activity[];
-}
-
-export interface Activity {
-  time: string;
-  title: string;
-  order: number;
-  description?: string;
+  itinerary: Itinerary;
 }
 
 export interface TourPackage {
@@ -127,15 +186,21 @@ type NotificationType =
 export interface INotification {
   id: string;
   userId: string;
-  user: User;
-  type: NotificationType;
-  title: string;
+  type: string;
+  title: string | null;
   message: string;
-  data: any;
+  data: {
+    amount?: number;
+    status?: string;
+    bookingId?: string;
+    paymentId?: string;
+    bookingCode?: string;
+    destination?: string;
+    itineraryId?: string;
+  } | null;
   isRead: boolean;
   createdAt: string;
 }
-
 export interface Feedback {
   id: string;
   userId: string;

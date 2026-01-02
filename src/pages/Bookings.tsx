@@ -191,7 +191,6 @@ export function Bookings({
     travelers: "1",
   });
 
-  // Mutation hooks
   const updateBookingStatus = useUpdateBookingStatus(selectedBookingId || "");
   const updateBooking = useUpdateBooking(selectedBookingId || "");
   const cancelBooking = useCancelBooking(selectedBookingId || "");
@@ -199,49 +198,45 @@ export function Bookings({
 
   // Transform API data to match component structure
   const transformBooking = (apiBooking: any) => {
-    const totalAmount =
-      parseFloat(apiBooking.total?.replace(/[₱,]/g, "") || apiBooking.total) ||
-      0;
+    const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
 
-    // Parse dates from "YYYY-MM-DD - YYYY-MM-DD" format
-    const dates = apiBooking.dates?.split(" - ") || [];
-    const startDate = dates[0];
-    const endDate = dates[1] || startDate;
+    const startDate = apiBooking.startDate || apiBooking.itinerary?.startDate;
+    const endDate = apiBooking.endDate || apiBooking.itinerary?.endDate;
 
-    // Calculate payment status from badges if available
-    // Will be overridden by detail fetch if needed
-    let paymentStatus = "Unpaid";
-    let totalPaid = 0;
+    const customerName = apiBooking.customerName || "Unknown Customer";
+    const customerEmail = apiBooking.customerEmail || "";
+    const customerMobile = apiBooking.customerMobile || "N/A";
 
     return {
       id: apiBooking.id,
-      customer: apiBooking.customer || "Unknown Customer",
-      email: apiBooking.email || "",
-      mobile: apiBooking.mobile || "N/A",
-      destination: apiBooking.destination,
-      itinerary: apiBooking.destination,
+      bookingCode: apiBooking.bookingCode,
+      customer: customerName,
+      email: customerEmail,
+      mobile: customerMobile,
+      destination: apiBooking.destination || apiBooking.itinerary?.destination,
+      itinerary: apiBooking.destination || apiBooking.itinerary?.destination,
       startDate: startDate,
       endDate: endDate,
-      travelers: apiBooking.travelers,
+      travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
       totalAmount: totalAmount,
-      paid: totalPaid,
-      paymentStatus: paymentStatus,
-      bookedDate: apiBooking.bookedDate,
-      bookedDateObj: new Date(apiBooking.bookedDate),
-      status: apiBooking.statusBadges,
-      bookingType: apiBooking.bookingType,
-      tourType: apiBooking.tourType,
+      paid: 0,
+      paymentStatus: "Unpaid",
+      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
+      bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
+      status: apiBooking.status,
+      bookingType: apiBooking.type,
+      tourType:
+        apiBooking.tourType || apiBooking.itinerary?.tourType || "PRIVATE",
       rejectionReason: apiBooking.rejectionReason,
       rejectionResolution: apiBooking.rejectionResolution,
-      resolutionStatus: apiBooking.resolutionStatus,
+      resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
       paymentHistory: [],
-      totalPaid: totalPaid,
-      bookingSource: apiBooking.bookingType,
-      itineraryDetails: apiBooking.itenerary,
+      totalPaid: 0,
+      bookingSource: apiBooking.type,
+      itineraryDetails: [],
     };
   };
 
-  // Transform detailed booking data (when fetching single booking)
   const transformDetailedBooking = (apiBooking: any) => {
     const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
 
@@ -263,7 +258,7 @@ export function Bookings({
     }
 
     const paymentHistory = allPayments.map((p: any) => ({
-      id: p.id,
+      id: apiBooking.id,
       paymentType: p.type === "FULL" ? "Full Payment" : "Partial Payment",
       amount: parseFloat(p.amount),
       modeOfPayment: p.method === "GCASH" ? "Gcash" : "Cash",
@@ -279,6 +274,7 @@ export function Bookings({
 
     return {
       id: apiBooking.id,
+      bookingCode: apiBooking.bookingCode,
       customer:
         `${apiBooking.user?.firstName || ""} ${
           apiBooking.user?.lastName || ""
@@ -306,7 +302,7 @@ export function Bookings({
       totalPaid: totalPaid,
       bookingSource: apiBooking.type,
       itineraryDetails:
-        apiBooking.itinerary?.map((day: any) => ({
+        apiBooking.itinerary?.days?.map((day: any) => ({
           day: day.dayNumber,
           title: `Day ${day.dayNumber}`,
           activities:
@@ -353,7 +349,7 @@ export function Bookings({
       setBreadcrumbs([
         { label: "Home", path: "/" },
         { label: "Bookings", path: "/bookings" },
-        { label: `Booking ${selectedBooking.id.substring(0, 8)}` },
+        { label: `Booking ${selectedBooking.bookingCode}` },
       ]);
     } else {
       resetBreadcrumbs();
@@ -842,7 +838,7 @@ export function Bookings({
             <div className="text-right">
               <p className="text-white/80 text-sm mb-1">Booking ID</p>
               <p className="text-2xl font-semibold">
-                {selectedBooking.id.substring(0, 8)}...
+                {selectedBooking.bookingCode}
               </p>
             </div>
           </div>
@@ -1692,7 +1688,7 @@ export function Bookings({
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-lg text-[#1A2B4F] font-semibold">
-                          Booking #{booking.id.substring(0, 8)}...
+                          {booking.bookingCode}
                         </h3>
                         {booking.paymentStatus && (
                           <span

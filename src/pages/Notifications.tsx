@@ -47,7 +47,7 @@ export function Notifications() {
 
   // Fetch notifications from API
   const { data: notificationsResponse, isLoading, error } = useNotifications();
-  const notifications = notificationsResponse?.data || [];
+  const notifications = notificationsResponse?.data?.items || [];
 
   const handleMarkAsRead = (notificationId: string) => {
     const markReadMutation = useMarkNotificationRead(notificationId, {
@@ -210,7 +210,10 @@ export function Notifications() {
         if (selectedTab === "unread" && notif.isRead) return false;
 
         // Type filter
-        if (typeFilters.length > 0 && !typeFilters.includes(notif.type))
+        if (
+          typeFilters.length > 0 &&
+          !typeFilters.includes(notif.type as NotificationType)
+        )
           return false;
 
         return true;
@@ -422,9 +425,15 @@ export function Notifications() {
             </div>
           ) : (
             filteredNotifications.map((notification) => {
-              const Icon = getNotificationIcon(notification.type);
-              const colors = getNotificationColor(notification.type);
-              const priority = getPriorityFromType(notification.type);
+              const Icon = getNotificationIcon(
+                notification.type as NotificationType
+              );
+              const colors = getNotificationColor(
+                notification.type as NotificationType
+              );
+              const priority = getPriorityFromType(
+                notification.type as NotificationType
+              );
 
               return (
                 <div

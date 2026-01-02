@@ -127,7 +127,7 @@ export function Sidebar({
     });
   };
 
-  const unreadCount = notificationsResponse?.data?.filter(
+  const unreadCount = notificationsResponse?.data?.items.filter(
     (n) => !n.isRead
   ).length;
 
@@ -325,7 +325,7 @@ export function Sidebar({
 
                 <div className="max-h-[400px] overflow-y-auto">
                   {notificationsResponse?.data &&
-                    notificationsResponse?.data?.map((notification) => (
+                    notificationsResponse?.data?.items.map((notification) => (
                       <button
                         key={notification.id}
                         className="w-full p-4 hover:bg-accent/30 transition-colors border-b border-border/30 text-left"
