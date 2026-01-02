@@ -59,31 +59,54 @@ export function UserBookings() {
     null
   );
 
-  // Fetch detailed booking when in detail view
   const { data: bookingDetailData, isLoading: isLoadingDetail } =
     useBookingDetail(selectedBookingId || "", {
       enabled: !!selectedBookingId && viewMode === "detail",
       queryKey: [queryKeys.bookings.detail],
     });
 
-  // Transform API data
   const transformBooking = (apiBooking: any) => {
-    const totalAmount =
-      parseFloat(apiBooking.total?.replace(/[₱,]/g, "") || apiBooking.total) ||
-      0;
+    const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
 
-    const dates = apiBooking.dates?.split(" - ") || [];
-    const startDate = dates[0];
-    const endDate = dates[1] || startDate;
+    const startDate = apiBooking.startDate;
+    const endDate = apiBooking.endDate;
+
+    const customerName =
+      apiBooking.customerName ||
+      (apiBooking.user
+        ? `${apiBooking.user.firstName || ""} ${
+            apiBooking.user.lastName || ""
+          }`.trim()
+        : "Unknown Customer");
+
+    const customerEmail =
+      apiBooking.customerEmail || apiBooking.user?.email || "";
+    const customerMobile =
+      apiBooking.customerMobile || apiBooking.user?.mobile || "N/A";
 
     let paymentStatus = "Unpaid";
+    if (
+      apiBooking.paymentStatus === "PAID" ||
+      apiBooking.paymentStatus === "VERIFIED"
+    ) {
+      paymentStatus = "Paid";
+    } else if (apiBooking.paymentStatus === "PARTIAL") {
+      paymentStatus = "Partial";
+    }
+
     let totalPaid = 0;
+    if (apiBooking.payments && apiBooking.payments.length > 0) {
+      totalPaid = apiBooking.payments
+        .filter((p: any) => p.status === "VERIFIED")
+        .reduce((sum: number, p: any) => sum + parseFloat(p.amount), 0);
+    }
 
     return {
       id: apiBooking.id,
-      customer: apiBooking.customer || "Unknown Customer",
-      email: apiBooking.email || "",
-      mobile: apiBooking.mobile || "N/A",
+      bookingCode: apiBooking.bookingCode,
+      customer: customerName,
+      email: customerEmail,
+      mobile: customerMobile,
       destination: apiBooking.destination,
       startDate: startDate,
       endDate: endDate,
@@ -91,11 +114,11 @@ export function UserBookings() {
       totalAmount: totalAmount,
       paid: totalPaid,
       paymentStatus: paymentStatus,
-      bookedDate: apiBooking.bookedDate,
-      status: apiBooking.statusBadges,
-      bookingType: apiBooking.bookingType,
+      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
+      status: apiBooking.status,
+      bookingType: apiBooking.type,
       tourType: apiBooking.tourType,
-      itineraryDetails: apiBooking.itenerary,
+      itineraryDetails: apiBooking.itinerary?.days || [],
     };
   };
 
@@ -110,20 +133,62 @@ export function UserBookings() {
     );
 
     let paymentStatus = "Unpaid";
-    if (totalPaid >= totalAmount) {
+    if (
+      apiBooking.paymentStatus === "PAID" ||
+      apiBooking.paymentStatus === "VERIFIED"
+    ) {
       paymentStatus = "Paid";
-    } else if (totalPaid > 0) {
+    } else if (apiBooking.paymentStatus === "PARTIAL") {
       paymentStatus = "Partial";
+    } else if (apiBooking.paymentStatus === "PENDING") {
+      paymentStatus = "Unpaid";
     }
+
+    const customerName =
+      apiBooking.customerName ||
+      (apiBooking.user
+        ? `${apiBooking.user.firstName || ""} ${
+            apiBooking.user.lastName || ""
+          }`.trim()
+        : "Unknown Customer");
+
+    const itineraryDetails =
+      apiBooking.itinerary?.days?.map((day: any) => ({
+        day: day.dayNumber,
+        title: `Day ${day.dayNumber}`,
+        activities:
+          day.activities?.map((act: any) => ({
+            time: act.time,
+            icon: getActivityIcon(act.title),
+            title: act.title,
+            description: act.description || "",
+            location: act.location || "",
+          })) || [],
+      })) || [];
+
+    // Transform payment history
+    const paymentHistory =
+      apiBooking.payments?.map((p: any) => ({
+        id: p.id,
+        paymentType: p.type === "FULL" ? "Full Payment" : "Partial Payment",
+        amount: parseFloat(p.amount),
+        modeOfPayment: p.method === "GCASH" ? "Gcash" : "Cash",
+        proofOfPayment: p.proofImage
+          ? p.proofImage.startsWith("data:")
+            ? p.proofImage
+            : `${import.meta.env.VITE_API_BASE_URL}/payments/${p.id}/proof`
+          : undefined,
+        submittedAt: p.createdAt,
+        status: p.status?.toLowerCase(),
+        transactionId: p.transactionId,
+      })) || [];
 
     return {
       id: apiBooking.id,
-      customer:
-        `${apiBooking.user?.firstName || ""} ${
-          apiBooking.user?.lastName || ""
-        }`.trim() || "Unknown Customer",
-      email: apiBooking.user?.email || "",
-      mobile: "N/A",
+      bookingCode: apiBooking.bookingCode,
+      customer: customerName,
+      email: apiBooking.customerEmail || apiBooking.user?.email || "",
+      mobile: apiBooking.customerMobile || apiBooking.user?.mobile || "N/A",
       destination: apiBooking.destination,
       startDate: apiBooking.startDate,
       endDate: apiBooking.endDate,
@@ -131,39 +196,15 @@ export function UserBookings() {
       totalAmount: totalAmount,
       paid: totalPaid,
       paymentStatus: paymentStatus,
-      bookedDate: apiBooking.createdAt,
+      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
       status: apiBooking.status,
       bookingType: apiBooking.type,
       tourType: apiBooking.tourType,
-      paymentHistory:
-        apiBooking.payments?.map((p: any) => ({
-          id: p.id,
-          paymentType: p.type === "FULL" ? "Full Payment" : "Partial Payment",
-          amount: parseFloat(p.amount),
-          modeOfPayment: p.method === "GCASH" ? "Gcash" : "Cash",
-          proofOfPayment: p.proofImage
-            ? `data:${p.proofMimeType};base64,${btoa(
-                String.fromCharCode(...p.proofImage.data)
-              )}`
-            : undefined,
-          submittedAt: p.createdAt,
-          status: p.status?.toLowerCase(),
-          transactionId: p.transactionId,
-        })) || [],
+      itineraryDetails: itineraryDetails,
+      paymentHistory: paymentHistory,
       totalPaid: totalPaid,
-      itineraryDetails:
-        apiBooking.itinerary?.map((day: any) => ({
-          day: day.dayNumber,
-          title: `Day ${day.dayNumber}`,
-          activities:
-            day.activities?.map((act: any) => ({
-              time: act.time,
-              icon: getActivityIcon(act.title),
-              title: act.title,
-              description: act.description || "",
-              location: act.location || "",
-            })) || [],
-        })) || [],
+      // Include ownership if needed
+      ownership: apiBooking.ownership,
     };
   };
 
@@ -199,7 +240,7 @@ export function UserBookings() {
       setBreadcrumbs([
         { label: "Home", path: "/" },
         { label: "My Bookings", path: "/user/bookings" },
-        { label: `Booking ${selectedBooking.id.substring(0, 8)}` },
+        { label: `Booking ${selectedBooking.bookingCode}` },
       ]);
     } else {
       resetBreadcrumbs();
@@ -648,7 +689,7 @@ export function UserBookings() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-lg text-[#1A2B4F] font-semibold">
-                          Booking #{booking.id.substring(0, 8)}...
+                          Booking {booking.bookingCode}
                         </h3>
                         {booking.paymentStatus && (
                           <span
