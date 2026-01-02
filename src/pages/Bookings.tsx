@@ -259,7 +259,6 @@ export function Bookings({
 
     const paymentHistory = allPayments.map((p: any) => ({
       id: apiBooking.id,
-
       paymentType: p.type === "FULL" ? "Full Payment" : "Partial Payment",
       amount: parseFloat(p.amount),
       modeOfPayment: p.method === "GCASH" ? "Gcash" : "Cash",

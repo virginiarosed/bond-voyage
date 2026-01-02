@@ -175,6 +175,8 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
 
     return {
       id: apiBooking.id,
+
+      bookingCode: apiBooking.bookingCode,
       customer: customerName,
       email: customerEmail,
       mobile: customerMobile,
@@ -557,7 +559,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
               <div className="text-right">
                 <p className="text-white/80 text-sm mb-1">Booking ID</p>
                 <p className="text-2xl font-semibold">
-                  {selectedBooking.id.substring(0, 8)}...
+                  {selectedBooking.bookingCode}...
                 </p>
               </div>
             </div>
@@ -1098,7 +1100,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="text-lg text-[#1A2B4F] font-semibold">
-                            Booking #{booking.id.substring(0, 8)}...
+                            Booking {booking.bookingCode}
                           </h3>
                           {booking.bookingType && (
                             <span
