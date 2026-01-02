@@ -1,5 +1,5 @@
 export const getInitials = (word: string) => {
-  if (!word) return null;
+  if (!word) return "BV";
 
   const words = word.split(" ");
   if (words && words.length >= 2) {

@@ -10,6 +10,16 @@ export interface ApiResponse<T = any> {
   };
 }
 
+export interface PaginatedData<T> {
+  items: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface QueryParams {
   page?: number;
   limit?: number;
@@ -127,15 +137,21 @@ type NotificationType =
 export interface INotification {
   id: string;
   userId: string;
-  user: User;
-  type: NotificationType;
-  title: string;
+  type: string;
+  title: string | null;
   message: string;
-  data: any;
+  data: {
+    amount?: number;
+    status?: string;
+    bookingId?: string;
+    paymentId?: string;
+    bookingCode?: string;
+    destination?: string;
+    itineraryId?: string;
+  } | null;
   isRead: boolean;
   createdAt: string;
 }
-
 export interface Feedback {
   id: string;
   userId: string;
