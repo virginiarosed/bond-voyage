@@ -20,6 +20,7 @@ export const queryKeys = {
     detail: (id: string) => ["tourPackages", "detail", id] as const,
   },
   payments: {
+    list: (params?: any) => ["payments", "list", params] as const,
     proof: (id: string) => ["payments", id, "proof"] as const,
   },
   inquiries: {

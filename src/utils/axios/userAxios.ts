@@ -8,7 +8,7 @@ export const apiClient: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  // withCredentials: true,
+  withCredentials: true, // Uncomment this if your API requires credentials
 });
 
 apiClient.interceptors.request.use(
@@ -29,17 +29,21 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest?._retry) {
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.get("refreshToken");
+        const refreshToken = localStorage.getItem("refreshToken");
+
+        if (!refreshToken) {
+          throw new Error("No refresh token available");
+        }
+
         const { data } = await axios.post<ApiResponse<{ accessToken: string }>>(
-          `${BASE_URL}/auth/refresh-token`,
+          `${BASE_URL}/auth/refresh`,
           { refreshToken },
           {
             withCredentials: true,
-            headers: { "X-Refresh-Token": refreshToken },
           }
         );
 
@@ -47,14 +51,19 @@ apiClient.interceptors.response.use(
           localStorage.setItem("accessToken", data.data.accessToken);
           originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`;
           return apiClient(originalRequest);
+        } else {
+          throw new Error("No access token in refresh response");
         }
       } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }
 
+    console.log("Not a 401 or already retried, rejecting error");
     return Promise.reject(error);
   }
 );
