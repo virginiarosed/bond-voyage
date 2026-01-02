@@ -14,6 +14,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 interface BookingListCardProps {
   booking: {
     id: string;
+    bookingCode: string;
     customer: string;
     email: string;
     mobile: string;
@@ -75,7 +76,7 @@ export function BookingListCard({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-lg text-[#1A2B4F] font-semibold">
-                Booking #{booking.id}
+                Booking {booking.bookingCode}
               </h3>
               {booking.tourType && (
                 <span
