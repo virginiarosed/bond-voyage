@@ -140,7 +140,7 @@ export function UserSidebar({
 
   // Calculate unread count from real API data
   const unreadCount =
-    notificationsResponse?.data?.filter((n) => !n.isRead).length || 0;
+    notificationsResponse?.data?.items.filter((n) => !n.isRead).length || 0;
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -391,7 +391,7 @@ export function UserSidebar({
 
                 <div className="max-h-[400px] overflow-y-auto">
                   {notificationsResponse?.data &&
-                    notificationsResponse?.data?.map((notification) => (
+                    notificationsResponse?.data?.items.map((notification) => (
                       <button
                         key={notification.id}
                         className="w-full p-4 hover:bg-accent/30 transition-colors border-b border-border/30 text-left"
