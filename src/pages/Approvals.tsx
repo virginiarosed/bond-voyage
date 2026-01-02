@@ -134,30 +134,18 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
   };
 
   const transformBooking = (apiBooking: any) => {
-    // Parse dates - handle both date strings and "YYYY-MM-DD - YYYY-MM-DD" format
     let startDate, endDate, formattedDates;
 
-    if (
-      apiBooking.dates &&
-      typeof apiBooking.dates === "string" &&
-      apiBooking.dates.includes(" - ")
-    ) {
-      // Format: "2025-07-01 - 2025-07-05"
-      const [start, end] = apiBooking.dates.split(" - ");
-      startDate = start;
-      endDate = end;
-      formattedDates = apiBooking.dates;
-    } else if (apiBooking.startDate && apiBooking.endDate) {
-      // Individual date fields
-      startDate = new Date(apiBooking.startDate).toISOString().split("T")[0];
-      endDate = new Date(apiBooking.endDate).toISOString().split("T")[0];
-      formattedDates = `${new Date(
-        apiBooking.startDate
-      ).toLocaleDateString()} - ${new Date(
-        apiBooking.endDate
+    const start = apiBooking.startDate || apiBooking.itinerary?.startDate;
+    const end = apiBooking.endDate || apiBooking.itinerary?.endDate;
+
+    if (start && end) {
+      startDate = new Date(start).toISOString().split("T")[0];
+      endDate = new Date(end).toISOString().split("T")[0];
+      formattedDates = `${new Date(start).toLocaleDateString()} - ${new Date(
+        end
       ).toLocaleDateString()}`;
     } else {
-      // Fallback
       startDate = new Date().toISOString().split("T")[0];
       endDate = new Date().toISOString().split("T")[0];
       formattedDates = "Date not available";
@@ -174,38 +162,39 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
     }
 
     // Parse total amount
-    const totalAmount = parseFloat(
-      apiBooking.total || apiBooking.totalPrice || 0
-    );
+    const totalAmount = parseFloat(apiBooking.totalPrice || 0);
+
+    // Get customer information
+    const customerName =
+      apiBooking.customerName ||
+      apiBooking.itinerary?.userId ||
+      "Unknown Customer";
+    const customerEmail =
+      apiBooking.customerEmail || apiBooking.itinerary?.user?.email || "";
+    const customerMobile = apiBooking.customerMobile || "N/A";
 
     return {
       id: apiBooking.id,
-      customer:
-        apiBooking.customer ||
-        `${apiBooking.user?.firstName || ""} ${
-          apiBooking.user?.lastName || ""
-        }`.trim() ||
-        "Unknown Customer",
-      email: apiBooking.email || apiBooking.user?.email || "",
-      mobile: apiBooking.mobile || apiBooking.user?.phone || "N/A",
-      destination: apiBooking.destination,
+      customer: customerName,
+      email: customerEmail,
+      mobile: customerMobile,
+      destination: apiBooking.destination || apiBooking.itinerary?.destination,
       dates: formattedDates,
       startDate: startDate,
       endDate: endDate,
-      travelers: apiBooking.travelers,
+      travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
       total: `₱${totalAmount.toLocaleString()}`,
       totalAmount: totalAmount,
       bookedDate: bookedDate,
-      status: apiBooking.statusBadges || apiBooking.status,
-      bookingType: apiBooking.bookingType || apiBooking.type,
-      tourType: apiBooking.tourType || "Private",
+      status: apiBooking.status,
+      bookingType: apiBooking.type,
+      tourType:
+        apiBooking.tourType || apiBooking.itinerary?.tourType || "PRIVATE",
       rejectionReason: apiBooking.rejectionReason,
       rejectionResolution: apiBooking.rejectionResolution,
-      resolutionStatus:
-        apiBooking.resolutionStatus ||
-        (apiBooking.isResolved ? "resolved" : "unresolved"),
+      resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
       itineraryDetails:
-        apiBooking.itinerary?.map((day: any) => ({
+        apiBooking.itinerary?.days?.map((day: any) => ({
           day: day.dayNumber,
           title: `Day ${day.dayNumber}`,
           activities:
