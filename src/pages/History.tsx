@@ -123,61 +123,66 @@ export function History({ onHistoryCountChange }: HistoryProps) {
     setFilterOpen(open);
   };
 
-  // Transform API data
   const transformBooking = (apiBooking: any) => {
-    const totalAmount =
-      parseFloat(apiBooking.total?.replace(/[₱,]/g, "") || apiBooking.total) ||
-      0;
+    const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
 
-    const dates = apiBooking.dates?.split(" - ") || [];
-    const startDate = dates[0] || new Date().toISOString().split("T")[0];
-    const endDate = dates[1] || startDate;
+    const startDate = apiBooking.startDate || apiBooking.itinerary?.startDate;
+    const endDate = apiBooking.endDate || apiBooking.itinerary?.endDate;
+
+    const customerName = apiBooking.customerName || "Unknown Customer";
+    const customerEmail = apiBooking.customerEmail || "";
+    const customerMobile = apiBooking.customerMobile || "N/A";
 
     return {
       id: apiBooking.id,
-      customer: apiBooking.customer || "Unknown Customer",
-      email: apiBooking.email || "",
-      mobile: apiBooking.mobile || "N/A",
-      destination: apiBooking.destination,
-      itinerary: apiBooking.destination,
+      bookingCode: apiBooking.bookingCode,
+      customer: customerName,
+      email: customerEmail,
+      mobile: customerMobile,
+      destination: apiBooking.destination || apiBooking.itinerary?.destination,
+      itinerary: apiBooking.destination || apiBooking.itinerary?.destination,
       startDate: startDate,
       endDate: endDate,
-      travelers: apiBooking.travelers,
+      travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
       totalAmount: totalAmount,
-      bookedDate: new Date(apiBooking.bookedDate).toISOString().split("T")[0],
-      bookedDateObj: new Date(apiBooking.bookedDate),
-      status: apiBooking.statusBadges,
-      bookingType: apiBooking.bookingType,
-      completedDate: apiBooking.completedDate
-        ? new Date(apiBooking.completedDate).toISOString().split("T")[0]
+      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
+      bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
+      status: apiBooking.status,
+      bookingType: apiBooking.type,
+      completedDate: apiBooking.completedAt
+        ? new Date(apiBooking.completedAt).toISOString().split("T")[0]
         : null,
-      cancelledDate: apiBooking.cancelledDate
-        ? new Date(apiBooking.cancelledDate).toISOString().split("T")[0]
+      cancelledDate: apiBooking.cancelledAt
+        ? new Date(apiBooking.cancelledAt).toISOString().split("T")[0]
         : null,
       cancellationReason: apiBooking.cancellationReason,
     };
   };
 
-  // Transform detailed booking data
   const transformDetailedBooking = (apiBooking: any) => {
     const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
 
+    const customerName =
+      apiBooking.customerName ||
+      `${apiBooking.user?.firstName || ""} ${
+        apiBooking.user?.lastName || ""
+      }`.trim() ||
+      "Unknown Customer";
+
     return {
       id: apiBooking.id,
-      customer:
-        `${apiBooking.user?.firstName || ""} ${
-          apiBooking.user?.lastName || ""
-        }`.trim() || "Unknown Customer",
-      email: apiBooking.user?.email || "",
-      mobile: "N/A",
-      destination: apiBooking.destination,
-      itinerary: apiBooking.destination,
-      startDate: new Date(apiBooking.startDate).toISOString().split("T")[0],
-      endDate: new Date(apiBooking.endDate).toISOString().split("T")[0],
-      travelers: apiBooking.travelers,
+      bookingCode: apiBooking.bookingCode,
+      customer: customerName,
+      email: apiBooking.customerEmail || apiBooking.user?.email || "",
+      mobile: apiBooking.customerMobile || "N/A",
+      destination: apiBooking.destination || apiBooking.itinerary?.destination,
+      itinerary: apiBooking.destination || apiBooking.itinerary?.destination,
+      startDate: apiBooking.startDate || apiBooking.itinerary?.startDate,
+      endDate: apiBooking.endDate || apiBooking.itinerary?.endDate,
+      travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
       totalAmount: totalAmount,
-      bookedDate: new Date(apiBooking.createdAt).toISOString().split("T")[0],
-      bookedDateObj: new Date(apiBooking.createdAt),
+      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
+      bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
       status: apiBooking.status,
       bookingType: apiBooking.type,
       completedDate: apiBooking.completedAt
@@ -188,7 +193,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
         : null,
       cancellationReason: apiBooking.cancellationReason,
       itineraryDetails:
-        apiBooking.itinerary?.map((day: any) => ({
+        apiBooking.itinerary?.days?.map((day: any) => ({
           day: day.dayNumber,
           title: `Day ${day.dayNumber}`,
           activities:
@@ -238,7 +243,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
         {
           label: `${
             selectedBooking.status === "COMPLETED" ? "Completed" : "Cancelled"
-          } Booking ${selectedBooking.id.substring(0, 8)}`,
+          } Booking ${selectedBooking.bookingCode}`,
         },
       ]);
     } else {
@@ -530,9 +535,9 @@ export function History({ onHistoryCountChange }: HistoryProps) {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-white/80 text-sm mb-1">Booking ID</p>
+              <p className="text-white/80 text-sm mb-1">Booking Code</p>
               <p className="text-2xl font-semibold">
-                {selectedBooking.id.substring(0, 8)}...
+                {selectedBooking.bookingCode}
               </p>
             </div>
           </div>
@@ -1005,7 +1010,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-lg text-[#1A2B4F] font-semibold">
-                          Booking #{booking.id.substring(0, 8)}...
+                          {booking.bookingCode}
                         </h3>
                         <span
                           className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
