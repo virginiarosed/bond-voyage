@@ -31,6 +31,7 @@ import { ContentCard } from "../../components/ContentCard";
 import { BookingListCard } from "../../components/BookingListCard";
 import { BookingDetailView } from "../../components/BookingDetailView";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { capitalize } from "../../utils/helpers/capitalize";
 import {
   Dialog,
   DialogContent,
@@ -152,10 +153,6 @@ export function UserTravels() {
         };
   }, [profileResponse?.data?.user]);
 
-  // Current logged in user
-  const currentUser = "Maria Santos";
-
-  // Conversation state for requested bookings
   const [conversations, setConversations] = useState<
     Record<
       string,
@@ -166,13 +163,11 @@ export function UserTravels() {
     {}
   );
 
-  // Fetch bookings from API
   const { data: myBookingsResponse, isLoading: isLoadingBookings } =
     useMyBookings({
       status: selectedTab.toUpperCase(),
     });
 
-  // Get selected booking detail
   const { data: selectedBookingData } = useBookingDetail(
     selectedBookingId || "",
     {
@@ -181,7 +176,6 @@ export function UserTravels() {
     }
   );
 
-  // Mutations
   const submitBookingMutation = useSubmitBooking(selectedBookingId || "", {
     onSuccess: () => {
       toast.success("Booking Submitted!", {
@@ -228,17 +222,17 @@ export function UserTravels() {
     },
   });
 
-  // Transform API data
-  const bookings = myBookingsResponse?.data?.map(transformBooking) || [];
+  const bookings =
+    myBookingsResponse?.data?.map((booking) =>
+      transformBooking(booking, profileData.id)
+    ) || [];
 
-  // Filter bookings
   const filteredTravels = bookings.filter((travel) => {
     const statusMatch = travel.status === selectedTab;
     const ownershipMatch =
       selectedFilter === "all" || travel.ownership === selectedFilter;
 
     if (selectedFilter === "requested" && requestedSubTab !== "all") {
-      // This would need confirmationStatus from API
       return statusMatch && ownershipMatch;
     }
 
@@ -309,7 +303,6 @@ export function UserTravels() {
 
     const rawItinerary = selectedBooking.itinerary || [];
 
-    // Convert icon components to string names for serialization
     const serializableItinerary = rawItinerary.map((day: any) => ({
       ...day,
       activities: day.activities.map((activity: any) => {
@@ -658,15 +651,16 @@ export function UserTravels() {
         <BookingDetailView
           booking={{
             id: selectedBooking.id,
+            bookingCode: selectedBooking.bookingCode,
             customer: selectedBooking.owner,
-            email: "user@email.com",
-            mobile: "+63 917 123 4567",
+            email: selectedBooking.email,
+            mobile: selectedBooking.mobile,
             destination: selectedBooking.destination,
             dates: selectedBooking.dates,
             travelers: selectedBooking.travelers,
             total: selectedBooking.budget,
-            bookedDate: selectedBooking.createdOn,
-            resolutionStatus: "unresolved",
+            bookedDate: selectedBooking.bookedDate,
+            resolutionStatus: selectedBooking.resolutionStatus,
           }}
           itinerary={itinerary}
           onBack={handleBackToList}
@@ -1151,14 +1145,15 @@ export function UserTravels() {
                     booking={{
                       id: travel.id,
                       customer: travel.owner,
-                      email: "",
-                      mobile: "",
+                      email: travel.email,
+                      mobile: travel.mobile,
                       destination: travel.destination,
                       dates: travel.dates,
                       travelers: travel.travelers,
                       total: travel.budget,
-                      bookedDate: travel.createdOn,
-                      resolutionStatus: "unresolved",
+                      bookedDate: travel.bookedDate,
+                      resolutionStatus: travel.resolutionStatus as any,
+                      bookingCode: travel.bookingCode,
                     }}
                     onViewDetails={handleViewDetails}
                     onShare={
@@ -1172,12 +1167,12 @@ export function UserTravels() {
                       <>
                         {/* Booking Type Badge */}
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                          {travel.bookingType}
+                          {capitalize(travel.bookingType)}
                         </span>
                         {/* Tour Type Badge */}
                         {travel.tourType && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
-                            {travel.tourType}
+                            {capitalize(travel.tourType)}
                           </span>
                         )}
                         {/* Ownership Badge */}

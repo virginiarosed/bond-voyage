@@ -54,7 +54,7 @@ export function UserNotifications() {
 
   // Fetch notifications from API
   const { data: notificationsResponse, isLoading, error } = useNotifications();
-  const notifications = notificationsResponse?.data || [];
+  const notifications = notificationsResponse?.data?.items || [];
 
   const handleMarkAsRead = (notificationId: string) => {
     const markReadMutation = useMarkNotificationRead(notificationId, {

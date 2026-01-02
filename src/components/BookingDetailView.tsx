@@ -1,7 +1,26 @@
-import { ChevronRight, ChevronLeft, MapPin, Calendar, Users, CreditCard, Clock, Phone, Mail, User, AlertTriangle, CheckCircle } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronLeft,
+  MapPin,
+  Calendar,
+  Users,
+  CreditCard,
+  Clock,
+  Phone,
+  Mail,
+  User,
+  AlertTriangle,
+  CheckCircle,
+} from "lucide-react";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { ItineraryDetailDisplay } from "./ItineraryDetailDisplay";
 
 type ItineraryDay = {
@@ -19,6 +38,7 @@ type ItineraryDay = {
 interface BookingDetailViewProps {
   booking: {
     id: string;
+    bookingCode: string;
     customer: string;
     email: string;
     mobile: string;
@@ -79,7 +99,9 @@ export function BookingDetailView({
     }
   };
 
-  const totalDisplay = booking.total || (booking.totalAmount ? `₱${booking.totalAmount.toLocaleString()}` : "N/A");
+  const totalDisplay =
+    booking.total ||
+    (booking.totalAmount ? `₱${booking.totalAmount.toLocaleString()}` : "N/A");
 
   return (
     <div className="space-y-6">
@@ -87,7 +109,7 @@ export function BookingDetailView({
       {useBreadcrumbs ? (
         /* Breadcrumb Navigation for specific views that need it */
         <div className="flex items-center gap-2 text-sm">
-          <button 
+          <button
             onClick={onBack}
             className="text-[#0A7AFF] hover:text-[#0865CC] font-medium transition-colors"
           >
@@ -106,16 +128,23 @@ export function BookingDetailView({
             <ChevronLeft className="w-5 h-5 text-[#64748B]" />
           </button>
           <div>
-            <h2 className="text-[#1A2B4F] font-semibold">{booking.itinerary || booking.destination}</h2>
+            <h2 className="text-[#1A2B4F] font-semibold">
+              {booking.itinerary || booking.destination}
+            </h2>
             <p className="text-sm text-[#64748B]">
-              {backButtonSubtitle || (isRequestedItinerary ? "Requested Itinerary" : "Booking Details")}
+              {backButtonSubtitle ||
+                (isRequestedItinerary
+                  ? "Requested Itinerary"
+                  : "Booking Details")}
             </p>
           </div>
         </div>
       )}
 
       {/* Booking Header Card */}
-      <div className={`rounded-2xl p-8 text-white shadow-lg ${getHeaderGradient()}`}>
+      <div
+        className={`rounded-2xl p-8 text-white shadow-lg ${getHeaderGradient()}`}
+      >
         <div className="flex items-start justify-between mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -135,7 +164,7 @@ export function BookingDetailView({
           </div>
           <div className="text-right">
             <p className="text-white/80 text-sm mb-1">Booking ID</p>
-            <p className="text-2xl font-semibold">{booking.id}</p>
+            <p className="text-2xl font-semibold">{booking.bookingCode}</p>
           </div>
         </div>
 
@@ -148,16 +177,24 @@ export function BookingDetailView({
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
             <Users className="w-5 h-5 mb-2 text-white/80" />
             <p className="text-white/80 text-xs mb-1">Travelers</p>
-            <p className="font-medium">{booking.travelers} {booking.travelers > 1 ? 'People' : 'Person'}</p>
+            <p className="font-medium">
+              {booking.travelers} {booking.travelers > 1 ? "People" : "Person"}
+            </p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
             <CreditCard className="w-5 h-5 mb-2 text-white/80" />
             <p className="text-white/80 text-xs mb-1">Total Amount</p>
-            <p className="font-medium">{booking.totalAmount ? `₱${booking.totalAmount.toLocaleString()}` : totalDisplay}</p>
+            <p className="font-medium">
+              {booking.totalAmount
+                ? `₱${booking.totalAmount.toLocaleString()}`
+                : totalDisplay}
+            </p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
             <Clock className="w-5 h-5 mb-2 text-white/80" />
-            <p className="text-white/80 text-xs mb-1">{isRequestedItinerary ? "Created On" : "Booked On"}</p>
+            <p className="text-white/80 text-xs mb-1">
+              {isRequestedItinerary ? "Created On" : "Booked On"}
+            </p>
             <p className="font-medium">{booking.bookedDate}</p>
           </div>
         </div>
@@ -173,7 +210,9 @@ export function BookingDetailView({
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                   <User className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="font-semibold text-[#1A2B4F]">Customer Information</h3>
+                <h3 className="font-semibold text-[#1A2B4F]">
+                  Customer Information
+                </h3>
               </div>
             </div>
             <div className="p-6 space-y-4">
@@ -206,18 +245,30 @@ export function BookingDetailView({
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
                     <CreditCard className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="font-semibold text-[#1A2B4F]">Payment Details</h3>
+                  <h3 className="font-semibold text-[#1A2B4F]">
+                    Payment Details
+                  </h3>
                 </div>
               </div>
               <div className="p-6 space-y-4">
                 {booking.paymentStatus && onPaymentStatusChange && (
                   <div>
-                    <Label htmlFor="payment-status" className="text-[#1A2B4F] mb-2 block">Payment Status</Label>
-                    <Select 
-                      value={booking.paymentStatus} 
-                      onValueChange={(value) => onPaymentStatusChange(booking.id, value)}
+                    <Label
+                      htmlFor="payment-status"
+                      className="text-[#1A2B4F] mb-2 block"
                     >
-                      <SelectTrigger id="payment-status" className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
+                      Payment Status
+                    </Label>
+                    <Select
+                      value={booking.paymentStatus}
+                      onValueChange={(value) =>
+                        onPaymentStatusChange(booking.id, value)
+                      }
+                    >
+                      <SelectTrigger
+                        id="payment-status"
+                        className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -232,19 +283,28 @@ export function BookingDetailView({
                 <div className="pt-4 border-t border-[#E5E7EB]">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-[#64748B]">Total Amount</span>
-                    <span className="font-semibold text-[#1A2B4F]">₱{booking.totalAmount.toLocaleString()}</span>
+                    <span className="font-semibold text-[#1A2B4F]">
+                      ₱{booking.totalAmount.toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-[#64748B]">Amount Paid</span>
-                    {booking.paymentStatus === "Partial" && onPaidAmountChange ? (
+                    {booking.paymentStatus === "Partial" &&
+                    onPaidAmountChange ? (
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-[#64748B]">₱</span>
                         <Input
                           type="number"
                           value={booking.paid || 0}
                           onChange={(e) => {
-                            const newPaid = Math.min(Number(e.target.value), booking.totalAmount!);
-                            onPaidAmountChange(booking.id, Math.max(0, newPaid));
+                            const newPaid = Math.min(
+                              Number(e.target.value),
+                              booking.totalAmount!
+                            );
+                            onPaidAmountChange(
+                              booking.id,
+                              Math.max(0, newPaid)
+                            );
                           }}
                           className="w-32 h-8 text-sm font-semibold text-[#10B981] text-right"
                           min="0"
@@ -252,12 +312,21 @@ export function BookingDetailView({
                         />
                       </div>
                     ) : (
-                      <span className="font-semibold text-[#10B981]">₱{(booking.paid || 0).toLocaleString()}</span>
+                      <span className="font-semibold text-[#10B981]">
+                        ₱{(booking.paid || 0).toLocaleString()}
+                      </span>
                     )}
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-[#E5E7EB]">
-                    <span className="text-sm font-medium text-[#1A2B4F]">Balance</span>
-                    <span className="font-semibold text-[#FF6B6B]">₱{(booking.totalAmount - (booking.paid || 0)).toLocaleString()}</span>
+                    <span className="text-sm font-medium text-[#1A2B4F]">
+                      Balance
+                    </span>
+                    <span className="font-semibold text-[#FF6B6B]">
+                      ₱
+                      {(
+                        booking.totalAmount - (booking.paid || 0)
+                      ).toLocaleString()}
+                    </span>
                   </div>
                 </div>
 
@@ -266,12 +335,21 @@ export function BookingDetailView({
                   <div>
                     <div className="flex justify-between text-xs text-[#64748B] mb-2">
                       <span>Payment Progress</span>
-                      <span>{Math.round(((booking.paid || 0) / booking.totalAmount) * 100)}%</span>
+                      <span>
+                        {Math.round(
+                          ((booking.paid || 0) / booking.totalAmount) * 100
+                        )}
+                        %
+                      </span>
                     </div>
                     <div className="h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-gradient-to-r from-[#10B981] to-[#14B8A6] transition-all duration-300"
-                        style={{ width: `${((booking.paid || 0) / booking.totalAmount) * 100}%` }}
+                        style={{
+                          width: `${
+                            ((booking.paid || 0) / booking.totalAmount) * 100
+                          }%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -302,17 +380,27 @@ export function BookingDetailView({
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
                 <AlertTriangle className="w-5 h-5 text-white" />
               </div>
-              <h3 className="font-semibold text-[#FF6B6B]">Rejection Details</h3>
+              <h3 className="font-semibold text-[#FF6B6B]">
+                Rejection Details
+              </h3>
             </div>
           </div>
           <div className="p-6 space-y-4">
             <div>
-              <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Rejection Reason:</p>
-              <p className="text-sm text-[#334155]">{booking.rejectionReason}</p>
+              <p className="text-xs font-semibold text-[#FF6B6B] mb-1">
+                Rejection Reason:
+              </p>
+              <p className="text-sm text-[#334155]">
+                {booking.rejectionReason}
+              </p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Required Action:</p>
-              <p className="text-sm text-[#334155]">{booking.rejectionResolution}</p>
+              <p className="text-xs font-semibold text-[#FF6B6B] mb-1">
+                Required Action:
+              </p>
+              <p className="text-sm text-[#334155]">
+                {booking.rejectionResolution}
+              </p>
             </div>
           </div>
         </div>
