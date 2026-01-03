@@ -100,43 +100,6 @@ export function Dashboard() {
     );
   }, [dashboardStatsResponse?.data?.trends]);
 
-  const upcomingTrips = useMemo(() => {
-    if (
-      !adminBookingsResponse?.data ||
-      adminBookingsResponse.data.length === 0
-    ) {
-      return [];
-    }
-
-    return adminBookingsResponse.data.map((booking: any) => {
-      const startDate = booking.startDate || booking.itinerary?.startDate;
-      const endDate = booking.endDate || booking.itinerary?.endDate;
-
-      let formattedDates = "Date not available";
-      if (startDate && endDate) {
-        formattedDates = `${new Date(
-          startDate
-        ).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
-      }
-
-      return {
-        id: booking.id,
-        bookingCode: booking.bookingCode,
-        customer: booking.customerName || "Unknown Customer",
-        email: booking.customerEmail || "",
-        mobile: booking.customerMobile || "N/A",
-        destination: booking.destination || booking.itinerary?.destination,
-        dates: formattedDates,
-        date: booking.bookedDate || booking.createdAt,
-        travelers: booking.travelers || booking.itinerary?.travelers || 1,
-        total: `₱${(parseFloat(booking.totalPrice) || 0).toLocaleString()}`,
-        bookedDate: booking.bookedDate || booking.createdAt,
-        bookingType: booking.type,
-        status: booking.status,
-      };
-    });
-  }, [adminBookingsResponse?.data]);
-
   const statusData = useMemo(() => {
     return [
       {
@@ -930,61 +893,6 @@ export function Dashboard() {
                   Activity will appear here
                 </p>
               </div>
-            )}
-          </div>
-        </ContentCard>
-      </div>
-
-      {/* Upcoming Trips */}
-      <div className="grid grid-cols-1 gap-6">
-        <ContentCard
-          title={`Upcoming Trips (${upcomingTrips.length})`}
-          footer={
-            <button
-              onClick={() => navigate("/bookings")}
-              className="text-sm text-primary hover:underline"
-            >
-              View All Bookings
-            </button>
-          }
-        >
-          <div className="space-y-4">
-            {upcomingTrips.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-[#64748B]">No upcoming trips</p>
-              </div>
-            ) : (
-              upcomingTrips.map((trip) => (
-                <BookingListCard
-                  key={trip.id}
-                  booking={{
-                    id: trip.id,
-                    bookingCode: trip.bookingCode,
-                    customer: trip.customer,
-                    email: trip.email,
-                    mobile: trip.mobile,
-                    destination: trip.destination,
-                    dates: trip.dates,
-                    travelers: trip.travelers,
-                    total: trip.total,
-                    bookedDate: trip.bookedDate,
-                    bookingType: trip.bookingType,
-                  }}
-                  onViewDetails={(id) => navigate("/bookings")}
-                  additionalBadges={
-                    trip.status === "CONFIRMED" ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
-                        <CheckCircle className="w-3 h-3" />
-                        Confirmed
-                      </span>
-                    ) : trip.status === "PENDING" ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">
-                        Pending Approval
-                      </span>
-                    ) : null
-                  }
-                />
-              ))
             )}
           </div>
         </ContentCard>
