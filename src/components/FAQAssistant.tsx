@@ -24,7 +24,7 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -210,17 +210,109 @@ How can I assist you today?`,
   // Get keywords for each page
   const getPageKeywords = (path: string): string[] => {
     const keywordMap: Record<string, string[]> = {
-      "/user/travels": ["travel", "itinerary", "trip", "plan", "destination", "activity", "day", "create", "edit"],
-      "/user/bookings": ["booking", "payment", "reservation", "confirm", "status", "cancel", "book", "reserve"],
-      "/user/history": ["history", "past", "previous", "completed", "old", "archive", "completed", "past"],
-      "/user/profile/edit": ["profile", "account", "settings", "password", "personal", "update", "change", "edit"],
-      "/user/feedback": ["feedback", "review", "rating", "comment", "suggest", "report", "submit"],
-      "/user/notifications": ["notification", "alert", "message", "reminder", "inbox", "notify"],
-      "/user/weather": ["weather", "forecast", "temperature", "climate", "rain", "sunny", "forecast"],
-      "/user/standard-itinerary": ["standard", "package", "pre-made", "template", "ready", "itinerary"],
-      "/user/smart-trip": ["smart", "ai", "generate", "suggest", "automatic", "plan", "create", "trip"],
-      "/user/create-new-travel": ["create", "new", "build", "custom", "design", "make", "travel", "plan"],
-      "/user/home": ["dashboard", "home", "overview", "main", "welcome", "start"],
+      "/user/travels": [
+        "travel",
+        "itinerary",
+        "trip",
+        "plan",
+        "destination",
+        "activity",
+        "day",
+        "create",
+        "edit",
+      ],
+      "/user/bookings": [
+        "booking",
+        "payment",
+        "reservation",
+        "confirm",
+        "status",
+        "cancel",
+        "book",
+        "reserve",
+      ],
+      "/user/history": [
+        "history",
+        "past",
+        "previous",
+        "completed",
+        "old",
+        "archive",
+        "completed",
+        "past",
+      ],
+      "/user/profile/edit": [
+        "profile",
+        "account",
+        "settings",
+        "password",
+        "personal",
+        "update",
+        "change",
+        "edit",
+      ],
+      "/user/feedback": [
+        "feedback",
+        "review",
+        "rating",
+        "comment",
+        "suggest",
+        "report",
+        "submit",
+      ],
+      "/user/notifications": [
+        "notification",
+        "alert",
+        "message",
+        "reminder",
+        "inbox",
+        "notify",
+      ],
+      "/user/weather": [
+        "weather",
+        "forecast",
+        "temperature",
+        "climate",
+        "rain",
+        "sunny",
+        "forecast",
+      ],
+      "/user/standard-itinerary": [
+        "standard",
+        "package",
+        "pre-made",
+        "template",
+        "ready",
+        "itinerary",
+      ],
+      "/user/smart-trip": [
+        "smart",
+        "ai",
+        "generate",
+        "suggest",
+        "automatic",
+        "plan",
+        "create",
+        "trip",
+      ],
+      "/user/create-new-travel": [
+        "create",
+        "new",
+        "build",
+        "custom",
+        "design",
+        "make",
+        "travel",
+        "plan",
+      ],
+      "/user/home": [
+        "dashboard",
+        "home",
+        "overview",
+        "main",
+        "welcome",
+        "start",
+      ],
     };
     return keywordMap[path] || [];
   };
@@ -230,58 +322,62 @@ How can I assist you today?`,
     if (!query.trim() || faqs.length === 0) return [];
 
     const lowerQuery = query.toLowerCase();
-    
+
     // Score each FAQ based on relevance
-    const scoredFAQs = faqs.map(faq => {
+    const scoredFAQs = faqs.map((faq) => {
       let score = 0;
-      
+
       // 1. Direct match in question (highest priority)
       if (faq.question.toLowerCase().includes(lowerQuery)) score += 10;
-      
+
       // 2. Match in answer
       if (faq.answer.toLowerCase().includes(lowerQuery)) score += 5;
-      
+
       // 3. Tag matches
-      const tagMatches = faq.tags.filter(tag => 
+      const tagMatches = faq.tags.filter((tag) =>
         tag.toLowerCase().includes(lowerQuery)
       ).length;
       score += tagMatches * 3;
-      
+
       // 4. Page relevance - check if FAQ is marked for current page
       if (faq.targetPages?.includes(currentPath)) {
         score += 8;
       }
-      
+
       // 5. Auto-detect page relevance based on keywords
       const pageKeywords = getPageKeywords(currentPath);
-      const keywordMatches = pageKeywords.filter(keyword =>
-        lowerQuery.includes(keyword.toLowerCase()) ||
-        faq.question.toLowerCase().includes(keyword.toLowerCase()) ||
-        faq.answer.toLowerCase().includes(keyword.toLowerCase())
+      const keywordMatches = pageKeywords.filter(
+        (keyword) =>
+          lowerQuery.includes(keyword.toLowerCase()) ||
+          faq.question.toLowerCase().includes(keyword.toLowerCase()) ||
+          faq.answer.toLowerCase().includes(keyword.toLowerCase())
       ).length;
       score += keywordMatches * 2;
-      
+
       return { faq, score };
     });
-    
+
     // Return top 3 results
     return scoredFAQs
-      .filter(item => item.score > 0)
+      .filter((item) => item.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
-      .map(item => item.faq);
+      .map((item) => item.faq);
   };
 
   // Helper function to convert markdown-like formatting
   const formatMessageContent = (content: string): string => {
     // Remove ** formatting but keep the text
-    return content.replace(/\*\*(.*?)\*\*/g, '$1');
+    return content.replace(/\*\*(.*?)\*\*/g, "$1");
   };
 
   // Helper function to get suggestions based on user message
-  const getSuggestionsForMessage = (userMessage: string, contextPath: string): string[] => {
+  const getSuggestionsForMessage = (
+    userMessage: string,
+    contextPath: string
+  ): string[] => {
     const lowerMessage = userMessage.toLowerCase();
-    
+
     // Context-based suggestions
     const pageName = getPageName(contextPath);
     if (pageName === "Travels") {
@@ -318,98 +414,143 @@ How can I assist you today?`,
   };
 
   // Helper function to get quick actions for specific user requests
-  const getQuickActionsForRequest = (userMessage: string): { label: string; icon: any; action: string }[] => {
+  const getQuickActionsForRequest = (
+    userMessage: string
+  ): { label: string; icon: any; action: string }[] => {
     const lowerMessage = userMessage.toLowerCase();
-    
+
     // Map of keywords to quick actions
-    const actionMap: Record<string, { label: string; icon: any; action: string }[]> = {
+    const actionMap: Record<
+      string,
+      { label: string; icon: any; action: string }[]
+    > = {
       // Feedback related
-      "feedback": [
-        { label: "Give Feedback", icon: MessageCircle, action: "/user/feedback" },
+      feedback: [
+        {
+          label: "Give Feedback",
+          icon: MessageCircle,
+          action: "/user/feedback",
+        },
         { label: "My Feedback", icon: History, action: "view my feedback" },
         { label: "Rate Service", icon: Sparkles, action: "rate service" },
       ],
-      "review": [
-        { label: "Submit Review", icon: MessageCircle, action: "/user/feedback" },
+      review: [
+        {
+          label: "Submit Review",
+          icon: MessageCircle,
+          action: "/user/feedback",
+        },
         { label: "My Reviews", icon: History, action: "view my reviews" },
       ],
-      "rate": [
+      rate: [
         { label: "Rate Trip", icon: Sparkles, action: "/user/feedback" },
         { label: "Rating Scale", icon: HelpCircle, action: "rating system" },
       ],
-      
+
       // Booking related
-      "booking": [
+      booking: [
         { label: "My Bookings", icon: Calendar, action: "/user/bookings" },
         { label: "New Booking", icon: Plus, action: "how to book" },
         { label: "Booking Status", icon: Bell, action: "check booking status" },
       ],
-      "book": [
-        { label: "Book Now", icon: Calendar, action: "/user/standard-itinerary" },
+      book: [
+        {
+          label: "Book Now",
+          icon: Calendar,
+          action: "/user/standard-itinerary",
+        },
         { label: "My Bookings", icon: Calendar, action: "/user/bookings" },
-        { label: "Booking Process", icon: HelpCircle, action: "booking process" },
+        {
+          label: "Booking Process",
+          icon: HelpCircle,
+          action: "booking process",
+        },
       ],
-      
+
       // Travel related
-      "travel": [
+      travel: [
         { label: "My Travels", icon: MapPin, action: "/user/travels" },
         { label: "New Travel", icon: Plus, action: "/user/create-new-travel" },
         { label: "Smart Trip", icon: Zap, action: "/user/smart-trip" },
       ],
-      "trip": [
+      trip: [
         { label: "Plan Trip", icon: MapPin, action: "/user/travels" },
         { label: "Smart Trip", icon: Zap, action: "/user/smart-trip" },
-        { label: "Itineraries", icon: BookOpen, action: "/user/standard-itinerary" },
+        {
+          label: "Itineraries",
+          icon: BookOpen,
+          action: "/user/standard-itinerary",
+        },
       ],
-      
+
       // Profile related
-      "profile": [
+      profile: [
         { label: "Edit Profile", icon: User, action: "/user/profile/edit" },
-        { label: "Account Settings", icon: Settings, action: "account settings" },
+        {
+          label: "Account Settings",
+          icon: Settings,
+          action: "account settings",
+        },
         { label: "Change Password", icon: Settings, action: "change password" },
       ],
-      "account": [
+      account: [
         { label: "My Profile", icon: User, action: "/user/profile/edit" },
         { label: "Settings", icon: Settings, action: "account settings" },
         { label: "Security", icon: Settings, action: "account security" },
       ],
-      
+
       // Payment related
-      "payment": [
+      payment: [
         { label: "Make Payment", icon: CreditCard, action: "make payment" },
-        { label: "Payment Methods", icon: CreditCard, action: "payment methods" },
+        {
+          label: "Payment Methods",
+          icon: CreditCard,
+          action: "payment methods",
+        },
         { label: "Payment History", icon: History, action: "payment history" },
       ],
-      "pay": [
+      pay: [
         { label: "Pay Now", icon: CreditCard, action: "make payment" },
-        { label: "Payment Options", icon: CreditCard, action: "payment methods" },
+        {
+          label: "Payment Options",
+          icon: CreditCard,
+          action: "payment methods",
+        },
       ],
-      
+
       // Weather related
-      "weather": [
+      weather: [
         { label: "Check Weather", icon: CloudSun, action: "/user/weather" },
-        { label: "Weather Forecast", icon: CloudSun, action: "weather forecast" },
+        {
+          label: "Weather Forecast",
+          icon: CloudSun,
+          action: "weather forecast",
+        },
         { label: "Weather Alerts", icon: Bell, action: "weather alerts" },
       ],
-      
+
       // History related
-      "history": [
+      history: [
         { label: "Travel History", icon: History, action: "/user/history" },
         { label: "Past Trips", icon: History, action: "view past trips" },
         { label: "Completed Trips", icon: History, action: "completed trips" },
       ],
-      "past": [
+      past: [
         { label: "History", icon: History, action: "/user/history" },
         { label: "Old Bookings", icon: History, action: "old bookings" },
       ],
-      
+
       // Notification related
-      "notification": [
+      notification: [
         { label: "Notifications", icon: Bell, action: "/user/notifications" },
         { label: "Alerts", icon: Bell, action: "manage alerts" },
-        { label: "Notification Settings", icon: Settings, action: "notification settings" },
+        {
+          label: "Notification Settings",
+          icon: Settings,
+          action: "notification settings",
+        },
       ],
-      "alert": [
+      alert: [
         { label: "View Alerts", icon: Bell, action: "/user/notifications" },
         { label: "Alert Settings", icon: Settings, action: "alert settings" },
       ],
@@ -474,8 +615,11 @@ How can I assist you today?`,
 
     // Check for specific feature requests with quick actions
     const requestQuickActions = getQuickActionsForRequest(userMessage);
-    const requestSuggestions = getSuggestionsForMessage(userMessage, contextPath);
-    
+    const requestSuggestions = getSuggestionsForMessage(
+      userMessage,
+      contextPath
+    );
+
     // Feedback requests
     if (
       lowerMessage.includes("feedback") ||
@@ -497,7 +641,11 @@ You can access the Feedback page directly from the sidebar or use the quick acti
         timestamp: new Date(),
         suggestions: requestSuggestions,
         quickActions: [
-          { label: "Go to Feedback", icon: MessageCircle, action: "/user/feedback" },
+          {
+            label: "Go to Feedback",
+            icon: MessageCircle,
+            action: "/user/feedback",
+          },
           { label: "Submit Feedback", icon: Plus, action: "submit feedback" },
           { label: "My Feedback", icon: History, action: "view my feedback" },
         ],
@@ -554,7 +702,11 @@ Use the quick actions below to start planning your next adventure.`,
         suggestions: requestSuggestions,
         quickActions: [
           { label: "My Travels", icon: MapPin, action: "/user/travels" },
-          { label: "New Travel", icon: Plus, action: "/user/create-new-travel" },
+          {
+            label: "New Travel",
+            icon: Plus,
+            action: "/user/create-new-travel",
+          },
           { label: "Smart Trip", icon: Zap, action: "/user/smart-trip" },
         ],
       };
@@ -583,8 +735,16 @@ Use the quick action below to go directly to your profile settings.`,
         suggestions: requestSuggestions,
         quickActions: [
           { label: "Edit Profile", icon: User, action: "/user/profile/edit" },
-          { label: "Account Settings", icon: Settings, action: "account settings" },
-          { label: "Change Password", icon: Settings, action: "change password" },
+          {
+            label: "Account Settings",
+            icon: Settings,
+            action: "account settings",
+          },
+          {
+            label: "Change Password",
+            icon: Settings,
+            action: "change password",
+          },
         ],
       };
     }
@@ -592,22 +752,23 @@ Use the quick action below to go directly to your profile settings.`,
     // FAQ-based responses
     if (matchedFAQs.length > 0) {
       // Check if we have page-specific FAQs
-      const pageSpecificFAQs = matchedFAQs.filter(faq => 
+      const pageSpecificFAQs = matchedFAQs.filter((faq) =>
         faq.targetPages?.includes(contextPath)
       );
-      
+
       if (pageSpecificFAQs.length > 0) {
         // Page-specific response
         const faqContent = pageSpecificFAQs
           .map((faq, index) => {
-            const tags = faq.tags.length > 0 
-              ? `\n📍 Tags: ${faq.tags.slice(0, 3).join(', ')}`
-              : '';
-            
+            const tags =
+              faq.tags.length > 0
+                ? `\n📍 Tags: ${faq.tags.slice(0, 3).join(", ")}`
+                : "";
+
             return `${index + 1}. ${faq.question}\n${faq.answer}${tags}`;
           })
-          .join('\n\n');
-        
+          .join("\n\n");
+
         return {
           id: Date.now().toString(),
           type: "ai",
@@ -627,7 +788,7 @@ ${faqContent}
         // General FAQ response
         const faqContent = matchedFAQs
           .map((faq) => `${faq.question}\n${faq.answer}\n`)
-          .join('\n');
+          .join("\n");
 
         return {
           id: Date.now().toString(),
@@ -847,7 +1008,10 @@ What would you like to know more about?`,
       // Provide information about booking process
       setInputValue("How do I book a trip?");
       setTimeout(() => handleSendMessage(), 100);
-    } else if (action === "check booking status" || action === "booking status") {
+    } else if (
+      action === "check booking status" ||
+      action === "booking status"
+    ) {
       // Navigate to bookings page
       navigate("/user/bookings");
       setIsOpen(false);
@@ -860,7 +1024,10 @@ What would you like to know more about?`,
       // Provide information about payment methods
       setInputValue("What payment methods are accepted?");
       setTimeout(() => handleSendMessage(), 100);
-    } else if (action === "account settings" || action === "notification settings") {
+    } else if (
+      action === "account settings" ||
+      action === "notification settings"
+    ) {
       // Navigate to profile edit page
       navigate("/user/profile/edit");
       setIsOpen(false);
@@ -1132,15 +1299,18 @@ What would you like to know more about?`,
                             message.relatedFAQs.length > 0 && (
                               <div className="mt-3 pt-3 border-t border-gray-100">
                                 <p className="text-xs font-medium text-gray-600 mb-2">
-                                  {message.relatedFAQs.some(faq => 
+                                  {message.relatedFAQs.some((faq) =>
                                     faq.targetPages?.includes(location.pathname)
-                                  ) 
+                                  )
                                     ? "Page-Specific FAQs:"
                                     : "Related FAQs:"}
                                 </p>
                                 <div className="space-y-2">
                                   {message.relatedFAQs.map((faq) => {
-                                    const isPageSpecific = faq.targetPages?.includes(location.pathname);
+                                    const isPageSpecific =
+                                      faq.targetPages?.includes(
+                                        location.pathname
+                                      );
                                     return (
                                       <div
                                         key={faq.id}
