@@ -40,7 +40,7 @@ apiClient.interceptors.response.use(
         }
 
         const { data } = await axios.post<ApiResponse<{ accessToken: string }>>(
-          `${BASE_URL}/auth/refresh`,
+          `${BASE_URL}/auth/refresh-token`,
           { refreshToken },
           {
             withCredentials: true,
