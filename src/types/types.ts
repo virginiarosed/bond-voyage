@@ -70,9 +70,10 @@ export interface IActivity {
 }
 
 export interface Day {
-  id: string;
+  id?: string;
   dayNumber: number;
-  date: string | null;
+  date?: string | null;
+  title?: string;
   activities: IActivity[];
 }
 
@@ -316,5 +317,43 @@ export interface DashboardStats {
     labels: string[];
     predicted: number[];
     year: number;
+  };
+}
+
+export interface DraftItinerary {
+  type: string;
+  destination: string;
+  travelers: number;
+  days: Array<{
+    dayNumber: number;
+    date: string | null;
+    title: string;
+    activities: Array<{
+      time: string;
+      title: string;
+      location?: string;
+      description?: string;
+      order?: number;
+    }>;
+  }>;
+}
+
+export interface RoamanRequest {
+  prompt: string;
+  preferences?: {
+    selectedDay?: number;
+    destination?: string;
+    currentDayActivities?: IActivity[];
+    totalDays?: number;
+  };
+}
+
+export interface RoamanResponse {
+  success: boolean;
+  message: string;
+  data: {
+    message: string;
+    draft?: DraftItinerary;
+    suggestions?: string[];
   };
 }

@@ -84,7 +84,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { ScrollArea } from "../../components/ui/scroll-area";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { useBreadcrumbs } from "../../components/BreadcrumbContext";
 import { useProfile } from "../../hooks/useAuth";
 import { User as IUser } from "../../types/types";
