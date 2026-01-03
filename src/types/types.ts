@@ -268,13 +268,25 @@ export interface RouteOptimizationRequest {
 }
 
 export interface ChatbotRequest {
-  message: string;
-  context?: string;
+  question: string;
+}
+
+export interface FAQSource {
+  id: string;
+  question: string;
+  order: number;
+  answer?: string;
+  lastUpdated?: string;
+  tags?: string[];
+  targetPages?: string[];
+  pageKeywords?: string[];
+  systemCategory?: string;
 }
 
 export interface ChatbotResponse {
-  message: string;
-  suggestions?: string[];
+  answer: string;
+  confidence: string;
+  sources: FAQSource[];
 }
 
 export interface DashboardStats {
