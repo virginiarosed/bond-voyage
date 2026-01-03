@@ -1,6 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Edit, Trash2, HelpCircle, Calendar, Search, X, ChevronLeft, RefreshCw, BookOpen, Tag, FileText, TrendingUp } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  HelpCircle,
+  Calendar,
+  Search,
+  X,
+  ChevronLeft,
+  RefreshCw,
+  BookOpen,
+  Tag,
+  FileText,
+  TrendingUp,
+} from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import { Pagination } from "../components/Pagination";
@@ -31,23 +45,26 @@ export function FaqPage() {
     {
       id: "FAQ-001",
       question: "How do I create a new booking?",
-      answer: "Go to the Bookings page and click 'New Booking'. Fill in the customer details, select travel dates, choose an itinerary, and confirm the payment. You'll receive a confirmation email once completed.",
+      answer:
+        "Go to the Bookings page and click 'New Booking'. Fill in the customer details, select travel dates, choose an itinerary, and confirm the payment. You'll receive a confirmation email once completed.",
       lastUpdated: "2024-12-15",
       tags: ["booking", "create", "payment"],
       targetPages: ["/user/bookings", "/user/create-new-travel"],
       pageKeywords: ["booking", "create", "new"],
-      systemCategory: "user"
+      systemCategory: "user",
     },
     {
       id: "FAQ-002",
-      question: "What's the difference between Standard and Requested itineraries?",
-      answer: "Standard itineraries are pre-designed travel plans for popular destinations. Requested itineraries are custom plans created specifically for your needs. You can customize either type to match your preferences.",
+      question:
+        "What's the difference between Standard and Requested itineraries?",
+      answer:
+        "Standard itineraries are pre-designed travel plans for popular destinations. Requested itineraries are custom plans created specifically for your needs. You can customize either type to match your preferences.",
       lastUpdated: "2024-12-10",
       tags: ["itinerary", "types", "customization"],
       targetPages: ["/user/standard-itinerary", "/user/requested-itinerary"],
       pageKeywords: ["itinerary", "standard", "requested"],
-      systemCategory: "user"
-    }
+      systemCategory: "user",
+    },
   ]);
 
   // Form state for creating/editing FAQ
@@ -60,7 +77,7 @@ export function FaqPage() {
     tags: [] as string[],
     targetPages: [] as string[],
     pageKeywords: [] as string[],
-    systemCategory: "user"
+    systemCategory: "user",
   });
   const [tagInput, setTagInput] = useState("");
   const [keywordInput, setKeywordInput] = useState("");
@@ -72,27 +89,34 @@ export function FaqPage() {
   // Calculate stats (removed Page-Specific FAQs and Avg Tags per FAQ)
   const totalFAQs = faqs.length;
   const totalTags = faqs.reduce((sum, faq) => sum + faq.tags.length, 0);
-  const userFacingFAQs = faqs.filter(faq => faq.systemCategory === "user").length;
+  const userFacingFAQs = faqs.filter(
+    (faq) => faq.systemCategory === "user"
+  ).length;
 
   // Sync FAQs to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('bondvoyage-faqs', JSON.stringify(faqs));
-    
+    localStorage.setItem("bondvoyage-faqs", JSON.stringify(faqs));
+
     // Dispatch storage event to trigger updates in open user-side tabs
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'bondvoyage-faqs',
-      newValue: JSON.stringify(faqs)
-    }));
-    
-    console.log('FAQs synced to localStorage:', faqs.length, 'entries');
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "bondvoyage-faqs",
+        newValue: JSON.stringify(faqs),
+      })
+    );
   }, [faqs]);
 
   // Filter FAQs based on search query
-  const filteredFaqs = faqs.filter(faq =>
-    faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    faq.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    faq.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    faq.pageKeywords.some(keyword => keyword.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredFaqs = faqs.filter(
+    (faq) =>
+      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      faq.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      faq.tags.some((tag) =>
+        tag.toLowerCase().includes(searchQuery.toLowerCase())
+      ) ||
+      faq.pageKeywords.some((keyword) =>
+        keyword.toLowerCase().includes(searchQuery.toLowerCase())
+      )
   );
 
   // Pagination calculations
@@ -106,7 +130,7 @@ export function FaqPage() {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     // Scroll to top when changing pages
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Handle create new FAQ
@@ -123,14 +147,14 @@ export function FaqPage() {
     }
 
     const newFaq: FAQ = {
-      id: `FAQ-${String(faqs.length + 1).padStart(3, '0')}`,
+      id: `FAQ-${String(faqs.length + 1).padStart(3, "0")}`,
       question: faqForm.question,
       answer: faqForm.answer,
-      lastUpdated: new Date().toISOString().split('T')[0],
+      lastUpdated: new Date().toISOString().split("T")[0],
       tags: faqForm.tags,
       targetPages: faqForm.targetPages,
       pageKeywords: faqForm.pageKeywords,
-      systemCategory: faqForm.systemCategory
+      systemCategory: faqForm.systemCategory,
     };
 
     setFaqs([newFaq, ...faqs]);
@@ -141,7 +165,8 @@ export function FaqPage() {
     setCurrentPage(1);
 
     toast.success("FAQ Created!", {
-      description: "Your new FAQ has been added successfully and synced to the user assistant.",
+      description:
+        "Your new FAQ has been added successfully and synced to the user assistant.",
     });
   };
 
@@ -158,17 +183,17 @@ export function FaqPage() {
       return;
     }
 
-    const updatedFaqs = faqs.map(faq => 
-      faq.id === currentFaq.id 
+    const updatedFaqs = faqs.map((faq) =>
+      faq.id === currentFaq.id
         ? {
             ...faq,
             question: faqForm.question,
             answer: faqForm.answer,
-            lastUpdated: new Date().toISOString().split('T')[0],
+            lastUpdated: new Date().toISOString().split("T")[0],
             tags: faqForm.tags,
             targetPages: faqForm.targetPages,
             pageKeywords: faqForm.pageKeywords,
-            systemCategory: faqForm.systemCategory
+            systemCategory: faqForm.systemCategory,
           }
         : faq
     );
@@ -179,14 +204,15 @@ export function FaqPage() {
     setCurrentFaq(null);
 
     toast.success("FAQ Updated!", {
-      description: "Your FAQ has been updated successfully and synced to the user assistant.",
+      description:
+        "Your FAQ has been updated successfully and synced to the user assistant.",
     });
   };
 
   // Handle delete FAQ
   const handleDeleteFaq = () => {
     if (faqToDelete) {
-      setFaqs(faqs.filter(faq => faq.id !== faqToDelete.id));
+      setFaqs(faqs.filter((faq) => faq.id !== faqToDelete.id));
       setDeleteConfirmOpen(false);
       setFaqToDelete(null);
 
@@ -196,7 +222,8 @@ export function FaqPage() {
       }
 
       toast.success("FAQ Deleted!", {
-        description: "The FAQ has been removed successfully and synced to the user assistant.",
+        description:
+          "The FAQ has been removed successfully and synced to the user assistant.",
       });
     }
   };
@@ -209,7 +236,7 @@ export function FaqPage() {
       tags: [],
       targetPages: [],
       pageKeywords: [],
-      systemCategory: "user"
+      systemCategory: "user",
     });
     setTagInput("");
     setKeywordInput("");
@@ -224,7 +251,7 @@ export function FaqPage() {
       tags: [...faq.tags],
       targetPages: faq.targetPages || [],
       pageKeywords: faq.pageKeywords || [],
-      systemCategory: faq.systemCategory || "user"
+      systemCategory: faq.systemCategory || "user",
     });
     setIsEditModalOpen(true);
   };
@@ -243,13 +270,16 @@ export function FaqPage() {
   const handleRemoveTag = (tagToRemove: string) => {
     setFaqForm({
       ...faqForm,
-      tags: faqForm.tags.filter(tag => tag !== tagToRemove),
+      tags: faqForm.tags.filter((tag) => tag !== tagToRemove),
     });
   };
 
   // Handle keyword input
   const handleAddKeyword = () => {
-    if (keywordInput.trim() && !faqForm.pageKeywords.includes(keywordInput.trim())) {
+    if (
+      keywordInput.trim() &&
+      !faqForm.pageKeywords.includes(keywordInput.trim())
+    ) {
       setFaqForm({
         ...faqForm,
         pageKeywords: [...faqForm.pageKeywords, keywordInput.trim()],
@@ -261,7 +291,9 @@ export function FaqPage() {
   const handleRemoveKeyword = (keywordToRemove: string) => {
     setFaqForm({
       ...faqForm,
-      pageKeywords: faqForm.pageKeywords.filter(keyword => keyword !== keywordToRemove),
+      pageKeywords: faqForm.pageKeywords.filter(
+        (keyword) => keyword !== keywordToRemove
+      ),
     });
   };
 
@@ -278,12 +310,14 @@ export function FaqPage() {
 
   // Force sync FAQs
   const handleForceSync = () => {
-    localStorage.setItem('bondvoyage-faqs', JSON.stringify(faqs));
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'bondvoyage-faqs',
-      newValue: JSON.stringify(faqs)
-    }));
-    
+    localStorage.setItem("bondvoyage-faqs", JSON.stringify(faqs));
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "bondvoyage-faqs",
+        newValue: JSON.stringify(faqs),
+      })
+    );
+
     toast.success("FAQs Synced!", {
       description: "All FAQs have been synced to the user assistant.",
     });
@@ -291,7 +325,7 @@ export function FaqPage() {
 
   // Load initial FAQs from localStorage if available
   useEffect(() => {
-    const savedFAQs = localStorage.getItem('bondvoyage-faqs');
+    const savedFAQs = localStorage.getItem("bondvoyage-faqs");
     if (savedFAQs) {
       try {
         const parsedFAQs = JSON.parse(savedFAQs);
@@ -299,7 +333,7 @@ export function FaqPage() {
           setFaqs(parsedFAQs);
         }
       } catch (error) {
-        console.error('Error loading FAQs from localStorage:', error);
+        console.error("Error loading FAQs from localStorage:", error);
       }
     }
   }, []);
@@ -318,7 +352,7 @@ export function FaqPage() {
     { path: "/user/customized-itinerary", name: "Customized Itinerary" },
     { path: "/user/smart-trip", name: "Smart Trip" },
     { path: "/user/create-new-travel", name: "Create Travel" },
-    { path: "/user/home", name: "Dashboard" }
+    { path: "/user/home", name: "Dashboard" },
   ];
 
   return (
@@ -338,7 +372,7 @@ export function FaqPage() {
 
       {/* Removed Stat Cards Section */}
 
-      <ContentCard 
+      <ContentCard
         title="Frequently Asked Questions"
         subtitle={`Manage FAQs for the user assistant. ${faqs.length} FAQs available.`}
         action={
@@ -351,10 +385,12 @@ export function FaqPage() {
               <RefreshCw className="w-4 h-4" />
               Sync FAQs
             </button>
-            <button 
+            <button
               onClick={() => setIsCreateModalOpen(true)}
               className="h-10 px-5 rounded-[20px] text-white text-sm font-medium shadow-[0_2px_8px_rgba(10,122,255,0.25)] flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5"
-              style={{ background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))` }}
+              style={{
+                background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))`,
+              }}
             >
               <Plus className="w-4 h-4" />
               New FAQ
@@ -390,10 +426,14 @@ export function FaqPage() {
                 <HelpCircle className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {searchQuery ? "No matching FAQs found" : "Only 2 FAQs available"}
+                {searchQuery
+                  ? "No matching FAQs found"
+                  : "Only 2 FAQs available"}
               </h3>
               <p className="text-gray-600 mb-6">
-                {searchQuery ? "Try a different search term" : "Add more FAQs to help users navigate the system"}
+                {searchQuery
+                  ? "Try a different search term"
+                  : "Add more FAQs to help users navigate the system"}
               </p>
               {!searchQuery && (
                 <button
@@ -405,22 +445,18 @@ export function FaqPage() {
               )}
             </div>
           ) : (
-            paginatedFaqs.map(faq => (
+            paginatedFaqs.map((faq) => (
               <div
                 key={faq.id}
                 className="group rounded-xl border border-gray-200 hover:border-[#0A7AFF] hover:shadow-lg bg-white transition-all duration-200 overflow-hidden h-full flex flex-col"
               >
                 <div className="p-5 flex-1">
                   <div className="flex items-start gap-3 mb-4">
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] group-hover:scale-110 transition-transform duration-200"
-                    >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] group-hover:scale-110 transition-transform duration-200">
                       <HelpCircle className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 
-                        className="text-base font-semibold text-gray-900 group-hover:text-[#0A7AFF] transition-colors mb-3 line-clamp-2"
-                      >
+                      <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#0A7AFF] transition-colors mb-3 line-clamp-2">
                         {faq.question}
                       </h3>
                       <p className="text-sm text-gray-600 mb-4 line-clamp-3">
@@ -429,8 +465,11 @@ export function FaqPage() {
                       {faq.tags.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2 mb-2">
                           <span className="text-xs text-gray-500">Tags:</span>
-                          {faq.tags.map(tag => (
-                            <span key={tag} className="px-2 py-1 rounded text-xs bg-blue-50 text-blue-600 border border-blue-200">
+                          {faq.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-1 rounded text-xs bg-blue-50 text-blue-600 border border-blue-200"
+                            >
                               {tag}
                             </span>
                           ))}
@@ -438,9 +477,14 @@ export function FaqPage() {
                       )}
                       {faq.pageKeywords.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className="text-xs text-gray-500">Keywords:</span>
-                          {faq.pageKeywords.map(keyword => (
-                            <span key={keyword} className="px-2 py-1 rounded text-xs bg-purple-50 text-purple-600 border border-purple-200">
+                          <span className="text-xs text-gray-500">
+                            Keywords:
+                          </span>
+                          {faq.pageKeywords.map((keyword) => (
+                            <span
+                              key={keyword}
+                              className="px-2 py-1 rounded text-xs bg-purple-50 text-purple-600 border border-purple-200"
+                            >
                               {keyword}
                             </span>
                           ))}
@@ -448,29 +492,40 @@ export function FaqPage() {
                       )}
                       {faq.targetPages && faq.targetPages.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-gray-500">Target Pages:</span>
-                          {faq.targetPages.slice(0, 2).map(page => {
-                            const pageOption = pageOptions.find(p => p.path === page);
+                          <span className="text-xs text-gray-500">
+                            Target Pages:
+                          </span>
+                          {faq.targetPages.slice(0, 2).map((page) => {
+                            const pageOption = pageOptions.find(
+                              (p) => p.path === page
+                            );
                             return pageOption ? (
-                              <span key={page} className="px-2 py-1 rounded text-xs bg-green-50 text-green-600 border border-green-200">
+                              <span
+                                key={page}
+                                className="px-2 py-1 rounded text-xs bg-green-50 text-green-600 border border-green-200"
+                              >
                                 {pageOption.name}
                               </span>
                             ) : null;
                           })}
                           {faq.targetPages.length > 2 && (
-                            <span className="text-xs text-gray-500">+{faq.targetPages.length - 2} more</span>
+                            <span className="text-xs text-gray-500">
+                              +{faq.targetPages.length - 2} more
+                            </span>
                           )}
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="px-5 pb-5 pt-4 border-t border-gray-100">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 text-sm text-gray-500">
                       <Calendar className="w-4 h-4" />
-                      <span>Updated {new Date(faq.lastUpdated).toLocaleDateString()}</span>
+                      <span>
+                        Updated {new Date(faq.lastUpdated).toLocaleDateString()}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
@@ -533,7 +588,9 @@ export function FaqPage() {
               <Input
                 id="question"
                 value={faqForm.question}
-                onChange={(e) => setFaqForm({ ...faqForm, question: e.target.value })}
+                onChange={(e) =>
+                  setFaqForm({ ...faqForm, question: e.target.value })
+                }
                 placeholder="Enter the question users frequently ask"
                 className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[#0A7AFF]/10"
               />
@@ -545,12 +602,14 @@ export function FaqPage() {
               <Textarea
                 id="answer"
                 value={faqForm.answer}
-                onChange={(e) => setFaqForm({ ...faqForm, answer: e.target.value })}
+                onChange={(e) =>
+                  setFaqForm({ ...faqForm, answer: e.target.value })
+                }
                 placeholder="Provide a clear and helpful answer"
                 className="min-h-[120px] border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[#0A7AFF]/10"
               />
             </div>
-            
+
             {/* Tags Section */}
             <div>
               <Label htmlFor="tags" className="text-[#1A2B4F] mb-2 block">
@@ -562,7 +621,9 @@ export function FaqPage() {
                     id="tags"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), handleAddTag())
+                    }
                     placeholder="Type a tag and press Enter"
                     className="flex-1 h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[#0A7AFF]/10"
                   />
@@ -575,7 +636,7 @@ export function FaqPage() {
                 </div>
                 {faqForm.tags.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {faqForm.tags.map(tag => (
+                    {faqForm.tags.map((tag) => (
                       <span
                         key={tag}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-blue-50 text-blue-600 border border-blue-200"
@@ -592,7 +653,8 @@ export function FaqPage() {
                   </div>
                 ) : (
                   <p className="text-xs text-gray-500">
-                    At least one tag is required. Tags help users find relevant FAQs.
+                    At least one tag is required. Tags help users find relevant
+                    FAQs.
                   </p>
                 )}
               </div>
@@ -609,7 +671,10 @@ export function FaqPage() {
                     id="keywords"
                     value={keywordInput}
                     onChange={(e) => setKeywordInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" &&
+                      (e.preventDefault(), handleAddKeyword())
+                    }
                     placeholder="Type a keyword and press Enter"
                     className="flex-1 h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[#0A7AFF]/10"
                   />
@@ -622,7 +687,7 @@ export function FaqPage() {
                 </div>
                 {faqForm.pageKeywords.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {faqForm.pageKeywords.map(keyword => (
+                    {faqForm.pageKeywords.map((keyword) => (
                       <span
                         key={keyword}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-purple-50 text-purple-600 border border-purple-200"
@@ -648,18 +713,25 @@ export function FaqPage() {
             <div className="pt-4 border-t border-gray-200">
               <Label className="text-[#1A2B4F] mb-2 block">
                 Target Pages (Optional)
-                <span className="text-xs text-gray-500 ml-2">Select pages where this FAQ should appear</span>
+                <span className="text-xs text-gray-500 ml-2">
+                  Select pages where this FAQ should appear
+                </span>
               </Label>
               <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-lg max-h-40 overflow-y-auto">
                 {pageOptions.map(({ path, name }) => (
-                  <label key={path} className="flex items-center gap-2 cursor-pointer px-2 py-1 hover:bg-gray-100 rounded">
+                  <label
+                    key={path}
+                    className="flex items-center gap-2 cursor-pointer px-2 py-1 hover:bg-gray-100 rounded"
+                  >
                     <input
                       type="checkbox"
                       checked={faqForm.targetPages?.includes(path) || false}
                       onChange={(e) => {
                         const newTargetPages = e.target.checked
                           ? [...(faqForm.targetPages || []), path]
-                          : (faqForm.targetPages || []).filter(p => p !== path);
+                          : (faqForm.targetPages || []).filter(
+                              (p) => p !== path
+                            );
                         setFaqForm({ ...faqForm, targetPages: newTargetPages });
                       }}
                       className="w-4 h-4 text-[#0A7AFF] rounded"
@@ -701,28 +773,38 @@ export function FaqPage() {
         content={
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-question" className="text-[#1A2B4F] mb-2 block">
+              <Label
+                htmlFor="edit-question"
+                className="text-[#1A2B4F] mb-2 block"
+              >
                 Question <span className="text-[#FF6B6B]">*</span>
               </Label>
               <Input
                 id="edit-question"
                 value={faqForm.question}
-                onChange={(e) => setFaqForm({ ...faqForm, question: e.target.value })}
+                onChange={(e) =>
+                  setFaqForm({ ...faqForm, question: e.target.value })
+                }
                 className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-4 focus:ring-[#14B8A6]/10"
               />
             </div>
             <div>
-              <Label htmlFor="edit-answer" className="text-[#1A2B4F] mb-2 block">
+              <Label
+                htmlFor="edit-answer"
+                className="text-[#1A2B4F] mb-2 block"
+              >
                 Answer <span className="text-[#FF6B6B]">*</span>
               </Label>
               <Textarea
                 id="edit-answer"
                 value={faqForm.answer}
-                onChange={(e) => setFaqForm({ ...faqForm, answer: e.target.value })}
+                onChange={(e) =>
+                  setFaqForm({ ...faqForm, answer: e.target.value })
+                }
                 className="min-h-[120px] border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-4 focus:ring-[#14B8A6]/10"
               />
             </div>
-            
+
             {/* Tags Section */}
             <div>
               <Label htmlFor="edit-tags" className="text-[#1A2B4F] mb-2 block">
@@ -734,7 +816,9 @@ export function FaqPage() {
                     id="edit-tags"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), handleAddTag())
+                    }
                     placeholder="Type a tag and press Enter"
                     className="flex-1 h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-4 focus:ring-[#14B8A6]/10"
                   />
@@ -747,7 +831,7 @@ export function FaqPage() {
                 </div>
                 {faqForm.tags.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {faqForm.tags.map(tag => (
+                    {faqForm.tags.map((tag) => (
                       <span
                         key={tag}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-emerald-50 text-emerald-600 border border-emerald-200"
@@ -764,7 +848,8 @@ export function FaqPage() {
                   </div>
                 ) : (
                   <p className="text-xs text-gray-500">
-                    At least one tag is required. Tags help users find relevant FAQs.
+                    At least one tag is required. Tags help users find relevant
+                    FAQs.
                   </p>
                 )}
               </div>
@@ -772,7 +857,10 @@ export function FaqPage() {
 
             {/* Page Keywords Section */}
             <div>
-              <Label htmlFor="edit-keywords" className="text-[#1A2B4F] mb-2 block">
+              <Label
+                htmlFor="edit-keywords"
+                className="text-[#1A2B4F] mb-2 block"
+              >
                 Page Keywords (Optional)
               </Label>
               <div className="space-y-2">
@@ -781,7 +869,10 @@ export function FaqPage() {
                     id="edit-keywords"
                     value={keywordInput}
                     onChange={(e) => setKeywordInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" &&
+                      (e.preventDefault(), handleAddKeyword())
+                    }
                     placeholder="Type a keyword and press Enter"
                     className="flex-1 h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-4 focus:ring-[#14B8A6]/10"
                   />
@@ -794,7 +885,7 @@ export function FaqPage() {
                 </div>
                 {faqForm.pageKeywords.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {faqForm.pageKeywords.map(keyword => (
+                    {faqForm.pageKeywords.map((keyword) => (
                       <span
                         key={keyword}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-purple-50 text-purple-600 border border-purple-200"
@@ -817,18 +908,25 @@ export function FaqPage() {
             <div className="pt-4 border-t border-gray-200">
               <Label className="text-[#1A2B4F] mb-2 block">
                 Target Pages (Optional)
-                <span className="text-xs text-gray-500 ml-2">Select pages where this FAQ should appear</span>
+                <span className="text-xs text-gray-500 ml-2">
+                  Select pages where this FAQ should appear
+                </span>
               </Label>
               <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-lg max-h-40 overflow-y-auto">
                 {pageOptions.map(({ path, name }) => (
-                  <label key={path} className="flex items-center gap-2 cursor-pointer px-2 py-1 hover:bg-gray-100 rounded">
+                  <label
+                    key={path}
+                    className="flex items-center gap-2 cursor-pointer px-2 py-1 hover:bg-gray-100 rounded"
+                  >
                     <input
                       type="checkbox"
                       checked={faqForm.targetPages?.includes(path) || false}
                       onChange={(e) => {
                         const newTargetPages = e.target.checked
                           ? [...(faqForm.targetPages || []), path]
-                          : (faqForm.targetPages || []).filter(p => p !== path);
+                          : (faqForm.targetPages || []).filter(
+                              (p) => p !== path
+                            );
                         setFaqForm({ ...faqForm, targetPages: newTargetPages });
                       }}
                       className="w-4 h-4 text-[#14B8A6] rounded"
@@ -849,7 +947,9 @@ export function FaqPage() {
                 <div className="text-sm">
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-gray-600 mb-1">FAQ ID:</p>
-                    <p className="font-semibold text-gray-900 mb-3">{currentFaq.id}</p>
+                    <p className="font-semibold text-gray-900 mb-3">
+                      {currentFaq.id}
+                    </p>
                     <p className="text-gray-600 mb-1">Last Updated:</p>
                     <p className="font-semibold text-gray-900">
                       {new Date(currentFaq.lastUpdated).toLocaleDateString()}
@@ -900,8 +1000,11 @@ export function FaqPage() {
                   <>
                     <p className="text-sm text-gray-600 mb-1">Tags:</p>
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {faqToDelete.tags.map(tag => (
-                        <span key={tag} className="px-2 py-1 rounded text-xs bg-red-50 text-red-600 border border-red-200">
+                      {faqToDelete.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-1 rounded text-xs bg-red-50 text-red-600 border border-red-200"
+                        >
                           {tag}
                         </span>
                       ))}
@@ -912,36 +1015,49 @@ export function FaqPage() {
                   <>
                     <p className="text-sm text-gray-600 mb-1">Keywords:</p>
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {faqToDelete.pageKeywords.map(keyword => (
-                        <span key={keyword} className="px-2 py-1 rounded text-xs bg-red-50 text-red-600 border border-red-200">
+                      {faqToDelete.pageKeywords.map((keyword) => (
+                        <span
+                          key={keyword}
+                          className="px-2 py-1 rounded text-xs bg-red-50 text-red-600 border border-red-200"
+                        >
                           {keyword}
                         </span>
                       ))}
                     </div>
                   </>
                 )}
-                {faqToDelete.targetPages && faqToDelete.targetPages.length > 0 && (
-                  <>
-                    <p className="text-sm text-gray-600 mb-1">Target Pages:</p>
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {faqToDelete.targetPages.slice(0, 3).map(page => {
-                        const pageOption = pageOptions.find(p => p.path === page);
-                        return pageOption ? (
-                          <span key={page} className="px-2 py-1 rounded text-xs bg-red-50 text-red-600 border border-red-200">
-                            {pageOption.name}
-                          </span>
-                        ) : null;
-                      })}
-                    </div>
-                  </>
-                )}
+                {faqToDelete.targetPages &&
+                  faqToDelete.targetPages.length > 0 && (
+                    <>
+                      <p className="text-sm text-gray-600 mb-1">
+                        Target Pages:
+                      </p>
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {faqToDelete.targetPages.slice(0, 3).map((page) => {
+                          const pageOption = pageOptions.find(
+                            (p) => p.path === page
+                          );
+                          return pageOption ? (
+                            <span
+                              key={page}
+                              className="px-2 py-1 rounded text-xs bg-red-50 text-red-600 border border-red-200"
+                            >
+                              {pageOption.name}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    </>
+                  )}
                 <p className="text-xs text-gray-500">
-                  Last updated: {new Date(faqToDelete.lastUpdated).toLocaleDateString()}
+                  Last updated:{" "}
+                  {new Date(faqToDelete.lastUpdated).toLocaleDateString()}
                 </p>
               </div>
               <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                 <p className="text-xs text-amber-700">
-                  ⚠️ This FAQ will be removed from the user assistant and cannot be recovered.
+                  ⚠️ This FAQ will be removed from the user assistant and cannot
+                  be recovered.
                 </p>
               </div>
             </div>

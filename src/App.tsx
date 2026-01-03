@@ -249,7 +249,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           },
         ];
         localStorage.setItem("bondvoyage-faqs", JSON.stringify(defaultFAQs));
-        console.log("FAQ system initialized with default FAQs");
       }
     };
 
