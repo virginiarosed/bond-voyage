@@ -1074,8 +1074,6 @@ export function EditCustomizedBooking() {
       })),
     };
 
-    console.log("Sending update data:", updateData); // For debugging
-
     // Call the update mutation
     updateBooking(updateData, {
       onSuccess: () => {

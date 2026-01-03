@@ -39,9 +39,12 @@ export const useLogin = (
         "/auth/login",
         credentials
       );
-      if (response.data.data?.accessToken && response.data.data?.refreshToken) {
-        localStorage.setItem("accessToken", response.data.data.accessToken);
-        localStorage.setItem("refreshToken", response.data.data.refreshToken);
+
+      const { accessToken, refreshToken } = response.data.data!;
+
+      if (accessToken && refreshToken) {
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
       }
       return response.data;
     },
