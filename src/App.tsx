@@ -1039,7 +1039,6 @@ function AppRoutes() {
         path="/itinerary/create-requested"
         element={
           <CreateRequestedItinerary
-            onSave={handleSaveRequestedItinerary}
             onSaveDraft={handleSaveDraft}
             initialData={editingRequestedDraft || undefined}
           />

@@ -40,7 +40,7 @@ apiClient.interceptors.response.use(
         }
 
         const { data } = await axios.post<ApiResponse<{ accessToken: string }>>(
-          `${BASE_URL}/auth/refresh`,
+          `${BASE_URL}/auth/refresh-token`,
           { refreshToken },
           {
             withCredentials: true,
@@ -55,7 +55,6 @@ apiClient.interceptors.response.use(
           throw new Error("No access token in refresh response");
         }
       } catch (refreshError) {
-        console.error("Token refresh failed:", refreshError);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         window.location.href = "/login";
@@ -63,7 +62,6 @@ apiClient.interceptors.response.use(
       }
     }
 
-    console.log("Not a 401 or already retried, rejecting error");
     return Promise.reject(error);
   }
 );
