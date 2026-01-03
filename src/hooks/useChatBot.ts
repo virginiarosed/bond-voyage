@@ -1,6 +1,12 @@
 import { UseMutationOptions, useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
-import { ApiResponse, ChatbotResponse, ChatbotRequest } from "../types/types";
+import {
+  ApiResponse,
+  ChatbotResponse,
+  ChatbotRequest,
+  RoamanRequest,
+  RoamanResponse,
+} from "../types/types";
 import { apiClient } from "../utils/axios/userAxios";
 
 export const useRoameoChatbot = (
@@ -23,11 +29,14 @@ export const useRoameoChatbot = (
 };
 
 export const useRoamanChatbot = (
-  options?: UseMutationOptions<any, AxiosError, ChatbotRequest>
+  options?: UseMutationOptions<RoamanResponse, AxiosError, RoamanRequest>
 ) => {
-  return useMutation({
-    mutationFn: async (data: ChatbotRequest) => {
-      const response = await apiClient.post("/chatbots/roaman", data);
+  return useMutation<RoamanResponse, AxiosError, RoamanRequest>({
+    mutationFn: async (data: RoamanRequest) => {
+      const response = await apiClient.post<RoamanResponse>(
+        "/chatbots/roaman",
+        data
+      );
       return response.data;
     },
     ...options,
