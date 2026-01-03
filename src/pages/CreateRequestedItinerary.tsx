@@ -906,28 +906,34 @@ export function CreateRequestedItinerary({
   };
 
   const handleSave = () => {
-    const apiItinerary = itineraryDays.map((day, index) => {
-      const dayDate = new Date(formData.travelDateFrom);
-      dayDate.setDate(dayDate.getDate() + index);
+    const itinerary = {
+      travelers: parseInt(formData.travelers),
+      totalDays: itineraryDays.length,
+      destination: formData.destination,
+      days: itineraryDays.map((day, index) => {
+        const dayDate = new Date(formData.travelDateFrom);
+        dayDate.setDate(dayDate.getDate() + index);
 
-      return {
-        dayNumber: day.day,
-        date: dayDate.toISOString().split("T")[0],
-        activities: day.activities.map((activity, activityIndex) => ({
-          time: activity.time || "00:00",
-          title: activity.title,
-          description: activity.description || undefined,
-          location: activity.location || undefined,
-          order: activityIndex + 1,
-        })),
-      };
-    });
+        return {
+          dayNumber: day.day,
+          date: dayDate.toISOString().split("T")[0],
+          title: day.title || "",
+          activities: day.activities.map((activity, activityIndex) => ({
+            time: activity.time || "00:00",
+            title: activity.title,
+            description: activity.description || "",
+            location: activity.location || "",
+            order: activityIndex + 1,
+          })),
+        };
+      }),
+    };
 
     const bookingData = {
       destination: formData.destination,
       startDate: formData.travelDateFrom,
       endDate: formData.travelDateTo,
-      travelers: parseInt(formData.travelers),
+
       totalPrice: parseFloat(formData.totalAmount),
       type: "REQUESTED",
       tourType: "PRIVATE",
@@ -935,13 +941,12 @@ export function CreateRequestedItinerary({
       customerEmail: formData.email,
       customerMobile: formData.mobile,
       ...(formData.customerId && { userId: formData.customerId }),
-      itinerary: apiItinerary,
+      itinerary: itinerary,
       status: "PENDING",
     };
 
     createBookingMutation.mutate(bookingData);
   };
-
   const handleBackClick = () => {
     if (hasUnsavedChanges) {
       setBackConfirmOpen(true);
