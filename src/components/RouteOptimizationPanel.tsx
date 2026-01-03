@@ -524,8 +524,6 @@ export function RouteOptimizationPanel({
             pendingOptimizationsRef.current.delete(dayId);
           },
           onError: (error: any) => {
-            console.error("Route optimization API error:", error);
-
             // Get error message
             const errorMessage =
               error.response?.data?.message ||
@@ -536,7 +534,6 @@ export function RouteOptimizationPanel({
               description: `${errorMessage}. Using local optimization.`,
             });
 
-            // Update state to remove loading (keep local optimization)
             setDayAnalyses((prev) => {
               const updated = new Map(prev);
               const current = updated.get(dayId);
@@ -552,12 +549,11 @@ export function RouteOptimizationPanel({
             pendingOptimizationsRef.current.delete(dayId);
           },
         });
-      }, 1500); // 1.5 second delay
+      }, 1500);
     },
     [optimizeRoute]
   );
 
-  // Initialize analyses and set up debounced optimizations
   useEffect(() => {
     const initializeAnalyses = () => {
       if (daysWithMeaningfulLocations.length === 0) return;
@@ -570,11 +566,9 @@ export function RouteOptimizationPanel({
         );
         if (originalActivities.length < 2) continue;
 
-        // Calculate original distance
         const originalDistance =
           calculateOriginalRouteDistance(originalActivities);
 
-        // Set initial state with local optimization
         const locallyOptimized = optimizeRouteLocally(originalActivities);
         const localOptimizedDistance =
           calculateOriginalRouteDistance(locallyOptimized);
@@ -590,17 +584,14 @@ export function RouteOptimizationPanel({
             optimizedDistance: localOptimizedDistance,
             timeSaved: localTimeSaved,
           },
-          isLoading: false, // Start with local optimization, API will load later
+          isLoading: false,
         });
 
-        // Schedule debounced API call
         sendOptimizationRequest(day, day.id);
       }
 
-      // Set initial analyses
       setDayAnalyses(newAnalyses);
 
-      // Set active tab
       if (
         selectedDayId &&
         daysWithMeaningfulLocations.find((d) => d.id === selectedDayId)
