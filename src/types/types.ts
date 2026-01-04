@@ -63,16 +63,16 @@ export interface IActivity {
   id: string;
   time: string;
   title: string;
-  description: string | null;
-  location: string | null;
-  icon: string | null;
+  description: string;
+  location: string;
+  icon: string;
   order: number;
 }
 
 export interface Day {
-  id?: string;
+  id: string;
   dayNumber: number;
-  date?: string | null;
+  date?: string;
   title?: string;
   activities: IActivity[];
 }
@@ -263,9 +263,16 @@ export interface WeatherResponse {
 }
 
 export interface RouteOptimizationRequest {
-  origin: { lat: number; lng: number };
-  destination: { lat: number; lng: number };
-  waypoints?: Array<{ lat: number; lng: number }>;
+  activities: Array<{
+    id: string;
+    lat: number;
+    lng: number;
+    name: string;
+    location: string;
+    time: string | null;
+  }>;
+  origin: string;
+  destination: string;
 }
 
 export interface ChatbotRequest {

@@ -501,11 +501,11 @@ export function Users() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="mb-4 bg-gradient-to-r from-[#0A7AFF] to-[#3B9EFF] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg"
+            className="mb-4 bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg"
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
                   <span className="text-white font-semibold text-sm sm:text-base">
                     {selectedUsers.length}
                   </span>
@@ -550,7 +550,7 @@ export function Users() {
                 </button>
                 <button
                   onClick={() => setSelectedUsers([])}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center text-white transition-all flex-shrink-0"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center text-white transition-all shrink-0"
                 >
                   <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
@@ -604,7 +604,7 @@ export function Users() {
         />
 
         {/* Data Table - Desktop */}
-        <div className=" md:block overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-[#F8FAFB] dark:bg-[#1F2937] border-b-2 border-[#E5E7EB] dark:border-[#2A3441]">
@@ -615,7 +615,7 @@ export function Users() {
                       selectedUsers.length === users.length && users.length > 0
                     }
                     onChange={toggleSelectAll}
-                    className="w-[18px] h-[18px] rounded border-2 border-[#E5E7EB] dark:border-[#2A3441] checked:bg-[#0A7AFF] checked:border-[#0A7AFF] cursor-pointer"
+                    className="w-4.5 h-4.5 rounded border-2 border-[#E5E7EB] dark:border-[#2A3441] checked:bg-[#0A7AFF] checked:border-[#0A7AFF] cursor-pointer"
                   />
                 </th>
                 <th className="px-4 py-3 text-left text-sm text-[#1A2B4F] dark:text-[#E5E7EB] font-semibold uppercase tracking-wide">
@@ -656,12 +656,12 @@ export function Users() {
                       type="checkbox"
                       checked={selectedUsers.includes(user.id)}
                       onChange={() => toggleUserSelection(user.id)}
-                      className="w-[18px] h-[18px] rounded border-2 border-[#E5E7EB] checked:bg-[#0A7AFF] checked:border-[#0A7AFF] cursor-pointer"
+                      className="w-4.5 h-4.5 rounded border-2 border-[#E5E7EB] checked:bg-[#0A7AFF] checked:border-[#0A7AFF] cursor-pointer"
                     />
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-full bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                         <span className="text-white text-sm font-medium">
                           {user.avatar}
                         </span>
@@ -763,9 +763,9 @@ export function Users() {
                       type="checkbox"
                       checked={selectedUsers.includes(user.id)}
                       onChange={() => toggleUserSelection(user.id)}
-                      className="w-[18px] h-[18px] rounded border-2 border-[#E5E7EB] checked:bg-[#0A7AFF] checked:border-[#0A7AFF] cursor-pointer mt-1"
+                      className="w-4.5 h-4.5 rounded border-2 border-[#E5E7EB] checked:bg-[#0A7AFF] checked:border-[#0A7AFF] cursor-pointer mt-1"
                     />
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                       <span className="text-white text-sm font-medium">
                         {user.avatar}
                       </span>
@@ -788,7 +788,7 @@ export function Users() {
                 {/* Details */}
                 <div className="space-y-2 mb-3">
                   <div className="flex items-start gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[70px]">
+                    <span className="text-xs text-muted-foreground min-w-17.5">
                       Email:
                     </span>
                     <span className="text-xs text-card-foreground break-all">
@@ -796,7 +796,7 @@ export function Users() {
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[70px]">
+                    <span className="text-xs text-muted-foreground min-w-17.5">
                       Mobile:
                     </span>
                     <span className="text-xs text-card-foreground">
@@ -804,7 +804,7 @@ export function Users() {
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[70px]">
+                    <span className="text-xs text-muted-foreground min-w-17.5">
                       User Since:
                     </span>
                     <span className="text-xs text-card-foreground">
@@ -871,10 +871,10 @@ export function Users() {
 
       {/* Edit User Modal */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[540px] max-h-[90vh] overflow-auto">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-135 max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 flex-shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 shrink-0">
                 <Edit className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               Edit User
@@ -991,7 +991,7 @@ export function Users() {
             <Button
               onClick={handleSaveEdit}
               disabled={updateUserMutation.isPending}
-              className="w-full sm:w-auto h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0865CC] hover:to-[#2E8FE8] shadow-lg shadow-[#0A7AFF]/25 text-white text-sm disabled:opacity-50"
+              className="w-full sm:w-auto h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0865CC] hover:to-[#2E8FE8] shadow-lg shadow-[#0A7AFF]/25 text-white text-sm disabled:opacity-50"
             >
               {updateUserMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
@@ -1001,10 +1001,10 @@ export function Users() {
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-120 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF8787] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20 flex-shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-linear-to-br from-[#FF6B6B] to-[#FF8787] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20 shrink-0">
                 <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               Delete User
@@ -1015,7 +1015,7 @@ export function Users() {
             </DialogDescription>
           </DialogHeader>
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <div className="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)] border border-[rgba(255,107,107,0.2)] rounded-xl sm:rounded-2xl p-4 sm:p-5 relative overflow-hidden">
+            <div className="bg-linear-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)] border border-[rgba(255,107,107,0.2)] rounded-xl sm:rounded-2xl p-4 sm:p-5 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-[#FF6B6B]/10 rounded-full blur-3xl"></div>
               <div className="relative text-sm">
                 <p className="text-sm text-[#334155] leading-relaxed">
@@ -1043,7 +1043,7 @@ export function Users() {
             <Button
               onClick={handleConfirmDelete}
               disabled={deleteUserMutation.isPending}
-              className="h-11 px-6 rounded-xl bg-gradient-to-r from-[#FF6B6B] to-[#FF8787] hover:from-[#E85555] hover:to-[#FF7272] shadow-lg shadow-[#FF6B6B]/25 text-white disabled:opacity-50"
+              className="h-11 px-6 rounded-xl bg-linear-to-r from-[#FF6B6B] to-[#FF8787] hover:from-[#E85555] hover:to-[#FF7272] shadow-lg shadow-[#FF6B6B]/25 text-white disabled:opacity-50"
             >
               {deleteUserMutation.isPending ? "Deleting..." : "Delete User"}
             </Button>
@@ -1053,14 +1053,14 @@ export function Users() {
 
       {/* Status Change Confirmation Modal */}
       <Dialog open={statusModalOpen} onOpenChange={setStatusModalOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-120">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
                   currentUser?.status === "Active"
-                    ? "bg-gradient-to-br from-[#FF6B6B] to-[#FF8787] shadow-[#FF6B6B]/20"
-                    : "bg-gradient-to-br from-[#10B981] to-[#34D399] shadow-[#10B981]/20"
+                    ? "bg-linear-to-br from-[#FF6B6B] to-[#FF8787] shadow-[#FF6B6B]/20"
+                    : "bg-linear-to-br from-[#10B981] to-[#34D399] shadow-[#10B981]/20"
                 }`}
               >
                 {currentUser?.status === "Active" ? (
@@ -1082,8 +1082,8 @@ export function Users() {
             <div
               className={`rounded-2xl p-5 border relative overflow-hidden ${
                 currentUser?.status === "Active"
-                  ? "bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)] border-[rgba(255,107,107,0.2)]"
-                  : "bg-gradient-to-br from-[rgba(16,185,129,0.08)] to-[rgba(16,185,129,0.12)] border-[rgba(16,185,129,0.2)]"
+                  ? "bg-linear-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)] border-[rgba(255,107,107,0.2)]"
+                  : "bg-linear-to-br from-[rgba(16,185,129,0.08)] to-[rgba(16,185,129,0.12)] border-[rgba(16,185,129,0.2)]"
               }`}
             >
               <div
@@ -1126,8 +1126,8 @@ export function Users() {
               }
               className={`h-11 px-6 rounded-xl shadow-lg text-white disabled:opacity-50 ${
                 currentUser?.status === "Active"
-                  ? "bg-gradient-to-r from-[#FF6B6B] to-[#FF8787] hover:from-[#E85555] hover:to-[#FF7272] shadow-[#FF6B6B]/25"
-                  : "bg-gradient-to-r from-[#10B981] to-[#34D399] hover:from-[#0D9668] hover:to-[#2BC78C] shadow-[#10B981]/25"
+                  ? "bg-linear-to-r from-[#FF6B6B] to-[#FF8787] hover:from-[#E85555] hover:to-[#FF7272] shadow-[#FF6B6B]/25"
+                  : "bg-linear-to-r from-[#10B981] to-[#34D399] hover:from-[#0D9668] hover:to-[#2BC78C] shadow-[#10B981]/25"
               }`}
             >
               {deactivateUserMutation.isPending || updateUserMutation.isPending
@@ -1142,10 +1142,10 @@ export function Users() {
 
       {/* Bulk Delete Confirmation Modal */}
       <Dialog open={bulkDeleteModalOpen} onOpenChange={setBulkDeleteModalOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-120">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF8787] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF6B6B] to-[#FF8787] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
                 <Trash2 className="w-5 h-5 text-white" />
               </div>
               Delete Multiple Users
@@ -1156,7 +1156,7 @@ export function Users() {
             </DialogDescription>
           </DialogHeader>
           <div className="px-8 py-6">
-            <div className="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)] border border-[rgba(255,107,107,0.2)] rounded-2xl p-5 relative overflow-hidden">
+            <div className="bg-linear-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)] border border-[rgba(255,107,107,0.2)] rounded-2xl p-5 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF6B6B]/10 rounded-full blur-3xl"></div>
               <div className="relative">
                 <p className="text-sm text-[#334155] leading-relaxed">
@@ -1185,7 +1185,7 @@ export function Users() {
             <Button
               onClick={handleConfirmBulkDelete}
               disabled={deleteUserMutation.isPending}
-              className="h-11 px-6 rounded-xl bg-gradient-to-r from-[#FF6B6B] to-[#FF8787] hover:from-[#E85555] hover:to-[#FF7272] shadow-lg shadow-[#FF6B6B]/25 text-white disabled:opacity-50"
+              className="h-11 px-6 rounded-xl bg-linear-to-r from-[#FF6B6B] to-[#FF8787] hover:from-[#E85555] hover:to-[#FF7272] shadow-lg shadow-[#FF6B6B]/25 text-white disabled:opacity-50"
             >
               {deleteUserMutation.isPending
                 ? "Deleting..."
@@ -1199,14 +1199,14 @@ export function Users() {
 
       {/* Bulk Status Change Confirmation Modal */}
       <Dialog open={bulkStatusModalOpen} onOpenChange={setBulkStatusModalOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-120">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
                   allSelectedActive
-                    ? "bg-gradient-to-br from-[#FF6B6B] to-[#FF8787] shadow-[#FF6B6B]/20"
-                    : "bg-gradient-to-br from-[#10B981] to-[#34D399] shadow-[#10B981]/20"
+                    ? "bg-linear-to-br from-[#FF6B6B] to-[#FF8787] shadow-[#FF6B6B]/20"
+                    : "bg-linear-to-br from-[#10B981] to-[#34D399] shadow-[#10B981]/20"
                 }`}
               >
                 {allSelectedActive ? (
@@ -1230,8 +1230,8 @@ export function Users() {
             <div
               className={`rounded-2xl p-5 border relative overflow-hidden ${
                 allSelectedActive
-                  ? "bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)] border-[rgba(255,107,107,0.2)]"
-                  : "bg-gradient-to-br from-[rgba(16,185,129,0.08)] to-[rgba(16,185,129,0.12)] border-[rgba(16,185,129,0.2)]"
+                  ? "bg-linear-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)] border-[rgba(255,107,107,0.2)]"
+                  : "bg-linear-to-br from-[rgba(16,185,129,0.08)] to-[rgba(16,185,129,0.12)] border-[rgba(16,185,129,0.2)]"
               }`}
             >
               <div
@@ -1275,8 +1275,8 @@ export function Users() {
               }
               className={`h-11 px-6 rounded-xl shadow-lg text-white disabled:opacity-50 ${
                 allSelectedActive
-                  ? "bg-gradient-to-r from-[#FF6B6B] to-[#FF8787] hover:from-[#E85555] hover:to-[#FF7272] shadow-[#FF6B6B]/25"
-                  : "bg-gradient-to-r from-[#10B981] to-[#34D399] hover:from-[#0D9668] hover:to-[#2BC78C] shadow-[#10B981]/25"
+                  ? "bg-linear-to-r from-[#FF6B6B] to-[#FF8787] hover:from-[#E85555] hover:to-[#FF7272] shadow-[#FF6B6B]/25"
+                  : "bg-linear-to-r from-[#10B981] to-[#34D399] hover:from-[#0D9668] hover:to-[#2BC78C] shadow-[#10B981]/25"
               }`}
             >
               {allSelectedActive

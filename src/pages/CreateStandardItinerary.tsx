@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -10,7 +10,6 @@ import {
   AlertCircle,
   Sparkles,
   CheckCircle2,
-  FileText,
   MapPin,
   Search,
   Package,
@@ -37,6 +36,7 @@ import {
   PHILIPPINE_LOCATIONS,
 } from "../utils/constants/constants";
 import { RouteOptimizationPanel } from "../components/RouteOptimizationPanel";
+import { Day } from "../types/types";
 
 const getIconComponent = (iconName: string) => {
   const iconOption = ICON_OPTIONS.find((opt) => opt.value === iconName);
@@ -53,23 +53,14 @@ interface Activity {
   order: number;
 }
 
-interface Day {
-  id: string;
-  day: number;
-  title: string;
-  activities: Activity[];
-}
-
 export function CreateStandardItinerary() {
   const navigate = useNavigate();
   const { mutate: createTourPackage, isPending } = useCreateTourPackage();
 
-  // Add this missing state variable near your other useState declarations:
   const [selectedDayForRoute, setSelectedDayForRoute] = useState<string | null>(
     null
   );
 
-  // Add this missing function to handle route optimization acceptance:
   const handleAcceptOptimization = (
     dayId: string,
     optimizedActivities: Activity[]
@@ -107,7 +98,7 @@ export function CreateStandardItinerary() {
   const [itineraryDays, setItineraryDays] = useState<Day[]>([
     {
       id: `day-${Date.now()}`,
-      day: 1,
+      dayNumber: 1,
       title: "",
       activities: [],
     },
@@ -143,22 +134,33 @@ export function CreateStandardItinerary() {
   const generateId = () =>
     `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+  // Sync formData.days with itineraryDays length whenever itineraryDays changes
+  useEffect(() => {
+    if (formData.days !== itineraryDays.length) {
+      setFormData((prev) => ({ ...prev, days: itineraryDays.length }));
+    }
+  }, [itineraryDays.length]);
+
   const handleFormChange = (field: string, value: string | number) => {
     if (field === "days" && typeof value === "number") {
       const currentDays = itineraryDays.length;
 
       if (value > currentDays) {
+        // Adding days
         const newDays: Day[] = [];
         for (let i = currentDays + 1; i <= value; i++) {
           newDays.push({
             id: generateId(),
-            day: i,
+            dayNumber: i,
             title: "",
             activities: [],
           });
         }
         setItineraryDays((prev) => [...prev, ...newDays]);
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        setHasUnsavedChanges(true);
       } else if (value < currentDays) {
+        // Reducing days
         const daysToRemove = itineraryDays.slice(value);
         const hasContent = daysToRemove.some(
           (day) => day.title || day.activities.length > 0
@@ -173,23 +175,34 @@ export function CreateStandardItinerary() {
           return;
         } else {
           setItineraryDays((prev) => prev.slice(0, value));
+          setFormData((prev) => ({ ...prev, [field]: value }));
+          setHasUnsavedChanges(true);
         }
       }
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      setHasUnsavedChanges(true);
     }
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    setHasUnsavedChanges(true);
   };
 
   const handleConfirmReduceDays = () => {
     if (reduceDaysConfirm && pendingDaysChange !== null) {
-      setFormData((prev) => ({ ...prev, days: pendingDaysChange }));
       setItineraryDays((prev) => prev.slice(0, pendingDaysChange));
+      setFormData((prev) => ({ ...prev, days: pendingDaysChange }));
       toast.success("Days Reduced", {
         description: `${reduceDaysConfirm.daysToRemove} ${
           reduceDaysConfirm.daysToRemove === 1 ? "day" : "days"
         } removed from itinerary.`,
       });
+      setHasUnsavedChanges(true);
     }
+    setReduceDaysConfirm(null);
+    setPendingDaysChange(null);
+  };
+
+  const handleCancelReduceDays = () => {
+    // Reset the days input back to current length
+    setFormData((prev) => ({ ...prev, days: itineraryDays.length }));
     setReduceDaysConfirm(null);
     setPendingDaysChange(null);
   };
@@ -328,6 +341,7 @@ export function CreateStandardItinerary() {
   const openIconPicker = (dayId: string, activityId: string) => {
     setCurrentActivityForIcon({ dayId, activityId });
     setIconPickerOpen(true);
+    setIconSearchQuery(""); // Reset search when opening
   };
 
   const selectIcon = (iconName: string) => {
@@ -341,6 +355,7 @@ export function CreateStandardItinerary() {
     }
     setIconPickerOpen(false);
     setCurrentActivityForIcon(null);
+    setIconSearchQuery("");
   };
 
   const handleLocationSearch = (
@@ -392,15 +407,15 @@ export function CreateStandardItinerary() {
     }
 
     for (const day of itineraryDays) {
-      if (!day.title.trim()) {
-        toast.error(`Day ${day.day} Incomplete`, {
-          description: `Please enter a title for Day ${day.day}.`,
+      if (!day.title?.trim()) {
+        toast.error(`Day ${day.dayNumber} Incomplete`, {
+          description: `Please enter a title for Day ${day.dayNumber}.`,
         });
         return false;
       }
       if (day.activities.length === 0) {
-        toast.error(`Day ${day.day} Empty`, {
-          description: `Please add at least one activity for Day ${day.day}.`,
+        toast.error(`Day ${day.dayNumber} Empty`, {
+          description: `Please add at least one activity for Day ${day.dayNumber}.`,
         });
         return false;
       }
@@ -408,7 +423,7 @@ export function CreateStandardItinerary() {
       for (const activity of day.activities) {
         if (!activity.title.trim()) {
           toast.error(`Activity Title Missing`, {
-            description: `Please enter a title for all activities on Day ${day.day}.`,
+            description: `Please enter a title for all activities on Day ${day.dayNumber}.`,
           });
           return false;
         }
@@ -434,7 +449,7 @@ export function CreateStandardItinerary() {
       category: formData.category,
       isActive: true,
       days: itineraryDays.map((day) => ({
-        dayNumber: day.day,
+        dayNumber: day.dayNumber,
         title: day.title,
         activities: day.activities
           .sort((a, b) => a.order - b.order)
@@ -595,16 +610,22 @@ export function CreateStandardItinerary() {
           </div>
         </ContentCard>
 
-        {itineraryDays.some(
-          (day) => day.activities.filter((a) => a.location).length >= 2
-        ) && (
+        {itineraryDays.some((day) => {
+          const validLocations = day.activities.filter(
+            (a) => a.location && PHILIPPINE_LOCATIONS.includes(a.location)
+          );
+          return validLocations.length >= 2;
+        }) && (
           <RouteOptimizationPanel
             itineraryDays={itineraryDays}
             selectedDayId={
               selectedDayForRoute ||
-              itineraryDays.find(
-                (d) => d.activities.filter((a) => a.location).length >= 2
-              )?.id
+              itineraryDays.find((d) => {
+                const validLocations = d.activities.filter(
+                  (a) => a.location && PHILIPPINE_LOCATIONS.includes(a.location)
+                );
+                return validLocations.length >= 2;
+              })?.id
             }
             onAcceptOptimization={handleAcceptOptimization}
           />
@@ -620,18 +641,20 @@ export function CreateStandardItinerary() {
             {itineraryDays.map((day) => (
               <div
                 key={day.id}
-                className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-gradient-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
+                className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                    <span className="text-white font-bold">D{day.day}</span>
+                  <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                    <span className="text-white font-bold">
+                      D{day.dayNumber}
+                    </span>
                   </div>
                   <div className="flex-1">
                     <Label
                       htmlFor={`day-${day.id}-title`}
                       className="text-[#1A2B4F] mb-2 block text-sm font-medium"
                     >
-                      Day {day.day} Title{" "}
+                      Day {day.dayNumber} Title{" "}
                       <span className="text-[#FF6B6B]">*</span>
                     </Label>
                     <Input
@@ -644,7 +667,7 @@ export function CreateStandardItinerary() {
                   </div>
                   <button
                     onClick={() => addActivity(day.id)}
-                    className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
+                    className="h-11 px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
                   >
                     <Plus className="w-4 h-4" />
                     Add Activity
@@ -658,7 +681,7 @@ export function CreateStandardItinerary() {
                         <Package className="w-7 h-7 text-[#CBD5E1]" />
                       </div>
                       <p className="text-sm text-[#64748B] mb-1">
-                        No activities yet for Day {day.day}
+                        No activities yet for Day {day.dayNumber}
                       </p>
                       <p className="text-xs text-[#94A3B8]">
                         Click "Add Activity" to start building this day
@@ -672,7 +695,7 @@ export function CreateStandardItinerary() {
                           key={activity.id}
                           className="relative p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
                         >
-                          <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
+                          <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
                             {activityIndex + 1}
                           </div>
 
@@ -727,6 +750,7 @@ export function CreateStandardItinerary() {
                                   Icon
                                 </Label>
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     openIconPicker(day.id, activity.id)
                                   }
@@ -815,7 +839,7 @@ export function CreateStandardItinerary() {
                                             }
                                             className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
                                           >
-                                            <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] flex-shrink-0" />
+                                            <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
                                             <span className="truncate">
                                               {suggestion}
                                             </span>
@@ -848,13 +872,14 @@ export function CreateStandardItinerary() {
                             </div>
 
                             <button
+                              type="button"
                               onClick={() =>
                                 setDeleteActivityConfirm({
                                   dayId: day.id,
                                   activityId: activity.id,
                                 })
                               }
-                              className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 flex-shrink-0"
+                              className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 shrink-0"
                               title="Delete Activity"
                             >
                               <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B] transition-colors" />
@@ -872,7 +897,7 @@ export function CreateStandardItinerary() {
       </div>
 
       <div className="fixed bottom-0 left-20 right-0 bg-white border-t-2 border-[#E5E7EB] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50">
-        <div className="max-w-[1400px] mx-auto px-8 py-4 flex items-center justify-between">
+        <div className="max-w-350 mx-auto px-8 py-4 flex items-center justify-between">
           <div className="text-sm text-[#64748B]">
             {hasUnsavedChanges ? (
               <span className="flex items-center gap-2">
@@ -885,15 +910,17 @@ export function CreateStandardItinerary() {
           </div>
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={handleBackClick}
               className="h-11 px-6 rounded-xl border-2 border-[#E5E7EB] hover:border-[#CBD5E1] hover:bg-[#F8FAFB] text-[#334155] font-medium transition-all"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleSaveClick}
               disabled={isPending}
-              className="h-11 px-6 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:shadow-xl hover:shadow-[#0A7AFF]/35 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-11 px-6 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:shadow-xl hover:shadow-[#0A7AFF]/35 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
               {isPending ? "Saving..." : "Save Itinerary"}
@@ -904,15 +931,18 @@ export function CreateStandardItinerary() {
 
       <Dialog
         open={iconPickerOpen}
-        onOpenChange={(open) => {
+        onOpenChange={(open: any) => {
           setIconPickerOpen(open);
-          if (!open) setIconSearchQuery("");
+          if (!open) {
+            setIconSearchQuery("");
+            setCurrentActivityForIcon(null);
+          }
         }}
       >
-        <DialogContent className="sm:max-w-[700px]">
+        <DialogContent className="sm:max-w-175">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               Select Activity Icon
@@ -934,7 +964,7 @@ export function CreateStandardItinerary() {
             </div>
           </div>
 
-          <ScrollArea className="max-h-[400px] px-6">
+          <ScrollArea className="max-h-100 px-6">
             <div className="grid grid-cols-4 gap-3 py-4">
               {ICON_OPTIONS.filter(
                 (option) =>
@@ -949,10 +979,11 @@ export function CreateStandardItinerary() {
                 return (
                   <button
                     key={option.value}
+                    type="button"
                     onClick={() => selectIcon(option.value)}
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] transition-all group"
                   >
-                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                    <div className="w-11 h-11 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <span className="text-xs text-center text-[#64748B] group-hover:text-[#0A7AFF] font-medium transition-colors leading-tight">
@@ -1017,10 +1048,10 @@ export function CreateStandardItinerary() {
       />
 
       <Dialog open={backConfirmOpen} onOpenChange={setBackConfirmOpen}>
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="sm:max-w-130">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 pb-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFB84D] to-[#FF9800] flex items-center justify-center shadow-lg shadow-[#FFB84D]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FFB84D] to-[#FF9800] flex items-center justify-center shadow-lg shadow-[#FFB84D]/20">
                 <AlertCircle className="w-5 h-5 text-white" />
               </div>
               Unsaved Changes
@@ -1036,12 +1067,14 @@ export function CreateStandardItinerary() {
             </p>
             <div className="flex flex-col gap-3 pt-2">
               <button
+                type="button"
                 onClick={() => setBackConfirmOpen(false)}
                 className="w-full h-12 px-6 rounded-xl border-2 border-[#E5E7EB] hover:border-[#CBD5E1] hover:bg-[#F8FAFB] text-[#334155] font-medium transition-all flex items-center justify-center"
               >
                 Continue Editing
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setBackConfirmOpen(false);
                   setHasUnsavedChanges(false);
@@ -1088,7 +1121,7 @@ export function CreateStandardItinerary() {
 
       <ConfirmationModal
         open={reduceDaysConfirm !== null}
-        onOpenChange={(open) => !open && setReduceDaysConfirm(null)}
+        onOpenChange={(open) => !open && handleCancelReduceDays()}
         title="Remove Days from Itinerary?"
         description="Reducing the number of days will permanently remove some itinerary details. This action cannot be undone."
         icon={<AlertCircle className="w-5 h-5 text-white" />}
@@ -1119,7 +1152,7 @@ export function CreateStandardItinerary() {
               </div>
               <div className="mt-3 p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[#FF6B6B]/20">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] shrink-0 mt-0.5" />
                   <p className="text-xs text-[#64748B]">
                     Day {reduceDaysConfirm.newDayCount + 1} through Day{" "}
                     {itineraryDays.length} will be permanently deleted with all
@@ -1131,10 +1164,7 @@ export function CreateStandardItinerary() {
           )
         }
         onConfirm={handleConfirmReduceDays}
-        onCancel={() => {
-          setReduceDaysConfirm(null);
-          setPendingDaysChange(null);
-        }}
+        onCancel={handleCancelReduceDays}
         confirmText="Remove Days"
         cancelText="Keep Current Days"
         confirmVariant="destructive"

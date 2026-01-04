@@ -253,7 +253,7 @@ export function Notifications() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
             <Bell className="w-8 h-8 text-[#0A7AFF] animate-pulse" />
           </div>
           <p className="text-sm text-[#64748B]">Loading notifications...</p>
@@ -266,7 +266,7 @@ export function Notifications() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(255,107,107,0.1)] to-[rgba(239,68,68,0.1)] flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(255,107,107,0.1)] to-[rgba(239,68,68,0.1)] flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-[#FF6B6B]" />
           </div>
           <p className="text-sm text-[#FF6B6B] font-medium mb-2">
@@ -336,7 +336,7 @@ export function Notifications() {
               onClick={() => setSelectedTab("all")}
               className={`px-5 h-11 text-sm transition-colors ${
                 selectedTab === "all"
-                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
@@ -346,7 +346,7 @@ export function Notifications() {
               onClick={() => setSelectedTab("unread")}
               className={`px-5 h-11 text-sm transition-colors ${
                 selectedTab === "unread"
-                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
@@ -382,7 +382,7 @@ export function Notifications() {
                     </button>
                   )}
                 </div>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                <div className="space-y-2 max-h-100 overflow-y-auto">
                   {notificationTypes.map(({ type, label, icon: Icon }) => (
                     <label
                       key={type}
@@ -411,7 +411,7 @@ export function Notifications() {
         <div className="space-y-3">
           {filteredNotifications.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
                 <Bell className="w-8 h-8 text-[#0A7AFF]" />
               </div>
               <h3 className="font-semibold text-[#1A2B4F] mb-2">
@@ -446,7 +446,7 @@ export function Notifications() {
                 >
                   <div className="flex items-start gap-4">
                     <div
-                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow} flex-shrink-0`}
+                      className={`w-12 h-12 rounded-xl bg-linear-to-br ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow} shrink-0`}
                     >
                       <Icon className="w-6 h-6 text-white" />
                     </div>
@@ -465,7 +465,7 @@ export function Notifications() {
                               {notification.title}
                             </h3>
                             {!notification.isRead && (
-                              <span className="w-2 h-2 rounded-full bg-[#0A7AFF] flex-shrink-0" />
+                              <span className="w-2 h-2 rounded-full bg-[#0A7AFF] shrink-0" />
                             )}
                           </div>
                           <p className="text-sm text-[#64748B] leading-relaxed mb-2">
@@ -499,7 +499,7 @@ export function Notifications() {
                               e.stopPropagation();
                               handleMarkAsRead(notification.id);
                             }}
-                            className="h-8 px-3 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center gap-1.5 hover:opacity-90 transition-all"
+                            className="h-8 px-3 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center gap-1.5 hover:opacity-90 transition-all"
                           >
                             <CheckCircle className="w-3.5 h-3.5" />
                             Mark as Read
