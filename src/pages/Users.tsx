@@ -604,7 +604,7 @@ export function Users() {
         />
 
         {/* Data Table - Desktop */}
-        <div className=" md:block overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-[#F8FAFB] dark:bg-[#1F2937] border-b-2 border-[#E5E7EB] dark:border-[#2A3441]">
@@ -615,7 +615,7 @@ export function Users() {
                       selectedUsers.length === users.length && users.length > 0
                     }
                     onChange={toggleSelectAll}
-                    className="w-[18px] h-[18px] rounded border-2 border-[#E5E7EB] dark:border-[#2A3441] checked:bg-[#0A7AFF] checked:border-[#0A7AFF] cursor-pointer"
+                    className="w-4.5 h-4.5 rounded border-2 border-[#E5E7EB] dark:border-[#2A3441] checked:bg-[#0A7AFF] checked:border-[#0A7AFF] cursor-pointer"
                   />
                 </th>
                 <th className="px-4 py-3 text-left text-sm text-[#1A2B4F] dark:text-[#E5E7EB] font-semibold uppercase tracking-wide">

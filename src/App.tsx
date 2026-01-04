@@ -132,11 +132,10 @@ export interface BookingData {
   bookingType: string;
   status?: string;
   bookingSource?: "Customized" | "Generated";
-  paymentStatus?: string; // Added for payment status tracking
-  tourType?: string; // Added for tour type tracking
+  paymentStatus?: string;
+  tourType?: string;
 }
 
-// FAQ Types for assistant
 export interface FAQ {
   id: string;
   question: string;
@@ -145,7 +144,6 @@ export interface FAQ {
   tags: string[];
 }
 
-// Layout Component to handle page config and TopNav
 function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { currentSide } = useSide();
@@ -162,7 +160,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.toggle("dark", savedTheme === "dark");
   }, []);
 
-  // Initialize FAQ system on app load
   useEffect(() => {
     const initializeFAQSystem = () => {
       if (!localStorage.getItem("bondvoyage-faqs")) {
@@ -586,7 +583,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Content Area */}
         <main className="p-4 sm:p-6 lg:p-8">
-          <div className="max-w-[1400px] mx-auto">{children}</div>
+          <div className="max-w-350 mx-auto">{children}</div>
         </main>
       </div>
 
