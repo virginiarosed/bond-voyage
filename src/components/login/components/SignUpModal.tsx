@@ -15,7 +15,7 @@ import {
   Mail,
   RefreshCw,
 } from "lucide-react";
-import * as DialogPrimitive from "@radix-ui/react-dialog@1.1.6";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { DialogTitle, DialogDescription } from "./ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { SideType, useSide } from "../../SideContext";
@@ -484,10 +484,10 @@ export function SignUpModal({
               WebkitBackdropFilter: "blur(12px)",
             }}
           />
-          <DialogPrimitive.Content className="fixed top-[50%] left-[50%] z-50 translate-x-[-50%] translate-y-[-50%] max-w-[1200px] w-[95vw] max-h-[90vh] p-0 overflow-hidden border-none gap-0 bg-white rounded-xl shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200">
+          <DialogPrimitive.Content className="fixed top-[50%] left-[50%] z-50 translate-x-[-50%] translate-y-[-50%] max-w-300 w-[95vw] max-h-[90vh] p-0 overflow-hidden border-none gap-0 bg-white rounded-xl shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200">
             <div className="flex flex-col lg:flex-row h-full max-h-[90vh]">
               {/* Left Column: Visual Hero */}
-              <div className="relative hidden lg:block lg:w-[48%] overflow-hidden flex-shrink-0">
+              <div className="relative hidden lg:block lg:w-[48%] overflow-hidden shrink-0">
                 <img
                   src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1080&q=80"
                   alt="Travel Adventure"
@@ -503,7 +503,7 @@ export function SignUpModal({
                 />
 
                 <div className="absolute inset-0 flex items-center justify-center p-8">
-                  <div className="max-w-[350px] text-white">
+                  <div className="max-w-87.5 text-white">
                     <div
                       className="mb-6 h-10 w-auto text-2xl font-bold"
                       style={{
@@ -540,7 +540,7 @@ export function SignUpModal({
                         "Collaborate with travel companions",
                       ].map((feature, i) => (
                         <div key={i} className="flex items-center gap-2">
-                          <CheckCircle className="w-5 h-5 text-[#10B981] flex-shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-[#10B981] shrink-0" />
                           <span className="text-white text-sm opacity-90">
                             {feature}
                           </span>
@@ -560,7 +560,7 @@ export function SignUpModal({
 
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto signup-modal-scroll">
-                  <div className="p-6 md:p-10 max-w-[500px] mx-auto w-full">
+                  <div className="p-6 md:p-10 max-w-125 mx-auto w-full">
                     {/* Step 1: Basic Information */}
                     {step === 1 && (
                       <>
@@ -611,11 +611,11 @@ export function SignUpModal({
                             }`}
                           >
                             {showToast.type === "error" ? (
-                              <XCircle className="w-5 h-5 text-[#FF6B6B] flex-shrink-0" />
+                              <XCircle className="w-5 h-5 text-[#FF6B6B] shrink-0" />
                             ) : showToast.type === "success" ? (
-                              <CheckCircle className="w-5 h-5 text-[#10B981] flex-shrink-0" />
+                              <CheckCircle className="w-5 h-5 text-[#10B981] shrink-0" />
                             ) : (
-                              <Mail className="w-5 h-5 text-[#0A7AFF] flex-shrink-0" />
+                              <Mail className="w-5 h-5 text-[#0A7AFF] shrink-0" />
                             )}
                             <div className="flex-1">
                               <div
@@ -633,7 +633,7 @@ export function SignUpModal({
                             </div>
                             <button
                               onClick={() => setShowToast(null)}
-                              className="text-[#64748B] hover:text-[#1A2B4F] transition-colors flex-shrink-0"
+                              className="text-[#64748B] hover:text-[#1A2B4F] transition-colors shrink-0"
                               style={{ fontSize: "20px" }}
                             >
                               ×
@@ -669,7 +669,7 @@ export function SignUpModal({
                               />
                               {touched.firstName && errors.firstName && (
                                 <div className="flex items-start gap-2 mt-2 animate-error">
-                                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] shrink-0 mt-0.5" />
                                   <span
                                     className="text-[#FF6B6B]"
                                     style={{
@@ -707,7 +707,7 @@ export function SignUpModal({
                               />
                               {touched.lastName && errors.lastName && (
                                 <div className="flex items-start gap-2 mt-2 animate-error">
-                                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] shrink-0 mt-0.5" />
                                   <span
                                     className="text-[#FF6B6B]"
                                     style={{
@@ -755,7 +755,7 @@ export function SignUpModal({
                             </div>
                             {touched.email && errors.email && (
                               <div className="flex items-start gap-2 mt-2 animate-error">
-                                <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                                <AlertCircle className="w-4 h-4 text-[#FF6B6B] shrink-0 mt-0.5" />
                                 <span
                                   className="text-[#FF6B6B]"
                                   style={{ fontSize: "13px", fontWeight: 500 }}
@@ -793,7 +793,7 @@ export function SignUpModal({
                               />
                               {touched.mobile && errors.mobile && (
                                 <div className="flex items-start gap-2 mt-2 animate-error">
-                                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] shrink-0 mt-0.5" />
                                   <span
                                     className="text-[#FF6B6B]"
                                     style={{
@@ -830,7 +830,7 @@ export function SignUpModal({
                               />
                               {touched.birthday && errors.birthday && (
                                 <div className="flex items-start gap-2 mt-2 animate-error">
-                                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] shrink-0 mt-0.5" />
                                   <span
                                     className="text-[#FF6B6B]"
                                     style={{
@@ -1012,7 +1012,7 @@ export function SignUpModal({
                             {touched.passwordConfirmation &&
                               errors.passwordConfirmation && (
                                 <div className="flex items-start gap-2 mt-2 animate-error">
-                                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] shrink-0 mt-0.5" />
                                   <span
                                     className="text-[#FF6B6B]"
                                     style={{
@@ -1140,11 +1140,11 @@ export function SignUpModal({
                             }`}
                           >
                             {showToast.type === "error" ? (
-                              <XCircle className="w-5 h-5 text-[#FF6B6B] flex-shrink-0" />
+                              <XCircle className="w-5 h-5 text-[#FF6B6B] shrink-0" />
                             ) : showToast.type === "success" ? (
-                              <CheckCircle className="w-5 h-5 text-[#10B981] flex-shrink-0" />
+                              <CheckCircle className="w-5 h-5 text-[#10B981] shrink-0" />
                             ) : (
-                              <Mail className="w-5 h-5 text-[#0A7AFF] flex-shrink-0" />
+                              <Mail className="w-5 h-5 text-[#0A7AFF] shrink-0" />
                             )}
                             <div className="flex-1">
                               <div
@@ -1162,7 +1162,7 @@ export function SignUpModal({
                             </div>
                             <button
                               onClick={() => setShowToast(null)}
-                              className="text-[#64748B] hover:text-[#1A2B4F] transition-colors flex-shrink-0"
+                              className="text-[#64748B] hover:text-[#1A2B4F] transition-colors shrink-0"
                               style={{ fontSize: "20px" }}
                             >
                               ×
@@ -1172,9 +1172,9 @@ export function SignUpModal({
 
                         {/* OTP Information */}
                         {showOTPEmail && (
-                          <div className="mb-6 p-4 bg-gradient-to-br from-[#F0F9FF] to-[#F0FDFA] rounded-xl border border-[#0A7AFF]/20">
+                          <div className="mb-6 p-4 bg-linear-to-br from-[#F0F9FF] to-[#F0FDFA] rounded-xl border border-[#0A7AFF]/20">
                             <div className="flex items-start gap-3 mb-3">
-                              <Mail className="w-5 h-5 text-[#0A7AFF] flex-shrink-0 mt-0.5" />
+                              <Mail className="w-5 h-5 text-[#0A7AFF] shrink-0 mt-0.5" />
                               <div>
                                 <p
                                   className="text-[#1A2B4F]"
@@ -1205,7 +1205,7 @@ export function SignUpModal({
                             {renderOtpInputs()}
                             {otpError && (
                               <div className="flex items-start gap-2 mt-3 justify-center animate-error">
-                                <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                                <AlertCircle className="w-4 h-4 text-[#FF6B6B] shrink-0 mt-0.5" />
                                 <span
                                   className="text-[#FF6B6B]"
                                   style={{ fontSize: "13px", fontWeight: 500 }}
