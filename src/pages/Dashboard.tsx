@@ -495,13 +495,17 @@ export function Dashboard() {
                     outerRadius,
                     percent,
                     name,
+                    value,
                   }) => {
+                    if (value === 0 || percent < 0.01) return null;
+
                     const radius =
                       innerRadius + (outerRadius - innerRadius) * 1.3;
                     const x =
                       cx + radius * Math.cos((-midAngle * Math.PI) / 180);
                     const y =
                       cy + radius * Math.sin((-midAngle * Math.PI) / 180);
+
                     return (
                       <text
                         x={x}
@@ -509,9 +513,14 @@ export function Dashboard() {
                         fill="#1A2B4F"
                         textAnchor={x > cx ? "start" : "end"}
                         dominantBaseline="central"
-                        style={{ fontSize: "13px", fontWeight: 600 }}
+                        style={{
+                          fontSize: percent < 0.05 ? "11px" : "13px",
+                          fontWeight: 600,
+                        }}
                       >
-                        {`${name} (${(percent * 100).toFixed(0)}%)`}
+                        {percent < 0.05
+                          ? `${(percent * 100).toFixed(0)}%`
+                          : `${name} (${(percent * 100).toFixed(0)}%)`}
                       </text>
                     );
                   }}
@@ -602,34 +611,6 @@ export function Dashboard() {
                   labelLine={{
                     stroke: "#CBD5E1",
                     strokeWidth: 2,
-                  }}
-                  label={({
-                    cx,
-                    cy,
-                    midAngle,
-                    innerRadius,
-                    outerRadius,
-                    percent,
-                    name,
-                  }) => {
-                    const radius =
-                      innerRadius + (outerRadius - innerRadius) * 1.3;
-                    const x =
-                      cx + radius * Math.cos((-midAngle * Math.PI) / 180);
-                    const y =
-                      cy + radius * Math.sin((-midAngle * Math.PI) / 180);
-                    return (
-                      <text
-                        x={x}
-                        y={y}
-                        fill="#1A2B4F"
-                        textAnchor={x > cx ? "start" : "end"}
-                        dominantBaseline="central"
-                        style={{ fontSize: "13px", fontWeight: 600 }}
-                      >
-                        {`${name} (${(percent * 100).toFixed(0)}%)`}
-                      </text>
-                    );
                   }}
                   outerRadius={100}
                   innerRadius={55}

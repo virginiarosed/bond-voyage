@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { DialogTitle, DialogDescription } from "./ui/dialog";
-import * as DialogPrimitive from "@radix-ui/react-dialog@1.1.6";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import bondVoyageLogo from "../assets/40755770f782ee2806bf45fc8b364947bbbe25e5.png";
 import { SideType, useSide } from "../../SideContext";
 import { useNavigate } from "react-router-dom";
@@ -52,6 +52,8 @@ export function LoginModal({
         const role = response.data.user.role.toLowerCase() as SideType;
         switchSide(role);
 
+        console.log(response);
+
         setShowToast({
           type: "success",
           title: "Login Successful!",
@@ -67,6 +69,7 @@ export function LoginModal({
       }
     },
     onError: (error: any) => {
+      console.log(error);
       setShowToast({
         type: "error",
         title: "Login Failed",
@@ -74,10 +77,6 @@ export function LoginModal({
           error.response?.data?.message ||
           "Invalid email or password. Please check your credentials and try again.",
       });
-
-      setTimeout(() => {
-        setShowToast(null);
-      }, 2000);
     },
   });
 

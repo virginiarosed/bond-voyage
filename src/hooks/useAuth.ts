@@ -16,7 +16,7 @@ export const useRegister = (
 ) => {
   return useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiClient.post<ApiResponse<AuthResponse>>(
+      const response = await axios.post<ApiResponse<AuthResponse>>(
         "/auth/register",
         data
       );
@@ -36,7 +36,7 @@ export const useLogin = (
 
   return useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      const response = await apiClient.post<ApiResponse<AuthResponse>>(
+      const response = await axios.post<ApiResponse<AuthResponse>>(
         "/auth/login",
         credentials
       );
