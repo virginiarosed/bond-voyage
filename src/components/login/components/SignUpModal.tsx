@@ -48,6 +48,7 @@ export function SignUpModal({
   const [otpInput, setOtpInput] = useState("");
   const [otpError, setOtpError] = useState("");
   const [showOTPEmail, setShowOTPEmail] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
@@ -66,6 +67,7 @@ export function SignUpModal({
   const sendOTPMutation = useSendOTP({
     onSuccess: (response) => {
       setShowOTPEmail(true);
+      setResendTimer(60); // Start 60 second countdown
       setShowToast({
         type: "success",
         title: "OTP Sent!",
@@ -156,8 +158,21 @@ export function SignUpModal({
     return "";
   };
 
+  const validateFirstName = (value: string) => {
+    if (!value) return "First name is required";
+    if (/\d/.test(value)) return "First name cannot contain numbers";
+    return "";
+  };
+
+  const validateLastName = (value: string) => {
+    if (!value) return "Last name is required";
+    if (/\d/.test(value)) return "Last name cannot contain numbers";
+    return "";
+  };
+
   const validateMobile = (value: string) => {
     if (!value) return "Mobile number is required";
+    if (/\D/.test(value)) return "Mobile number must contain only digits";
     const mobileRegex = /^09\d{9}$/;
     if (!mobileRegex.test(value))
       return "Invalid format. Please enter as 09*********";
@@ -206,6 +221,12 @@ export function SignUpModal({
     const newErrors = { ...errors };
 
     switch (field) {
+      case "firstName":
+        newErrors.firstName = validateFirstName(firstName);
+        break;
+      case "lastName":
+        newErrors.lastName = validateLastName(lastName);
+        break;
       case "email":
         newErrors.email = validateEmail(email);
         break;
@@ -233,12 +254,14 @@ export function SignUpModal({
 
     setErrors(newErrors);
   };
-
   const handleNext = () => {
     const newErrors: { [key: string]: string } = {};
 
-    if (!firstName) newErrors.firstName = "First name is required";
-    if (!lastName) newErrors.lastName = "Last name is required";
+    const firstNameError = validateFirstName(firstName);
+    if (firstNameError) newErrors.firstName = firstNameError;
+
+    const lastNameError = validateLastName(lastName);
+    if (lastNameError) newErrors.lastName = lastNameError;
 
     const emailError = validateEmail(email);
     if (emailError) newErrors.email = emailError;
@@ -274,7 +297,6 @@ export function SignUpModal({
       return;
     }
 
-    // Send OTP and move to step 2
     sendOTPMutation.mutate({ email, firstName });
     setStep(2);
   };
@@ -282,6 +304,7 @@ export function SignUpModal({
   const handleResendOTP = () => {
     setOtpInput("");
     setOtpError("");
+    setResendTimer(60);
     sendOTPMutation.mutate({ email, firstName });
   };
 
@@ -293,7 +316,6 @@ export function SignUpModal({
       return;
     }
 
-    // Verify OTP using mutation
     verifyOTPMutation.mutate({ email, otp: otpInput });
   };
 
@@ -322,6 +344,7 @@ export function SignUpModal({
     setOtpInput("");
     setOtpError("");
     setShowOTPEmail(false);
+    setResendTimer(0);
     setErrors({});
     setTouched({});
     setShowToast(null);
@@ -332,6 +355,16 @@ export function SignUpModal({
       setTimeout(resetForm, 300);
     }
   }, [isOpen]);
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => {
+        setResendTimer(resendTimer - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
 
   // Handle OTP input change
   const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1226,8 +1259,12 @@ export function SignUpModal({
                             <button
                               type="button"
                               onClick={handleResendOTP}
-                              disabled={otpSending}
-                              className="text-[#0A7AFF] hover:text-[#3B9EFF] transition-colors inline-flex items-center gap-2"
+                              disabled={otpSending || resendTimer > 0}
+                              className={`text-[#0A7AFF] hover:text-[#3B9EFF] transition-colors inline-flex items-center gap-2 ${
+                                resendTimer > 0
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : ""
+                              }`}
                               style={{ fontSize: "14px", fontWeight: 600 }}
                             >
                               <RefreshCw
@@ -1235,7 +1272,9 @@ export function SignUpModal({
                                   otpSending ? "animate-spin" : ""
                                 }`}
                               />
-                              Resend Code
+                              {resendTimer > 0
+                                ? `Resend Code (${resendTimer}s)`
+                                : "Resend Code"}
                             </button>
                           </div>
 
