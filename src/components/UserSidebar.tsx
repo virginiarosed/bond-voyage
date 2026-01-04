@@ -228,24 +228,6 @@ export function UserSidebar({
           >
             <img src={bondVoyage} alt="Bond Voyage" />
           </button>
-
-          {/* Side Switch Menu Overlay */}
-          {showSideMenu && (
-            <div className="absolute left-20 top-0 ml-3 w-56 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-left-2 duration-200">
-              <button
-                onClick={handleSwitchToAdmin}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-accent transition-colors"
-              >
-                <ArrowLeftRight
-                  className="w-5 h-5 text-primary"
-                  strokeWidth={2}
-                />
-                <span className="text-sm text-card-foreground">
-                  Switch to Admin Side
-                </span>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Navigation Menu Items */}
@@ -369,8 +351,8 @@ export function UserSidebar({
 
             {/* Notification Overlay */}
             {showNotificationMenu && (
-              <div className="fixed bottom-3 left-24 w-96 max-w-[calc(100vw-6rem)] bg-card/80 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_rgba(10,122,255,0.12),0_2px_8px_rgba(0,0,0,0.08)] border border-border/50 z-[200] overflow-hidden">
-                <div className="p-5 border-b border-border/50 bg-gradient-to-br from-primary/5 to-accent/5">
+              <div className="fixed bottom-3 left-24 w-96 max-w-[calc(100vw-6rem)] bg-card/80 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_rgba(10,122,255,0.12),0_2px_8px_rgba(0,0,0,0.08)] border border-border/50 z-200 overflow-hidden">
+                <div className="p-5 border-b border-border/50 bg-linear-to-br from-primary/5 to-accent/5">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-base text-popover-foreground font-semibold">
@@ -389,7 +371,7 @@ export function UserSidebar({
                   </div>
                 </div>
 
-                <div className="max-h-[400px] overflow-y-auto">
+                <div className="max-h-100 overflow-y-auto">
                   {notificationsResponse?.data &&
                     notificationsResponse?.data?.items.map((notification) => (
                       <button
@@ -398,7 +380,7 @@ export function UserSidebar({
                       >
                         <div className="flex items-start gap-3">
                           <div
-                            className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                            className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
                               notification.isRead ? "bg-muted" : "bg-primary"
                             }`}
                           />
@@ -437,7 +419,7 @@ export function UserSidebar({
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 overflow-hidden"
+              className="w-12 h-12 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 overflow-hidden"
             >
               {profileData && profileData.avatarUrl ? (
                 <img
@@ -460,10 +442,10 @@ export function UserSidebar({
 
             {/* User Menu Overlay*/}
             {showUserMenu && (
-              <div className="fixed bottom-3 left-24 w-72 max-w-[calc(100vw-6rem)] bg-card/80 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_rgba(10,122,255,0.12),0_2px_8px_rgba(0,0,0,0.08)] border border-border/50 z-[200] overflow-hidden">
-                <div className="p-5 border-b border-border/50 bg-gradient-to-br from-primary/5 to-accent/5">
+              <div className="fixed bottom-3 left-24 w-72 max-w-[calc(100vw-6rem)] bg-card/80 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_rgba(10,122,255,0.12),0_2px_8px_rgba(0,0,0,0.08)] border border-border/50 z-200 overflow-hidden">
+                <div className="p-5 border-b border-border/50 bg-linear-to-br from-primary/5 to-accent/5">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md overflow-hidden">
+                    <div className="w-14 h-14 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center shadow-md overflow-hidden">
                       {profileData && profileData.avatarUrl ? (
                         <img
                           src={profileData.avatarUrl}
@@ -557,11 +539,11 @@ export function UserSidebar({
         {showThemeMenu && (
           <div
             ref={themeMenuRef}
-            className="fixed bottom-3 left-24 lg:left-[400px] w-80 max-w-[calc(100vw-6rem)] bg-card/80 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_rgba(10,122,255,0.12),0_2px_8px_rgba(0,0,0,0.08)] border border-border/50 z-[200] overflow-hidden"
+            className="fixed bottom-3 left-24 lg:left-100 w-80 max-w-[calc(100vw-6rem)] bg-card/80 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_rgba(10,122,255,0.12),0_2px_8px_rgba(0,0,0,0.08)] border border-border/50 z-200 overflow-hidden"
           >
-            <div className="p-5 border-b border-border/50 bg-gradient-to-br from-warning/5 to-warning/10">
+            <div className="p-5 border-b border-border/50 bg-linear-to-br from-warning/5 to-warning/10">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-warning to-warning/80 flex items-center justify-center shadow-md">
+                <div className="w-12 h-12 rounded-xl bg-linear-to-br from-warning to-warning/80 flex items-center justify-center shadow-md">
                   {currentTheme === "dark" ? (
                     <Moon className="w-6 h-6 text-white" strokeWidth={2} />
                   ) : (
