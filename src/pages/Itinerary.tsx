@@ -874,13 +874,13 @@ export function Itinerary({
             }}
             className="group rounded-2xl border-2 border-[#E5E7EB] overflow-hidden bg-white transition-all duration-200 hover:border-[#0A7AFF] hover:shadow-[0_8px_20px_rgba(10,122,255,0.15)] hover:-translate-y-1 cursor-pointer"
           >
-            <div className="h-[180px] relative overflow-hidden">
+            <div className="h-45 relative overflow-hidden">
               <ImageWithFallback
                 src={template.image}
                 alt={template.destination}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent" />
               {template.apiSource && (
                 <div className="absolute top-3 right-3">
                   <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(16,185,129,0.9)] text-white border border-white/20 shadow-lg">
@@ -933,7 +933,7 @@ export function Itinerary({
                       setSelectedStandardForBooking(template.id);
                       setStandardBookingModalOpen(true);
                     }}
-                    className="flex-1 h-9 rounded-xl border border-[#14B8A6] bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 text-sm font-medium transition-all shadow-sm"
+                    className="flex-1 h-9 rounded-xl border border-[#14B8A6] bg-linear-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 text-sm font-medium transition-all shadow-sm"
                   >
                     <BookOpen className="w-4 h-4" />
                     Book This Trip
@@ -1243,7 +1243,7 @@ export function Itinerary({
               }}
               className={`px-5 h-11 text-sm transition-colors ${
                 selectedCategory === "Standard"
-                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
@@ -1256,7 +1256,7 @@ export function Itinerary({
               }}
               className={`px-5 h-11 text-sm transition-colors ${
                 selectedCategory === "Requested"
-                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
@@ -1272,10 +1272,10 @@ export function Itinerary({
 
       {/* Create Itinerary Modal */}
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
+        <DialogContent className="sm:max-w-150 max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 pb-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                 <Plus className="w-5 h-5 text-white" />
               </div>
               Create New Itinerary
@@ -1295,7 +1295,7 @@ export function Itinerary({
                 className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white hover:bg-[rgba(10,122,255,0.02)] transition-all duration-200 text-left group"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 group-hover:scale-110 transition-transform">
                     <Plus className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
@@ -1326,7 +1326,7 @@ export function Itinerary({
                 className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#14B8A6] bg-white hover:bg-[rgba(20,184,166,0.02)] transition-all duration-200 text-left group"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#14B8A6] to-[#10B981] flex items-center justify-center shadow-lg shadow-[#14B8A6]/20 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#14B8A6] to-[#10B981] flex items-center justify-center shadow-lg shadow-[#14B8A6]/20 group-hover:scale-110 transition-transform">
                     <Package className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
@@ -1369,7 +1369,7 @@ export function Itinerary({
                         className="relative w-full p-4 rounded-xl border-2 border-[#E5E7EB] hover:border-[#FFB84D] bg-white hover:bg-[rgba(255,184,77,0.02)] transition-all group"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FFB84D] to-[#FF9800] flex items-center justify-center shadow-md flex-shrink-0">
+                          <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#FFB84D] to-[#FF9800] flex items-center justify-center shadow-md shrink-0">
                             {draft.type === "requested" ? (
                               <Package className="w-5 h-5 text-white" />
                             ) : (
@@ -1418,7 +1418,7 @@ export function Itinerary({
                               setDraftToDelete(draft);
                               setDeleteDraftConfirmOpen(true);
                             }}
-                            className="flex-shrink-0 w-8 h-8 rounded-lg border border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.1)] flex items-center justify-center transition-all group/delete"
+                            className="shrink-0 w-8 h-8 rounded-lg border border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.1)] flex items-center justify-center transition-all group/delete"
                             title="Delete Draft"
                           >
                             <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B]" />
