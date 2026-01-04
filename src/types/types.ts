@@ -67,6 +67,14 @@ export interface IActivity {
   location: string;
   icon: string;
   order: number;
+  // Optional place object returned by places search/geocoding
+  locationData?: {
+    source: string;
+    name: string;
+    address: string;
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface Day {
@@ -377,4 +385,12 @@ export interface FAQ {
   category: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Place {
+  source: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
 }

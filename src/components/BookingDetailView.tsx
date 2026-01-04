@@ -205,9 +205,9 @@ export function BookingDetailView({
         <div className="space-y-6">
           {/* Customer Information */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
-            <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+            <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <h3 className="font-semibold text-[#1A2B4F]">
@@ -240,9 +240,9 @@ export function BookingDetailView({
           {/* Payment Information */}
           {showPaymentDetails && booking.totalAmount !== undefined && (
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
-              <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+              <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
+                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
                     <CreditCard className="w-5 h-5 text-white" />
                   </div>
                   <h3 className="font-semibold text-[#1A2B4F]">
@@ -344,7 +344,7 @@ export function BookingDetailView({
                     </div>
                     <div className="h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-[#10B981] to-[#14B8A6] transition-all duration-300"
+                        className="h-full bg-linear-to-r from-[#10B981] to-[#14B8A6] transition-all duration-300"
                         style={{
                           width: `${
                             ((booking.paid || 0) / booking.totalAmount) * 100
@@ -375,9 +375,9 @@ export function BookingDetailView({
       {/* Rejection Info for Rejected Bookings */}
       {booking.rejectionReason && booking.rejectionResolution && (
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
-          <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[rgba(255,107,107,0.05)] to-white">
+          <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[rgba(255,107,107,0.05)] to-white">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
                 <AlertTriangle className="w-5 h-5 text-white" />
               </div>
               <h3 className="font-semibold text-[#FF6B6B]">

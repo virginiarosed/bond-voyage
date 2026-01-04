@@ -48,4 +48,8 @@ export const queryKeys = {
     all: ["faqs"] as const,
     list: (params?: any) => [...queryKeys.faqs.all, "list", params] as const,
   },
+  places: {
+    all: ["places"] as const,
+    search: (params?: any) => [...queryKeys.places.all, "search", params],
+  },
 };

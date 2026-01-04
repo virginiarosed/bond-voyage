@@ -1128,14 +1128,14 @@ export function CreateRequestedItinerary({
                         >
                           <div className="flex items-start gap-3">
                             {/* User Avatar */}
-                            <div className="flex-shrink-0">
+                            <div className="shrink-0">
                               {user.avatarUrl ? (
                                 <ImageWithFallback
                                   src={user.avatarUrl}
                                   alt={fullName}
                                   className="w-10 h-10 rounded-lg object-cover"
                                   fallback={
-                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                                    <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                                       <span className="text-white font-medium text-sm">
                                         {user.firstName?.charAt(0)}
                                         {user.lastName?.charAt(0)}
@@ -1144,7 +1144,7 @@ export function CreateRequestedItinerary({
                                   }
                                 />
                               ) : (
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                                   <span className="text-white font-medium text-sm">
                                     {user.firstName?.charAt(0)}
                                     {user.lastName?.charAt(0)}
@@ -1178,11 +1178,11 @@ export function CreateRequestedItinerary({
                               {/* Contact Info */}
                               <div className="flex flex-col gap-1 mt-1">
                                 <div className="flex items-center gap-2 text-xs text-[#64748B]">
-                                  <Mail className="w-3 h-3 flex-shrink-0" />
+                                  <Mail className="w-3 h-3 shrink-0" />
                                   <span className="truncate">{user.email}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-[#64748B]">
-                                  <Phone className="w-3 h-3 flex-shrink-0" />
+                                  <Phone className="w-3 h-3 shrink-0" />
                                   <span className="truncate">
                                     {user.mobile || "No mobile"}
                                   </span>
@@ -1192,7 +1192,7 @@ export function CreateRequestedItinerary({
                                 {hasBookings && user.dateFrom && (
                                   <div className="mt-1 pt-1 border-t border-[#F1F5F9]">
                                     <div className="flex items-center gap-1 text-xs text-[#94A3B8]">
-                                      <Calendar className="w-3 h-3 flex-shrink-0" />
+                                      <Calendar className="w-3 h-3 shrink-0" />
                                       <span>
                                         Last booking:{" "}
                                         {new Date(
@@ -1206,7 +1206,7 @@ export function CreateRequestedItinerary({
                             </div>
 
                             {/* Role Indicator */}
-                            <div className="flex-shrink-0">
+                            <div className="shrink-0">
                               <span
                                 className={`text-xs px-2 py-1 rounded-full ${
                                   user.role === "ADMIN"
@@ -1288,10 +1288,10 @@ export function CreateRequestedItinerary({
 
               {/* Selected User Info Panel */}
               {formData.customerId && (
-                <div className="mt-2 p-3 rounded-lg bg-gradient-to-r from-[rgba(10,122,255,0.05)] to-[rgba(20,184,166,0.05)] border border-[#0A7AFF]/20">
+                <div className="mt-2 p-3 rounded-lg bg-linear-to-r from-[rgba(10,122,255,0.05)] to-[rgba(20,184,166,0.05)] border border-[#0A7AFF]/20">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                         <CheckCircle2 className="w-4 h-4 text-white" />
                       </div>
                       <div>
@@ -1333,7 +1333,7 @@ export function CreateRequestedItinerary({
                         href={`/users/${formData.customerId}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1 text-xs rounded-lg bg-gradient-to-r from-[#0A7AFF] to-[#3B9EFF] text-white hover:shadow-lg transition-shadow flex items-center gap-1"
+                        className="px-3 py-1 text-xs rounded-lg bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] text-white hover:shadow-lg transition-shadow flex items-center gap-1"
                       >
                         <User className="w-3 h-3" />
                         View Profile
@@ -1547,11 +1547,11 @@ export function CreateRequestedItinerary({
             {itineraryDays.map((day, dayIndex) => (
               <div
                 key={day.id}
-                className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-gradient-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
+                className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
               >
                 {/* Day Header */}
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                  <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                     <span className="text-white font-bold">D{day.day}</span>
                   </div>
                   <div className="flex-1">
@@ -1572,7 +1572,7 @@ export function CreateRequestedItinerary({
                   </div>
                   <button
                     onClick={() => addActivity(day.id)}
-                    className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
+                    className="h-11 px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
                   >
                     <Plus className="w-4 h-4" />
                     Add Activity
@@ -1602,7 +1602,7 @@ export function CreateRequestedItinerary({
                           className="relative p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
                         >
                           {/* Activity number badge */}
-                          <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
+                          <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
                             {activityIndex + 1}
                           </div>
 
@@ -1753,7 +1753,7 @@ export function CreateRequestedItinerary({
                                             }
                                             className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
                                           >
-                                            <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] flex-shrink-0" />
+                                            <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
                                             <span className="truncate">
                                               {suggestion}
                                             </span>
@@ -1791,7 +1791,7 @@ export function CreateRequestedItinerary({
                               onClick={() =>
                                 confirmDeleteActivity(day.id, activity.id)
                               }
-                              className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 flex-shrink-0"
+                              className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 shrink-0"
                               title="Delete Activity"
                             >
                               <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B] transition-colors" />
@@ -1807,8 +1807,8 @@ export function CreateRequestedItinerary({
           </div>
         </ContentCard>
 
-        <div className="fixed bottom-0 left-[80px] right-0 h-20 bg-white border-t-2 border-[#E5E7EB] z-40">
-          <div className="h-full max-w-[1400px] mx-auto px-8 flex items-center justify-end gap-3">
+        <div className="fixed bottom-0 left-20 right-0 h-20 bg-white border-t-2 border-[#E5E7EB] z-40">
+          <div className="h-full max-w-350 mx-auto px-8 flex items-center justify-end gap-3">
             <button
               onClick={handleBackClick}
               disabled={createBookingMutation.isPending}
@@ -1819,7 +1819,7 @@ export function CreateRequestedItinerary({
             <button
               onClick={handleSaveClick}
               disabled={createBookingMutation.isPending}
-              className="h-12 px-8 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-12 px-8 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
               {createBookingMutation.isPending ? "Saving..." : "Save Itinerary"}
@@ -1836,10 +1836,10 @@ export function CreateRequestedItinerary({
           if (!open) setIconSearchQuery("");
         }}
       >
-        <DialogContent className="sm:max-w-[700px]">
+        <DialogContent className="sm:max-w-175">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               Select Activity Icon
@@ -1862,7 +1862,7 @@ export function CreateRequestedItinerary({
             </div>
           </div>
 
-          <ScrollArea className="max-h-[400px] px-6">
+          <ScrollArea className="max-h-100 px-6">
             <div className="grid grid-cols-4 gap-3 py-4">
               {ICON_OPTIONS.filter(
                 (option) =>
@@ -1880,7 +1880,7 @@ export function CreateRequestedItinerary({
                     onClick={() => selectIcon(option.value)}
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] transition-all group"
                   >
-                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                    <div className="w-11 h-11 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <span className="text-xs text-center text-[#64748B] group-hover:text-[#0A7AFF] font-medium transition-colors leading-tight">
@@ -1955,10 +1955,10 @@ export function CreateRequestedItinerary({
 
       {/* Unsaved Changes Modal */}
       <Dialog open={backConfirmOpen} onOpenChange={setBackConfirmOpen}>
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="sm:max-w-130">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 pb-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFB84D] to-[#FF9800] flex items-center justify-center shadow-lg shadow-[#FFB84D]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FFB84D] to-[#FF9800] flex items-center justify-center shadow-lg shadow-[#FFB84D]/20">
                 <AlertCircle className="w-5 h-5 text-white" />
               </div>
               Unsaved Changes
@@ -1976,7 +1976,7 @@ export function CreateRequestedItinerary({
             <div className="flex flex-col gap-3 pt-2">
               <button
                 onClick={handleSaveDraft}
-                className="w-full h-12 px-6 rounded-xl bg-gradient-to-r from-[#FFB84D] to-[#FF9800] text-white font-medium shadow-lg shadow-[#FFB84D]/20 hover:shadow-xl hover:shadow-[#FFB84D]/30 transition-all flex items-center justify-center gap-2"
+                className="w-full h-12 px-6 rounded-xl bg-linear-to-r from-[#FFB84D] to-[#FF9800] text-white font-medium shadow-lg shadow-[#FFB84D]/20 hover:shadow-xl hover:shadow-[#FFB84D]/30 transition-all flex items-center justify-center gap-2"
               >
                 <FileText className="w-4 h-4" />
                 Save as Draft
@@ -2067,7 +2067,7 @@ export function CreateRequestedItinerary({
               </div>
               <div className="mt-3 p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[#FF6B6B]/20">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] shrink-0 mt-0.5" />
                   <p className="text-xs text-[#64748B]">
                     Day {reduceDaysConfirm.newDayCount + 1} through Day{" "}
                     {itineraryDays.length} will be permanently deleted.

@@ -798,7 +798,7 @@ export function Bookings({
         </div>
 
         {/* Booking Header Card */}
-        <div className="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
+        <div className="bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
           <div className="flex items-start justify-between mb-6">
             <div>
               <h1 className="text-3xl font-semibold mb-2">
@@ -856,9 +856,9 @@ export function Bookings({
           <div className="space-y-6">
             {/* Customer Information */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+              <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg">
                     <User className="w-5 h-5 text-white" />
                   </div>
                   <h3 className="font-semibold text-[#1A2B4F]">
@@ -968,7 +968,7 @@ export function Bookings({
               {selectedBooking.bookingType === "STANDARD" ? (
                 <button
                   onClick={() => handleEditBooking(selectedBooking)}
-                  className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
                 >
                   <Edit className="w-4 h-4" />
                   Edit Booking
@@ -976,7 +976,7 @@ export function Bookings({
               ) : selectedBooking.bookingType === "REQUESTED" ? (
                 <button
                   onClick={() => handleMoveToRequestedClick(selectedBooking)}
-                  className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
                 >
                   <Package className="w-4 h-4" />
                   Move to Requested
@@ -984,7 +984,7 @@ export function Bookings({
               ) : (
                 <button
                   onClick={() => handleMoveToApprovalsClick(selectedBooking)}
-                  className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Move to Approvals
@@ -995,7 +995,7 @@ export function Bookings({
                 selectedBooking.paymentStatus === "Paid" && (
                   <button
                     onClick={() => handleCompleteClick(selectedBooking)}
-                    className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     Mark as Complete
@@ -1239,10 +1239,10 @@ export function Bookings({
           open={moveToRequestedDialogOpen}
           onOpenChange={setMoveToRequestedDialogOpen}
         >
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-125">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg">
                   <Package className="w-5 h-5 text-white" />
                 </div>
                 Move to Requested
@@ -1294,7 +1294,7 @@ export function Bookings({
 
             {selectedPayment && (
               <div className="space-y-4">
-                <div className="bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
+                <div className="bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
                   <div className="flex justify-between">
                     <div className="text-right">
                       <p className="text-sm">Amount</p>
@@ -1410,7 +1410,7 @@ export function Bookings({
           }}
           className={`px-5 h-11 text-sm transition-colors ${
             selectedStatus === "all"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
           }`}
         >
@@ -1423,7 +1423,7 @@ export function Bookings({
           }}
           className={`px-5 h-11 text-sm transition-colors ${
             selectedStatus === "paid"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
           }`}
         >
@@ -1436,7 +1436,7 @@ export function Bookings({
           }}
           className={`px-5 h-11 text-sm transition-colors ${
             selectedStatus === "partial"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
           }`}
         >
@@ -1449,7 +1449,7 @@ export function Bookings({
           }}
           className={`px-5 h-11 text-sm transition-colors ${
             selectedStatus === "unpaid"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
           }`}
         >
@@ -1655,7 +1655,7 @@ export function Bookings({
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                       <span className="text-white text-lg">🎫</span>
                     </div>
                     <div>
@@ -1984,10 +1984,10 @@ export function Bookings({
         open={moveToRequestedDialogOpen}
         onOpenChange={setMoveToRequestedDialogOpen}
       >
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg">
                 <Package className="w-5 h-5 text-white" />
               </div>
               Move to Requested
@@ -2039,7 +2039,7 @@ export function Bookings({
 
           {selectedPayment && (
             <div className="space-y-4">
-              <div className="bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
+              <div className="bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
                 <div className="flex justify-between">
                   <div>
                     <h3 className="text-lg font-semibold">

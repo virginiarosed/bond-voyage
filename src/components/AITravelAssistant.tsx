@@ -364,7 +364,7 @@ export function AITravelAssistant({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowDraftPreview(false)}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110]"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-110"
             />
 
             {/* Dialog */}
@@ -372,7 +372,7 @@ export function AITravelAssistant({
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] max-h-[80vh] bg-white rounded-2xl shadow-2xl z-[111] flex flex-col"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-125 max-h-[80vh] bg-white rounded-2xl shadow-2xl z-111 flex flex-col"
             >
               {/* Header */}
               <div
@@ -404,7 +404,7 @@ export function AITravelAssistant({
               <ScrollArea className="flex-1 p-6">
                 <div className="space-y-4">
                   {/* Destination Info */}
-                  <div className="p-4 rounded-lg bg-gradient-to-br from-[#F0FDF4] to-[#DBEAFE] border border-[#10B981]/20">
+                  <div className="p-4 rounded-lg bg-linear-to-br from-[#F0FDF4] to-[#DBEAFE] border border-[#10B981]/20">
                     <div className="flex items-center gap-2 mb-2">
                       <MapPin className="w-4 h-4 text-[#10B981]" />
                       <span className="text-sm font-medium text-[#1A2B4F]">
@@ -433,9 +433,9 @@ export function AITravelAssistant({
                         {day.activities?.map((activity, activityIndex) => (
                           <div
                             key={`activity-${day.dayNumber}-${activityIndex}`}
-                            className="flex gap-3 p-3 rounded-lg bg-gradient-to-br from-[#F8FAFB] to-white border border-[#E5E7EB]"
+                            className="flex gap-3 p-3 rounded-lg bg-linear-to-br from-[#F8FAFB] to-white border border-[#E5E7EB]"
                           >
-                            <div className="flex-shrink-0 w-16 text-xs font-medium text-[#10B981] flex items-center gap-1">
+                            <div className="shrink-0 w-16 text-xs font-medium text-[#10B981] flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {activity.time}
                             </div>
@@ -498,7 +498,7 @@ export function AITravelAssistant({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleChat}
-            className="fixed bottom-24 right-6 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center z-[100] group"
+            className="fixed bottom-24 right-6 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center z-100 group"
             style={{
               background: "linear-gradient(to bottom right, #10B981, #0A7AFF)",
               boxShadow: "0 25px 50px -12px rgba(255, 184, 77, 0.3)",
@@ -557,11 +557,11 @@ export function AITravelAssistant({
             }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-24 right-6 w-[420px] h-[600px] rounded-2xl bg-white shadow-2xl border-2 border-[#E5E7EB] flex flex-col z-[100] overflow-hidden"
+            className="fixed bottom-24 right-6 w-105 h-150 rounded-2xl bg-white shadow-2xl border-2 border-[#E5E7EB] flex flex-col z-100 overflow-hidden"
           >
             {/* Header */}
             <div
-              className="relative p-4 overflow-hidden flex-shrink-0"
+              className="relative p-4 overflow-hidden shrink-0"
               style={{
                 background: "linear-gradient(to right, #10B981, #0A7AFF)",
               }}
@@ -726,7 +726,7 @@ export function AITravelAssistant({
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-hidden bg-gradient-to-b from-[#F8FAFB] to-white">
+            <div className="flex-1 overflow-hidden bg-linear-to-b from-[#F8FAFB] to-white">
               <ScrollArea className="h-full">
                 <div className="p-4 space-y-4">
                   {messages.map((message, index) => (
@@ -743,7 +743,7 @@ export function AITravelAssistant({
                     >
                       {message.type === "ai" && (
                         <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-md"
                           style={{
                             background:
                               "linear-gradient(to bottom right, #10B981, #0A7AFF)",
@@ -809,7 +809,7 @@ export function AITravelAssistant({
                         </p>
                       </div>
                       {message.type === "user" && (
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#64748B] to-[#475569] flex items-center justify-center flex-shrink-0 shadow-md">
+                        <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#64748B] to-[#475569] flex items-center justify-center shrink-0 shadow-md">
                           <span className="text-xs text-white">You</span>
                         </div>
                       )}
@@ -823,7 +823,7 @@ export function AITravelAssistant({
                       className="flex gap-2"
                     >
                       <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-md"
                         style={{
                           background:
                             "linear-gradient(to bottom right, #10B981, #0A7AFF)",
@@ -856,7 +856,7 @@ export function AITravelAssistant({
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t-2 border-[#E5E7EB] bg-white flex-shrink-0">
+            <div className="p-4 border-t-2 border-[#E5E7EB] bg-white shrink-0">
               <div className="flex gap-2">
                 <Input
                   value={inputValue}
