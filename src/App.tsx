@@ -262,13 +262,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (location.pathname === "/home") {
-      import("./styles/login.index.css");
-      import("./styles/login.globals.css");
-    } else {
-      import("./styles/globals.css");
-      import("./styles/index.css");
-    }
     setTimeout(() => {
       setIsLoading(false);
     }, 1500);
