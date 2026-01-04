@@ -654,10 +654,10 @@ export function RouteOptimizationPanel({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-8 rounded-2xl border-2 border-dashed border-[#E5E7EB] bg-gradient-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)]"
+        className="p-8 rounded-2xl border-2 border-dashed border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)]"
       >
         <div className="flex flex-col items-center text-center max-w-md mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0A7AFF]/10 to-[#14B8A6]/10 flex items-center justify-center mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[#0A7AFF]/10 to-[#14B8A6]/10 flex items-center justify-center mb-4">
             <MapPinned className="w-8 h-8 text-[#0A7AFF]" />
           </div>
           <h3 className="text-[#1A2B4F] mb-2">Route Optimization Ready</h3>
@@ -684,7 +684,7 @@ export function RouteOptimizationPanel({
       className="rounded-2xl border-2 border-[#E5E7EB] bg-white shadow-lg overflow-hidden"
     >
       {/* Header */}
-      <div className="p-5 bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6]">
+      <div className="p-5 bg-linear-to-r from-[#0A7AFF] to-[#14B8A6]">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
             <Route className="w-6 h-6 text-white" />
@@ -709,7 +709,7 @@ export function RouteOptimizationPanel({
 
       {/* Multi-day Tabs */}
       {daysWithMeaningfulLocations.length > 1 && (
-        <div className="px-5 pt-5 pb-3 border-b border-[#E5E7EB] bg-gradient-to-br from-[rgba(10,122,255,0.02)] to-transparent">
+        <div className="px-5 pt-5 pb-3 border-b border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-transparent">
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
@@ -726,7 +726,7 @@ export function RouteOptimizationPanel({
                   <TabsTrigger
                     key={day.id}
                     value={day.id}
-                    className="relative data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#0A7AFF] data-[state=active]:to-[#14B8A6] data-[state=active]:text-white rounded-lg px-4 py-2 transition-all whitespace-nowrap"
+                    className="relative data-[state=active]:bg-linear-to-r data-[state=active]:from-[#0A7AFF] data-[state=active]:to-[#14B8A6] data-[state=active]:text-white rounded-lg px-4 py-2 transition-all whitespace-nowrap"
                     disabled={isLoading}
                   >
                     <Calendar className="w-4 h-4 mr-2" />
