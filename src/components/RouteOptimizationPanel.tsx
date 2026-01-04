@@ -20,10 +20,8 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import { useOptimizeRoute } from "../hooks/useOptimizeRoute";
 import { isMeaningfulLocation } from "../utils/helpers/isMeaningFulLocation";
-import {
-  LOCATION_COORDS,
-  PHILIPPINE_LOCATIONS,
-} from "../utils/constants/constants";
+import { LOCATION_COORDS } from "../utils/constants/constants";
+import type { Place } from "../types/types";
 
 interface Activity {
   id: string;
@@ -32,13 +30,14 @@ interface Activity {
   title: string;
   description: string;
   location: string;
+  locationData?: Place;
   order: number;
 }
 
 interface Day {
   id: string;
-  day: number;
-  title: string;
+  dayNumber: number;
+  title?: string;
   activities: Activity[];
 }
 
@@ -95,7 +94,7 @@ export function RouteOptimizationPanel({
   const mapRef = useRef<MapInstance | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  const optimizationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const optimizationTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const pendingOptimizationsRef = useRef<Set<string>>(new Set());
 
   const { mutate: optimizeRoute, isPending: isOptimizing } = useOptimizeRoute();
@@ -107,7 +106,9 @@ export function RouteOptimizationPanel({
         const validLocations = d.activities.filter(
           (a) =>
             isMeaningfulLocation(a.location) &&
-            PHILIPPINE_LOCATIONS.includes(a.location)
+            a.locationData &&
+            typeof a.locationData.lat === "number" &&
+            typeof a.locationData.lng === "number"
         );
         return validLocations.length >= 2;
       }),
@@ -115,22 +116,29 @@ export function RouteOptimizationPanel({
   );
 
   const getCoordinates = useCallback(
-    (location: string): [number, number] | null => {
-      if (!isMeaningfulLocation(location)) {
-        console.log("Location too short:", location);
-        return null;
+    (locationOrPlace: string | Place): [number, number] | null => {
+      if (!locationOrPlace) return null;
+
+      // If a Place object is provided, prefer its lat/lng
+      if (
+        typeof locationOrPlace === "object" &&
+        typeof (locationOrPlace as Place).lat === "number" &&
+        typeof (locationOrPlace as Place).lng === "number"
+      ) {
+        const p = locationOrPlace as Place;
+        return [p.lat, p.lng];
       }
 
-      // Check if it's a valid Philippine location first
-      if (!PHILIPPINE_LOCATIONS.includes(location)) {
-        console.log("Not a valid Philippine location:", location);
+      const location = locationOrPlace as string;
+      if (!isMeaningfulLocation(location)) {
+        console.log("Location too short:", location);
         return null;
       }
 
       const normalizedLocation = location.toLowerCase().trim().split(",")[0];
 
       if (LOCATION_COORDS[normalizedLocation]) {
-        return LOCATION_COORDS[normalizedLocation];
+        return LOCATION_COORDS[normalizedLocation] as [number, number];
       }
 
       for (const [key, coords] of Object.entries(LOCATION_COORDS)) {
@@ -138,7 +146,7 @@ export function RouteOptimizationPanel({
           normalizedLocation.includes(key) ||
           key.includes(normalizedLocation)
         ) {
-          return coords;
+          return coords as [number, number];
         }
       }
 
@@ -203,11 +211,13 @@ export function RouteOptimizationPanel({
       const meaningfulActivities = activities.filter(
         (a) =>
           isMeaningfulLocation(a.location) &&
-          PHILIPPINE_LOCATIONS.includes(a.location)
+          a.locationData &&
+          typeof a.locationData.lat === "number" &&
+          typeof a.locationData.lng === "number"
       );
       if (meaningfulActivities.length < 2) {
         console.log(
-          "Not enough activities with valid Philippine locations:",
+          "Not enough activities with valid locations:",
           meaningfulActivities.length
         );
         return null;
@@ -219,7 +229,9 @@ export function RouteOptimizationPanel({
 
       for (let i = 0; i < meaningfulActivities.length; i++) {
         const activity = meaningfulActivities[i];
-        const coords = getCoordinates(activity.location);
+        const coords = getCoordinates(
+          activity.locationData ?? activity.location
+        );
         if (!coords) {
           console.log("Could not get coordinates for:", activity.location);
           continue;
@@ -279,13 +291,19 @@ export function RouteOptimizationPanel({
       const activitiesWithValidLocations = activities.filter(
         (a) =>
           isMeaningfulLocation(a.location) &&
-          PHILIPPINE_LOCATIONS.includes(a.location)
+          a.locationData &&
+          typeof a.locationData.lat === "number" &&
+          typeof a.locationData.lng === "number"
       );
 
       for (let i = 0; i < activitiesWithValidLocations.length - 1; i++) {
-        const coord1 = getCoordinates(activitiesWithValidLocations[i].location);
+        const coord1 = getCoordinates(
+          activitiesWithValidLocations[i].locationData ??
+            activitiesWithValidLocations[i].location
+        );
         const coord2 = getCoordinates(
-          activitiesWithValidLocations[i + 1].location
+          activitiesWithValidLocations[i + 1].locationData ??
+            activitiesWithValidLocations[i + 1].location
         );
 
         if (coord1 && coord2) {
@@ -305,7 +323,9 @@ export function RouteOptimizationPanel({
       const activitiesWithLocations = activities.filter(
         (a) =>
           isMeaningfulLocation(a.location) &&
-          PHILIPPINE_LOCATIONS.includes(a.location)
+          a.locationData &&
+          typeof a.locationData.lat === "number" &&
+          typeof a.locationData.lng === "number"
       );
       if (activitiesWithLocations.length <= 2) return activities;
 
@@ -326,8 +346,12 @@ export function RouteOptimizationPanel({
         let shortestDistance = Infinity;
 
         for (let i = 0; i < remaining.length; i++) {
-          const coord1 = getCoordinates(current.location);
-          const coord2 = getCoordinates(remaining[i].location);
+          const coord1 = getCoordinates(
+            current.locationData ?? current.location
+          );
+          const coord2 = getCoordinates(
+            remaining[i].locationData ?? remaining[i].location
+          );
 
           if (coord1 && coord2) {
             const distance = calculateDistance(coord1, coord2);
@@ -425,20 +449,46 @@ export function RouteOptimizationPanel({
 
   const sendOptimizationRequest = useCallback(
     (day: Day, dayId: string) => {
-      if (optimizationTimerRef.current) {
-        clearTimeout(optimizationTimerRef.current);
-      }
-
+      // prevent duplicate concurrent optimizations
       if (pendingOptimizationsRef.current.has(dayId)) {
         console.log("Already optimizing day:", dayId);
         return;
       }
 
-      optimizationTimerRef.current = setTimeout(() => {
+      // clear any existing timer for this specific day
+      const existing = optimizationTimerRef.current.get(dayId);
+      if (existing) {
+        clearTimeout(existing);
+      }
+
+      // if this day doesn't have at least 2 activities with coordinates, don't schedule
+      const hasValidLocations =
+        day.activities.filter(
+          (a) =>
+            a.locationData &&
+            typeof a.locationData.lat === "number" &&
+            typeof a.locationData.lng === "number"
+        ).length >= 2;
+
+      if (!hasValidLocations) {
+        // ensure we don't leave a stale timer
+        const stale = optimizationTimerRef.current.get(dayId);
+        if (stale) {
+          clearTimeout(stale);
+          optimizationTimerRef.current.delete(dayId);
+        }
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        // remove scheduled timer reference immediately
+        optimizationTimerRef.current.delete(dayId);
         const originalActivities = day.activities.filter(
           (a) =>
             isMeaningfulLocation(a.location) &&
-            PHILIPPINE_LOCATIONS.includes(a.location)
+            a.locationData &&
+            typeof a.locationData.lat === "number" &&
+            typeof a.locationData.lng === "number"
         );
 
         if (originalActivities.length < 2) {
@@ -572,6 +622,9 @@ export function RouteOptimizationPanel({
           },
         });
       }, 1500);
+
+      // store per-day timer so subsequent changes for other days don't cancel this one
+      optimizationTimerRef.current.set(dayId, timer);
     },
     [
       optimizeRoute,
@@ -598,7 +651,9 @@ export function RouteOptimizationPanel({
         const originalActivities = day.activities.filter(
           (a) =>
             isMeaningfulLocation(a.location) &&
-            PHILIPPINE_LOCATIONS.includes(a.location)
+            a.locationData &&
+            typeof a.locationData.lat === "number" &&
+            typeof a.locationData.lng === "number"
         );
         if (originalActivities.length < 2) continue;
 
@@ -644,9 +699,11 @@ export function RouteOptimizationPanel({
     initializeAnalyses();
 
     return () => {
-      if (optimizationTimerRef.current) {
-        clearTimeout(optimizationTimerRef.current);
+      // clear all pending timers
+      for (const t of optimizationTimerRef.current.values()) {
+        clearTimeout(t);
       }
+      optimizationTimerRef.current.clear();
       pendingOptimizationsRef.current.clear();
     };
   }, [
@@ -676,7 +733,7 @@ export function RouteOptimizationPanel({
     ) {
       onAcceptOptimization(dayId, analysis.optimizedActivities);
       toast.success("Route Optimized!", {
-        description: `Day ${analysis.day.day} reordered. You'll save ~${analysis.routeAnalysis.timeSaved} minutes!`,
+        description: `Day ${analysis.day.dayNumber} reordered. You'll save ~${analysis.routeAnalysis.timeSaved} minutes!`,
       });
     }
   };
@@ -760,7 +817,7 @@ export function RouteOptimizationPanel({
                     disabled={isLoading}
                   >
                     <Calendar className="w-4 h-4 mr-2" />
-                    Day {day.day}
+                    Day {day.dayNumber}
                     {isLoading && (
                       <Loader2 className="w-3 h-3 ml-2 animate-spin" />
                     )}

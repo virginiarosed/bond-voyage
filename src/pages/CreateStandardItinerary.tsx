@@ -13,6 +13,7 @@ import {
   MapPin,
   Search,
   Package,
+  Loader2,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import { ImageUploadField } from "../components/ImageUploadField";
@@ -28,15 +29,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import { useDebounce } from "../hooks/useDebounce";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { toast } from "sonner";
 import { useCreateTourPackage } from "../hooks/useTourPackages";
-import {
-  ICON_OPTIONS,
-  PHILIPPINE_LOCATIONS,
-} from "../utils/constants/constants";
+import { usePlacesSearch } from "../hooks/useLocations";
+import { ICON_OPTIONS } from "../utils/constants/constants";
 import { RouteOptimizationPanel } from "../components/RouteOptimizationPanel";
-import { Day } from "../types/types";
+import { Day, Place } from "../types/types";
+import { queryKeys } from "../utils/lib/queryKeys";
 
 const getIconComponent = (iconName: string) => {
   const iconOption = ICON_OPTIONS.find((opt) => opt.value === iconName);
@@ -50,6 +51,7 @@ interface Activity {
   title: string;
   description: string;
   location: string;
+  locationData?: Place;
   order: number;
 }
 
@@ -124,17 +126,32 @@ export function CreateStandardItinerary() {
     null
   );
 
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [activeLocationInput, setActiveLocationInput] = useState<{
     dayId: string;
     activityId: string;
   } | null>(null);
+  const [locationSearchQuery, setLocationSearchQuery] = useState("");
+  const debouncedValue = useDebounce(locationSearchQuery);
   const [iconSearchQuery, setIconSearchQuery] = useState("");
+
+  const { data: placesData, isLoading: isLoadingPlaces } = usePlacesSearch(
+    debouncedValue.length >= 2
+      ? {
+          text: debouncedValue,
+          limit: 10,
+        }
+      : undefined,
+    {
+      enabled: debouncedValue.length >= 2,
+      queryKey: queryKeys.places.search(debouncedValue),
+    }
+  );
+
+  const locationSuggestions = placesData?.data || [];
 
   const generateId = () =>
     `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // Sync formData.days with itineraryDays length whenever itineraryDays changes
   useEffect(() => {
     if (formData.days !== itineraryDays.length) {
       setFormData((prev) => ({ ...prev, days: itineraryDays.length }));
@@ -146,7 +163,6 @@ export function CreateStandardItinerary() {
       const currentDays = itineraryDays.length;
 
       if (value > currentDays) {
-        // Adding days
         const newDays: Day[] = [];
         for (let i = currentDays + 1; i <= value; i++) {
           newDays.push({
@@ -160,7 +176,6 @@ export function CreateStandardItinerary() {
         setFormData((prev) => ({ ...prev, [field]: value }));
         setHasUnsavedChanges(true);
       } else if (value < currentDays) {
-        // Reducing days
         const daysToRemove = itineraryDays.slice(value);
         const hasContent = daysToRemove.some(
           (day) => day.title || day.activities.length > 0
@@ -201,7 +216,6 @@ export function CreateStandardItinerary() {
   };
 
   const handleCancelReduceDays = () => {
-    // Reset the days input back to current length
     setFormData((prev) => ({ ...prev, days: itineraryDays.length }));
     setReduceDaysConfirm(null);
     setPendingDaysChange(null);
@@ -262,9 +276,9 @@ export function CreateStandardItinerary() {
     dayId: string,
     activityId: string,
     field: keyof Activity,
-    value: string
+    value: string | Place
   ) => {
-    if (field === "time" && value) {
+    if (field === "time" && typeof value === "string" && value) {
       const day = itineraryDays.find((d) => d.id === dayId);
       if (day) {
         const timeExists = day.activities.some(
@@ -341,7 +355,7 @@ export function CreateStandardItinerary() {
   const openIconPicker = (dayId: string, activityId: string) => {
     setCurrentActivityForIcon({ dayId, activityId });
     setIconPickerOpen(true);
-    setIconSearchQuery(""); // Reset search when opening
+    setIconSearchQuery("");
   };
 
   const selectIcon = (iconName: string) => {
@@ -358,30 +372,28 @@ export function CreateStandardItinerary() {
     setIconSearchQuery("");
   };
 
-  const handleLocationSearch = (
+  const handleLocationInputChange = (
     searchTerm: string,
     dayId: string,
     activityId: string
   ) => {
+    updateActivity(dayId, activityId, "location", searchTerm);
     if (searchTerm.length >= 2) {
-      const filtered = PHILIPPINE_LOCATIONS.filter((location) =>
-        location.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setLocationSuggestions(filtered.slice(0, 5));
+      setLocationSearchQuery(searchTerm);
       setActiveLocationInput({ dayId, activityId });
     } else {
-      setLocationSuggestions([]);
+      setLocationSearchQuery("");
       setActiveLocationInput(null);
     }
   };
-
   const selectLocationSuggestion = (
-    location: string,
+    place: Place,
     dayId: string,
     activityId: string
   ) => {
-    updateActivity(dayId, activityId, "location", location);
-    setLocationSuggestions([]);
+    updateActivity(dayId, activityId, "location", place.name);
+    updateActivity(dayId, activityId, "locationData", place);
+    setLocationSearchQuery("");
     setActiveLocationInput(null);
   };
 
@@ -460,6 +472,7 @@ export function CreateStandardItinerary() {
             description: activity.description || "",
             icon: activity.icon || "Clock",
             location: activity.location || "",
+            locationData: activity.locationData || null,
           })),
       })),
     };
@@ -612,7 +625,11 @@ export function CreateStandardItinerary() {
 
         {itineraryDays.some((day) => {
           const validLocations = day.activities.filter(
-            (a) => a.location && PHILIPPINE_LOCATIONS.includes(a.location)
+            (a) =>
+              a.location &&
+              a.locationData &&
+              typeof a.locationData.lat === "number" &&
+              typeof a.locationData.lng === "number"
           );
           return validLocations.length >= 2;
         }) && (
@@ -622,7 +639,11 @@ export function CreateStandardItinerary() {
               selectedDayForRoute ||
               itineraryDays.find((d) => {
                 const validLocations = d.activities.filter(
-                  (a) => a.location && PHILIPPINE_LOCATIONS.includes(a.location)
+                  (a) =>
+                    a.location &&
+                    a.locationData &&
+                    typeof a.locationData.lat === "number" &&
+                    typeof a.locationData.lng === "number"
                 );
                 return validLocations.length >= 2;
               })?.id
@@ -784,39 +805,41 @@ export function CreateStandardItinerary() {
                                   Location
                                 </Label>
                                 <div className="relative">
-                                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none z-10" />
+                                  {isLoadingPlaces &&
+                                    activeLocationInput?.dayId === day.id &&
+                                    activeLocationInput?.activityId ===
+                                      activity.id && (
+                                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
+                                    )}
                                   <Input
                                     placeholder="Search location..."
                                     value={activity.location}
-                                    onChange={(e) => {
-                                      updateActivity(
-                                        day.id,
-                                        activity.id,
-                                        "location",
-                                        e.target.value
-                                      );
-                                      handleLocationSearch(
+                                    onChange={(e) =>
+                                      handleLocationInputChange(
                                         e.target.value,
                                         day.id,
                                         activity.id
-                                      );
-                                    }}
+                                      )
+                                    }
                                     onFocus={() => {
                                       if (activity.location.length >= 2) {
-                                        handleLocationSearch(
-                                          activity.location,
-                                          day.id,
-                                          activity.id
+                                        setLocationSearchQuery(
+                                          activity.location
                                         );
+                                        setActiveLocationInput({
+                                          dayId: day.id,
+                                          activityId: activity.id,
+                                        });
                                       }
                                     }}
                                     onBlur={() => {
                                       setTimeout(() => {
-                                        setLocationSuggestions([]);
+                                        setLocationSearchQuery("");
                                         setActiveLocationInput(null);
                                       }, 200);
                                     }}
-                                    className="h-9 pl-9 rounded-lg border-[#E5E7EB] text-sm"
+                                    className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm"
                                   />
                                 </div>
 
@@ -824,28 +847,63 @@ export function CreateStandardItinerary() {
                                   activeLocationInput?.activityId ===
                                     activity.id &&
                                   locationSuggestions.length > 0 && (
-                                    <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-40 overflow-auto">
-                                      {locationSuggestions.map(
-                                        (suggestion, idx) => (
-                                          <button
-                                            key={idx}
-                                            type="button"
-                                            onClick={() =>
-                                              selectLocationSuggestion(
-                                                suggestion,
-                                                day.id,
-                                                activity.id
-                                              )
-                                            }
-                                            className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
-                                          >
-                                            <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
-                                            <span className="truncate">
-                                              {suggestion}
-                                            </span>
-                                          </button>
-                                        )
-                                      )}
+                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                                      {locationSuggestions.map((place, idx) => (
+                                        <button
+                                          key={idx}
+                                          type="button"
+                                          onClick={() =>
+                                            selectLocationSuggestion(
+                                              place,
+                                              day.id,
+                                              activity.id
+                                            )
+                                          }
+                                          className="w-full px-4 py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
+                                        >
+                                          <div className="flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
+                                              <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
+                                                {place.name}
+                                              </p>
+                                              <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                                                {place.address}
+                                              </p>
+                                              <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-xs px-2 py-0.5 rounded bg-[#F1F5F9] text-[#64748B]">
+                                                  {place.source}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                {activeLocationInput?.dayId === day.id &&
+                                  activeLocationInput?.activityId ===
+                                    activity.id &&
+                                  !isLoadingPlaces &&
+                                  locationSearchQuery.length >= 2 &&
+                                  locationSuggestions.length === 0 && (
+                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg p-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-[#F8FAFB] flex items-center justify-center shrink-0">
+                                          <Search className="w-5 h-5 text-[#CBD5E1]" />
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-[#64748B]">
+                                            No locations found
+                                          </p>
+                                          <p className="text-xs text-[#94A3B8] mt-0.5">
+                                            Try a different search term
+                                          </p>
+                                        </div>
+                                      </div>
                                     </div>
                                   )}
                               </div>

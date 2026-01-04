@@ -9,6 +9,7 @@ import axios, { AxiosError, AxiosInstance } from "axios";
 import { apiClient } from "../utils/axios/userAxios";
 import { queryKeys } from "../utils/lib/queryKeys";
 import { ApiResponse, AuthResponse, User } from "../types/types";
+import { jwtDecode } from "jwt-decode";
 
 export const useRegister = (
   options?: UseMutationOptions<ApiResponse<AuthResponse>, AxiosError, any>
@@ -41,6 +42,20 @@ export const useLogin = (
       );
 
       const { accessToken, refreshToken } = response.data.data!;
+
+      // const decodedAccessToken = jwtDecode(accessToken);
+      // const decodedRefreshToken = jwtDecode(refreshToken);
+
+      // if (decodedAccessToken.exp && decodedRefreshToken.exp) {
+      //   console.log(
+      //     "access token exp: ",
+      //     new Date(decodedAccessToken.exp * 1000)
+      //   );
+      //   console.log(
+      //     "refreshToken token exp: ",
+      //     new Date(decodedRefreshToken.exp * 1000)
+      //   );
+      // }
 
       if (accessToken && refreshToken) {
         localStorage.setItem("accessToken", accessToken);
