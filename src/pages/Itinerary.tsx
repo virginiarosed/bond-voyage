@@ -91,11 +91,12 @@ import {
 import { toast } from "sonner";
 import { TourPackage } from "../types/types";
 import { queryKeys } from "../utils/lib/queryKeys";
-import { useCreateBooking } from "../hooks/useBookings";
+import { useBookingDetail, useCreateBooking } from "../hooks/useBookings";
 import { useAdminBookings } from "../hooks/useBookings";
 
 interface RequestedItineraryBooking {
   id: string;
+  bookingCode?: string;
   customer: string;
   email: string;
   mobile: string;
@@ -109,6 +110,7 @@ interface RequestedItineraryBooking {
   status: "pending" | "in-progress" | "completed";
   sentStatus: "sent" | "unsent";
   confirmStatus?: "confirmed" | "unconfirmed";
+  rawBooking?: any;
 }
 
 interface ItineraryActivity {
@@ -197,18 +199,15 @@ const ICON_MAP: Record<string, any> = {
   Search,
 };
 
-// Helper to get icon name from component
 const getIconName = (iconComponent: any): string => {
   if (typeof iconComponent === "string") return iconComponent;
 
-  // Find the icon name by matching the component
   for (const [name, component] of Object.entries(ICON_MAP)) {
     if (component === iconComponent) return name;
   }
-  return "Clock"; // default
+  return "Clock";
 };
 
-// Serialize itinerary data for navigation (convert icon components to strings)
 const serializeItineraryData = (data: any) => {
   if (!data) return data;
 
@@ -250,13 +249,11 @@ export function Itinerary({
   >("Standard");
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  // State for query parameters
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
   });
 
-  // Fetch admin bookings (REQUESTED type)
   const {
     data: bookingsData,
     isLoading: isLoadingBookings,
@@ -264,10 +261,9 @@ export function Itinerary({
     refetch: refetchBookings,
   } = useAdminBookings({
     ...queryParams,
-    type: "REQUESTED", // Filter only requested bookings
+    type: "REQUESTED",
   });
 
-  // Fetch tour packages from API using the hook
   const {
     data: tourPackagesResponse,
     isLoading: isLoadingPackages,
@@ -278,7 +274,6 @@ export function Itinerary({
   const { mutate: createBooking, isPending: isCreateBookingPending } =
     useCreateBooking();
 
-  // Delete tour package mutation
   const { mutate: deleteTourPackage, isPending } = useDeleteTourPackage({});
 
   const handleDeleteTourPackage = (id: string) => {
@@ -386,6 +381,15 @@ export function Itinerary({
     }
   );
 
+  const {
+    data: bookingDetailData,
+    isLoading: isLoadingBookingDetail,
+    isError: isBookingDetailError,
+  } = useBookingDetail(selectedRequestedId!, {
+    enabled: !!selectedRequestedId && requestedViewMode === "detail",
+    queryKey: queryKeys.bookings.detail(selectedRequestedId!),
+  });
+
   // Transform API tour package to standard itinerary format
   const transformTourPackageToItinerary = (
     tourPackage: TourPackage,
@@ -438,18 +442,15 @@ export function Itinerary({
     return apiItineraries.filter((itinerary) => itinerary.isActive !== false);
   }, [apiItineraries]);
 
-  // Combine API itineraries with newly created ones
   const templates = useMemo(() => {
     const combined = [...activeApiItineraries, ...newStandardItineraries];
     return combined.map((t) => standardItineraryUpdates[t.id] || t);
   }, [activeApiItineraries, newStandardItineraries, standardItineraryUpdates]);
 
-  // Standard Itinerary Details Data - now includes API data
   const [standardItineraryDetails, setStandardItineraryDetails] = useState<
     Record<string, ItineraryDay[]>
   >({});
 
-  // Update itinerary details when tour package detail is fetched
   useEffect(() => {
     if (selectedTourPackageDetail?.data) {
       const pkg = selectedTourPackageDetail.data;
@@ -465,7 +466,6 @@ export function Itinerary({
     }
   }, [selectedTourPackageDetail]);
 
-  // Load itinerary details for newly created itineraries
   useEffect(() => {
     const newDetails: Record<string, ItineraryDay[]> = {};
 
@@ -475,7 +475,6 @@ export function Itinerary({
       }
     });
 
-    // Apply updates from edit page
     Object.keys(standardItineraryUpdates).forEach((id) => {
       if (standardItineraryUpdates[id]?.itineraryDetails) {
         newDetails[id] = standardItineraryUpdates[id].itineraryDetails;
@@ -487,38 +486,63 @@ export function Itinerary({
     }
   }, [newStandardItineraries, standardItineraryUpdates]);
 
-  // Transform API bookings data to RequestedItineraryBooking format
   useEffect(() => {
     if (bookingsData?.data) {
       const transformedBookings: RequestedItineraryBooking[] =
         bookingsData.data.map((booking: any) => ({
           id: booking.id,
-          customer: booking.customer,
-          email: booking.email,
-          mobile: booking.mobile || "N/A",
-          destination: booking.destination,
-          itinerary: booking.destination, // Using destination as itinerary for now
-          dates: booking.dates,
-          travelers: booking.travelers,
-          totalAmount: `₱${parseFloat(booking.total || "0").toLocaleString()}`,
-          paid: "₱0", // Assuming no payment data in response
-          bookedDate: booking.bookedDate,
-          status:
-            booking.resolutionStatus === "resolved"
-              ? "completed"
-              : booking.statusBadges === "CONFIRMED"
-              ? "in-progress"
-              : "pending",
-          sentStatus: booking.statusBadges === "CONFIRMED" ? "sent" : "unsent",
+          bookingCode: booking.bookingCode,
+          customer: booking.customerName || "Unknown Customer",
+          email: booking.customerEmail || "N/A",
+          mobile: booking.customerMobile || "N/A",
+          destination: booking.destination || "N/A",
+          itinerary: booking.destination || "N/A",
+          dates:
+            booking.startDate && booking.endDate
+              ? formatDateRange(booking.startDate, booking.endDate)
+              : "Dates not set",
+          travelers: booking.travelers || 1,
+          totalAmount: `₱${parseFloat(
+            booking.totalPrice || "0"
+          ).toLocaleString()}`,
+          paid: "₱0",
+          bookedDate: booking.bookedDate || booking.createdAt,
+          status: getStatusBadge(booking.status, booking.isResolved),
+          sentStatus: booking.status === "CONFIRMED" ? "sent" : "unsent",
           confirmStatus:
-            booking.statusBadges === "CONFIRMED" ? "confirmed" : "unconfirmed",
+            booking.status === "CONFIRMED" ? "confirmed" : "unconfirmed",
+          rawBooking: booking,
         }));
 
       setRequestedBookings(transformedBookings);
     }
   }, [bookingsData]);
 
-  // Merge requested bookings from Bookings page with existing ones
+  const getSentStatus = (status: string, type: string) => {
+    if (type === "REQUESTED") {
+      return status === "CONFIRMED" ? "sent" : "unsent";
+    }
+    return "unsent";
+  };
+
+  const getConfirmStatus = (status: string) => {
+    return status === "CONFIRMED" ? "confirmed" : "unconfirmed";
+  };
+
+  const getStatusBadge = (status: string, isResolved: boolean) => {
+    const statusMap: Record<string, "pending" | "in-progress" | "completed"> = {
+      DRAFT: "pending",
+      PENDING: "pending",
+      CONFIRMED: "in-progress",
+      APPROVED: "in-progress",
+      COMPLETED: "completed",
+      CANCELLED: "completed",
+    };
+
+    if (isResolved) return "completed";
+    return statusMap[status] || "pending";
+  };
+
   useEffect(() => {
     if (
       requestedBookingsFromBookings &&
@@ -546,11 +570,8 @@ export function Itinerary({
             : "₱0",
           bookedDate: booking.bookedDate,
           status: "pending",
-          sentStatus: booking.sentStatus || "unsent",
-          confirmStatus: booking.confirmStatus || "unconfirmed",
-          ...(booking.itineraryDetails && {
-            itineraryDetails: booking.itineraryDetails,
-          }),
+          sentStatus: getSentStatus(booking.status, booking.type),
+          confirmStatus: getConfirmStatus(booking.status),
         })
       );
 
@@ -564,7 +585,6 @@ export function Itinerary({
     }
   }, [requestedBookingsFromBookings]);
 
-  // Handle navigation back from edit pages with updates
   useEffect(() => {
     if (location.state?.scrollToId) {
       const { scrollToId, category, updatedItinerary, updatedBooking } =
@@ -608,20 +628,32 @@ export function Itinerary({
     }
   }, [location.state, navigate, location.pathname]);
 
-  // Helper function to format date range
-  const formatDateRange = (startDate: string, endDate: string): string => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+  const formatDateRange = (
+    startDate: string | null,
+    endDate: string | null
+  ): string => {
+    if (!startDate || !endDate) return "Dates not set";
 
-    const formatDate = (date: Date) => {
-      return date.toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      });
-    };
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
-    return `${formatDate(start)} – ${formatDate(end)}`;
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return "Invalid dates";
+      }
+
+      const formatDate = (date: Date) => {
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      };
+
+      return `${formatDate(start)} – ${formatDate(end)}`;
+    } catch (error) {
+      return "Invalid date format";
+    }
   };
 
   const handleDeleteItinerary = () => {
@@ -640,7 +672,6 @@ export function Itinerary({
     setDeleteConfirmOpen(false);
   };
 
-  // Handle delete confirmation for both API and local items
   const confirmDelete = (item: {
     id: string;
     type: "api" | "local";
@@ -651,7 +682,6 @@ export function Itinerary({
     setDeleteConfirmOpen(true);
   };
 
-  // Export functions
   const handleExportPDF = () => {
     toast.info("PDF export functionality coming soon");
   };
@@ -660,7 +690,6 @@ export function Itinerary({
     toast.info("Excel export functionality coming soon");
   };
 
-  // Filter and sort templates
   const getFilteredAndSortedTemplates = () => {
     let filtered = templates.filter((t) => t.category === selectedCategory);
 
@@ -681,7 +710,6 @@ export function Itinerary({
     return filtered;
   };
 
-  // Filter requested bookings
   const getFilteredRequestedBookings = () => {
     const allBookings = [...requestedBookings];
 
@@ -728,7 +756,6 @@ export function Itinerary({
     ? requestedBookingUpdates[selectedRequestedBase.id] || selectedRequestedBase
     : null;
 
-  // Handle showing confirmation modal for booking
   const handleShowBookingConfirmation = () => {
     if (
       !selectedStandardForBooking ||
@@ -744,7 +771,6 @@ export function Itinerary({
     setCreateBookingConfirmOpen(true);
   };
 
-  // Handle booking from standard itinerary
   const handleBookStandardItinerary = () => {
     if (!selectedStandardForBooking) return;
 
@@ -756,16 +782,13 @@ export function Itinerary({
       ? standard.pricePerPax * travelers
       : 0;
 
-    // Get itinerary details from the booking package detail (fetched via the new hook)
     let itineraryDetails: any[] = [];
 
     if (selectedBookingPackageDetail?.data?.days) {
-      // Transform the API days to the itinerary format expected by your backend
       itineraryDetails = transformApiDaysToItineraryDetails(
         selectedBookingPackageDetail.data.days
       );
     } else if (standardItineraryDetails[standard.id]) {
-      // Fallback to cached details if available
       itineraryDetails = standardItineraryDetails[standard.id];
     }
 
@@ -785,7 +808,7 @@ export function Itinerary({
       status: "pending",
       type: "STANDARD" as const,
       tourType: bookingFormData.tourType.toUpperCase(),
-      itinerary: itineraryDetails, // Now this will have data!
+      itinerary: itineraryDetails,
     };
 
     createBooking(newBooking, {
@@ -816,7 +839,6 @@ export function Itinerary({
     });
   };
 
-  // Render Standard Itinerary Grid View
   const renderStandardGridView = () => {
     if (isLoadingPackages) {
       return (
@@ -1015,7 +1037,6 @@ export function Itinerary({
     );
   };
 
-  // Render Requested Itinerary List View with API integration
   const renderRequestedListView = () => {
     if (isLoadingBookings) {
       return (
@@ -1076,14 +1097,14 @@ export function Itinerary({
             <BookingListCard
               booking={{
                 id: booking.id,
-                customer: booking.customer,
-                email: booking.email,
-                mobile: booking.mobile,
+                bookingCode: booking.bookingCode!,
+                customerName: booking.customer,
+                customerEmail: booking.email,
+                customerMobile: booking.mobile,
                 destination: booking.destination,
-                dates: booking.dates,
+                bookedDate: booking.dates,
                 travelers: booking.travelers,
-                total: booking.totalAmount,
-                bookedDate: booking.bookedDate,
+                totalPrice: parseInt(booking.totalAmount),
               }}
               onViewDetails={() => {
                 setSelectedRequestedId(booking.id);
@@ -1113,7 +1134,7 @@ export function Itinerary({
                         : "Unconfirmed"}
                     </span>
                   )}
-                  {/* Add status badge */}
+                  {/* Update status badge to use actual status */}
                   <span
                     className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                       booking.status === "completed"
@@ -1175,26 +1196,104 @@ export function Itinerary({
         />
       ) : selectedCategory === "Requested" &&
         requestedViewMode === "detail" &&
-        selectedRequested ? (
-        <BookingDetailView
-          booking={{
-            id: selectedRequested.id,
-            customer: selectedRequested.customer,
-            email: selectedRequested.email,
-            mobile: selectedRequested.mobile,
-            destination: selectedRequested.destination,
-            itinerary: selectedRequested.itinerary,
-            dates: selectedRequested.dates,
-            travelers: selectedRequested.travelers,
-            total: selectedRequested.totalAmount,
-            bookedDate: selectedRequested.bookedDate,
-          }}
-          itinerary={[]}
-          onBack={() => setRequestedViewMode("list")}
-          actionButtons={<div />}
-          breadcrumbPage="Requested"
-          isRequestedItinerary={true}
-        />
+        selectedRequestedId ? (
+        <>
+          {isLoadingBookingDetail ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="w-16 h-16 border-4 border-[#0A7AFF] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-[#64748B]">Loading booking details...</p>
+              </div>
+            </div>
+          ) : isBookingDetailError ? (
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-[#FF6B6B] mx-auto mb-4" />
+              <p className="text-[#64748B] text-lg mb-2">
+                Failed to load booking details
+              </p>
+              <button
+                onClick={() => setRequestedViewMode("list")}
+                className="px-4 py-2 bg-[#0A7AFF] text-white rounded-lg hover:bg-[#0A6AE8] transition-colors"
+              >
+                Back to List
+              </button>
+            </div>
+          ) : bookingDetailData?.data ? (
+            <BookingDetailView
+              booking={{
+                id: bookingDetailData.data.id,
+                bookingCode: bookingDetailData.data.bookingCode,
+                customer:
+                  bookingDetailData.data.customerName ||
+                  selectedRequested?.customer ||
+                  "Unknown Customer",
+                email:
+                  bookingDetailData.data.customerEmail ||
+                  selectedRequested?.email ||
+                  "N/A",
+                mobile:
+                  bookingDetailData.data.customerMobile ||
+                  selectedRequested?.mobile ||
+                  "N/A",
+                destination:
+                  bookingDetailData.data.destination ||
+                  selectedRequested?.destination,
+                itinerary:
+                  bookingDetailData.data.itinerary?.title ||
+                  selectedRequested?.destination ||
+                  "Custom Itinerary",
+                dates:
+                  bookingDetailData.data.startDate &&
+                  bookingDetailData.data.endDate
+                    ? formatDateRange(
+                        bookingDetailData.data.startDate,
+                        bookingDetailData.data.endDate
+                      )
+                    : selectedRequested?.dates || "Dates not set",
+                travelers:
+                  bookingDetailData.data.travelers ||
+                  selectedRequested?.travelers ||
+                  1,
+                total: `₱${parseFloat(
+                  bookingDetailData.data.totalPrice.toString()
+                ).toLocaleString()}`,
+                bookedDate:
+                  bookingDetailData.data.bookedDate ||
+                  selectedRequested?.bookedDate,
+                status: bookingDetailData.data.status,
+                paymentStatus: bookingDetailData.data.paymentStatus,
+                type: bookingDetailData.data.type,
+                tourType: bookingDetailData.data.tourType,
+                startDate: bookingDetailData.data.startDate,
+                endDate: bookingDetailData.data.endDate,
+                paymentReceiptUrl: bookingDetailData.data.paymentReceiptUrl,
+                rejectionReason: bookingDetailData.data.rejectionReason!,
+                rejectionResolution:
+                  bookingDetailData.data.rejectionResolution!,
+                isResolved: bookingDetailData.data.isResolved,
+                ownership: bookingDetailData.data.ownership,
+              }}
+              itinerary={bookingDetailData.data.itinerary?.days || []}
+              onBack={() => setRequestedViewMode("list")}
+              actionButtons={<div />}
+              breadcrumbPage="Requested"
+              isRequestedItinerary={true}
+            />
+          ) : (
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-[#FF6B6B] mx-auto mb-4" />
+              <p className="text-[#64748B] text-lg mb-2">
+                Booking details not found
+              </p>
+              <button
+                onClick={() => setRequestedViewMode("list")}
+                className="px-4 py-2 bg-[#0A7AFF] text-white rounded-lg hover:bg-[#0A6AE8] transition-colors"
+              >
+                Back to List
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <ContentCard
           title={
