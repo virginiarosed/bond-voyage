@@ -167,7 +167,7 @@ export function Dashboard() {
     <div>
       {/* Profile Information Section */}
       <div
-        className="mb-6 sm:mb-8 rounded-2xl p-4 sm:p-6 lg:p-8 relative overflow-hidden min-h-[280px] sm:min-h-[340px] lg:min-h-[380px]"
+        className="mb-6 sm:mb-8 rounded-2xl p-4 sm:p-6 lg:p-8 relative overflow-hidden min-h-70 sm:min-h-85 lg:min-h-95"
         style={{
           background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))`,
           boxShadow: `0 8px 32px var(--shadow-color-strong)`,
@@ -181,7 +181,7 @@ export function Dashboard() {
           {/* Left Side - Profile Info */}
           <div className="flex items-center gap-12 sm:gap-12 flex-1 pl-0 lg:pl-12 w-full lg:w-auto">
             {/* Profile Avatar */}
-            <div className="relative flex-shrink-0">
+            <div className="relative shrink-0">
               <div
                 className={`w-30 h-30 sm:w-34 sm:h-34 rounded-full border-4 border-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] overflow-hidden ${
                   profileData && profileData.avatarUrl ? "" : "bg-blue-500"
@@ -256,7 +256,7 @@ export function Dashboard() {
           </div>
 
           {/* Right Side - Interactive Traveling Avatar */}
-          <div className="flex-shrink-0 w-full lg:w-1/2 min-w-[280px] sm:min-w-[320px] flex-1">
+          <div className="shrink-0 w-full lg:w-1/2 min-w-70 sm:min-w-[320px] flex-1">
             <TravelingAvatar />
           </div>
         </div>
@@ -303,7 +303,7 @@ export function Dashboard() {
         <ContentCard
           title={`Booking Trends (Last 12 Months + 6 Month Prediction) - ${new Date().getFullYear()}`}
         >
-          <div className="h-[300px] sm:h-[350px] lg:h-[400px]">
+          <div className="h-75 sm:h-87.5 lg:h-100">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={transformTrendsData(
@@ -453,7 +453,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {/* Booking Status Distribution */}
         <ContentCard title="Booking Status Distribution">
-          <div className="h-[280px] sm:h-[300px] lg:h-[320px]">
+          <div className="h-70 sm:h-75 lg:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <defs>
@@ -495,13 +495,17 @@ export function Dashboard() {
                     outerRadius,
                     percent,
                     name,
+                    value,
                   }) => {
+                    if (value === 0 || percent < 0.01) return null;
+
                     const radius =
                       innerRadius + (outerRadius - innerRadius) * 1.3;
                     const x =
                       cx + radius * Math.cos((-midAngle * Math.PI) / 180);
                     const y =
                       cy + radius * Math.sin((-midAngle * Math.PI) / 180);
+
                     return (
                       <text
                         x={x}
@@ -509,9 +513,14 @@ export function Dashboard() {
                         fill="#1A2B4F"
                         textAnchor={x > cx ? "start" : "end"}
                         dominantBaseline="central"
-                        style={{ fontSize: "13px", fontWeight: 600 }}
+                        style={{
+                          fontSize: percent < 0.05 ? "11px" : "13px",
+                          fontWeight: 600,
+                        }}
                       >
-                        {`${name} (${(percent * 100).toFixed(0)}%)`}
+                        {percent < 0.05
+                          ? `${(percent * 100).toFixed(0)}%`
+                          : `${name} (${(percent * 100).toFixed(0)}%)`}
                       </text>
                     );
                   }}
@@ -569,7 +578,7 @@ export function Dashboard() {
 
         {/* Booking Type Distribution */}
         <ContentCard title="Booking Type Distribution">
-          <div className="h-[320px]">
+          <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <defs>
@@ -602,34 +611,6 @@ export function Dashboard() {
                   labelLine={{
                     stroke: "#CBD5E1",
                     strokeWidth: 2,
-                  }}
-                  label={({
-                    cx,
-                    cy,
-                    midAngle,
-                    innerRadius,
-                    outerRadius,
-                    percent,
-                    name,
-                  }) => {
-                    const radius =
-                      innerRadius + (outerRadius - innerRadius) * 1.3;
-                    const x =
-                      cx + radius * Math.cos((-midAngle * Math.PI) / 180);
-                    const y =
-                      cy + radius * Math.sin((-midAngle * Math.PI) / 180);
-                    return (
-                      <text
-                        x={x}
-                        y={y}
-                        fill="#1A2B4F"
-                        textAnchor={x > cx ? "start" : "end"}
-                        dominantBaseline="central"
-                        style={{ fontSize: "13px", fontWeight: 600 }}
-                      >
-                        {`${name} (${(percent * 100).toFixed(0)}%)`}
-                      </text>
-                    );
                   }}
                   outerRadius={100}
                   innerRadius={55}
@@ -730,7 +711,7 @@ export function Dashboard() {
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-md"
+                      className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-md"
                       style={{
                         background: `linear-gradient(135deg, ${color.from}, ${color.to})`,
                       }}
@@ -834,7 +815,7 @@ export function Dashboard() {
                   <div className="flex items-center gap-3">
                     {/* Smaller icon */}
                     <div
-                      className={`flex-shrink-0 w-8 h-8 rounded-lg ${iconBgColor} flex items-center justify-center`}
+                      className={`shrink-0 w-8 h-8 rounded-lg ${iconBgColor} flex items-center justify-center`}
                     >
                       <IconComponent className={`w-4 h-4 ${iconColor}`} />
                     </div>
