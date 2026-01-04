@@ -56,6 +56,11 @@ interface RouteAnalysis {
   optimizedDistance: number;
   timeSaved: number;
   optimizedOrder?: number[];
+  routeGeometry?: {
+    type: string;
+    coordinates: number[][][];
+  };
+  totalTime?: number;
 }
 
 interface DayAnalysis {
@@ -348,81 +353,72 @@ export function RouteOptimizationPanel({
   );
 
   const processOptimizationResponse = useCallback(
-    (response: any, originalActivities: Activity[]): Activity[] => {
+    (
+      response: any,
+      originalActivities: Activity[]
+    ): { optimizedActivities: Activity[]; routeData?: any } => {
       console.log("Processing API response:", response);
 
-      if (response) {
-        if (response.optimizedOrder && Array.isArray(response.optimizedOrder)) {
-          return response.optimizedOrder.map(
-            (index: number) => originalActivities[index]
-          );
-        }
-
-        if (
-          response.data?.optimizedOrder &&
-          Array.isArray(response.data.optimizedOrder)
-        ) {
-          return response.data.optimizedOrder.map(
-            (index: number) => originalActivities[index]
-          );
-        }
-
-        if (response.activities && Array.isArray(response.activities)) {
-          return response.activities.map((activityData: any) => {
+      if (
+        response?.data?.activities &&
+        Array.isArray(response.data.activities)
+      ) {
+        // Map the optimized order back to original activities by ID
+        const optimizedActivities = response.data.activities
+          .map((activityData: any) => {
             const original = originalActivities.find(
               (a) => a.id === activityData.id
             );
             if (original) return original;
 
-            const byLocation = originalActivities.find(
-              (a) => a.location === activityData.location
+            console.warn(
+              "Could not find original activity for:",
+              activityData.id
             );
-            if (byLocation) return byLocation;
+            return originalActivities[0]; // Fallback
+          })
+          .filter(Boolean);
 
-            return {
-              id: activityData.id || `opt-${Date.now()}`,
-              time: activityData.time || "",
-              icon: activityData.icon || "Clock",
-              title: activityData.name || activityData.title || "",
-              location: activityData.location || "",
-              description: activityData.description || "",
-              order: activityData.order || 0,
-            };
-          });
-        }
+        return {
+          optimizedActivities,
+          routeData: {
+            geometry: response.data.routeGeometry,
+            totalDistance: response.data.totalDistance,
+            totalTime: response.data.totalTime,
+          },
+        };
+      }
 
-        if (
-          response.data?.activities &&
-          Array.isArray(response.data.activities)
-        ) {
-          return response.data.activities.map((activityData: any) => {
+      if (response?.activities && Array.isArray(response.activities)) {
+        const optimizedActivities = response.activities
+          .map((activityData: any) => {
             const original = originalActivities.find(
               (a) => a.id === activityData.id
             );
             if (original) return original;
+            return originalActivities[0];
+          })
+          .filter(Boolean);
 
-            const byLocation = originalActivities.find(
-              (a) => a.location === activityData.location
-            );
-            if (byLocation) return byLocation;
-
-            return {
-              id: activityData.id || `opt-${Date.now()}`,
-              time: activityData.time || "",
-              icon: activityData.icon || "Clock",
-              title: activityData.name || activityData.title || "",
-              location: activityData.location || "",
-              description: activityData.description || "",
-              order: activityData.order || 0,
-            };
-          });
-        }
+        return {
+          optimizedActivities,
+          routeData: response.routeGeometry
+            ? {
+                geometry: response.routeGeometry,
+                totalDistance: response.totalDistance,
+                totalTime: response.totalTime,
+              }
+            : undefined,
+        };
       }
 
       console.log(
         "No valid optimization data in response, using local optimization"
       );
-      return optimizeRouteLocally(originalActivities);
+      return {
+        optimizedActivities: optimizeRouteLocally(originalActivities),
+        routeData: undefined,
+      };
     },
     [optimizeRouteLocally]
   );
@@ -502,15 +498,19 @@ export function RouteOptimizationPanel({
 
         optimizeRoute(optimizationData, {
           onSuccess: (response) => {
-            const optimizedActivities = processOptimizationResponse(
-              response,
-              originalActivities
-            );
-            const optimizedDistance =
-              calculateOriginalRouteDistance(optimizedActivities);
+            const { optimizedActivities, routeData } =
+              processOptimizationResponse(response, originalActivities);
+
+            const optimizedDistance = routeData?.totalDistance
+              ? routeData.totalDistance / 1000 // Convert meters to km
+              : calculateOriginalRouteDistance(optimizedActivities);
+
+            const optimizedTime = routeData?.totalTime
+              ? Math.round(routeData.totalTime / 60) // Convert seconds to minutes
+              : calculateTravelTime(optimizedDistance);
+
             const timeSaved =
-              calculateTravelTime(originalDistance) -
-              calculateTravelTime(optimizedDistance);
+              calculateTravelTime(originalDistance) - optimizedTime;
 
             setDayAnalyses((prev) => {
               const updated = new Map(prev);
@@ -523,6 +523,8 @@ export function RouteOptimizationPanel({
                     ...current.routeAnalysis,
                     optimizedDistance,
                     timeSaved,
+                    routeGeometry: routeData?.geometry,
+                    totalTime: optimizedTime,
                   },
                   isLoading: false,
                 });
@@ -787,17 +789,123 @@ export function RouteOptimizationPanel({
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="text-center py-8">
-                <p className="text-sm text-[#64748B]">
-                  Route optimization content goes here...
-                </p>
+              <div className="space-y-4">
+                {/* Route Statistics */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-4 rounded-xl bg-linear-to-br from-[#0A7AFF]/5 to-[#0A7AFF]/10 border border-[#0A7AFF]/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Route className="w-4 h-4 text-[#0A7AFF]" />
+                      <span className="text-xs text-[#64748B]">Distance</span>
+                    </div>
+                    <p className="text-2xl font-bold text-[#1A2B4F]">
+                      {analysis.routeAnalysis.optimizedDistance.toFixed(1)} km
+                    </p>
+                    {analysis.routeAnalysis.optimizedDistance <
+                      analysis.routeAnalysis.originalDistance && (
+                      <p className="text-xs text-[#10B981] mt-1">
+                        ↓{" "}
+                        {(
+                          analysis.routeAnalysis.originalDistance -
+                          analysis.routeAnalysis.optimizedDistance
+                        ).toFixed(1)}{" "}
+                        km saved
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-linear-to-br from-[#14B8A6]/5 to-[#14B8A6]/10 border border-[#14B8A6]/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-4 h-4 text-[#14B8A6]" />
+                      <span className="text-xs text-[#64748B]">Time</span>
+                    </div>
+                    <p className="text-2xl font-bold text-[#1A2B4F]">
+                      {analysis.routeAnalysis.totalTime ||
+                        calculateTravelTime(
+                          analysis.routeAnalysis.optimizedDistance
+                        )}{" "}
+                      min
+                    </p>
+                    {analysis.routeAnalysis.timeSaved > 0 && (
+                      <p className="text-xs text-[#10B981] mt-1">
+                        ↓ {analysis.routeAnalysis.timeSaved} min saved
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-linear-to-br from-[#10B981]/5 to-[#10B981]/10 border border-[#10B981]/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Zap className="w-4 h-4 text-[#10B981]" />
+                      <span className="text-xs text-[#64748B]">Efficiency</span>
+                    </div>
+                    <p className="text-2xl font-bold text-[#1A2B4F]">
+                      {analysis.routeAnalysis.originalDistance > 0
+                        ? Math.round(
+                            (1 -
+                              analysis.routeAnalysis.optimizedDistance /
+                                analysis.routeAnalysis.originalDistance) *
+                              100
+                          )
+                        : 0}
+                      %
+                    </p>
+                    <p className="text-xs text-[#64748B] mt-1">improvement</p>
+                  </div>
+                </div>
+
+                {/* Optimized Route List */}
+                <div className="bg-linear-to-br from-[rgba(10,122,255,0.02)] to-transparent rounded-xl border border-[#E5E7EB] p-4">
+                  <h4 className="text-sm font-medium text-[#1A2B4F] mb-3 flex items-center gap-2">
+                    <MapPinned className="w-4 h-4 text-[#0A7AFF]" />
+                    Optimized Route Order
+                  </h4>
+                  <div className="space-y-2">
+                    {analysis.optimizedActivities.map((activity, index) => (
+                      <div
+                        key={activity.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#0A7AFF]/30 transition-colors"
+                      >
+                        <div className="shrink-0 w-8 h-8 rounded-full bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center text-white text-sm font-medium">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[#1A2B4F] truncate">
+                            {activity.title}
+                          </p>
+                          <p className="text-xs text-[#64748B] truncate">
+                            {activity.location}
+                          </p>
+                        </div>
+                        {index < analysis.optimizedActivities.length - 1 && (
+                          <ChevronRight className="w-4 h-4 text-[#64748B] shrink-0" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Apply Button */}
                 <button
                   type="button"
                   onClick={() => handleAcceptOptimization(day.id)}
                   disabled={isLoading}
-                  className="mt-4 px-6 py-2 bg-[#0A7AFF] text-white rounded-lg hover:bg-[#0A7AFF]/90 disabled:opacity-50"
+                  className="w-full px-6 py-3 bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
                 >
-                  {isLoading ? "Optimizing..." : "Apply Optimization"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Optimizing Route...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      Apply Optimized Route
+                      {analysis.routeAnalysis.timeSaved > 0 && (
+                        <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                          Save {analysis.routeAnalysis.timeSaved} min
+                        </span>
+                      )}
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>
