@@ -354,7 +354,7 @@ export function UserBookingDetail() {
           </p>
           <button
             onClick={() => navigate("/user/bookings")}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white hover:shadow-lg transition-all"
+            className="px-6 py-2.5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white hover:shadow-lg transition-all"
           >
             Back to Bookings
           </button>
@@ -386,7 +386,7 @@ export function UserBookingDetail() {
       </div>
 
       {/* Booking Header Card */}
-      <div className="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
+      <div className="bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
         <div className="flex items-start justify-between mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -450,9 +450,9 @@ export function UserBookingDetail() {
         <div className="space-y-6">
           {/* Customer Information */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
-            <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+            <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <h3 className="font-semibold text-[#1A2B4F]">
@@ -464,7 +464,7 @@ export function UserBookingDetail() {
               <div>
                 <p className="text-xs text-[#64748B] mb-1">Full Name</p>
                 <p className="text-[#1A2B4F] font-medium">
-                  {user ? `${user.firstName} ${user.lastName}` : "Loading..."}
+                  {booking.customerName || "Unknown Customer"}
                 </p>
               </div>
               <div>
@@ -472,7 +472,7 @@ export function UserBookingDetail() {
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-[#0A7AFF]" />
                   <p className="text-[#334155]">
-                    {booking.user?.email || user?.email}
+                    {booking.customerEmail || "N/A"}
                   </p>
                 </div>
               </div>
@@ -515,7 +515,7 @@ export function UserBookingDetail() {
                     bookedDate: formatDate(booking.createdAt),
                   };
                   const itineraryDays = booking.itinerary || [];
-                  exportBookingDetailToPDF(bookingData, itineraryDays);
+                  exportBookingDetailToPDF(bookingData, itineraryDays.days);
                   toast.success("Exporting booking as PDF...");
                 }}
                 className="h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 text-sm text-[#334155] hover:text-[#FF6B6B] font-medium transition-all"
@@ -537,7 +537,7 @@ export function UserBookingDetail() {
                     bookedDate: formatDate(booking.createdAt),
                   };
                   const itineraryDays = booking.itinerary || [];
-                  exportBookingDetailToExcel(bookingData, itineraryDays);
+                  exportBookingDetailToExcel(bookingData, itineraryDays.days);
                   toast.success("Exporting booking as Excel...");
                 }}
                 className="h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#10B981] hover:bg-[rgba(16,185,129,0.05)] flex items-center justify-center gap-2 text-sm text-[#334155] hover:text-[#10B981] font-medium transition-all"
@@ -557,20 +557,24 @@ export function UserBookingDetail() {
 
         {/* Right Column - Itinerary */}
         <div className="col-span-2">
-          {booking.itinerary && booking.itinerary.length > 0 ? (
+          {booking.itinerary &&
+          booking.itinerary.days &&
+          booking.itinerary.days.length > 0 ? (
             <ItineraryDetailDisplay
               itineraryData={{
                 id: booking.id,
                 destination: booking.destination,
-                duration: `${booking.itinerary.length} Days`,
-                days: booking.itinerary.map((day) => ({
+                duration: `${booking.itinerary.days.length} Days`,
+                description: "",
+                destinations: [booking.destination],
+                days: booking.itinerary.days.map((day) => ({
                   day: day.dayNumber,
                   title: `Day ${day.dayNumber}`,
                   description: "",
                   activities: day.activities.map((activity) => ({
                     time: activity.time,
                     activity: activity.title,
-                    location: activity.description || "",
+                    location: activity.description || activity.location || "",
                   })),
                 })),
                 inclusions: [],
@@ -1052,7 +1056,7 @@ export function UserBookingDetail() {
                       <div className="space-y-4">
                         {/* Step 1 */}
                         <div className="flex items-start gap-4 p-3 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
-                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 text-sm font-bold">
                             1
                           </div>
                           <div className="flex-1">
@@ -1068,7 +1072,7 @@ export function UserBookingDetail() {
 
                         {/* Step 2 */}
                         <div className="flex items-start gap-4 p-3 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
-                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 text-sm font-bold">
                             2
                           </div>
                           <div className="flex-1">
@@ -1084,7 +1088,7 @@ export function UserBookingDetail() {
 
                         {/* Step 3 */}
                         <div className="flex items-start gap-4 p-3 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
-                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 text-sm font-bold">
                             3
                           </div>
                           <div className="flex-1">
@@ -1100,7 +1104,7 @@ export function UserBookingDetail() {
 
                         {/* Step 4 */}
                         <div className="flex items-start gap-4 p-3 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
-                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 text-sm font-bold">
                             4
                           </div>
                           <div className="flex-1">
@@ -1116,7 +1120,7 @@ export function UserBookingDetail() {
 
                         {/* Step 5 */}
                         <div className="flex items-start gap-4 p-3 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
-                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 text-sm font-bold">
                             5
                           </div>
                           <div className="flex-1">
@@ -1135,7 +1139,7 @@ export function UserBookingDetail() {
                     {/* Important Notes */}
                     <div className="bg-[#FFF3E0] border border-[#FFB74D] rounded-xl p-4">
                       <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-[#FF9800] flex-shrink-0 mt-0.5" />
+                        <AlertCircle className="w-5 h-5 text-[#FF9800] shrink-0 mt-0.5" />
                         <div className="space-y-2">
                           <h5 className="text-sm font-semibold text-[#1A2B4F]">
                             Important Reminders
@@ -1719,7 +1723,7 @@ export function UserBookingDetail() {
           <div className="space-y-4 px-6 py-2">
             <div className="bg-[#FFF3F3] border border-[#FFE0E0] rounded-xl p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#FF6B6B] flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[#FF6B6B] flex items-center justify-center shrink-0">
                   <AlertCircle className="w-5 h-5 text-white" />
                 </div>
                 <div className="space-y-2">
