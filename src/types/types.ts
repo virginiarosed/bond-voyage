@@ -357,3 +357,17 @@ export interface RoamanResponse {
     suggestions?: string[];
   };
 }
+
+export interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  order: number;
+  isActive: boolean;
+  tags: string[];
+  targetPages: string[];
+  pageKeywords: string[];
+  category: string;
+  createdAt: string;
+  updatedAt: string;
+}

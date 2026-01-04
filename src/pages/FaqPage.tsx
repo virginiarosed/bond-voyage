@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -10,10 +10,6 @@ import {
   X,
   ChevronLeft,
   RefreshCw,
-  BookOpen,
-  Tag,
-  FileText,
-  TrendingUp,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import { ConfirmationModal } from "../components/ConfirmationModal";
@@ -21,19 +17,14 @@ import { Pagination } from "../components/Pagination";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { StatCard } from "../components/StatCard";
 import { toast } from "sonner";
-
-interface FAQ {
-  id: string;
-  question: string;
-  answer: string;
-  lastUpdated: string;
-  tags: string[];
-  targetPages: string[];
-  pageKeywords: string[];
-  systemCategory: string;
-}
+import { FAQ } from "../types/types";
+import {
+  useFaqs,
+  useCreateFaq,
+  useUpdateFaq,
+  useDeleteFaq,
+} from "../hooks/useFaqs";
 
 export function FaqPage() {
   const navigate = useNavigate();
@@ -41,31 +32,12 @@ export function FaqPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  const [faqs, setFaqs] = useState<FAQ[]>([
-    {
-      id: "FAQ-001",
-      question: "How do I create a new booking?",
-      answer:
-        "Go to the Bookings page and click 'New Booking'. Fill in the customer details, select travel dates, choose an itinerary, and confirm the payment. You'll receive a confirmation email once completed.",
-      lastUpdated: "2024-12-15",
-      tags: ["booking", "create", "payment"],
-      targetPages: ["/user/bookings", "/user/create-new-travel"],
-      pageKeywords: ["booking", "create", "new"],
-      systemCategory: "user",
-    },
-    {
-      id: "FAQ-002",
-      question:
-        "What's the difference between Standard and Requested itineraries?",
-      answer:
-        "Standard itineraries are pre-designed travel plans for popular destinations. Requested itineraries are custom plans created specifically for your needs. You can customize either type to match your preferences.",
-      lastUpdated: "2024-12-10",
-      tags: ["itinerary", "types", "customization"],
-      targetPages: ["/user/standard-itinerary", "/user/requested-itinerary"],
-      pageKeywords: ["itinerary", "standard", "requested"],
-      systemCategory: "user",
-    },
-  ]);
+  const { data: faqsResponse, refetch } = useFaqs();
+  const createFaqMutation = useCreateFaq();
+  const updateFaqMutation = useUpdateFaq();
+  const deleteFaqMutation = useDeleteFaq();
+
+  const faqs = useMemo(() => faqsResponse?.data || [], [faqsResponse?.data]);
 
   // Form state for creating/editing FAQ
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -75,156 +47,110 @@ export function FaqPage() {
     question: "",
     answer: "",
     tags: [] as string[],
-    targetPages: [] as string[],
-    pageKeywords: [] as string[],
-    systemCategory: "user",
   });
   const [tagInput, setTagInput] = useState("");
-  const [keywordInput, setKeywordInput] = useState("");
 
-  // Delete modal state
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [faqToDelete, setFaqToDelete] = useState<FAQ | null>(null);
 
-  // Calculate stats (removed Page-Specific FAQs and Avg Tags per FAQ)
+  // Calculate stats
   const totalFAQs = faqs.length;
   const totalTags = faqs.reduce((sum, faq) => sum + faq.tags.length, 0);
-  const userFacingFAQs = faqs.filter(
-    (faq) => faq.systemCategory === "user"
-  ).length;
 
-  // Sync FAQs to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("bondvoyage-faqs", JSON.stringify(faqs));
-
-    // Dispatch storage event to trigger updates in open user-side tabs
-    window.dispatchEvent(
-      new StorageEvent("storage", {
-        key: "bondvoyage-faqs",
-        newValue: JSON.stringify(faqs),
-      })
+  const filteredFaqs = useMemo(() => {
+    return faqs.filter(
+      (faq: FAQ) =>
+        faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        faq.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        faq.tags.some((tag: string) =>
+          tag.toLowerCase().includes(searchQuery.toLowerCase())
+        )
     );
-  }, [faqs]);
+  }, [faqs, searchQuery]);
 
-  // Filter FAQs based on search query
-  const filteredFaqs = faqs.filter(
-    (faq) =>
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.tags.some((tag) =>
-        tag.toLowerCase().includes(searchQuery.toLowerCase())
-      ) ||
-      faq.pageKeywords.some((keyword) =>
-        keyword.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-  );
-
-  // Pagination calculations
   const totalItems = filteredFaqs.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedFaqs = filteredFaqs.slice(startIndex, endIndex);
 
-  // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to top when changing pages
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Handle create new FAQ
-  const handleCreateFaq = () => {
+  const handleCreateFaq = async () => {
     if (!faqForm.question.trim() || !faqForm.answer.trim()) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Check if tags are provided (now required)
     if (faqForm.tags.length === 0) {
       toast.error("Please add at least one tag");
       return;
     }
 
-    const newFaq: FAQ = {
-      id: `FAQ-${String(faqs.length + 1).padStart(3, "0")}`,
-      question: faqForm.question,
-      answer: faqForm.answer,
-      lastUpdated: new Date().toISOString().split("T")[0],
-      tags: faqForm.tags,
-      targetPages: faqForm.targetPages,
-      pageKeywords: faqForm.pageKeywords,
-      systemCategory: faqForm.systemCategory,
-    };
+    try {
+      await createFaqMutation.mutateAsync(faqForm);
+      resetFaqForm();
+      setIsCreateModalOpen(false);
+      setCurrentPage(1);
 
-    setFaqs([newFaq, ...faqs]);
-    resetFaqForm();
-    setIsCreateModalOpen(false);
-
-    // Reset to first page when new FAQ is added
-    setCurrentPage(1);
-
-    toast.success("FAQ Created!", {
-      description:
-        "Your new FAQ has been added successfully and synced to the user assistant.",
-    });
+      toast.success("FAQ Created!", {
+        description: "Your new FAQ has been added successfully.",
+      });
+    } catch (error) {
+      toast.error("Failed to create FAQ");
+    }
   };
 
-  // Handle edit FAQ
-  const handleEditFaq = () => {
+  const handleEditFaq = async () => {
     if (!currentFaq || !faqForm.question.trim() || !faqForm.answer.trim()) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Check if tags are provided (now required)
     if (faqForm.tags.length === 0) {
       toast.error("Please add at least one tag");
       return;
     }
 
-    const updatedFaqs = faqs.map((faq) =>
-      faq.id === currentFaq.id
-        ? {
-            ...faq,
-            question: faqForm.question,
-            answer: faqForm.answer,
-            lastUpdated: new Date().toISOString().split("T")[0],
-            tags: faqForm.tags,
-            targetPages: faqForm.targetPages,
-            pageKeywords: faqForm.pageKeywords,
-            systemCategory: faqForm.systemCategory,
-          }
-        : faq
-    );
+    try {
+      await updateFaqMutation.mutateAsync({
+        id: currentFaq.id, // Pass the FAQ id here
+        data: faqForm, // Pass the form data here
+      });
+      resetFaqForm();
+      setIsEditModalOpen(false);
+      setCurrentFaq(null);
 
-    setFaqs(updatedFaqs);
-    resetFaqForm();
-    setIsEditModalOpen(false);
-    setCurrentFaq(null);
-
-    toast.success("FAQ Updated!", {
-      description:
-        "Your FAQ has been updated successfully and synced to the user assistant.",
-    });
+      toast.success("FAQ Updated!", {
+        description: "Your FAQ has been updated successfully.",
+      });
+    } catch (error) {
+      toast.error("Failed to update FAQ");
+    }
   };
 
   // Handle delete FAQ
-  const handleDeleteFaq = () => {
+  const handleDeleteFaq = async () => {
     if (faqToDelete) {
-      setFaqs(faqs.filter((faq) => faq.id !== faqToDelete.id));
-      setDeleteConfirmOpen(false);
-      setFaqToDelete(null);
+      try {
+        await deleteFaqMutation.mutateAsync(faqToDelete.id);
+        setDeleteConfirmOpen(false);
+        setFaqToDelete(null);
 
-      // Reset to first page if current page becomes empty
-      if (paginatedFaqs.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
+        if (paginatedFaqs.length === 1 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        }
+
+        toast.success("FAQ Deleted!", {
+          description: "The FAQ has been removed successfully.",
+        });
+      } catch (error) {
+        toast.error("Failed to delete FAQ");
       }
-
-      toast.success("FAQ Deleted!", {
-        description:
-          "The FAQ has been removed successfully and synced to the user assistant.",
-      });
     }
   };
 
@@ -234,12 +160,8 @@ export function FaqPage() {
       question: "",
       answer: "",
       tags: [],
-      targetPages: [],
-      pageKeywords: [],
-      systemCategory: "user",
     });
     setTagInput("");
-    setKeywordInput("");
   };
 
   // Initialize form for editing
@@ -249,14 +171,10 @@ export function FaqPage() {
       question: faq.question,
       answer: faq.answer,
       tags: [...faq.tags],
-      targetPages: faq.targetPages || [],
-      pageKeywords: faq.pageKeywords || [],
-      systemCategory: faq.systemCategory || "user",
     });
     setIsEditModalOpen(true);
   };
 
-  // Handle tag input
   const handleAddTag = () => {
     if (tagInput.trim() && !faqForm.tags.includes(tagInput.trim())) {
       setFaqForm({
@@ -274,86 +192,31 @@ export function FaqPage() {
     });
   };
 
-  // Handle keyword input
-  const handleAddKeyword = () => {
-    if (
-      keywordInput.trim() &&
-      !faqForm.pageKeywords.includes(keywordInput.trim())
-    ) {
-      setFaqForm({
-        ...faqForm,
-        pageKeywords: [...faqForm.pageKeywords, keywordInput.trim()],
-      });
-      setKeywordInput("");
-    }
-  };
-
-  const handleRemoveKeyword = (keywordToRemove: string) => {
-    setFaqForm({
-      ...faqForm,
-      pageKeywords: faqForm.pageKeywords.filter(
-        (keyword) => keyword !== keywordToRemove
-      ),
-    });
-  };
-
-  // Clear search query
   const clearSearch = () => {
     setSearchQuery("");
-    setCurrentPage(1); // Reset to first page when clearing search
+    setCurrentPage(1);
   };
 
-  // Back to Dashboard function
   const handleBackToDashboard = () => {
     navigate("/");
   };
 
-  // Force sync FAQs
   const handleForceSync = () => {
-    localStorage.setItem("bondvoyage-faqs", JSON.stringify(faqs));
-    window.dispatchEvent(
-      new StorageEvent("storage", {
-        key: "bondvoyage-faqs",
-        newValue: JSON.stringify(faqs),
-      })
-    );
-
-    toast.success("FAQs Synced!", {
-      description: "All FAQs have been synced to the user assistant.",
+    refetch();
+    toast.success("FAQs Refreshed!", {
+      description: "FAQ list has been refreshed with latest data.",
     });
   };
 
-  // Load initial FAQs from localStorage if available
-  useEffect(() => {
-    const savedFAQs = localStorage.getItem("bondvoyage-faqs");
-    if (savedFAQs) {
-      try {
-        const parsedFAQs = JSON.parse(savedFAQs);
-        if (parsedFAQs.length > 0) {
-          setFaqs(parsedFAQs);
-        }
-      } catch (error) {
-        console.error("Error loading FAQs from localStorage:", error);
-      }
-    }
-  }, []);
-
-  // Page options for targetPages selection
-  const pageOptions = [
-    { path: "/user/travels", name: "Travels" },
-    { path: "/user/bookings", name: "Bookings" },
-    { path: "/user/history", name: "History" },
-    { path: "/user/profile/edit", name: "Profile" },
-    { path: "/user/feedback", name: "Feedback" },
-    { path: "/user/notifications", name: "Notifications" },
-    { path: "/user/weather", name: "Weather" },
-    { path: "/user/standard-itinerary", name: "Standard Itinerary" },
-    { path: "/user/requested-itinerary", name: "Requested Itinerary" },
-    { path: "/user/customized-itinerary", name: "Customized Itinerary" },
-    { path: "/user/smart-trip", name: "Smart Trip" },
-    { path: "/user/create-new-travel", name: "Create Travel" },
-    { path: "/user/home", name: "Dashboard" },
-  ];
+  // Get formatted date
+  const getFormattedDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   return (
     <div>
@@ -370,24 +233,32 @@ export function FaqPage() {
         </div>
       </div>
 
-      {/* Removed Stat Cards Section */}
-
       <ContentCard
         title="Frequently Asked Questions"
-        subtitle={`Manage FAQs for the user assistant. ${faqs.length} FAQs available.`}
+        subtitle={`Manage FAQs for the user assistant. ${totalFAQs} FAQs available.`}
         action={
           <div className="flex items-center gap-3">
-            {/* Sync FAQs button */}
+            {/* Refresh FAQs button */}
             <button
               onClick={handleForceSync}
-              className="h-10 px-4 rounded-[20px] bg-[#10B981] text-white text-sm font-medium shadow-[0_2px_8px_rgba(10,122,255,0.25)] flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0969e6] hover:shadow-[0_4px_12px_rgba(10,122,255,0.35)]"
+              disabled={
+                createFaqMutation.isPending ||
+                updateFaqMutation.isPending ||
+                deleteFaqMutation.isPending
+              }
+              className="h-10 px-4 rounded-[20px] bg-[#10B981] text-white text-sm font-medium shadow-[0_2px_8px_rgba(10,122,255,0.25)] flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0969e6] hover:shadow-[0_4px_12px_rgba(10,122,255,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw className="w-4 h-4" />
-              Sync FAQs
+              Refresh FAQs
             </button>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="h-10 px-5 rounded-[20px] text-white text-sm font-medium shadow-[0_2px_8px_rgba(10,122,255,0.25)] flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5"
+              disabled={
+                createFaqMutation.isPending ||
+                updateFaqMutation.isPending ||
+                deleteFaqMutation.isPending
+              }
+              className="h-10 px-5 rounded-[20px] text-white text-sm font-medium shadow-[0_2px_8px_rgba(10,122,255,0.25)] flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))`,
               }}
@@ -402,7 +273,7 @@ export function FaqPage() {
         <div className="relative w-full mb-6">
           <input
             type="text"
-            placeholder="Search FAQs by question, answer, tags, or keywords..."
+            placeholder="Search FAQs by question, answer, or tags..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-11 px-4 pl-10 rounded-xl border border-[#E5E7EB] bg-[#F8FAFB] text-sm text-[#334155] placeholder:text-[#64748B] focus:border-[#0A7AFF] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[rgba(10,122,255,0.08)] shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition-all pr-10"
@@ -426,14 +297,12 @@ export function FaqPage() {
                 <HelpCircle className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {searchQuery
-                  ? "No matching FAQs found"
-                  : "Only 2 FAQs available"}
+                {searchQuery ? "No matching FAQs found" : "No FAQs available"}
               </h3>
               <p className="text-gray-600 mb-6">
                 {searchQuery
                   ? "Try a different search term"
-                  : "Add more FAQs to help users navigate the system"}
+                  : "Create your first FAQ to help users"}
               </p>
               {!searchQuery && (
                 <button
@@ -445,7 +314,7 @@ export function FaqPage() {
               )}
             </div>
           ) : (
-            paginatedFaqs.map((faq) => (
+            paginatedFaqs.map((faq: FAQ) => (
               <div
                 key={faq.id}
                 className="group rounded-xl border border-gray-200 hover:border-[#0A7AFF] hover:shadow-lg bg-white transition-all duration-200 overflow-hidden h-full flex flex-col"
@@ -465,7 +334,7 @@ export function FaqPage() {
                       {faq.tags.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2 mb-2">
                           <span className="text-xs text-gray-500">Tags:</span>
-                          {faq.tags.map((tag) => (
+                          {faq.tags.map((tag: string) => (
                             <span
                               key={tag}
                               className="px-2 py-1 rounded text-xs bg-blue-50 text-blue-600 border border-blue-200"
@@ -473,46 +342,6 @@ export function FaqPage() {
                               {tag}
                             </span>
                           ))}
-                        </div>
-                      )}
-                      {faq.pageKeywords.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className="text-xs text-gray-500">
-                            Keywords:
-                          </span>
-                          {faq.pageKeywords.map((keyword) => (
-                            <span
-                              key={keyword}
-                              className="px-2 py-1 rounded text-xs bg-purple-50 text-purple-600 border border-purple-200"
-                            >
-                              {keyword}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {faq.targetPages && faq.targetPages.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-gray-500">
-                            Target Pages:
-                          </span>
-                          {faq.targetPages.slice(0, 2).map((page) => {
-                            const pageOption = pageOptions.find(
-                              (p) => p.path === page
-                            );
-                            return pageOption ? (
-                              <span
-                                key={page}
-                                className="px-2 py-1 rounded text-xs bg-green-50 text-green-600 border border-green-200"
-                              >
-                                {pageOption.name}
-                              </span>
-                            ) : null;
-                          })}
-                          {faq.targetPages.length > 2 && (
-                            <span className="text-xs text-gray-500">
-                              +{faq.targetPages.length - 2} more
-                            </span>
-                          )}
                         </div>
                       )}
                     </div>
@@ -524,13 +353,21 @@ export function FaqPage() {
                     <div className="flex items-center gap-1 text-sm text-gray-500">
                       <Calendar className="w-4 h-4" />
                       <span>
-                        Updated {new Date(faq.lastUpdated).toLocaleDateString()}
+                        Created{" "}
+                        {getFormattedDate(
+                          faq.createdAt || new Date().toISOString()
+                        )}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => initializeEditForm(faq)}
-                        className="p-2 rounded-lg text-gray-600 hover:text-[#0A7AFF] hover:bg-blue-50 transition-colors"
+                        disabled={
+                          createFaqMutation.isPending ||
+                          updateFaqMutation.isPending ||
+                          deleteFaqMutation.isPending
+                        }
+                        className="p-2 rounded-lg text-gray-600 hover:text-[#0A7AFF] hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Edit FAQ"
                       >
                         <Edit className="w-4 h-4" />
@@ -540,7 +377,12 @@ export function FaqPage() {
                           setFaqToDelete(faq);
                           setDeleteConfirmOpen(true);
                         }}
-                        className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        disabled={
+                          createFaqMutation.isPending ||
+                          updateFaqMutation.isPending ||
+                          deleteFaqMutation.isPending
+                        }
+                        className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Delete FAQ"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -568,12 +410,12 @@ export function FaqPage() {
         )}
       </ContentCard>
 
-      {/* Create FAQ Modal using ConfirmationModal component */}
+      {/* Create FAQ Modal */}
       <ConfirmationModal
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
         title="Create New FAQ"
-        description="Add a new frequently asked question to help your users. This will be synced to the user assistant immediately."
+        description="Add a new frequently asked question to help your users."
         icon={<HelpCircle className="w-5 h-5 text-white" />}
         iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
         iconShadow="shadow-[#0A7AFF]/20"
@@ -659,93 +501,6 @@ export function FaqPage() {
                 )}
               </div>
             </div>
-
-            {/* Page Keywords Section */}
-            <div>
-              <Label htmlFor="keywords" className="text-[#1A2B4F] mb-2 block">
-                Page Keywords (Optional)
-              </Label>
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <Input
-                    id="keywords"
-                    value={keywordInput}
-                    onChange={(e) => setKeywordInput(e.target.value)}
-                    onKeyPress={(e) =>
-                      e.key === "Enter" &&
-                      (e.preventDefault(), handleAddKeyword())
-                    }
-                    placeholder="Type a keyword and press Enter"
-                    className="flex-1 h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[#0A7AFF]/10"
-                  />
-                  <button
-                    onClick={handleAddKeyword}
-                    className="px-4 h-11 rounded-lg border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] text-[#64748B] transition-colors"
-                  >
-                    Add
-                  </button>
-                </div>
-                {faqForm.pageKeywords.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {faqForm.pageKeywords.map((keyword) => (
-                      <span
-                        key={keyword}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-purple-50 text-purple-600 border border-purple-200"
-                      >
-                        {keyword}
-                        <button
-                          onClick={() => handleRemoveKeyword(keyword)}
-                          className="hover:text-purple-800"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <p className="text-xs text-gray-500">
-                  Keywords help the assistant match FAQs to page content.
-                </p>
-              </div>
-            </div>
-
-            {/* Target Pages Section */}
-            <div className="pt-4 border-t border-gray-200">
-              <Label className="text-[#1A2B4F] mb-2 block">
-                Target Pages (Optional)
-                <span className="text-xs text-gray-500 ml-2">
-                  Select pages where this FAQ should appear
-                </span>
-              </Label>
-              <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-lg max-h-40 overflow-y-auto">
-                {pageOptions.map(({ path, name }) => (
-                  <label
-                    key={path}
-                    className="flex items-center gap-2 cursor-pointer px-2 py-1 hover:bg-gray-100 rounded"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={faqForm.targetPages?.includes(path) || false}
-                      onChange={(e) => {
-                        const newTargetPages = e.target.checked
-                          ? [...(faqForm.targetPages || []), path]
-                          : (faqForm.targetPages || []).filter(
-                              (p) => p !== path
-                            );
-                        setFaqForm({ ...faqForm, targetPages: newTargetPages });
-                      }}
-                      className="w-4 h-4 text-[#0A7AFF] rounded"
-                    />
-                    <span className="text-sm text-gray-700">{name}</span>
-                  </label>
-                ))}
-              </div>
-              {faqForm.targetPages.length > 0 && (
-                <p className="text-xs text-green-600 mt-2">
-                  Selected {faqForm.targetPages.length} page(s)
-                </p>
-              )}
-            </div>
           </div>
         }
         onConfirm={handleCreateFaq}
@@ -757,14 +512,15 @@ export function FaqPage() {
         cancelText="Cancel"
         confirmVariant="default"
         confirmButtonStyle="bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] hover:from-[#0969e6] hover:to-[#12a594] hover:shadow-lg hover:shadow-[#0A7AFF]/30"
+        isLoading={createFaqMutation.isPending}
       />
 
-      {/* Edit FAQ Modal using ConfirmationModal component */}
+      {/* Edit FAQ Modal */}
       <ConfirmationModal
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         title="Edit FAQ"
-        description="Update the FAQ details below. Changes will be synced to the user assistant immediately."
+        description="Update the FAQ details below."
         icon={<Edit className="w-5 h-5 text-white" />}
         iconGradient="bg-gradient-to-br from-[#14B8A6] to-[#0A7AFF]"
         iconShadow="shadow-[#14B8A6]/20"
@@ -854,110 +610,6 @@ export function FaqPage() {
                 )}
               </div>
             </div>
-
-            {/* Page Keywords Section */}
-            <div>
-              <Label
-                htmlFor="edit-keywords"
-                className="text-[#1A2B4F] mb-2 block"
-              >
-                Page Keywords (Optional)
-              </Label>
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <Input
-                    id="edit-keywords"
-                    value={keywordInput}
-                    onChange={(e) => setKeywordInput(e.target.value)}
-                    onKeyPress={(e) =>
-                      e.key === "Enter" &&
-                      (e.preventDefault(), handleAddKeyword())
-                    }
-                    placeholder="Type a keyword and press Enter"
-                    className="flex-1 h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-4 focus:ring-[#14B8A6]/10"
-                  />
-                  <button
-                    onClick={handleAddKeyword}
-                    className="px-4 h-11 rounded-lg border border-[#E5E7EB] hover:border-[#14B8A6] hover:bg-[rgba(20,184,166,0.05)] text-[#64748B] transition-colors"
-                  >
-                    Add
-                  </button>
-                </div>
-                {faqForm.pageKeywords.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {faqForm.pageKeywords.map((keyword) => (
-                      <span
-                        key={keyword}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-purple-50 text-purple-600 border border-purple-200"
-                      >
-                        {keyword}
-                        <button
-                          onClick={() => handleRemoveKeyword(keyword)}
-                          className="hover:text-purple-800"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Target Pages Section */}
-            <div className="pt-4 border-t border-gray-200">
-              <Label className="text-[#1A2B4F] mb-2 block">
-                Target Pages (Optional)
-                <span className="text-xs text-gray-500 ml-2">
-                  Select pages where this FAQ should appear
-                </span>
-              </Label>
-              <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-lg max-h-40 overflow-y-auto">
-                {pageOptions.map(({ path, name }) => (
-                  <label
-                    key={path}
-                    className="flex items-center gap-2 cursor-pointer px-2 py-1 hover:bg-gray-100 rounded"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={faqForm.targetPages?.includes(path) || false}
-                      onChange={(e) => {
-                        const newTargetPages = e.target.checked
-                          ? [...(faqForm.targetPages || []), path]
-                          : (faqForm.targetPages || []).filter(
-                              (p) => p !== path
-                            );
-                        setFaqForm({ ...faqForm, targetPages: newTargetPages });
-                      }}
-                      className="w-4 h-4 text-[#14B8A6] rounded"
-                    />
-                    <span className="text-sm text-gray-700">{name}</span>
-                  </label>
-                ))}
-              </div>
-              {faqForm.targetPages.length > 0 && (
-                <p className="text-xs text-green-600 mt-2">
-                  Selected {faqForm.targetPages.length} page(s)
-                </p>
-              )}
-            </div>
-
-            {currentFaq && (
-              <div className="pt-4 border-t border-gray-200">
-                <div className="text-sm">
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-gray-600 mb-1">FAQ ID:</p>
-                    <p className="font-semibold text-gray-900 mb-3">
-                      {currentFaq.id}
-                    </p>
-                    <p className="text-gray-600 mb-1">Last Updated:</p>
-                    <p className="font-semibold text-gray-900">
-                      {new Date(currentFaq.lastUpdated).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         }
         onConfirm={handleEditFaq}
@@ -970,9 +622,10 @@ export function FaqPage() {
         cancelText="Cancel"
         confirmVariant="default"
         confirmButtonStyle="bg-gradient-to-r from-[#14B8A6] to-[#0A7AFF] hover:from-[#12a594] hover:to-[#0969e6] hover:shadow-lg hover:shadow-[#14B8A6]/30"
+        isLoading={updateFaqMutation.isPending}
       />
 
-      {/* Delete FAQ Confirmation Modal using ConfirmationModal component */}
+      {/* Delete FAQ Confirmation Modal */}
       <ConfirmationModal
         open={deleteConfirmOpen}
         onOpenChange={(open) => {
@@ -982,7 +635,7 @@ export function FaqPage() {
           }
         }}
         title="Delete FAQ"
-        description="Are you sure you want to delete this FAQ? This action cannot be undone and will be synced to the user assistant."
+        description="Are you sure you want to delete this FAQ? This action cannot be undone."
         icon={<Trash2 className="w-5 h-5 text-white" />}
         iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
         iconShadow="shadow-[#FF6B6B]/30"
@@ -1000,7 +653,7 @@ export function FaqPage() {
                   <>
                     <p className="text-sm text-gray-600 mb-1">Tags:</p>
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {faqToDelete.tags.map((tag) => (
+                      {faqToDelete.tags.map((tag: string) => (
                         <span
                           key={tag}
                           className="px-2 py-1 rounded text-xs bg-red-50 text-red-600 border border-red-200"
@@ -1011,53 +664,11 @@ export function FaqPage() {
                     </div>
                   </>
                 )}
-                {faqToDelete.pageKeywords.length > 0 && (
-                  <>
-                    <p className="text-sm text-gray-600 mb-1">Keywords:</p>
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {faqToDelete.pageKeywords.map((keyword) => (
-                        <span
-                          key={keyword}
-                          className="px-2 py-1 rounded text-xs bg-red-50 text-red-600 border border-red-200"
-                        >
-                          {keyword}
-                        </span>
-                      ))}
-                    </div>
-                  </>
-                )}
-                {faqToDelete.targetPages &&
-                  faqToDelete.targetPages.length > 0 && (
-                    <>
-                      <p className="text-sm text-gray-600 mb-1">
-                        Target Pages:
-                      </p>
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {faqToDelete.targetPages.slice(0, 3).map((page) => {
-                          const pageOption = pageOptions.find(
-                            (p) => p.path === page
-                          );
-                          return pageOption ? (
-                            <span
-                              key={page}
-                              className="px-2 py-1 rounded text-xs bg-red-50 text-red-600 border border-red-200"
-                            >
-                              {pageOption.name}
-                            </span>
-                          ) : null;
-                        })}
-                      </div>
-                    </>
-                  )}
-                <p className="text-xs text-gray-500">
-                  Last updated:{" "}
-                  {new Date(faqToDelete.lastUpdated).toLocaleDateString()}
-                </p>
               </div>
               <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                 <p className="text-xs text-amber-700">
-                  ⚠️ This FAQ will be removed from the user assistant and cannot
-                  be recovered.
+                  ⚠️ This FAQ will be permanently deleted and cannot be
+                  recovered.
                 </p>
               </div>
             </div>
@@ -1072,6 +683,7 @@ export function FaqPage() {
         cancelText="Cancel"
         confirmVariant="destructive"
         confirmButtonStyle="bg-gradient-to-r from-[#FF6B6B] to-[#FF5252] hover:from-[#e55a5a] hover:to-[#e54a4a] hover:shadow-lg hover:shadow-[#FF6B6B]/30"
+        isLoading={deleteFaqMutation.isPending}
       />
     </div>
   );

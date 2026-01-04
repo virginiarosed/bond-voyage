@@ -10,12 +10,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../components/StatCard";
 import { ContentCard } from "../components/ContentCard";
-import { BookingListCard } from "../components/BookingListCard";
 import { TravelingAvatar } from "../components/TravelingAvatar";
 import { useProfile } from "../hooks/useAuth";
 import { useDashboardStats } from "../hooks/useDashboard";
 import { useActivityLogs } from "../hooks/useActivityLogs";
-import { useAdminBookings } from "../hooks/useBookings";
 import { getInitials } from "../utils/helpers/getInitials";
 import {
   LineChart,
@@ -32,18 +30,21 @@ import {
 } from "recharts";
 import { useMemo } from "react";
 import { transformTrendsData } from "../utils/helpers/transformTrendsData";
-import { User } from "../types/types";
+import { User, FAQ } from "../types/types";
 import { queryKeys } from "../utils/lib/queryKeys";
 import {
   getDefaultActivities,
   transformActivityLogs,
 } from "../utils/helpers/transformActivityLogs";
+import { useFaqs } from "../hooks/useFaqs";
 
 export function Dashboard() {
   const navigate = useNavigate();
   const { data: profileResponse } = useProfile();
   const { data: dashboardStatsResponse, isLoading } = useDashboardStats();
-  const { data: adminBookingsResponse } = useAdminBookings();
+
+  // Use real FAQ data from the API
+  const { data: faqsResponse } = useFaqs({ limit: 3 });
 
   const profileData: User = useMemo(() => {
     return profileResponse?.data?.user
@@ -157,58 +158,10 @@ export function Dashboard() {
     return transformActivityLogs(activityLogsResponse.data);
   }, [activityLogsResponse?.data]);
 
-  // Frequently Asked Questions data - Simplified version
-  const faqData = [
-    {
-      id: "FAQ-001",
-      question: "How do I create a new booking for a customer?",
-      answer:
-        "Go to the Bookings page and click 'Create Booking'. Fill in customer details, select itinerary, and confirm payment. You can also create bookings directly from the Itinerary page.",
-    },
-    {
-      id: "FAQ-002",
-      question:
-        "What's the difference between Standard and Requested itineraries?",
-      answer:
-        "Standard itineraries are pre-built templates for popular destinations. Requested itineraries are custom plans created specifically for individual customer requests with detailed day-by-day activities.",
-    },
-    {
-      id: "FAQ-003",
-      question: "How do I manage pending approvals?",
-      answer:
-        "Pending approvals appear on your dashboard and in the Bookings page. You can review, approve, or reject requests with comments. Notifications are sent to customers upon approval.",
-    },
-    {
-      id: "FAQ-004",
-      question: "Can I edit a booking after it's confirmed?",
-      answer:
-        "Yes, bookings can be edited from the Bookings page. Changes are tracked in the activity log, and customers receive notifications for significant modifications.",
-    },
-    {
-      id: "FAQ-005",
-      question: "How do I handle customer refunds?",
-      answer:
-        "Refunds can be processed through the Bookings page. Select the booking, click 'Manage Payment', then 'Process Refund'. Refunds take 3-5 business days to reflect in customer accounts.",
-    },
-    {
-      id: "FAQ-006",
-      question: "What are the cancellation policies?",
-      answer:
-        "Cancellations made 30+ days before travel receive full refund. 15-29 days: 50% refund. 0-14 days: non-refundable. Emergency cases are reviewed individually.",
-    },
-    {
-      id: "FAQ-007",
-      question: "How do I customize itineraries?",
-      answer:
-        "Go to the Itinerary page, select 'Create New Itinerary', and choose between Standard or Requested templates. You can add activities, set schedules, and include pricing details.",
-    },
-    {
-      id: "FAQ-008",
-      question: "What payment methods are accepted?",
-      answer:
-        "We accept credit cards (Visa, Mastercard, Amex), bank transfers, GCash, Maya, and PayPal. All payments are secured with SSL encryption.",
-    },
-  ];
+  // Use real FAQ data from API response
+  const faqData = useMemo(() => {
+    return faqsResponse?.data || [];
+  }, [faqsResponse?.data]);
 
   return (
     <div>
@@ -733,7 +686,7 @@ export function Dashboard() {
 
       {/* FAQ and Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        {/* Frequently Asked Questions - Simplified */}
+        {/* Frequently Asked Questions - Using real API data */}
         <ContentCard
           title="Frequently Asked Questions"
           action={
@@ -760,7 +713,7 @@ export function Dashboard() {
           }
         >
           <div className="space-y-4 pt-2">
-            {faqData.slice(0, 2).map((faq, index) => {
+            {faqData.slice(0, 2).map((faq: FAQ, index: number) => {
               const colors = [
                 { from: "#0A7AFF", to: "#14B8A6" },
                 { from: "#FFB84D", to: "#FF9800" },
@@ -791,6 +744,23 @@ export function Dashboard() {
                       <p className="text-sm text-[#64748B] line-clamp-3">
                         {faq.answer}
                       </p>
+                      {faq.tags && faq.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {faq.tags.slice(0, 3).map((tag, tagIndex) => (
+                            <span
+                              key={`${faq.id}-tag-${tagIndex}`}
+                              className="px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-600"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {faq.tags.length > 3 && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+                              +{faq.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

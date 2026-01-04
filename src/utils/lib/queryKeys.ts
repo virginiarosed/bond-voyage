@@ -44,4 +44,8 @@ export const queryKeys = {
   dashboard: {
     stats: (year?: number) => ["dashboard", "stats", year] as const,
   },
+  faqs: {
+    all: ["faqs"] as const,
+    list: (params?: any) => [...queryKeys.faqs.all, "list", params] as const,
+  },
 };
