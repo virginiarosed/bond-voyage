@@ -65,13 +65,7 @@ const activities: Activity[] = [
     icon: Calendar,
     color: "#8B5CF6", // Purple
   },
-  {
-    type: "inquiries",
-    label: "Answering Inquiries",
-    sublabel: "Customer support",
-    icon: Mail,
-    color: "#EC4899", // Pink
-  },
+
   {
     type: "feedback",
     label: "Managing Feedback",
