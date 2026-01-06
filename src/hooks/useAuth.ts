@@ -6,7 +6,7 @@ import {
   UseQueryOptions,
 } from "@tanstack/react-query";
 import axios, { AxiosError, AxiosInstance } from "axios";
-import { apiClient } from "../utils/axios/userAxios";
+import { apiClient, BASE_URL } from "../utils/axios/userAxios";
 import { queryKeys } from "../utils/lib/queryKeys";
 import { ApiResponse, AuthResponse, User } from "../types/types";
 import { jwtDecode } from "jwt-decode";
@@ -17,7 +17,7 @@ export const useRegister = (
   return useMutation({
     mutationFn: async (data: any) => {
       const response = await axios.post<ApiResponse<AuthResponse>>(
-        "/auth/register",
+        `${BASE_URL}/auth/register`,
         data
       );
       if (response.data.data?.accessToken) {
@@ -37,7 +37,7 @@ export const useLogin = (
   return useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
       const response = await axios.post<ApiResponse<AuthResponse>>(
-        "/auth/login",
+        `${BASE_URL}/auth/login`,
         credentials
       );
 
