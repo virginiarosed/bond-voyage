@@ -39,7 +39,7 @@ const userFeatures = [
   },
   {
     icon: Wand2,
-    title: "AI-Assisted Custom Itinerary",
+    title: "Booking Approvals",
     description: "Customize your itinerary with AI help",
   },
   {
@@ -59,7 +59,7 @@ const userFeatures = [
   },
   {
     icon: MessagesSquare,
-    title: "Inquiries Page",
+    title: "Inquiries Management",
     description: "Manage and communicate with admin about your inquiries",
   },
   {

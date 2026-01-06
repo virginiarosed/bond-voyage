@@ -86,17 +86,6 @@ export function Footer() {
         <div className="pt-8 border-t border-white/20">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-white opacity-60">
             <p>© 2025 BondVoyage. All rights reserved.</p>
-            <div className="flex items-center gap-6">
-              <a href="#" className="hover:opacity-100 transition-opacity">
-                Privacy Policy
-              </a>
-              <a href="#" className="hover:opacity-100 transition-opacity">
-                Terms of Service
-              </a>
-              <a href="#" className="hover:opacity-100 transition-opacity">
-                Cookie Policy
-              </a>
-            </div>
           </div>
         </div>
       </div>
