@@ -187,7 +187,7 @@ export function EditProfile() {
 
     // Call API to change password
     changePassword({
-      currentPassword: passwordForm.currentPassword,
+      oldPassword: passwordForm.currentPassword,
       newPassword: passwordForm.newPassword,
     });
   };
