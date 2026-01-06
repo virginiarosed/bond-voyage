@@ -111,7 +111,7 @@ export const useUpdateProfile = (
 
   return useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiClient.put<ApiResponse<{ user: User }>>(
+      const response = await apiClient.patch<ApiResponse<{ user: User }>>(
         "/users/profile",
         data
       );
@@ -128,10 +128,7 @@ export const useChangePassword = (
   options?: UseMutationOptions<ApiResponse, AxiosError, any>
 ) => {
   return useMutation({
-    mutationFn: async (data: {
-      currentPassword: string;
-      newPassword: string;
-    }) => {
+    mutationFn: async (data: { oldPassword: string; newPassword: string }) => {
       const response = await apiClient.put<ApiResponse>(
         "/users/change-password",
         data
