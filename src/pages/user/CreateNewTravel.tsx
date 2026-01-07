@@ -81,6 +81,7 @@ import {
   ShoppingCart,
   Search,
 } from "lucide-react";
+import { useProfile } from "../../hooks/useAuth";
 
 interface Activity {
   id: string;
@@ -226,6 +227,8 @@ export function CreateNewTravel() {
       activities: [],
     },
   ]);
+
+  const { data: userProfileResponse } = useProfile();
 
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
@@ -652,6 +655,14 @@ export function CreateNewTravel() {
       }
     }
 
+    // Check if user profile is loaded
+    if (!userProfileResponse?.data?.user) {
+      toast.error("Profile Not Loaded", {
+        description: "Please wait while we load your profile information.",
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -661,39 +672,61 @@ export function CreateNewTravel() {
     setSaveConfirmOpen(true);
   };
 
-  // Save travel plan
   const handleSave = () => {
-    // Transform itinerary data to match API structure
-    const apiItinerary = itineraryDays.map((day, index) => {
-      // Calculate the actual date for this day
-      const dayDate = new Date(formData.travelDateFrom);
-      dayDate.setDate(dayDate.getDate() + index);
+    const apiDays = itineraryDays.map((day, index) => {
+      const dayDate = formData.travelDateFrom
+        ? new Date(formData.travelDateFrom)
+        : new Date();
+      if (formData.travelDateFrom) {
+        dayDate.setDate(dayDate.getDate() + index);
+      }
 
       return {
         dayNumber: day.day,
-        date: dayDate.toISOString().split("T")[0], // YYYY-MM-DD format
+        date: formData.travelDateFrom
+          ? dayDate.toISOString().split("T")[0]
+          : null,
         activities: day.activities.map((activity, activityIndex) => ({
           time: activity.time || "00:00",
           title: activity.title,
-          description: activity.description || undefined,
+          description: activity.description || null,
+          location: activity.location || null,
+          icon: activity.icon || null,
           order: activityIndex + 1,
         })),
       };
     });
 
-    // Prepare booking data for API
+    const userProfile = userProfileResponse?.data?.user;
+
+    const itineraryTitle = `My Trip to ${formData.destination}`;
+
     const bookingData = {
       destination: formData.destination,
       startDate: formData.travelDateFrom,
       endDate: formData.travelDateTo,
       travelers: parseInt(formData.travelers),
       totalPrice: parseFloat(formData.totalAmount),
-      type: "CUSTOMIZED", // This is a customized booking
-      tourType: "PRIVATE", // You can make this configurable if needed
-      itinerary: apiItinerary,
+      type: "CUSTOMIZED",
+      tourType: "PRIVATE",
+      customerName: `${userProfile?.firstName || ""} ${
+        userProfile?.lastName || ""
+      }`.trim(),
+      customerEmail: userProfile?.email || "",
+      customerMobile: userProfile?.mobile || "",
+      itinerary: {
+        title: itineraryTitle,
+        destination: formData.destination,
+        startDate: formData.travelDateFrom,
+        endDate: formData.travelDateTo,
+        travelers: parseInt(formData.travelers),
+        estimatedCost: parseFloat(formData.totalAmount),
+        type: "CUSTOMIZED",
+        tourType: "PRIVATE",
+        days: apiDays,
+      },
     };
 
-    // Call API to create booking
     createBookingMutation.mutate(bookingData);
   };
 
@@ -1143,8 +1176,8 @@ export function CreateNewTravel() {
           </button>
           <button
             onClick={handleSaveClick}
-            disabled={createBookingMutation.isPending}
-            className="h-10 md:h-12 px-4 md:px-8 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all flex items-center gap-2 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={createBookingMutation.isPending || !userProfileResponse}
+            className="h-10 md:h-12 px-4 md:px-8 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all flex items-center gap-2 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
             {createBookingMutation.isPending ? "Saving..." : "Save Travel Plan"}
