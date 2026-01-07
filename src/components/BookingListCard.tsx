@@ -70,21 +70,6 @@ export function BookingListCard({
     }
   };
 
-  // Safely format booked date
-  const getFormattedBookedDate = () => {
-    try {
-      if (!booking.bookedDate) return "Date not set";
-      const date = new Date(booking.bookedDate);
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    } catch {
-      return "Invalid date";
-    }
-  };
-
   return (
     <div
       key={booking.id}
