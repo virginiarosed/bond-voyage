@@ -49,6 +49,7 @@ import {
   useTourPackages,
   useTourPackageDetail,
 } from "../../hooks/useTourPackages"; // Import your hooks
+import { useCreateBooking, useSubmitBooking } from "../../hooks/useBookings"; // Import booking mutations
 import { queryKeys } from "../../utils/lib/queryKeys";
 import { useProfile } from "../../hooks/useAuth";
 import { User } from "../../types/types";
@@ -74,7 +75,7 @@ interface BookingFormData {
   travelDateFrom: string;
   travelDateTo: string;
   travelers: string;
-  tourType: "Joiner" | "Private";
+  tourType: "JOINER" | "PRIVATE";
 }
 
 export function UserStandardItinerary() {
@@ -94,6 +95,7 @@ export function UserStandardItinerary() {
   >(null);
   const [createBookingConfirmOpen, setCreateBookingConfirmOpen] =
     useState(false);
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
 
   // Fetch tour packages using the hook
   const {
@@ -108,6 +110,62 @@ export function UserStandardItinerary() {
 
   const { data: profileResponse, isLoading: profileDataIsLoading } =
     useProfile();
+
+  // Initialize submit booking mutation (conditional based on created booking ID)
+  const submitBookingMutation = useSubmitBooking(createdBookingId || "", {
+    onSuccess: (response) => {
+      setCreateBookingConfirmOpen(false);
+      setCreatedBookingId(null);
+
+      toast.success("Booking Submitted Successfully!", {
+        description: `Your booking ${response.data?.bookingCode} has been submitted`,
+      });
+
+      // Reset form
+      setBookingFormData({
+        customerName: `${profileData.firstName} ${profileData.lastName}`,
+        email: profileData.email,
+        mobile: profileData.mobile,
+        travelDateFrom: "",
+        travelDateTo: "",
+        travelers: "1",
+        tourType: "" as any,
+      });
+
+      // Navigate to UserBookings with booking ID to scroll to
+      setTimeout(() => {
+        navigate("/user/bookings", {
+          state: { newBookingId: response.data?.bookingCode },
+        });
+      }, 1500);
+    },
+    onError: (error: any) => {
+      toast.error("Booking Submission Failed", {
+        description:
+          error?.response?.data?.message ||
+          "Failed to submit booking. Please try again.",
+      });
+    },
+  });
+
+  // Initialize create booking mutation
+  const createBookingMutation = useCreateBooking({
+    onSuccess: (response) => {
+      // Store the created booking ID
+      setCreatedBookingId(response.data?.id);
+
+      // Automatically submit the booking after creation
+      submitBookingMutation.mutate(undefined as any);
+    },
+    onError: (error: any) => {
+      toast.error("Booking Creation Failed", {
+        description:
+          error?.response?.data?.message ||
+          "Failed to create booking. Please try again.",
+      });
+      setCreateBookingConfirmOpen(false);
+    },
+  });
 
   const profileData: User = useMemo(() => {
     return profileResponse?.data?.user
@@ -142,49 +200,32 @@ export function UserStandardItinerary() {
 
   // Booking form data
   const [bookingFormData, setBookingFormData] = useState<BookingFormData>({
-    customerName: `${profileData.firstName} ${profileData.lastName}`,
-    email: profileData.email,
-    mobile: profileData.mobile,
+    customerName: "",
+    email: "",
+    mobile: "",
     travelDateFrom: "",
     travelDateTo: "",
     travelers: "1",
     tourType: "" as any,
   });
 
-  // Default itinerary details (fallback for packages without day-by-day details)
-  const defaultItineraryDetails: Record<string, ItineraryDay[]> = {
-    fallback: [
-      {
-        day: 1,
-        title: "Arrival & Check-in",
-        activities: [
-          {
-            time: "10:00 AM",
-            icon: Plane,
-            title: "Arrival",
-            description: "Meet and greet with tour guide",
-            location: "Airport",
-          },
-          {
-            time: "12:00 PM",
-            icon: Hotel,
-            title: "Check-in",
-            description: "Check-in at hotel",
-            location: "Hotel",
-          },
-          {
-            time: "6:00 PM",
-            icon: UtensilsCrossed,
-            title: "Welcome Dinner",
-            description: "Dinner at local restaurant",
-            location: "Restaurant",
-          },
-        ],
-      },
-    ],
-  };
+  // Auto-populate form with profile data when profile loads
+  useEffect(() => {
+    if (profileData.firstName && profileData.lastName) {
+      setBookingFormData((prev) => ({
+        ...prev,
+        customerName: `${profileData.firstName} ${profileData.lastName}`,
+        email: profileData.email,
+        mobile: profileData.mobile,
+      }));
+    }
+  }, [
+    profileData.firstName,
+    profileData.lastName,
+    profileData.email,
+    profileData.mobile,
+  ]);
 
-  // Transform API data to match component structure
   const templates =
     tourPackagesData?.data?.map((pkg) => ({
       id: pkg.id,
@@ -273,90 +314,23 @@ export function UserStandardItinerary() {
     const travelers = parseInt(bookingFormData.travelers) || 1;
     const totalAmount = selectedTemplate.pricePerPax * travelers;
 
-    // Generate booking ID
-    const currentYear = new Date().getFullYear();
-    const bookingId = `BV-${currentYear}-${String(
-      Math.floor(Math.random() * 9000) + 1000
-    ).padStart(4, "0")}`;
-
-    // Format dates
-    const formatDate = (dateStr: string) => {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      });
-    };
-
-    const dateRange = `${formatDate(
-      bookingFormData.travelDateFrom
-    )} – ${formatDate(bookingFormData.travelDateTo)}`;
-
-    // Create booking object
-    const newBooking = {
-      id: bookingId,
-      customer: bookingFormData.customerName,
-      email: bookingFormData.email,
-      mobile: bookingFormData.mobile,
+    // Prepare booking payload for API
+    const bookingPayload = {
+      itineraryId: selectedStandardForBooking, // Using tour package ID as itinerary ID
       destination: selectedTemplate.destination,
-      dates: dateRange,
+      startDate: new Date(bookingFormData.travelDateFrom).toISOString(),
+      endDate: new Date(bookingFormData.travelDateTo).toISOString(),
       travelers: travelers,
-      amount: `₱${totalAmount.toLocaleString()}`,
-      paymentStatus: "Unpaid" as const,
-      tripStatus: "upcoming" as const,
-      bookingDate: new Date().toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-      image: selectedTemplate.image,
-      itinerary: `${selectedTemplate.days} Days`,
-      bookingType: "Standard" as const,
+      totalPrice: totalAmount,
+      type: "STANDARD", // Changed from CUSTOMIZED to STANDARD
       tourType: bookingFormData.tourType,
+      customerName: bookingFormData.customerName,
+      customerEmail: bookingFormData.email,
+      customerMobile: bookingFormData.mobile,
     };
 
-    // Store in localStorage for UserBookings (user side)
-    const existingUserBookings = JSON.parse(
-      localStorage.getItem("userStandardBookings") || "[]"
-    );
-    existingUserBookings.push(newBooking);
-    localStorage.setItem(
-      "userStandardBookings",
-      JSON.stringify(existingUserBookings)
-    );
-
-    // Store in localStorage for Bookings (admin side) with same booking ID
-    const existingAdminBookings = JSON.parse(
-      localStorage.getItem("adminStandardBookings") || "[]"
-    );
-    existingAdminBookings.push(newBooking);
-    localStorage.setItem(
-      "adminStandardBookings",
-      JSON.stringify(existingAdminBookings)
-    );
-
-    setCreateBookingConfirmOpen(false);
-
-    toast.success("Booking Created Successfully!", {
-      description: `Your booking ${bookingId} has been created`,
-    });
-
-    // Reset form
-    setBookingFormData({
-      customerName: "Maria Santos",
-      email: "maria.santos@email.com",
-      mobile: "+63 917 123 4567",
-      travelDateFrom: "",
-      travelDateTo: "",
-      travelers: "1",
-      tourType: "" as any,
-    });
-
-    // Navigate to UserBookings with booking ID to scroll to
-    setTimeout(() => {
-      navigate("/user/bookings", { state: { newBookingId: bookingId } });
-    }, 1500);
+    // Call the API mutation
+    createBookingMutation.mutate(bookingPayload);
   };
 
   const selectedTemplate =
@@ -365,20 +339,22 @@ export function UserStandardItinerary() {
       : null;
 
   // Transform API day data to match component structure
-  const selectedItineraryDetails = packageDetailData?.data?.days?.length
-    ? packageDetailData.data.days.map((day: any, index: number) => ({
-        day: index + 1,
-        title: day.title || `Day ${index + 1}`,
-        activities:
-          day.activities?.map((activity: any) => ({
-            time: activity.time || "TBA",
-            icon: Camera, // Default icon, you can map this based on activity type
-            title: activity.title || "Activity",
-            description: activity.description || "",
-            location: activity.location || "",
-          })) || [],
-      }))
-    : defaultItineraryDetails.fallback;
+  // Return empty array if no days available
+  const selectedItineraryDetails =
+    packageDetailData?.data?.days && packageDetailData.data.days.length > 0
+      ? packageDetailData.data.days.map((day: any, index: number) => ({
+          day: index + 1,
+          title: day.title || `Day ${index + 1}`,
+          activities:
+            day.activities?.map((activity: any) => ({
+              time: activity.time || "TBA",
+              icon: Camera, // Default icon, you can map this based on activity type
+              title: activity.title || "Activity",
+              description: activity.description || "",
+              location: activity.location || "",
+            })) || [],
+        }))
+      : [];
 
   // Loading state
   if (isLoading) {
@@ -509,65 +485,79 @@ export function UserStandardItinerary() {
                 </div>
               </div>
 
-              <div className="space-y-6">
-                {selectedItineraryDetails.map((day) => (
-                  <div
-                    key={day.day}
-                    className="border-l-4 border-[#0A7AFF] dark:border-[#2596be] pl-6 relative"
-                  >
-                    {/* Day Header */}
-                    <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/30">
-                      <span className="text-white text-sm font-semibold">
-                        {day.day}
-                      </span>
-                    </div>
+              {selectedItineraryDetails.length > 0 ? (
+                <div className="space-y-6">
+                  {selectedItineraryDetails.map((day) => (
+                    <div
+                      key={day.day}
+                      className="border-l-4 border-[#0A7AFF] dark:border-[#2596be] pl-6 relative"
+                    >
+                      {/* Day Header */}
+                      <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/30">
+                        <span className="text-white text-sm font-semibold">
+                          {day.day}
+                        </span>
+                      </div>
 
-                    <div className="mb-4">
-                      <h4 className="font-semibold text-[#1A2B4F] dark:text-white">
-                        Day {day.day}: {day.title}
-                      </h4>
-                    </div>
+                      <div className="mb-4">
+                        <h4 className="font-semibold text-[#1A2B4F] dark:text-white">
+                          Day {day.day}: {day.title}
+                        </h4>
+                      </div>
 
-                    {/* Activities */}
-                    <div className="space-y-3 mb-6">
-                      {day.activities.map((activity, idx) => {
-                        const IconComponent = activity.icon;
-                        return (
-                          <div
-                            key={idx}
-                            className="flex gap-4 p-4 rounded-xl bg-[#F8FAFB] dark:bg-[#0F1419] hover:bg-white dark:hover:bg-[#1A1F2E] hover:shadow-sm border border-transparent hover:border-[#E5E7EB] dark:hover:border-[#2A3441] transition-all"
-                          >
-                            <div className="flex-shrink-0">
-                              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0A7AFF]/10 to-[#14B8A6]/10 dark:from-[#2596be]/20 dark:to-[#14B8A6]/20 flex items-center justify-center">
-                                <IconComponent className="w-5 h-5 text-[#0A7AFF] dark:text-[#2596be]" />
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-4 mb-1">
-                                <h5 className="font-medium text-[#1A2B4F] dark:text-white">
-                                  {activity.title}
-                                </h5>
-                                <span className="flex-shrink-0 text-sm text-[#0A7AFF] dark:text-[#2596be] font-medium">
-                                  {activity.time}
-                                </span>
-                              </div>
-                              <p className="text-sm text-[#64748B] dark:text-[#94A3B8] mb-1">
-                                {activity.description}
-                              </p>
-                              {activity.location && (
-                                <div className="flex items-center gap-1.5 text-xs text-[#64748B] dark:text-[#94A3B8]">
-                                  <MapPin className="w-3.5 h-3.5" />
-                                  <span>{activity.location}</span>
+                      {/* Activities */}
+                      <div className="space-y-3 mb-6">
+                        {day.activities.map((activity, idx) => {
+                          const IconComponent = activity.icon;
+                          return (
+                            <div
+                              key={idx}
+                              className="flex gap-4 p-4 rounded-xl bg-[#F8FAFB] dark:bg-[#0F1419] hover:bg-white dark:hover:bg-[#1A1F2E] hover:shadow-sm border border-transparent hover:border-[#E5E7EB] dark:hover:border-[#2A3441] transition-all"
+                            >
+                              <div className="flex-shrink-0">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0A7AFF]/10 to-[#14B8A6]/10 dark:from-[#2596be]/20 dark:to-[#14B8A6]/20 flex items-center justify-center">
+                                  <IconComponent className="w-5 h-5 text-[#0A7AFF] dark:text-[#2596be]" />
                                 </div>
-                              )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-4 mb-1">
+                                  <h5 className="font-medium text-[#1A2B4F] dark:text-white">
+                                    {activity.title}
+                                  </h5>
+                                  <span className="flex-shrink-0 text-sm text-[#0A7AFF] dark:text-[#2596be] font-medium">
+                                    {activity.time}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-[#64748B] dark:text-[#94A3B8] mb-1">
+                                  {activity.description}
+                                </p>
+                                {activity.location && (
+                                  <div className="flex items-center gap-1.5 text-xs text-[#64748B] dark:text-[#94A3B8]">
+                                    <MapPin className="w-3.5 h-3.5" />
+                                    <span>{activity.location}</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-[#F8FAFB] dark:bg-[#0F1419] flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="w-8 h-8 text-[#64748B] dark:text-[#94A3B8]" />
                   </div>
-                ))}
-              </div>
+                  <p className="text-[#64748B] dark:text-[#94A3B8] mb-2">
+                    No itinerary details available
+                  </p>
+                  <p className="text-sm text-[#94A3B8] dark:text-[#64748B]">
+                    Day-by-day itinerary has not been added for this package yet
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Additional Information */}
@@ -777,7 +767,7 @@ export function UserStandardItinerary() {
                     </Label>
                     <Select
                       value={bookingFormData.tourType}
-                      onValueChange={(value: "Joiner" | "Private") =>
+                      onValueChange={(value: "JOINER" | "PRIVATE") =>
                         setBookingFormData({
                           ...bookingFormData,
                           tourType: value,
@@ -788,8 +778,8 @@ export function UserStandardItinerary() {
                         <SelectValue placeholder="Select tour type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Joiner">Joiner</SelectItem>
-                        <SelectItem value="Private">Private</SelectItem>
+                        <SelectItem value="JOINER">JOINER</SelectItem>
+                        <SelectItem value="PRIVATE">PRIVATE</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -836,15 +826,31 @@ export function UserStandardItinerary() {
                     Cancel
                   </button>
                   <button
-                    onClick={handleCreateStandardBooking}
-                    className="px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg"
+                    onClick={handleConfirmBooking}
+                    disabled={
+                      createBookingMutation.isPending ||
+                      submitBookingMutation.isPending
+                    }
+                    className="px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     style={{
                       background:
                         "linear-gradient(135deg, var(--gradient-from), var(--gradient-to))",
                       color: "white",
                     }}
                   >
-                    Submit Booking
+                    {createBookingMutation.isPending ||
+                    submitBookingMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>
+                          {createBookingMutation.isPending
+                            ? "Creating..."
+                            : "Submitting..."}
+                        </span>
+                      </>
+                    ) : (
+                      <span>Submit Booking</span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -882,15 +888,24 @@ export function UserStandardItinerary() {
                     parseInt(bookingFormData.travelers || "1")
                   ).toLocaleString()}
                 </div>
-                <div>• Payment Status: Unpaid</div>
+                <div>• Payment Status: Pending</div>
               </div>
             </div>
           }
           onConfirm={handleConfirmBooking}
           onCancel={() => setCreateBookingConfirmOpen(false)}
-          confirmText="Confirm Booking"
+          confirmText={
+            createBookingMutation.isPending
+              ? "Creating..."
+              : submitBookingMutation.isPending
+              ? "Submitting..."
+              : "Confirm Booking"
+          }
           cancelText="Cancel"
           confirmVariant="default"
+          isLoading={
+            createBookingMutation.isPending || submitBookingMutation.isPending
+          }
         />
       </div>
     );
