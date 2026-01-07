@@ -25,6 +25,51 @@ import {
   AlertTriangle,
   Clock,
   ChevronLeft,
+  // Import all icon options from your CreateNewTravel component
+  Waves,
+  Mountain,
+  Palmtree,
+  TreePine,
+  Building2,
+  Ship,
+  Train,
+  Coffee,
+  ShoppingBag,
+  Music,
+  Sunset,
+  AlertCircle,
+  Sparkles as SparklesIcon,
+  CheckCircle2,
+  FileText,
+  Users as UsersIcon,
+  DollarSign,
+  Utensils,
+  Home,
+  Landmark,
+  Church,
+  Castle,
+  Globe,
+  Backpack,
+  Luggage,
+  Umbrella,
+  Sun,
+  Moon,
+  Star,
+  Heart,
+  Gift,
+  ShoppingCart,
+  Search,
+  Bus,
+  Anchor,
+  Bike,
+  Film,
+  Ticket,
+  Wine,
+  IceCream,
+  Pizza,
+  Fish,
+  Salad,
+  Tent,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ContentCard } from "../../components/ContentCard";
@@ -62,8 +107,83 @@ import { queryKeys } from "../../utils/lib/queryKeys";
 import { useProfile } from "../../hooks/useAuth";
 import { useAddCollaborator } from "../../hooks/useCollaborators";
 import { getIconForActivity } from "../../utils/helpers/getIconForActivity";
-import { transformBooking } from "../../utils/helpers/transformBooking";
 import { QueryClient } from "@tanstack/react-query";
+
+interface TransformedBooking {
+  id: string;
+  bookingCode: string;
+  owner: string;
+  email: string;
+  mobile: string;
+  destination: string;
+  dates: string;
+  startDate: string;
+  endDate: string;
+  travelers: number;
+  budget: string;
+  bookedDate: string;
+  status: string;
+  bookingType: string;
+  tourType: string;
+  ownership: "owned" | "collaborated" | "requested";
+  resolutionStatus?: "solved" | "unsolved";
+  itinerary: any[];
+}
+
+// Icon mapping for the new API response
+const ICON_MAP: Record<string, any> = {
+  relax: UtensilsCrossed,
+  food: UtensilsCrossed,
+  beach: Waves,
+  mountain: Mountain,
+  tree: TreePine,
+  // Map all icon values from CreateNewTravel component
+  Plane: Plane,
+  Hotel: Hotel,
+  Car: Car,
+  Bus: Bus,
+  Train: Train,
+  Ship: Ship,
+  Anchor: Anchor,
+  Bike: Bike,
+  Home: Home,
+  Tent: Tent,
+  UtensilsCrossed: UtensilsCrossed,
+  Utensils: Utensils,
+  Coffee: Coffee,
+  Wine: Wine,
+  IceCream: IceCream,
+  Pizza: Pizza,
+  Fish: Fish,
+  Salad: Salad,
+  Camera: Camera,
+  Waves: Waves,
+  Mountain: Mountain,
+  Palmtree: Palmtree,
+  TreePine: TreePine,
+  Landmark: Landmark,
+  Church: Church,
+  Castle: Castle,
+  Film: Film,
+  Music: Music,
+  Ticket: Ticket,
+  ShoppingBag: ShoppingBag,
+  ShoppingCart: ShoppingCart,
+  MapPin: MapPin,
+  Compass: AlertCircle,
+  Globe: Globe,
+  Backpack: Backpack,
+  Luggage: Luggage,
+  Package: ShoppingBag,
+  Building2: Building2,
+  Sunset: Sunset,
+  Sun: Sun,
+  Moon: Moon,
+  Star: Star,
+  Umbrella: Umbrella,
+  Heart: Heart,
+  Gift: Gift,
+};
 
 export function UserTravels() {
   const navigate = useNavigate();
@@ -114,7 +234,7 @@ export function UserTravels() {
         setJoinTravelId("");
         // Invalidate queries to refresh the list
         queryClient.invalidateQueries({
-          queryKey: queryKeys.bookings.myBookings,
+          queryKey: queryKeys.bookings.myBookings(),
         });
       },
       onError: (error: any) => {
@@ -222,22 +342,132 @@ export function UserTravels() {
     },
   });
 
-  const bookings =
-    myBookingsResponse?.data?.map((booking) =>
-      transformBooking(booking, profileData.id)
-    ) || [];
+  const bookings: TransformedBooking[] = useMemo(() => {
+    if (!myBookingsResponse?.data) return [];
 
-  const filteredTravels = bookings.filter((travel) => {
-    const statusMatch = travel.status === selectedTab;
-    const ownershipMatch =
-      selectedFilter === "all" || travel.ownership === selectedFilter;
+    return myBookingsResponse.data.map((booking) => {
+      // Use the ownership from the API response if available, otherwise calculate it
+      let ownership: "owned" | "collaborated" | "requested" = "owned";
 
-    if (selectedFilter === "requested" && requestedSubTab !== "all") {
+      if (booking.ownership) {
+        // Map the API ownership value to our expected values
+        ownership = booking.ownership.toLowerCase() as
+          | "owned"
+          | "collaborated"
+          | "requested";
+      } else if (profileData.id) {
+        // Fall back to calculating if ownership is not provided
+        const isOwner = booking.userId === profileData.id;
+        const isCollaborator = booking.itinerary?.collaborators?.some(
+          (collab: any) => collab.userId === profileData.id
+        );
+
+        if (!isOwner && isCollaborator) {
+          ownership = "collaborated";
+        } else if (!isOwner && !isCollaborator) {
+          ownership = "requested";
+        }
+      }
+
+      const formatDate = (dateString: string) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        });
+      };
+
+      const startDate = booking.startDate ? formatDate(booking.startDate) : "";
+      const endDate = booking.endDate ? formatDate(booking.endDate) : "";
+      const dates = startDate && endDate ? `${startDate} – ${endDate}` : "";
+
+      const bookedDate = booking.bookedDate
+        ? formatDate(booking.bookedDate)
+        : booking.createdAt
+        ? formatDate(booking.createdAt)
+        : "";
+
+      const budget = booking.totalPrice
+        ? `₱${booking.totalPrice.toLocaleString()}`
+        : "₱0";
+
+      let resolutionStatus: "solved" | "unsolved" | undefined;
+      if (booking.rejectionReason && !booking.isResolved) {
+        resolutionStatus = "unsolved";
+      } else if (booking.rejectionReason && booking.isResolved) {
+        resolutionStatus = "solved";
+      }
+
+      return {
+        id: booking.id,
+        bookingCode: booking.bookingCode,
+        owner: booking.customerName || "Unknown",
+        email: booking.customerEmail || "",
+        mobile: booking.customerMobile || "",
+        destination: booking.destination || "Unknown Destination",
+        dates,
+        startDate: booking.startDate || "",
+        endDate: booking.endDate || "",
+        travelers: booking.travelers || 0,
+        budget,
+        bookedDate,
+        status: booking.status?.toLowerCase() || "draft",
+        bookingType: booking.type || "CUSTOMIZED",
+        tourType: booking.tourType || "PRIVATE",
+        ownership,
+        resolutionStatus,
+        itinerary: booking.itinerary?.days || [],
+      };
+    });
+  }, [myBookingsResponse?.data, profileData.id]);
+
+  const filteredTravels = useMemo(() => {
+    return bookings.filter((booking) => {
+      const statusMatch = booking.status === selectedTab;
+      const ownershipMatch =
+        selectedFilter === "all" || booking.ownership === selectedFilter;
+
+      if (selectedFilter === "requested" && requestedSubTab !== "all") {
+        // Handle requested sub-tabs if needed
+        return statusMatch && ownershipMatch;
+      }
+
       return statusMatch && ownershipMatch;
-    }
+    });
+  }, [bookings, selectedTab, selectedFilter, requestedSubTab]);
 
-    return statusMatch && ownershipMatch;
-  });
+  // Get the selected booking for detail view
+  const selectedBooking = useMemo(() => {
+    return bookings.find((t) => t.id === selectedBookingId);
+  }, [bookings, selectedBookingId]);
+
+  // Transform itinerary for display in detail view
+  const transformedItinerary = useMemo(() => {
+    if (!selectedBooking?.itinerary) return [];
+
+    return selectedBooking.itinerary.map((day: any) => ({
+      day: day.dayNumber,
+      title: day.date
+        ? `Day ${day.dayNumber} - ${new Date(day.date).toLocaleDateString(
+            "en-US",
+            { month: "short", day: "numeric" }
+          )}`
+        : `Day ${day.dayNumber}`,
+      activities: (day.activities || [])
+        .sort((a: any, b: any) => a.order - b.order)
+        .map((activity: any) => ({
+          time: activity.time || "00:00",
+          icon:
+            ICON_MAP[activity.icon] ||
+            getIconForActivity(activity.title, activity.description),
+          title: activity.title,
+          description: activity.description || "",
+          location: activity.location || "",
+        })),
+    }));
+  }, [selectedBooking?.itinerary]);
 
   const handleViewDetails = (bookingId: string) => {
     setSelectedBookingId(bookingId);
@@ -295,28 +525,17 @@ export function UserTravels() {
   };
 
   const handleEditBooking = () => {
-    const selectedBooking = bookings.find((t) => t.id === selectedBookingId);
     if (!selectedBooking) {
       toast.error("Booking not found");
       return;
     }
 
-    const rawItinerary = selectedBooking.itinerary || [];
-
-    const serializableItinerary = rawItinerary.map((day: any) => ({
+    const serializableItinerary = selectedBooking.itinerary.map((day: any) => ({
       ...day,
-      activities: day.activities.map((activity: any) => {
-        const IconComponent = getIconForActivity(
-          activity.title,
-          activity.description
-        );
-        const iconName = IconComponent.name || "Clock";
-
-        return {
-          ...activity,
-          icon: iconName,
-        };
-      }),
+      activities: day.activities.map((activity: any) => ({
+        ...activity,
+        icon: activity.icon || "Clock", // Default icon if none
+      })),
     }));
 
     navigate(`/user/travels/edit/${selectedBookingId}`, {
@@ -602,13 +821,7 @@ export function UserTravels() {
   ]);
 
   // Detail view
-  if (viewMode === "detail" && selectedBookingId) {
-    const selectedBooking = bookings.find((t) => t.id === selectedBookingId);
-    if (!selectedBooking) {
-      setViewMode("list");
-      return null;
-    }
-
+  if (viewMode === "detail" && selectedBooking) {
     const tabLabel =
       selectedTab === "draft"
         ? "In Progress"
@@ -616,22 +829,6 @@ export function UserTravels() {
         ? "Pending"
         : "Rejected Bookings";
     const isOwner = selectedBooking.ownership === "owned";
-
-    // Transform itinerary for display
-    const itinerary =
-      selectedBooking.itinerary?.map((day) => ({
-        day: day.dayNumber,
-        title: `Day ${day.dayNumber}`,
-        activities: day.activities
-          .sort((a, b) => a.order - b.order)
-          .map((activity) => ({
-            time: activity.time,
-            icon: getIconForActivity(activity.title, activity.description),
-            title: activity.title,
-            description: activity.description || "",
-            location: "", // API doesn't provide location yet
-          })),
-      })) || [];
 
     return (
       <>
@@ -662,7 +859,7 @@ export function UserTravels() {
             bookedDate: selectedBooking.bookedDate,
             resolutionStatus: selectedBooking.resolutionStatus,
           }}
-          itinerary={itinerary}
+          itinerary={transformedItinerary}
           onBack={handleBackToList}
           breadcrumbPage={tabLabel}
           headerVariant={
@@ -1144,13 +1341,14 @@ export function UserTravels() {
                   <BookingListCard
                     booking={{
                       id: travel.id,
-                      customer: travel.owner,
-                      email: travel.email,
-                      mobile: travel.mobile,
+                      customerName: travel.owner,
+                      customerEmail: travel.email,
+                      customerMobile: travel.mobile,
                       destination: travel.destination,
-                      dates: travel.dates,
+                      startDate: travel.startDate,
+                      endDate: travel.endDate,
                       travelers: travel.travelers,
-                      total: travel.budget,
+                      totalPrice: travel.budget,
                       bookedDate: travel.bookedDate,
                       resolutionStatus: travel.resolutionStatus as any,
                       bookingCode: travel.bookingCode,

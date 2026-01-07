@@ -25,7 +25,6 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import { toast } from "sonner";
 import { useCreateBooking } from "../../hooks/useBookings";
 
-// Import all icons
 import {
   Plane,
   Hotel,
@@ -81,6 +80,7 @@ import {
   ShoppingCart,
   Search,
 } from "lucide-react";
+import { useProfile } from "../../hooks/useAuth";
 
 interface Activity {
   id: string;
@@ -226,6 +226,8 @@ export function CreateNewTravel() {
       activities: [],
     },
   ]);
+
+  const { data: userProfileResponse } = useProfile();
 
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
@@ -652,6 +654,14 @@ export function CreateNewTravel() {
       }
     }
 
+    // Check if user profile is loaded
+    if (!userProfileResponse?.data?.user) {
+      toast.error("Profile Not Loaded", {
+        description: "Please wait while we load your profile information.",
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -661,39 +671,61 @@ export function CreateNewTravel() {
     setSaveConfirmOpen(true);
   };
 
-  // Save travel plan
   const handleSave = () => {
-    // Transform itinerary data to match API structure
-    const apiItinerary = itineraryDays.map((day, index) => {
-      // Calculate the actual date for this day
-      const dayDate = new Date(formData.travelDateFrom);
-      dayDate.setDate(dayDate.getDate() + index);
+    const apiDays = itineraryDays.map((day, index) => {
+      const dayDate = formData.travelDateFrom
+        ? new Date(formData.travelDateFrom)
+        : new Date();
+      if (formData.travelDateFrom) {
+        dayDate.setDate(dayDate.getDate() + index);
+      }
 
       return {
         dayNumber: day.day,
-        date: dayDate.toISOString().split("T")[0], // YYYY-MM-DD format
+        date: formData.travelDateFrom
+          ? dayDate.toISOString().split("T")[0]
+          : null,
         activities: day.activities.map((activity, activityIndex) => ({
           time: activity.time || "00:00",
           title: activity.title,
-          description: activity.description || undefined,
+          description: activity.description || null,
+          location: activity.location || null,
+          icon: activity.icon || null,
           order: activityIndex + 1,
         })),
       };
     });
 
-    // Prepare booking data for API
+    const userProfile = userProfileResponse?.data?.user;
+
+    const itineraryTitle = `My Trip to ${formData.destination}`;
+
     const bookingData = {
       destination: formData.destination,
       startDate: formData.travelDateFrom,
       endDate: formData.travelDateTo,
       travelers: parseInt(formData.travelers),
       totalPrice: parseFloat(formData.totalAmount),
-      type: "CUSTOMIZED", // This is a customized booking
-      tourType: "PRIVATE", // You can make this configurable if needed
-      itinerary: apiItinerary,
+      type: "CUSTOMIZED",
+      tourType: "PRIVATE",
+      customerName: `${userProfile?.firstName || ""} ${
+        userProfile?.lastName || ""
+      }`.trim(),
+      customerEmail: userProfile?.email || "",
+      customerMobile: userProfile?.mobile || "",
+      itinerary: {
+        title: itineraryTitle,
+        destination: formData.destination,
+        startDate: formData.travelDateFrom,
+        endDate: formData.travelDateTo,
+        travelers: parseInt(formData.travelers),
+        estimatedCost: parseFloat(formData.totalAmount),
+        type: "CUSTOMIZED",
+        tourType: "PRIVATE",
+        days: apiDays,
+      },
     };
 
-    // Call API to create booking
     createBookingMutation.mutate(bookingData);
   };
 
@@ -865,11 +897,11 @@ export function CreateNewTravel() {
           {itineraryDays.map((day, dayIndex) => (
             <div
               key={day.id}
-              className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-gradient-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
+              className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
             >
               {/* Day Header */}
               <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                   <span className="text-white font-bold">D{day.day}</span>
                 </div>
                 <div className="flex-1">
@@ -890,7 +922,7 @@ export function CreateNewTravel() {
                 </div>
                 <button
                   onClick={() => addActivity(day.id)}
-                  className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all w-full md:w-auto justify-center"
+                  className="h-11 px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all w-full md:w-auto justify-center"
                 >
                   <Plus className="w-4 h-4" />
                   Add Activity
@@ -920,7 +952,7 @@ export function CreateNewTravel() {
                         className="relative p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
                       >
                         {/* Activity number badge */}
-                        <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
+                        <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
                           {activityIndex + 1}
                         </div>
 
@@ -1077,7 +1109,7 @@ export function CreateNewTravel() {
                                           }
                                           className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
                                         >
-                                          <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] flex-shrink-0" />
+                                          <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
                                           <span className="truncate">
                                             {suggestion}
                                           </span>
@@ -1115,7 +1147,7 @@ export function CreateNewTravel() {
                             onClick={() =>
                               confirmDeleteActivity(day.id, activity.id)
                             }
-                            className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 flex-shrink-0"
+                            className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 shrink-0"
                             title="Delete Activity"
                           >
                             <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B] transition-colors" />
@@ -1132,8 +1164,8 @@ export function CreateNewTravel() {
       </ContentCard>
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 md:left-[80px] right-0 h-16 bg-white border-t-2 border-[#E5E7EB] z-40">
-        <div className="h-full max-w-[1400px] mx-auto px-4 md:px-8 flex items-center justify-end gap-3">
+      <div className="fixed bottom-0 left-0 md:left-20 right-0 h-16 bg-white border-t-2 border-[#E5E7EB] z-40">
+        <div className="h-full max-w-350 mx-auto px-4 md:px-8 flex items-center justify-end gap-3">
           <button
             onClick={handleBackClick}
             disabled={createBookingMutation.isPending}
@@ -1143,8 +1175,8 @@ export function CreateNewTravel() {
           </button>
           <button
             onClick={handleSaveClick}
-            disabled={createBookingMutation.isPending}
-            className="h-10 md:h-12 px-4 md:px-8 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all flex items-center gap-2 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={createBookingMutation.isPending || !userProfileResponse}
+            className="h-10 md:h-12 px-4 md:px-8 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all flex items-center gap-2 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
             {createBookingMutation.isPending ? "Saving..." : "Save Travel Plan"}
@@ -1162,10 +1194,10 @@ export function CreateNewTravel() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[700px]">
+        <DialogContent className="sm:max-w-175">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               Select Activity Icon
@@ -1188,7 +1220,7 @@ export function CreateNewTravel() {
             </div>
           </div>
 
-          <ScrollArea className="max-h-[400px] px-6">
+          <ScrollArea className="max-h-100 px-6">
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 py-4">
               {filteredIcons.map((option) => {
                 const Icon = option.icon;
@@ -1198,7 +1230,7 @@ export function CreateNewTravel() {
                     onClick={() => selectIcon(option.value)}
                     className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] transition-all group"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <span className="text-xs text-center text-[#64748B] group-hover:text-[#0A7AFF] font-medium transition-colors leading-tight line-clamp-2">
@@ -1259,10 +1291,10 @@ export function CreateNewTravel() {
 
       {/* Unsaved Changes Modal */}
       <Dialog open={backConfirmOpen} onOpenChange={setBackConfirmOpen}>
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="sm:max-w-130">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 pb-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFB84D] to-[#FF9800] flex items-center justify-center shadow-lg shadow-[#FFB84D]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FFB84D] to-[#FF9800] flex items-center justify-center shadow-lg shadow-[#FFB84D]/20">
                 <AlertCircle className="w-5 h-5 text-white" />
               </div>
               Unsaved Changes
@@ -1359,7 +1391,7 @@ export function CreateNewTravel() {
               </div>
               <div className="mt-3 p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[#FF6B6B]/20">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 text-[#FF6B6B] shrink-0 mt-0.5" />
                   <p className="text-xs text-[#64748B]">
                     Day {reduceDaysConfirm.newDayCount + 1} through Day{" "}
                     {itineraryDays.length} will be permanently deleted.

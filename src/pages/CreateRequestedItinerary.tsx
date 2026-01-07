@@ -65,6 +65,7 @@ import {
   Search,
   Bot,
   Lock,
+  Loader2,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -90,6 +91,9 @@ import {
 import { useUsers } from "../hooks/useUsers";
 import { queryKeys } from "../utils/lib/queryKeys";
 import { useCreateBooking } from "../hooks/useBookings";
+import { useDebounce } from "../hooks/useDebounce";
+import { usePlacesSearch } from "../hooks/useLocations";
+import { Place } from "../types/types";
 
 interface Activity {
   id: string;
@@ -98,6 +102,8 @@ interface Activity {
   title: string;
   description: string;
   location: string;
+  locationData?: Place;
+  order: number;
 }
 
 interface Day {
@@ -224,11 +230,12 @@ export function CreateRequestedItinerary({
   } | null>(null);
 
   // Location autocomplete states
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [activeLocationInput, setActiveLocationInput] = useState<{
     dayId: string;
     activityId: string;
   } | null>(null);
+  const [locationSearchQuery, setLocationSearchQuery] = useState("");
+  const debouncedValue = useDebounce(locationSearchQuery);
 
   // Icon search state
   const [iconSearchQuery, setIconSearchQuery] = useState("");
@@ -237,6 +244,47 @@ export function CreateRequestedItinerary({
   const [selectedDayForRoute, setSelectedDayForRoute] = useState<string | null>(
     null
   );
+
+  // Use Places Search API with debounce
+  const { data: placesData, isLoading: isLoadingPlaces } = usePlacesSearch(
+    debouncedValue.length >= 2
+      ? {
+          text: debouncedValue,
+          limit: 10,
+        }
+      : undefined,
+    {
+      enabled: debouncedValue.length >= 2,
+      queryKey: queryKeys.places.search(debouncedValue),
+    }
+  );
+
+  const locationSuggestions = placesData?.data || [];
+
+  const handleAcceptOptimization = (
+    dayId: string,
+    optimizedActivities: Activity[]
+  ) => {
+    setItineraryDays((prev) =>
+      prev.map((day) =>
+        day.id === dayId
+          ? {
+              ...day,
+              activities: optimizedActivities.map((activity, index) => ({
+                ...activity,
+                order: index,
+              })),
+            }
+          : day
+      )
+    );
+    toast.success("Route Optimized", {
+      description: `Activities for Day ${
+        itineraryDays.find((d) => d.id === dayId)?.day
+      } have been reordered for optimal routing.`,
+    });
+    setHasUnsavedChanges(true);
+  };
 
   // Generate unique ID
   const generateId = () =>
@@ -401,32 +449,31 @@ export function CreateRequestedItinerary({
     }
   }, [formData.travelDateFrom, formData.travelDateTo, pendingDateChange]);
 
-  // Handle location search
-  const handleLocationSearch = (
+  // Handle location input change
+  const handleLocationInputChange = (
     searchTerm: string,
     dayId: string,
     activityId: string
   ) => {
+    updateActivity(dayId, activityId, "location", searchTerm);
     if (searchTerm.length >= 2) {
-      const filtered = PHILIPPINE_LOCATIONS.filter((location) =>
-        location.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setLocationSuggestions(filtered.slice(0, 5));
+      setLocationSearchQuery(searchTerm);
       setActiveLocationInput({ dayId, activityId });
     } else {
-      setLocationSuggestions([]);
+      setLocationSearchQuery("");
       setActiveLocationInput(null);
     }
   };
 
   // Select location suggestion
   const selectLocationSuggestion = (
-    location: string,
+    place: Place,
     dayId: string,
     activityId: string
   ) => {
-    updateActivity(dayId, activityId, "location", location);
-    setLocationSuggestions([]);
+    updateActivity(dayId, activityId, "location", place.name);
+    updateActivity(dayId, activityId, "locationData", place);
+    setLocationSearchQuery("");
     setActiveLocationInput(null);
   };
 
@@ -510,6 +557,7 @@ export function CreateRequestedItinerary({
 
   // Add activity to a day
   const addActivity = (dayId: string) => {
+    const day = itineraryDays.find((d) => d.id === dayId);
     const newActivity: Activity = {
       id: generateId(),
       time: "",
@@ -517,6 +565,7 @@ export function CreateRequestedItinerary({
       title: "",
       description: "",
       location: "",
+      order: day ? day.activities.length : 0,
     };
 
     setItineraryDays((prev) =>
@@ -546,7 +595,9 @@ export function CreateRequestedItinerary({
         day.id === dayId
           ? {
               ...day,
-              activities: day.activities.filter((a) => a.id !== activityId),
+              activities: day.activities
+                .filter((a) => a.id !== activityId)
+                .map((a, idx) => ({ ...a, order: idx })),
             }
           : day
       )
@@ -564,10 +615,10 @@ export function CreateRequestedItinerary({
     dayId: string,
     activityId: string,
     field: keyof Activity,
-    value: string
+    value: string | Place
   ) => {
     // Validate time overlap if updating time field
-    if (field === "time" && value) {
+    if (field === "time" && typeof value === "string" && value) {
       const day = itineraryDays.find((d) => d.id === dayId);
       if (day) {
         // Check if this time already exists in other activities of the same day
@@ -618,6 +669,7 @@ export function CreateRequestedItinerary({
   const openIconPicker = (dayId: string, activityId: string) => {
     setCurrentActivityForIcon({ dayId, activityId });
     setIconPickerOpen(true);
+    setIconSearchQuery("");
   };
 
   // Select icon
@@ -632,6 +684,7 @@ export function CreateRequestedItinerary({
     }
     setIconPickerOpen(false);
     setCurrentActivityForIcon(null);
+    setIconSearchQuery("");
   };
 
   // Move activity up
@@ -645,7 +698,10 @@ export function CreateRequestedItinerary({
             newActivities[activityIndex - 1],
             newActivities[activityIndex],
           ];
-          return { ...day, activities: newActivities };
+          return {
+            ...day,
+            activities: newActivities.map((a, idx) => ({ ...a, order: idx })),
+          };
         }
         return day;
       })
@@ -662,7 +718,10 @@ export function CreateRequestedItinerary({
             newActivities[activityIndex + 1],
             newActivities[activityIndex],
           ];
-          return { ...day, activities: newActivities };
+          return {
+            ...day,
+            activities: newActivities.map((a, idx) => ({ ...a, order: idx })),
+          };
         }
         return day;
       })
@@ -918,13 +977,16 @@ export function CreateRequestedItinerary({
           dayNumber: day.day,
           date: dayDate.toISOString().split("T")[0],
           title: day.title || "",
-          activities: day.activities.map((activity, activityIndex) => ({
-            time: activity.time || "00:00",
-            title: activity.title,
-            description: activity.description || "",
-            location: activity.location || "",
-            order: activityIndex + 1,
-          })),
+          activities: day.activities
+            .sort((a, b) => a.order - b.order)
+            .map((activity) => ({
+              time: activity.time || "00:00",
+              title: activity.title,
+              description: activity.description || "",
+              location: activity.location || "",
+              locationData: activity.locationData || null,
+              order: activity.order,
+            })),
         };
       }),
     };
@@ -983,17 +1045,6 @@ export function CreateRequestedItinerary({
     setBackConfirmOpen(false);
     setHasUnsavedChanges(false);
     navigate("/itinerary");
-  };
-
-  const handleAcceptOptimization = (
-    dayId: string,
-    optimizedActivities: Activity[]
-  ) => {
-    setItineraryDays((prev) =>
-      prev.map((day) =>
-        day.id === dayId ? { ...day, activities: optimizedActivities } : day
-      )
-    );
   };
 
   return (
@@ -1518,16 +1569,30 @@ export function CreateRequestedItinerary({
         </ContentCard>
 
         {/* Route Optimization Panel */}
-        {itineraryDays.some(
-          (day) => day.activities.filter((a) => a.location).length >= 2
-        ) && (
+        {itineraryDays.some((day) => {
+          const validLocations = day.activities.filter(
+            (a) =>
+              a.location &&
+              a.locationData &&
+              typeof a.locationData.lat === "number" &&
+              typeof a.locationData.lng === "number"
+          );
+          return validLocations.length >= 2;
+        }) && (
           <RouteOptimizationPanel
             itineraryDays={itineraryDays}
             selectedDayId={
               selectedDayForRoute ||
-              itineraryDays.find(
-                (d) => d.activities.filter((a) => a.location).length >= 2
-              )?.id
+              itineraryDays.find((d) => {
+                const validLocations = d.activities.filter(
+                  (a) =>
+                    a.location &&
+                    a.locationData &&
+                    typeof a.locationData.lat === "number" &&
+                    typeof a.locationData.lng === "number"
+                );
+                return validLocations.length >= 2;
+              })?.id
             }
             onAcceptOptimization={handleAcceptOptimization}
           />
@@ -1661,6 +1726,7 @@ export function CreateRequestedItinerary({
                                   Icon
                                 </Label>
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     openIconPicker(day.id, activity.id)
                                   }
@@ -1696,40 +1762,41 @@ export function CreateRequestedItinerary({
                                   Location
                                 </Label>
                                 <div className="relative">
-                                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none z-10" />
+                                  {isLoadingPlaces &&
+                                    activeLocationInput?.dayId === day.id &&
+                                    activeLocationInput?.activityId ===
+                                      activity.id && (
+                                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
+                                    )}
                                   <Input
                                     placeholder="Search location..."
                                     value={activity.location}
-                                    onChange={(e) => {
-                                      updateActivity(
-                                        day.id,
-                                        activity.id,
-                                        "location",
-                                        e.target.value
-                                      );
-                                      handleLocationSearch(
+                                    onChange={(e) =>
+                                      handleLocationInputChange(
                                         e.target.value,
                                         day.id,
                                         activity.id
-                                      );
-                                    }}
+                                      )
+                                    }
                                     onFocus={() => {
                                       if (activity.location.length >= 2) {
-                                        handleLocationSearch(
-                                          activity.location,
-                                          day.id,
-                                          activity.id
+                                        setLocationSearchQuery(
+                                          activity.location
                                         );
+                                        setActiveLocationInput({
+                                          dayId: day.id,
+                                          activityId: activity.id,
+                                        });
                                       }
                                     }}
                                     onBlur={() => {
-                                      // Delay hiding suggestions to allow click
                                       setTimeout(() => {
-                                        setLocationSuggestions([]);
+                                        setLocationSearchQuery("");
                                         setActiveLocationInput(null);
                                       }, 200);
                                     }}
-                                    className="h-9 pl-9 rounded-lg border-[#E5E7EB] text-sm"
+                                    className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm"
                                   />
                                 </div>
 
@@ -1738,28 +1805,63 @@ export function CreateRequestedItinerary({
                                   activeLocationInput?.activityId ===
                                     activity.id &&
                                   locationSuggestions.length > 0 && (
-                                    <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-40 overflow-auto">
-                                      {locationSuggestions.map(
-                                        (suggestion, idx) => (
-                                          <button
-                                            key={idx}
-                                            type="button"
-                                            onClick={() =>
-                                              selectLocationSuggestion(
-                                                suggestion,
-                                                day.id,
-                                                activity.id
-                                              )
-                                            }
-                                            className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
-                                          >
-                                            <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
-                                            <span className="truncate">
-                                              {suggestion}
-                                            </span>
-                                          </button>
-                                        )
-                                      )}
+                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                                      {locationSuggestions.map((place, idx) => (
+                                        <button
+                                          key={idx}
+                                          type="button"
+                                          onClick={() =>
+                                            selectLocationSuggestion(
+                                              place,
+                                              day.id,
+                                              activity.id
+                                            )
+                                          }
+                                          className="w-full px-4 py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
+                                        >
+                                          <div className="flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
+                                              <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
+                                                {place.name}
+                                              </p>
+                                              <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                                                {place.address}
+                                              </p>
+                                              <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-xs px-2 py-0.5 rounded bg-[#F1F5F9] text-[#64748B]">
+                                                  {place.source}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                {activeLocationInput?.dayId === day.id &&
+                                  activeLocationInput?.activityId ===
+                                    activity.id &&
+                                  !isLoadingPlaces &&
+                                  locationSearchQuery.length >= 2 &&
+                                  locationSuggestions.length === 0 && (
+                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg p-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-[#F8FAFB] flex items-center justify-center shrink-0">
+                                          <Search className="w-5 h-5 text-[#CBD5E1]" />
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-[#64748B]">
+                                            No locations found
+                                          </p>
+                                          <p className="text-xs text-[#94A3B8] mt-0.5">
+                                            Try a different search term
+                                          </p>
+                                        </div>
+                                      </div>
                                     </div>
                                   )}
                               </div>
@@ -1788,6 +1890,7 @@ export function CreateRequestedItinerary({
 
                             {/* Delete Button */}
                             <button
+                              type="button"
                               onClick={() =>
                                 confirmDeleteActivity(day.id, activity.id)
                               }
@@ -1877,6 +1980,7 @@ export function CreateRequestedItinerary({
                 return (
                   <button
                     key={option.value}
+                    type="button"
                     onClick={() => selectIcon(option.value)}
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] transition-all group"
                   >
@@ -1975,6 +2079,7 @@ export function CreateRequestedItinerary({
             </p>
             <div className="flex flex-col gap-3 pt-2">
               <button
+                type="button"
                 onClick={handleSaveDraft}
                 className="w-full h-12 px-6 rounded-xl bg-linear-to-r from-[#FFB84D] to-[#FF9800] text-white font-medium shadow-lg shadow-[#FFB84D]/20 hover:shadow-xl hover:shadow-[#FFB84D]/30 transition-all flex items-center justify-center gap-2"
               >
@@ -1982,12 +2087,14 @@ export function CreateRequestedItinerary({
                 Save as Draft
               </button>
               <button
+                type="button"
                 onClick={() => setBackConfirmOpen(false)}
                 className="w-full h-12 px-6 rounded-xl border-2 border-[#E5E7EB] hover:border-[#CBD5E1] hover:bg-[#F8FAFB] text-[#334155] font-medium transition-all flex items-center justify-center"
               >
                 Continue Editing
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setBackConfirmOpen(false);
                   setHasUnsavedChanges(false);

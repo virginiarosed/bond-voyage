@@ -98,9 +98,10 @@ export const useSubmitBooking = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (data: any) => {
       const response = await apiClient.patch<ApiResponse<Booking>>(
-        `/bookings/${id}/submit`
+        `/bookings/${id}/submit`,
+        { data }
       );
       return response.data;
     },

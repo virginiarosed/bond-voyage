@@ -129,6 +129,7 @@ export interface Booking {
   endDate: string | null;
   travelers: number;
   totalPrice: number;
+  ownership: string;
   type: "STANDARD" | "CUSTOMIZED" | "REQUESTED";
   status:
     | "DRAFT"

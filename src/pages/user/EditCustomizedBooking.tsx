@@ -66,6 +66,7 @@ import {
   Search,
   RotateCcw,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { ContentCard } from "../../components/ContentCard";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
@@ -87,24 +88,11 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import { toast } from "sonner";
 import { useBreadcrumbs } from "../../components/BreadcrumbContext";
 import { useProfile } from "../../hooks/useAuth";
-import { User as IUser } from "../../types/types";
+import { Day, IActivity, User as IUser, Place } from "../../types/types";
 import { queryKeys } from "../../utils/lib/queryKeys";
-
-interface Activity {
-  id: string;
-  time: string;
-  icon: string;
-  title: string;
-  description: string;
-  location: string;
-}
-
-interface Day {
-  id: string;
-  day: number;
-  title: string;
-  activities: Activity[];
-}
+import { useDebounce } from "../../hooks/useDebounce";
+import { usePlacesSearch } from "../../hooks/useLocations";
+import { ICON_OPTIONS } from "../../utils/constants/constants";
 
 interface BookingFormData {
   destination: string;
@@ -122,103 +110,6 @@ interface Version {
   itineraryDays: Day[];
   label?: string;
 }
-
-const ICON_OPTIONS = [
-  // Transportation
-  { value: "Plane", label: "Plane / Flight", icon: Plane },
-  { value: "Car", label: "Car / Drive", icon: Car },
-  { value: "Bus", label: "Bus", icon: Bus },
-  { value: "Train", label: "Train", icon: Train },
-  { value: "Ship", label: "Ship / Ferry", icon: Ship },
-  { value: "Anchor", label: "Boat / Anchor", icon: Anchor },
-  { value: "Bike", label: "Bike / Cycling", icon: Bike },
-
-  // Accommodation
-  { value: "Hotel", label: "Hotel / Lodging", icon: Hotel },
-  { value: "Home", label: "Home / Villa", icon: Home },
-  { value: "Tent", label: "Camping / Tent", icon: Tent },
-
-  // Food & Dining
-  { value: "UtensilsCrossed", label: "Restaurant", icon: UtensilsCrossed },
-  { value: "Utensils", label: "Dining", icon: Utensils },
-  { value: "Coffee", label: "Coffee / Cafe", icon: Coffee },
-  { value: "Wine", label: "Wine / Bar", icon: Wine },
-  { value: "IceCream", label: "Dessert / Ice Cream", icon: IceCream },
-  { value: "Pizza", label: "Pizza / Fast Food", icon: Pizza },
-  { value: "Fish", label: "Seafood", icon: Fish },
-  { value: "Salad", label: "Healthy Food", icon: Salad },
-
-  // Activities & Attractions
-  { value: "Camera", label: "Photography / Sightseeing", icon: Camera },
-  { value: "Waves", label: "Beach / Swimming", icon: Waves },
-  { value: "Mountain", label: "Mountain / Hiking", icon: Mountain },
-  { value: "Palmtree", label: "Tropical / Island", icon: Palmtree },
-  { value: "TreePine", label: "Nature / Forest", icon: TreePine },
-  { value: "Landmark", label: "Landmark / Monument", icon: Landmark },
-  { value: "Church", label: "Church / Temple", icon: Church },
-  { value: "Castle", label: "Castle / Palace", icon: Castle },
-  { value: "Film", label: "Movies / Shows", icon: Film },
-  { value: "Music", label: "Music / Entertainment", icon: Music },
-  { value: "Ticket", label: "Event / Tickets", icon: Ticket },
-  { value: "ShoppingBag", label: "Shopping", icon: ShoppingBag },
-  { value: "ShoppingCart", label: "Market / Shopping", icon: ShoppingCart },
-
-  // Navigation & Travel
-  { value: "MapPin", label: "Location / Map Pin", icon: MapPin },
-  { value: "Compass", label: "Compass / Navigate", icon: Compass },
-  { value: "Globe", label: "World / Global", icon: Globe },
-  { value: "Backpack", label: "Backpacking / Adventure", icon: Backpack },
-  { value: "Luggage", label: "Luggage / Travel", icon: Luggage },
-
-  // Misc
-  { value: "Package", label: "Package / Tour", icon: Package },
-  { value: "Building2", label: "Building / City", icon: Building2 },
-  { value: "Sunset", label: "Sunset / Sunrise", icon: Sunset },
-  { value: "Sun", label: "Sun / Day", icon: Sun },
-  { value: "Moon", label: "Moon / Night", icon: Moon },
-  { value: "Star", label: "Star / Featured", icon: Star },
-  { value: "Umbrella", label: "Umbrella / Beach", icon: Umbrella },
-  { value: "Heart", label: "Love / Favorite", icon: Heart },
-  { value: "Gift", label: "Gift / Souvenir", icon: Gift },
-];
-
-// Philippine cities/destinations for autocomplete suggestions
-const PHILIPPINE_LOCATIONS = [
-  "Boracay, Aklan",
-  "Caticlan Airport, Malay, Aklan",
-  "White Beach, Boracay",
-  "D'Mall, Boracay",
-  "Manila, Metro Manila",
-  "Makati, Metro Manila",
-  "BGC, Taguig City",
-  "Intramuros, Manila",
-  "Rizal Park, Manila",
-  "Palawan",
-  "El Nido, Palawan",
-  "Coron, Palawan",
-  "Puerto Princesa, Palawan",
-  "Underground River, Palawan",
-  "Cebu City, Cebu",
-  "Mactan Island, Cebu",
-  "Oslob, Cebu",
-  "Moalboal, Cebu",
-  "Kawasan Falls, Cebu",
-  "Baguio City, Benguet",
-  "Banaue Rice Terraces, Ifugao",
-  "Sagada, Mountain Province",
-  "Vigan, Ilocos Sur",
-  "Pagudpud, Ilocos Norte",
-  "Siargao Island",
-  "Cloud 9, Siargao",
-  "Bohol",
-  "Chocolate Hills, Bohol",
-  "Panglao Island, Bohol",
-  "Tagbilaran, Bohol",
-  "Davao City",
-  "Camiguin Island",
-  "Batanes",
-  "Hundred Islands, Pangasinan",
-];
 
 const getIconComponent = (iconName: string) => {
   const iconOption = ICON_OPTIONS.find((opt) => opt.value === iconName);
@@ -375,18 +266,94 @@ export function EditCustomizedBooking() {
   } | null>(null);
 
   // Location autocomplete states
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [activeLocationInput, setActiveLocationInput] = useState<{
     dayId: string;
     activityId: string;
   } | null>(null);
+  const [locationSearchQuery, setLocationSearchQuery] = useState("");
+  const debouncedValue = useDebounce(locationSearchQuery);
 
   // Icon search state
   const [iconSearchQuery, setIconSearchQuery] = useState("");
 
+  // Route Optimization state
+  const [selectedDayForRoute, setSelectedDayForRoute] = useState<string | null>(
+    null
+  );
+
+  // Use Places Search API with debounce
+  const { data: placesData, isLoading: isLoadingPlaces } = usePlacesSearch(
+    debouncedValue.length >= 2
+      ? {
+          text: debouncedValue,
+          limit: 10,
+        }
+      : undefined,
+    {
+      enabled: debouncedValue.length >= 2,
+      queryKey: queryKeys.places.search(debouncedValue),
+    }
+  );
+
+  const locationSuggestions = placesData?.data || [];
+
   // Generate unique ID
   const generateId = () =>
     `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  // Handle route optimization acceptance
+  const handleAcceptOptimization = (
+    dayId: string,
+    optimizedActivities: IActivity[]
+  ) => {
+    setItineraryDays((prev) =>
+      prev.map((day) =>
+        day.id === dayId
+          ? {
+              ...day,
+              activities: optimizedActivities.map((activity, index) => ({
+                ...activity,
+                order: index,
+              })),
+            }
+          : day
+      )
+    );
+    toast.success("Route Optimized", {
+      description: `Activities for Day ${
+        itineraryDays.find((d) => d.id === dayId)?.dayNumber
+      } have been reordered for optimal routing.`,
+    });
+    setHasUnsavedChanges(true);
+  };
+
+  // Handle location input change
+  const handleLocationInputChange = (
+    searchTerm: string,
+    dayId: string,
+    activityId: string
+  ) => {
+    updateActivity(dayId, activityId, "location", searchTerm);
+    if (searchTerm.length >= 2) {
+      setLocationSearchQuery(searchTerm);
+      setActiveLocationInput({ dayId, activityId });
+    } else {
+      setLocationSearchQuery("");
+      setActiveLocationInput(null);
+    }
+  };
+
+  // Select location suggestion
+  const selectLocationSuggestion = (
+    place: Place,
+    dayId: string,
+    activityId: string
+  ) => {
+    updateActivity(dayId, activityId, "location", place.name);
+    updateActivity(dayId, activityId, "locationData", place);
+    setLocationSearchQuery("");
+    setActiveLocationInput(null);
+  };
 
   // Load versions from localStorage
   useEffect(() => {
@@ -580,13 +547,15 @@ export function EditCustomizedBooking() {
           day: day.dayNumber || index + 1,
           title: "",
           activities:
-            day.activities?.map((activity: any) => ({
+            day.activities?.map((activity: any, activityIndex: number) => ({
               id: activity.id || generateId(),
               time: activity.time || "",
               icon: activity.icon || "Clock",
               title: activity.title || "",
               description: activity.description || "",
               location: activity.location || "",
+              locationData: activity.locationData || undefined,
+              order: activity.order ?? activityIndex,
             })) || [],
         })
       );
@@ -606,7 +575,7 @@ export function EditCustomizedBooking() {
         for (let i = 1; i <= dayCount; i++) {
           days.push({
             id: generateId(),
-            day: i,
+            dayNumber: i,
             title: "",
             activities: [],
           });
@@ -615,7 +584,7 @@ export function EditCustomizedBooking() {
         // Default to 1 day if no dates
         days.push({
           id: generateId(),
-          day: 1,
+          dayNumber: 1,
           title: "",
           activities: [],
         });
@@ -715,7 +684,7 @@ export function EditCustomizedBooking() {
           for (let i = itineraryDays.length + 1; i <= dayCount; i++) {
             newDays.push({
               id: generateId(),
-              day: i,
+              dayNumber: i,
               title: "",
               activities: [],
             });
@@ -741,35 +710,6 @@ export function EditCustomizedBooking() {
     pendingDateChange,
     itineraryDays,
   ]);
-
-  // Handle location search
-  const handleLocationSearch = (
-    searchTerm: string,
-    dayId: string,
-    activityId: string
-  ) => {
-    if (searchTerm.length >= 2) {
-      const filtered = PHILIPPINE_LOCATIONS.filter((location) =>
-        location.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setLocationSuggestions(filtered.slice(0, 5));
-      setActiveLocationInput({ dayId, activityId });
-    } else {
-      setLocationSuggestions([]);
-      setActiveLocationInput(null);
-    }
-  };
-
-  // Select location suggestion
-  const selectLocationSuggestion = (
-    location: string,
-    dayId: string,
-    activityId: string
-  ) => {
-    updateActivity(dayId, activityId, "location", location);
-    setLocationSuggestions([]);
-    setActiveLocationInput(null);
-  };
 
   // Handle booking data changes
   const handleBookingChange = (field: keyof BookingFormData, value: string) => {
@@ -849,13 +789,15 @@ export function EditCustomizedBooking() {
 
   // Add activity to a day
   const addActivity = (dayId: string) => {
-    const newActivity: Activity = {
+    const day = itineraryDays.find((d) => d.id === dayId);
+    const newActivity: IActivity = {
       id: generateId(),
       time: "",
       icon: "",
       title: "",
       description: "",
       location: "",
+      order: day ? day.activities.length : 0,
     };
 
     setItineraryDays((prev) =>
@@ -886,7 +828,9 @@ export function EditCustomizedBooking() {
         day.id === dayId
           ? {
               ...day,
-              activities: day.activities.filter((a) => a.id !== activityId),
+              activities: day.activities
+                .filter((a) => a.id !== activityId)
+                .map((a, idx) => ({ ...a, order: idx })),
             }
           : day
       )
@@ -903,11 +847,11 @@ export function EditCustomizedBooking() {
   const updateActivity = (
     dayId: string,
     activityId: string,
-    field: keyof Activity,
-    value: string
+    field: keyof IActivity,
+    value: string | Place
   ) => {
     // Validate time overlap if updating time field
-    if (field === "time" && value) {
+    if (field === "time" && typeof value === "string" && value) {
       const day = itineraryDays.find((d) => d.id === dayId);
       if (day) {
         // Check if this time already exists in other activities of the same day
@@ -917,7 +861,7 @@ export function EditCustomizedBooking() {
 
         if (timeExists) {
           toast.error("Time Overlap Detected", {
-            description: `The time ${value} is already used by another activity on Day ${day.day}. Please choose a different time.`,
+            description: `The time ${value} is already used by another activity on Day ${day.dayNumber}. Please choose a different time.`,
           });
           return; // Don't update if time overlaps
         }
@@ -930,7 +874,7 @@ export function EditCustomizedBooking() {
           const previousActivity = day.activities[activityIndex - 1];
           if (previousActivity.time && value <= previousActivity.time) {
             toast.error("Invalid Time Sequence", {
-              description: `Activity time must be later than the previous activity (${previousActivity.time}) on Day ${day.day}.`,
+              description: `Activity time must be later than the previous activity (${previousActivity.time}) on Day ${day.dayNumber}.`,
             });
             return; // Don't update if not sequential
           }
@@ -967,7 +911,10 @@ export function EditCustomizedBooking() {
             newActivities[activityIndex],
             newActivities[activityIndex - 1],
           ];
-          return { ...day, activities: newActivities };
+          return {
+            ...day,
+            activities: newActivities.map((a, idx) => ({ ...a, order: idx })),
+          };
         }
         return day;
       })
@@ -985,7 +932,10 @@ export function EditCustomizedBooking() {
             newActivities[activityIndex + 1],
             newActivities[activityIndex],
           ];
-          return { ...day, activities: newActivities };
+          return {
+            ...day,
+            activities: newActivities.map((a, idx) => ({ ...a, order: idx })),
+          };
         }
         return day;
       })
@@ -997,6 +947,7 @@ export function EditCustomizedBooking() {
   const openIconPicker = (dayId: string, activityId: string) => {
     setCurrentActivityForIcon({ dayId, activityId });
     setIconPickerOpen(true);
+    setIconSearchQuery("");
   };
 
   // Select icon
@@ -1011,6 +962,7 @@ export function EditCustomizedBooking() {
     }
     setIconPickerOpen(false);
     setCurrentActivityForIcon(null);
+    setIconSearchQuery("");
   };
 
   // Handle save
@@ -1031,7 +983,7 @@ export function EditCustomizedBooking() {
     }
 
     // Check if all days have at least a title
-    const hasEmptyDays = itineraryDays.some((day) => !day.title.trim());
+    const hasEmptyDays = itineraryDays.some((day) => !day.title?.trim());
     if (hasEmptyDays) {
       toast.error("Validation Error", {
         description: "Please provide a title for all days.",
@@ -1062,15 +1014,18 @@ export function EditCustomizedBooking() {
         ? parseFloat(bookingData.totalPrice)
         : 0,
       itinerary: itineraryDays.map((day) => ({
-        dayNumber: day.day,
-        activities: day.activities.map((activity, index) => ({
-          time: activity.time,
-          title: activity.title,
-          description: activity.description,
-          location: activity.location,
-          icon: activity.icon,
-          order: index + 1, // Add order field based on position
-        })),
+        dayNumber: day.dayNumber,
+        activities: day.activities
+          .sort((a, b) => a.order - b.order)
+          .map((activity) => ({
+            time: activity.time,
+            title: activity.title,
+            description: activity.description,
+            location: activity.location,
+            locationData: activity.locationData || null,
+            icon: activity.icon,
+            order: activity.order,
+          })),
       })),
     };
 
@@ -1111,19 +1066,6 @@ export function EditCustomizedBooking() {
   const handleConfirmBack = () => {
     setBackConfirmOpen(false);
     navigate("/user/travels");
-  };
-
-  // Handle route optimization acceptance
-  const handleAcceptOptimization = (
-    dayId: string,
-    optimizedActivities: Activity[]
-  ) => {
-    setItineraryDays((prev) =>
-      prev.map((day) =>
-        day.id === dayId ? { ...day, activities: optimizedActivities } : day
-      )
-    );
-    setHasUnsavedChanges(true);
   };
 
   if (isBookingLoading) {
@@ -1291,11 +1233,31 @@ export function EditCustomizedBooking() {
       </ContentCard>
 
       {/* Route Optimization Panel */}
-      {itineraryDays.some(
-        (day) => day.activities.filter((a) => a.location).length >= 2
-      ) && (
+      {itineraryDays.some((day) => {
+        const validLocations = day.activities.filter(
+          (a) =>
+            a.location &&
+            a.locationData &&
+            typeof a.locationData.lat === "number" &&
+            typeof a.locationData.lng === "number"
+        );
+        return validLocations.length >= 2;
+      }) && (
         <RouteOptimizationPanel
           itineraryDays={itineraryDays}
+          selectedDayId={
+            selectedDayForRoute ||
+            itineraryDays.find((d) => {
+              const validLocations = d.activities.filter(
+                (a) =>
+                  a.location &&
+                  a.locationData &&
+                  typeof a.locationData.lat === "number" &&
+                  typeof a.locationData.lng === "number"
+              );
+              return validLocations.length >= 2;
+            })?.id
+          }
           onAcceptOptimization={handleAcceptOptimization}
         />
       )}
@@ -1316,14 +1278,14 @@ export function EditCustomizedBooking() {
               {/* Day Header */}
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                  <span className="text-white font-bold">D{day.day}</span>
+                  <span className="text-white font-bold">D{day.dayNumber}</span>
                 </div>
                 <div className="flex-1">
                   <Label
                     htmlFor={`day-${day.id}-title`}
                     className="text-[#1A2B4F] mb-2 block text-sm font-medium"
                   >
-                    Day {day.day} Title{" "}
+                    Day {day.dayNumber} Title{" "}
                     <span className="text-[#FF6B6B]">*</span>
                   </Label>
                   <Input
@@ -1351,7 +1313,7 @@ export function EditCustomizedBooking() {
                       <Package className="w-7 h-7 text-[#CBD5E1]" />
                     </div>
                     <p className="text-sm text-[#64748B] mb-1">
-                      No activities yet for Day {day.day}
+                      No activities yet for Day {day.dayNumber}
                     </p>
                     <p className="text-xs text-[#94A3B8]">
                       Click "Add Activity" to start building this day
@@ -1425,6 +1387,7 @@ export function EditCustomizedBooking() {
                                 Icon
                               </Label>
                               <button
+                                type="button"
                                 onClick={() =>
                                   openIconPicker(day.id, activity.id)
                                 }
@@ -1460,39 +1423,39 @@ export function EditCustomizedBooking() {
                                 Location
                               </Label>
                               <div className="relative">
-                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none z-10" />
+                                {isLoadingPlaces &&
+                                  activeLocationInput?.dayId === day.id &&
+                                  activeLocationInput?.activityId ===
+                                    activity.id && (
+                                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
+                                  )}
                                 <Input
                                   placeholder="Search location..."
                                   value={activity.location}
-                                  onChange={(e) => {
-                                    updateActivity(
-                                      day.id,
-                                      activity.id,
-                                      "location",
-                                      e.target.value
-                                    );
-                                    handleLocationSearch(
+                                  onChange={(e) =>
+                                    handleLocationInputChange(
                                       e.target.value,
                                       day.id,
                                       activity.id
-                                    );
-                                  }}
+                                    )
+                                  }
                                   onFocus={() => {
                                     if (activity.location.length >= 2) {
-                                      handleLocationSearch(
-                                        activity.location,
-                                        day.id,
-                                        activity.id
-                                      );
+                                      setLocationSearchQuery(activity.location);
+                                      setActiveLocationInput({
+                                        dayId: day.id,
+                                        activityId: activity.id,
+                                      });
                                     }
                                   }}
                                   onBlur={() => {
                                     setTimeout(() => {
-                                      setLocationSuggestions([]);
+                                      setLocationSearchQuery("");
                                       setActiveLocationInput(null);
                                     }, 200);
                                   }}
-                                  className="h-9 pl-9 rounded-lg border-[#E5E7EB] text-sm"
+                                  className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm"
                                 />
                               </div>
 
@@ -1501,28 +1464,63 @@ export function EditCustomizedBooking() {
                                 activeLocationInput?.activityId ===
                                   activity.id &&
                                 locationSuggestions.length > 0 && (
-                                  <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-40 overflow-auto">
-                                    {locationSuggestions.map(
-                                      (suggestion, suggestionIndex) => (
-                                        <button
-                                          key={`${day.id}-${activity.id}-${suggestionIndex}-${suggestion}`}
-                                          type="button"
-                                          onClick={() =>
-                                            selectLocationSuggestion(
-                                              suggestion,
-                                              day.id,
-                                              activity.id
-                                            )
-                                          }
-                                          className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
-                                        >
-                                          <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
-                                          <span className="truncate">
-                                            {suggestion}
-                                          </span>
-                                        </button>
-                                      )
-                                    )}
+                                  <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                                    {locationSuggestions.map((place, idx) => (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() =>
+                                          selectLocationSuggestion(
+                                            place,
+                                            day.id,
+                                            activity.id
+                                          )
+                                        }
+                                        className="w-full px-4 py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
+                                      >
+                                        <div className="flex items-start gap-3">
+                                          <div className="w-8 h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
+                                            <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
+                                              {place.name}
+                                            </p>
+                                            <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                                              {place.address}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              <span className="text-xs px-2 py-0.5 rounded bg-[#F1F5F9] text-[#64748B]">
+                                                {place.source}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                              {activeLocationInput?.dayId === day.id &&
+                                activeLocationInput?.activityId ===
+                                  activity.id &&
+                                !isLoadingPlaces &&
+                                locationSearchQuery.length >= 2 &&
+                                locationSuggestions.length === 0 && (
+                                  <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg p-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-lg bg-[#F8FAFB] flex items-center justify-center shrink-0">
+                                        <Search className="w-5 h-5 text-[#CBD5E1]" />
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-[#64748B]">
+                                          No locations found
+                                        </p>
+                                        <p className="text-xs text-[#94A3B8] mt-0.5">
+                                          Try a different search term
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                             </div>
@@ -1551,6 +1549,7 @@ export function EditCustomizedBooking() {
 
                           {/* Delete Button */}
                           <button
+                            type="button"
                             onClick={() =>
                               confirmDeleteActivity(day.id, activity.id)
                             }
@@ -1614,28 +1613,41 @@ export function EditCustomizedBooking() {
       </div>
 
       {/* Icon Picker Modal */}
-      <Dialog open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
+      <Dialog
+        open={iconPickerOpen}
+        onOpenChange={(open: any) => {
+          setIconPickerOpen(open);
+          if (!open) setIconSearchQuery("");
+        }}
+      >
         <DialogContent className="sm:max-w-175 max-h-[85vh]">
           <DialogHeader>
-            <DialogTitle>Choose an Icon</DialogTitle>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              Select Activity Icon
+            </DialogTitle>
             <DialogDescription>
-              Select an icon that best represents the activity
+              Choose an icon that best represents this activity
             </DialogDescription>
           </DialogHeader>
 
           {/* Search */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
-            <Input
-              placeholder="Search icons..."
-              value={iconSearchQuery}
-              onChange={(e) => setIconSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          <div className="px-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+              <Input
+                placeholder="Search icons..."
+                value={iconSearchQuery}
+                onChange={(e) => setIconSearchQuery(e.target.value)}
+                className="h-10 pl-10 rounded-lg border-[#E5E7EB]"
+              />
+            </div>
           </div>
 
-          <ScrollArea className="h-100 pr-4">
-            <div className="grid grid-cols-4 gap-3">
+          <ScrollArea className="h-100 pr-4 px-6">
+            <div className="grid grid-cols-4 gap-3 py-4">
               {ICON_OPTIONS.filter((opt) =>
                 opt.label.toLowerCase().includes(iconSearchQuery.toLowerCase())
               ).map((iconOption) => {
@@ -1643,11 +1655,14 @@ export function EditCustomizedBooking() {
                 return (
                   <button
                     key={iconOption.value}
+                    type="button"
                     onClick={() => selectIcon(iconOption.value)}
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] transition-all group"
                   >
-                    <Icon className="w-6 h-6 text-[#64748B] group-hover:text-[#0A7AFF] transition-colors" />
-                    <span className="text-xs text-center text-[#64748B] group-hover:text-[#0A7AFF] transition-colors">
+                    <div className="w-11 h-11 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-xs text-center text-[#64748B] group-hover:text-[#0A7AFF] font-medium transition-colors leading-tight">
                       {iconOption.label}
                     </span>
                   </button>
@@ -1702,6 +1717,7 @@ export function EditCustomizedBooking() {
             </p>
             <div className="flex flex-col gap-3 pt-2">
               <button
+                type="button"
                 onClick={() => setBackConfirmOpen(false)}
                 className="w-full h-12 px-6 rounded-xl border-2 border-transparent 
                            bg-linear-to-br from-[#FFB84D] to-[#FF9800] 
@@ -1712,6 +1728,7 @@ export function EditCustomizedBooking() {
                 Continue Editing
               </button>
               <button
+                type="button"
                 onClick={handleConfirmBack}
                 className="w-full h-12 px-6 rounded-xl border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] text-[#334155] hover:text-[#FF6B6B] font-medium transition-all flex items-center justify-center"
               >
@@ -1796,7 +1813,7 @@ export function EditCustomizedBooking() {
         confirmVariant="destructive"
       />
 
-      {/* Version History Modal
+      {/* Version History Modal - Commented out as in original
       <VersionHistoryModal
         open={versionHistoryOpen}
         onOpenChange={setVersionHistoryOpen}
