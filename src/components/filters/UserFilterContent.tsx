@@ -37,9 +37,9 @@ export function UserFilterContent({
 }: UserFilterContentProps) {
   return (
     <div className="overflow-auto" style={{ height: 300 }}>
-      <div className="p-5 bg-gradient-to-br from-[#F8FAFB] to-white border-b border-[#E5E7EB]/50">
+      <div className="p-5 bg-linear-to-br from-[#F8FAFB] to-white border-b border-[#E5E7EB]/50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+          <div className="w-9 h-9 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
             <Filter className="w-4 h-4 text-white" />
           </div>
           <div>
@@ -51,28 +51,6 @@ export function UserFilterContent({
         </div>
       </div>
       <div className="p-5 space-y-4">
-        <div>
-          <Label className="text-sm font-medium text-[#1A2B4F] mb-2.5 block">
-            Role
-          </Label>
-          <Select
-            value={roleFilter ?? "all"}
-            onValueChange={(v: string) =>
-              onRoleFilterChange &&
-              onRoleFilterChange(v as "all" | "USER" | "ADMIN")
-            }
-          >
-            <SelectTrigger className="w-full h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="USER">User</SelectItem>
-              <SelectItem value="ADMIN">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         <div>
           <Label className="text-sm font-medium text-[#1A2B4F] mb-2.5 block">
             Status
@@ -95,7 +73,7 @@ export function UserFilterContent({
         </div>
 
         <div>
-          <Label className="text-sm font-medium text-[#1A2B4F] mb-2.5 block flex items-center gap-2">
+          <Label className="text-sm font-medium text-[#1A2B4F] mb-2.5  flex items-center gap-2">
             <Calendar className="w-4 h-4" />
             Date Range (User Since)
           </Label>
@@ -143,7 +121,7 @@ export function UserFilterContent({
         </Button>
         <Button
           onClick={onApplyFilters}
-          className="flex-1 h-10 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0865CC] hover:to-[#2E8FE8] shadow-lg shadow-[#0A7AFF]/20 text-white"
+          className="flex-1 h-10 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0865CC] hover:to-[#2E8FE8] shadow-lg shadow-[#0A7AFF]/20 text-white"
         >
           Apply Filters
         </Button>

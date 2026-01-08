@@ -55,6 +55,12 @@ import {
   Gift,
   ShoppingCart,
   Search,
+  Send,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  Lock,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -89,10 +95,19 @@ import {
   useTourPackages,
 } from "../hooks/useTourPackages";
 import { toast } from "sonner";
-import { TourPackage } from "../types/types";
+import { Booking, TourPackage } from "../types/types";
 import { queryKeys } from "../utils/lib/queryKeys";
-import { useBookingDetail, useCreateBooking } from "../hooks/useBookings";
-import { useAdminBookings } from "../hooks/useBookings";
+import {
+  useBookingDetail,
+  useCreateBooking,
+  useAdminBookings,
+  useSubmitBooking,
+  useCancelBooking,
+  useUpdateBookingStatus,
+  useBookingPayments,
+} from "../hooks/useBookings";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUsers } from "../hooks/useUsers";
 
 interface RequestedItineraryBooking {
   id: string;
@@ -131,6 +146,7 @@ interface ItineraryDay {
 
 interface BookingFormData {
   customerName: string;
+  customerId?: string;
   email: string;
   mobile: string;
   travelDateFrom: string;
@@ -147,6 +163,76 @@ interface ItineraryProps {
   onEditStandardDraft?: (draft: any) => void;
   onDeleteDraft?: (draftId: string) => void;
 }
+
+// Helper function to transform standard itinerary details for payload
+const transformStandardItineraryDetailsForPayload = (
+  days: ItineraryDay[],
+  startDate?: string
+): any[] => {
+  if (!days || days.length === 0) return [];
+
+  return days.map((day, index) => {
+    let date = null;
+    if (startDate) {
+      const dayDate = new Date(startDate);
+      dayDate.setDate(dayDate.getDate() + index);
+      date = dayDate.toISOString();
+    }
+
+    return {
+      dayNumber: day.dayNumber || index + 1,
+      date: date,
+      activities: (day.activities || []).map((activity, activityIndex) => ({
+        time: activity.time || "00:00",
+        title: activity.title || `Activity ${activityIndex + 1}`,
+        description: activity.description || "",
+        location: activity.location || "",
+        icon: activity.icon || null,
+        order: activity.order || activityIndex,
+      })),
+    };
+  });
+};
+
+// Helper function to transform API days for payload
+const transformApiDaysToItineraryDetailsForPayload = (days: any[]): any[] => {
+  if (!days || days.length === 0) return [];
+
+  return days.map((day, index) => ({
+    dayNumber: day.dayNumber || index + 1,
+    date: day.date || null,
+    activities: (day.activities || []).map(
+      (activity: any, activityIndex: number) => ({
+        time: activity.time || "00:00",
+        title: activity.title || `Activity ${activityIndex + 1}`,
+        description: activity.description || "",
+        location: activity.location || "",
+        icon: activity.icon || null,
+        order: activity.order || activityIndex,
+      })
+    ),
+  }));
+};
+
+// Helper function to transform requested itinerary for payload
+const transformRequestedItineraryForPayload = (days: any[]): any[] => {
+  if (!days || days.length === 0) return [];
+
+  return days.map((day, index) => ({
+    dayNumber: day.dayNumber || index + 1,
+    date: day.date || null,
+    activities: (day.activities || []).map(
+      (activity: any, activityIndex: number) => ({
+        time: activity.time || "00:00",
+        title: activity.title || `Activity ${activityIndex + 1}`,
+        description: activity.description || "",
+        location: activity.location || "",
+        icon: activity.icon || null,
+        order: activity.order || activityIndex,
+      })
+    ),
+  }));
+};
 
 // Icon mapping helper
 const ICON_MAP: Record<string, any> = {
@@ -230,6 +316,231 @@ const serializeItineraryData = (data: any) => {
   return serialized;
 };
 
+// Helper functions for status transformation
+const formatDateRange = (
+  startDate: string | Date | null,
+  endDate: string | Date | null
+): string => {
+  if (!startDate || !endDate) return "Dates not set";
+
+  try {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return "Invalid dates";
+    }
+
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    };
+
+    return `${formatDate(start)} – ${formatDate(end)}`;
+  } catch (error) {
+    return "Invalid date format";
+  }
+};
+
+const formatDate = (dateString: string | Date | null): string => {
+  if (!dateString) return "Date not available";
+
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid date";
+
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch (error) {
+    return "Invalid date";
+  }
+};
+
+const formatDateISO = (dateString: string | Date | null): string => {
+  if (!dateString) return new Date().toISOString().split("T")[0];
+
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return new Date().toISOString().split("T")[0];
+
+    return date.toISOString().split("T")[0];
+  } catch (error) {
+    return new Date().toISOString().split("T")[0];
+  }
+};
+
+const getStatusBadge = (
+  status: string,
+  isResolved?: boolean
+): "pending" | "in-progress" | "completed" => {
+  if (isResolved) return "completed";
+
+  const statusMap: Record<string, "pending" | "in-progress" | "completed"> = {
+    DRAFT: "pending",
+    PENDING: "pending",
+    CONFIRMED: "in-progress",
+    APPROVED: "in-progress",
+    COMPLETED: "completed",
+    CANCELLED: "completed",
+    REJECTED: "completed",
+  };
+
+  return statusMap[status] || "pending";
+};
+
+const getSentStatus = (booking: any): "sent" | "unsent" => {
+  const sentAt = booking.itinerary?.sentAt || booking.sentAt;
+  const sentStatus = booking.itinerary?.sentStatus || booking.sentStatus;
+  const status = booking.status || booking.itinerary?.status;
+
+  if (sentAt || sentStatus === "sent" || status === "CONFIRMED") {
+    return "sent";
+  }
+
+  return "unsent";
+};
+
+const getConfirmStatus = (status: string): "confirmed" | "unconfirmed" => {
+  return status === "CONFIRMED" ? "confirmed" : "unconfirmed";
+};
+
+const getActivityIcon = (title: string) => {
+  const lowerTitle = title?.toLowerCase() || "";
+  if (lowerTitle.includes("flight") || lowerTitle.includes("arrival"))
+    return "Plane";
+  if (lowerTitle.includes("hotel") || lowerTitle.includes("check-in"))
+    return "Hotel";
+  if (lowerTitle.includes("photo") || lowerTitle.includes("view"))
+    return "Camera";
+  if (
+    lowerTitle.includes("lunch") ||
+    lowerTitle.includes("dinner") ||
+    lowerTitle.includes("breakfast")
+  )
+    return "UtensilsCrossed";
+  if (lowerTitle.includes("transfer") || lowerTitle.includes("drive"))
+    return "Car";
+  return "MapPin";
+};
+
+// Main transformation function
+const transformApiBooking = (apiBooking: any) => {
+  // Get dates
+  const start =
+    apiBooking.startDate ||
+    apiBooking.itinerary?.startDate ||
+    apiBooking.itinerary?.days?.[0]?.date;
+  const end =
+    apiBooking.endDate ||
+    apiBooking.itinerary?.endDate ||
+    apiBooking.itinerary?.days?.[apiBooking.itinerary?.days?.length - 1]?.date;
+
+  const startDate = formatDateISO(start);
+  const endDate = formatDateISO(end);
+
+  // Format dates for display
+  const formattedDates =
+    start && end
+      ? `${formatDate(start)} - ${formatDate(end)}`
+      : "Date not available";
+
+  // Parse booked date
+  const bookedDate = formatDate(apiBooking.bookedDate || apiBooking.createdAt);
+
+  // Parse total amount
+  const totalAmount = parseFloat(
+    apiBooking.totalPrice || apiBooking.itinerary?.estimatedCost || 0
+  );
+  const formattedTotal = `₱${totalAmount.toLocaleString()}`;
+
+  // Get customer information
+  const customerName =
+    apiBooking.customerName ||
+    apiBooking.itinerary?.userId ||
+    "Unknown Customer";
+  const customerEmail =
+    apiBooking.customerEmail || apiBooking.itinerary?.user?.email || "";
+  const customerMobile = apiBooking.customerMobile || "N/A";
+
+  // Transform itinerary details
+  const itineraryDetails =
+    apiBooking.itinerary?.days?.map((day: any) => ({
+      day: day.dayNumber,
+      title: `Day ${day.dayNumber}`,
+      activities:
+        (day.activities || []).map((act: any) => ({
+          time: act.time || "",
+          icon: getActivityIcon(act.title),
+          title: act.title || "",
+          description: act.description || "",
+          location: act.location || "",
+        })) || [],
+    })) || [];
+
+  return {
+    id: apiBooking.id,
+    bookingCode: apiBooking.bookingCode,
+    customer: customerName,
+    email: customerEmail,
+    mobile: customerMobile,
+    destination: apiBooking.destination || apiBooking.itinerary?.destination,
+    dates: formattedDates,
+    startDate: startDate,
+    endDate: endDate,
+    travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
+    total: formattedTotal,
+    totalAmount: totalAmount,
+    bookedDate: bookedDate,
+    status: apiBooking.status,
+    bookingType: apiBooking.type,
+    tourType:
+      apiBooking.tourType || apiBooking.itinerary?.tourType || "PRIVATE",
+    rejectionReason: apiBooking.rejectionReason,
+    rejectionResolution: apiBooking.rejectionResolution,
+    resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
+    itineraryDetails: itineraryDetails,
+  };
+};
+
+// Simplified transformation for BookingListCard
+const transformBookingForListCard = (apiBooking: any) => {
+  const transformed = transformApiBooking(apiBooking);
+
+  return {
+    id: transformed.id,
+    bookingCode: transformed.bookingCode,
+    customer: transformed.customer,
+    email: transformed.email,
+    mobile: transformed.mobile,
+    destination: transformed.destination,
+    startDate: transformed.startDate,
+    endDate: transformed.endDate,
+    travelers: transformed.travelers,
+    total: transformed.total,
+    totalAmount: transformed.totalAmount,
+    bookedDate: transformed.bookedDate,
+    status: transformed.status,
+    bookingType: transformed.bookingType,
+    tourType: transformed.tourType,
+    rejectionReason: transformed.rejectionReason,
+    rejectionResolution: transformed.rejectionResolution,
+    resolutionStatus: transformed.resolutionStatus,
+    // For BookingListCard props
+    customerName: transformed.customer,
+    customerEmail: transformed.email,
+    customerMobile: transformed.mobile,
+    totalAmountNum: transformed.totalAmount,
+    // Keep raw booking for reference
+    rawBooking: apiBooking,
+  };
+};
+
 export function Itinerary({
   requestedBookingsFromBookings = [],
   newStandardItineraries = [],
@@ -240,6 +551,7 @@ export function Itinerary({
 }: ItineraryProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const standardRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const requestedRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -253,6 +565,10 @@ export function Itinerary({
     page: 1,
     limit: 10,
   });
+
+  const [selectedRequestedId, setSelectedRequestedId] = useState<string | null>(
+    null
+  );
 
   const {
     data: bookingsData,
@@ -276,40 +592,93 @@ export function Itinerary({
 
   const { mutate: deleteTourPackage, isPending } = useDeleteTourPackage({});
 
-  const handleDeleteTourPackage = (id: string) => {
-    deleteTourPackage(
-      { id },
-      {
-        onSuccess: () => {
-          toast.success("Tour package deleted successfully!");
-          refetchTourPackages();
-        },
-        onError: () => {
-          toast.error("Failed to delete tour package");
-        },
-      }
-    );
-  };
-
-  const tourPackages: TourPackage[] = useMemo(() => {
-    if (!tourPackagesResponse?.data) return [];
-    return Array.isArray(tourPackagesResponse.data)
-      ? tourPackagesResponse.data
-      : [];
-  }, [tourPackagesResponse?.data]);
-
-  // Standard itinerary states
-  const [viewMode, setViewMode] = useState<"grid" | "detail">("grid");
-  const [selectedStandardId, setSelectedStandardId] = useState<string | null>(
-    null
+  const { mutate: submitBooking, isPending: isSubmitting } = useSubmitBooking(
+    selectedRequestedId || "",
+    {
+      onSuccess: () => {
+        toast.success("Itinerary Sent to Client!", {
+          description: "The requested itinerary has been marked as sent.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(selectedRequestedId!),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+      },
+      onError: (error: any) => {
+        toast.error("Failed to send itinerary", {
+          description: error.message || "Please try again.",
+        });
+      },
+    }
   );
 
-  // Requested itinerary states
-  const [requestedViewMode, setRequestedViewMode] = useState<"list" | "detail">(
-    "list"
+  const { mutate: cancelBooking, isPending: isCancelling } = useCancelBooking(
+    selectedRequestedId || "",
+    {
+      onSuccess: () => {
+        toast.success("Booking Cancelled", {
+          description: "The booking has been cancelled successfully.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(selectedRequestedId!),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+      },
+      onError: (error: any) => {
+        toast.error("Failed to cancel booking", {
+          description: error.message || "Please try again.",
+        });
+      },
+    }
   );
-  const [selectedRequestedId, setSelectedRequestedId] = useState<string | null>(
-    null
+
+  const { mutate: updateBookingStatus, isPending: isUpdatingStatus } =
+    useUpdateBookingStatus(selectedRequestedId || "", {
+      onSuccess: () => {
+        toast.success("Status Updated", {
+          description: "Booking status has been updated successfully.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(selectedRequestedId!),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+        setStatusUpdateModalOpen(false);
+      },
+      onError: (error: any) => {
+        toast.error("Failed to update status", {
+          description: error.message || "Please try again.",
+        });
+      },
+    });
+
+  // Payment hooks
+  const { data: paymentsData } = useBookingPayments(selectedRequestedId!);
+
+  // User search states
+  const [userSearchParams, setUserSearchParams] = useState<{
+    q?: string;
+    limit?: number;
+  }>({
+    q: "",
+    limit: 5,
+  });
+
+  const [userSuggestions, setUserSuggestions] = useState<any[]>([]);
+  const [isUserSearching, setIsUserSearching] = useState(false);
+
+  const { data: usersData, isLoading: isSearchingUsers } = useUsers(
+    userSearchParams,
+    {
+      enabled: !!userSearchParams.q && userSearchParams.q?.length >= 2,
+      staleTime: 30000,
+      queryKey: [queryKeys.users.list],
+    }
   );
 
   // Booking modal states
@@ -326,12 +695,25 @@ export function Itinerary({
   // Booking form data
   const [bookingFormData, setBookingFormData] = useState<BookingFormData>({
     customerName: "",
+    customerId: "",
     email: "",
     mobile: "",
     travelDateFrom: "",
     travelDateTo: "",
     travelers: "1",
-    tourType: "" as any,
+    tourType: "Private" as any,
+  });
+
+  // Status update states
+  const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
+  const [statusUpdateData, setStatusUpdateData] = useState<{
+    status: string;
+    rejectionReason?: string;
+    rejectionResolution?: string;
+  }>({
+    status: "",
+    rejectionReason: "",
+    rejectionResolution: "",
   });
 
   const { data: selectedBookingPackageDetail } = useTourPackageDetail(
@@ -350,6 +732,14 @@ export function Itinerary({
     title?: string;
     destination?: string;
   } | null>(null);
+
+  const [selectedStandardId, setSelectedStandardId] = useState<string | null>(
+    null
+  );
+
+  const [requestedViewMode, setRequestedViewMode] = useState<"list" | "detail">(
+    "list"
+  );
 
   // Delete draft states
   const [deleteDraftConfirmOpen, setDeleteDraftConfirmOpen] = useState(false);
@@ -430,6 +820,58 @@ export function Itinerary({
     }));
   };
 
+  // User search handlers
+  const handleUserNameInput = (value: string) => {
+    setBookingFormData((prev) => ({
+      ...prev,
+      customerName: value,
+      ...(value !== prev.customerName &&
+        value.length < 2 && {
+          customerId: "",
+          email: "",
+          mobile: "",
+        }),
+    }));
+
+    if (value.length >= 2) {
+      setUserSearchParams((prev) => ({
+        ...prev,
+        q: value,
+      }));
+    } else {
+      setUserSearchParams((prev) => ({
+        ...prev,
+        q: undefined,
+      }));
+      setUserSuggestions([]);
+      setIsUserSearching(false);
+    }
+  };
+
+  const selectUserSuggestion = (user: any) => {
+    setBookingFormData((prev) => ({
+      ...prev,
+      customerName: `${user.firstName} ${user.lastName}`,
+      customerId: user.id,
+      email: user.email || "",
+      mobile: user.mobile || "",
+    }));
+
+    setUserSearchParams((prev) => ({
+      ...prev,
+      q: undefined,
+    }));
+    setUserSuggestions([]);
+    setIsUserSearching(false);
+  };
+
+  const tourPackages: TourPackage[] = useMemo(() => {
+    if (!tourPackagesResponse?.data) return [];
+    return Array.isArray(tourPackagesResponse.data)
+      ? tourPackagesResponse.data
+      : [];
+  }, [tourPackagesResponse?.data]);
+
   // Combine API itineraries with newly created ones
   const apiItineraries = useMemo(() => {
     return tourPackages.map((pkg, index) =>
@@ -450,6 +892,11 @@ export function Itinerary({
   const [standardItineraryDetails, setStandardItineraryDetails] = useState<
     Record<string, ItineraryDay[]>
   >({});
+
+  // Standard itinerary states
+  const [viewMode, setViewMode] = useState<"grid" | "detail">("grid");
+
+  // Requested itinerary states
 
   useEffect(() => {
     if (selectedTourPackageDetail?.data) {
@@ -489,59 +936,52 @@ export function Itinerary({
   useEffect(() => {
     if (bookingsData?.data) {
       const transformedBookings: RequestedItineraryBooking[] =
-        bookingsData.data.map((booking: any) => ({
-          id: booking.id,
-          bookingCode: booking.bookingCode,
-          customer: booking.customerName || "Unknown Customer",
-          email: booking.customerEmail || "N/A",
-          mobile: booking.customerMobile || "N/A",
-          destination: booking.destination || "N/A",
-          itinerary: booking.destination || "N/A",
-          dates:
-            booking.startDate && booking.endDate
-              ? formatDateRange(booking.startDate, booking.endDate)
-              : "Dates not set",
-          travelers: booking.travelers || 1,
-          totalAmount: `₱${parseFloat(
-            booking.totalPrice || "0"
-          ).toLocaleString()}`,
-          paid: "₱0",
-          bookedDate: booking.bookedDate || booking.createdAt,
-          status: getStatusBadge(booking.status, booking.isResolved),
-          sentStatus: booking.status === "CONFIRMED" ? "sent" : "unsent",
-          confirmStatus:
-            booking.status === "CONFIRMED" ? "confirmed" : "unconfirmed",
-          rawBooking: booking,
-        }));
+        bookingsData.data.map((apiBooking: any) => {
+          const transformed = transformApiBooking(apiBooking);
+
+          // Determine sent status
+          const sentAt = apiBooking.itinerary?.sentAt || apiBooking.sentAt;
+          const sentStatus =
+            apiBooking.itinerary?.sentStatus ||
+            bookingDetailData?.data?.itinerary.sentStatus;
+          const sent =
+            sentAt || sentStatus === "sent" || apiBooking.status === "CONFIRMED"
+              ? "sent"
+              : "unsent";
+
+          // Determine confirm status
+          const confirmStatus =
+            apiBooking.status === "CONFIRMED" ? "confirmed" : "unconfirmed";
+
+          // Determine status badge
+          const statusBadge = getStatusBadge(
+            apiBooking.status,
+            apiBooking.isResolved
+          );
+
+          return {
+            id: transformed.id,
+            bookingCode: transformed.bookingCode,
+            customer: transformed.customer,
+            email: transformed.email,
+            mobile: transformed.mobile,
+            destination: transformed.destination,
+            itinerary: transformed.destination,
+            dates: transformed.dates,
+            travelers: transformed.travelers,
+            totalAmount: transformed.total,
+            paid: "₱0",
+            bookedDate: transformed.bookedDate,
+            status: statusBadge,
+            sentStatus: sent,
+            confirmStatus: confirmStatus,
+            rawBooking: apiBooking,
+          };
+        });
 
       setRequestedBookings(transformedBookings);
     }
-  }, [bookingsData]);
-
-  const getSentStatus = (status: string, type: string) => {
-    if (type === "REQUESTED") {
-      return status === "CONFIRMED" ? "sent" : "unsent";
-    }
-    return "unsent";
-  };
-
-  const getConfirmStatus = (status: string) => {
-    return status === "CONFIRMED" ? "confirmed" : "unconfirmed";
-  };
-
-  const getStatusBadge = (status: string, isResolved: boolean) => {
-    const statusMap: Record<string, "pending" | "in-progress" | "completed"> = {
-      DRAFT: "pending",
-      PENDING: "pending",
-      CONFIRMED: "in-progress",
-      APPROVED: "in-progress",
-      COMPLETED: "completed",
-      CANCELLED: "completed",
-    };
-
-    if (isResolved) return "completed";
-    return statusMap[status] || "pending";
-  };
+  }, [bookingsData, bookingDetailData]);
 
   useEffect(() => {
     if (
@@ -570,7 +1010,7 @@ export function Itinerary({
             : "₱0",
           bookedDate: booking.bookedDate,
           status: "pending",
-          sentStatus: getSentStatus(booking.status, booking.type),
+          sentStatus: getSentStatus(booking),
           confirmStatus: getConfirmStatus(booking.status),
         })
       );
@@ -628,32 +1068,115 @@ export function Itinerary({
     }
   }, [location.state, navigate, location.pathname]);
 
-  const formatDateRange = (
-    startDate: string | null,
-    endDate: string | null
-  ): string => {
-    if (!startDate || !endDate) return "Dates not set";
-
-    try {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        return "Invalid dates";
-      }
-
-      const formatDate = (date: Date) => {
-        return date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
-      };
-
-      return `${formatDate(start)} – ${formatDate(end)}`;
-    } catch (error) {
-      return "Invalid date format";
+  // User search effects
+  useEffect(() => {
+    if (usersData?.data?.users) {
+      setUserSuggestions(usersData.data.users);
+      setIsUserSearching(true);
+    } else {
+      setUserSuggestions([]);
     }
+  }, [usersData]);
+
+  useEffect(() => {
+    if (!userSearchParams.q || userSearchParams.q.length < 2) {
+      setUserSuggestions([]);
+      setIsUserSearching(false);
+    }
+  }, [userSearchParams.q]);
+
+  const handleDeleteTourPackage = (id: string) => {
+    deleteTourPackage(
+      { id },
+      {
+        onSuccess: () => {
+          toast.success("Tour package deleted successfully!");
+          refetchTourPackages();
+        },
+        onError: () => {
+          toast.error("Failed to delete tour package");
+        },
+      }
+    );
+  };
+
+  const handleSendToClient = (bookingId: string) => {
+    submitBooking(bookingId, {
+      onSuccess: () => {
+        toast.success("Itinerary Sent to Client!", {
+          description: "The requested itinerary has been marked as sent.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(bookingId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+      },
+      onError: (error: any) => {
+        toast.error("Failed to send itinerary", {
+          description: error.message || "Please try again.",
+        });
+      },
+    });
+  };
+
+  const handleCancelBooking = (bookingId: string) => {
+    cancelBooking(bookingId, {
+      onSuccess: () => {
+        toast.success("Booking Cancelled", {
+          description: "The booking has been cancelled successfully.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(bookingId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+      },
+      onError: (error: any) => {
+        toast.error("Failed to cancel booking", {
+          description: error.message || "Please try again.",
+        });
+      },
+    });
+  };
+
+  const handleUpdateBookingStatus = (
+    bookingId: string,
+    status: string,
+    rejectionReason?: string,
+    rejectionResolution?: string
+  ) => {
+    updateBookingStatus(
+      {
+        id: bookingId,
+        data: {
+          status,
+          ...(rejectionReason && { rejectionReason }),
+          ...(rejectionResolution && { rejectionResolution }),
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Status Updated", {
+            description: "Booking status has been updated successfully.",
+          });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.bookings.detail(bookingId),
+          });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.bookings.adminBookings(queryParams),
+          });
+          setStatusUpdateModalOpen(false);
+        },
+        onError: (error: any) => {
+          toast.error("Failed to update status", {
+            description: error.message || "Please try again.",
+          });
+        },
+      }
+    );
   };
 
   const handleDeleteItinerary = () => {
@@ -782,45 +1305,64 @@ export function Itinerary({
       ? standard.pricePerPax * travelers
       : 0;
 
-    let itineraryDetails: any[] = [];
+    // Transform itinerary details to match expected format
+    let itineraryDays: any[] = [];
 
     if (selectedBookingPackageDetail?.data?.days) {
-      itineraryDetails = transformApiDaysToItineraryDetails(
+      itineraryDays = transformApiDaysToItineraryDetailsForPayload(
         selectedBookingPackageDetail.data.days
       );
     } else if (standardItineraryDetails[standard.id]) {
-      itineraryDetails = standardItineraryDetails[standard.id];
+      itineraryDays = transformStandardItineraryDetailsForPayload(
+        standardItineraryDetails[standard.id],
+        bookingFormData.travelDateFrom
+      );
     }
 
+    // Create the booking payload matching the expected API format
     const newBooking = {
-      customer: bookingFormData.customerName,
-      email: bookingFormData.email,
-      mobile: bookingFormData.mobile,
       destination: standard.destination,
-      startDate: bookingFormData.travelDateFrom,
-      endDate: bookingFormData.travelDateTo,
       travelers: travelers,
       totalPrice: totalAmount,
-      paid: 0,
-      paymentStatus: "Unpaid",
-      bookedDate: new Date().toISOString().split("T")[0],
-      bookedDateObj: new Date(),
-      status: "pending",
-      type: "STANDARD" as const,
+      type: "STANDARD",
       tourType: bookingFormData.tourType.toUpperCase(),
-      itinerary: itineraryDetails,
+      customerName: bookingFormData.customerName,
+      customerEmail: bookingFormData.email,
+      customerMobile: bookingFormData.mobile,
+      ...(bookingFormData.customerId && { userId: bookingFormData.customerId }),
+      ...(bookingFormData.travelDateFrom && {
+        startDate: bookingFormData.travelDateFrom,
+      }),
+      ...(bookingFormData.travelDateTo && {
+        endDate: bookingFormData.travelDateTo,
+      }),
+      // Include itinerary data if available
+      ...(itineraryDays.length > 0 && {
+        itinerary: {
+          title:
+            standard.title || `Standard Itinerary - ${standard.destination}`,
+          destination: standard.destination,
+          travelers: travelers,
+          type: "STANDARD",
+          tourType: bookingFormData.tourType.toUpperCase(),
+          days: itineraryDays,
+        },
+      }),
     };
 
+    console.log("Creating standard booking payload:", newBooking);
+
     createBooking(newBooking, {
-      onSuccess: () => {
+      onSuccess: (response) => {
         setBookingFormData({
           customerName: "",
+          customerId: "",
           email: "",
           mobile: "",
           travelDateFrom: "",
           travelDateTo: "",
           travelers: "1",
-          tourType: "" as any,
+          tourType: "Private" as any,
         });
         setCreateBookingConfirmOpen(false);
         setStandardBookingModalOpen(false);
@@ -831,9 +1373,110 @@ export function Itinerary({
         });
         navigate("/bookings");
       },
-      onError: () => {
+      onError: (error: any) => {
+        console.error("Booking creation error:", error);
         toast.error("Standard Booking Failed!", {
-          description: `Booking for ${bookingFormData.customerName} has failed.`,
+          description:
+            error.response?.data?.message ||
+            error.message ||
+            `Booking for ${bookingFormData.customerName} has failed.`,
+        });
+      },
+    });
+  };
+
+  const handleCreateBookingFromRequested = () => {
+    if (!selectedRequestedForBooking || !bookingFormData.customerName) {
+      toast.error("Missing required information");
+      return;
+    }
+
+    const requestedBooking = requestedBookings.find(
+      (b) => b.id === selectedRequestedForBooking
+    );
+
+    if (!requestedBooking) {
+      toast.error("Requested itinerary not found");
+      return;
+    }
+
+    // Extract numeric value from the formatted string
+    const totalAmount = parseFloat(
+      requestedBooking?.totalAmount?.replace(/[^0-9.]/g, "")
+    );
+
+    // Get the detailed booking data to extract itinerary information
+    const bookingDetail =
+      bookingDetailData?.data || requestedBooking.rawBooking;
+
+    // Create the booking payload matching the expected API format
+    const newBooking = {
+      destination: requestedBooking.destination,
+      travelers: parseInt(bookingFormData.travelers),
+      totalPrice: totalAmount,
+      type: "REQUESTED",
+      tourType: bookingFormData.tourType.toUpperCase(),
+      customerName: bookingFormData.customerName,
+      customerEmail: bookingFormData.email,
+      customerMobile: bookingFormData.mobile,
+      ...(bookingFormData.customerId && { userId: bookingFormData.customerId }),
+      ...(bookingFormData.travelDateFrom && {
+        startDate: bookingFormData.travelDateFrom,
+      }),
+      ...(bookingFormData.travelDateTo && {
+        endDate: bookingFormData.travelDateTo,
+      }),
+      // Include original requested itinerary ID
+      ...(bookingDetail?.itineraryId && {
+        itineraryId: bookingDetail.itineraryId,
+      }),
+      // Or include full itinerary data if needed
+      ...(bookingDetail?.itinerary && {
+        itinerary: {
+          title:
+            bookingDetail.itinerary.title ||
+            `Requested Itinerary - ${requestedBooking.destination}`,
+          destination: requestedBooking.destination,
+          travelers: parseInt(bookingFormData.travelers),
+          type: "CUSTOMIZED",
+          tourType: bookingFormData.tourType.toUpperCase(),
+          days: transformRequestedItineraryForPayload(
+            bookingDetail.itinerary?.days || []
+          ),
+        },
+      }),
+    };
+
+    console.log("Creating requested booking payload:", newBooking);
+
+    createBooking(newBooking, {
+      onSuccess: (response) => {
+        setBookingFormData({
+          customerName: "",
+          customerId: "",
+          email: "",
+          mobile: "",
+          travelDateFrom: "",
+          travelDateTo: "",
+          travelers: "1",
+          tourType: "Private" as any,
+        });
+        setRequestedBookingModalOpen(false);
+        setSelectedRequestedForBooking(null);
+
+        toast.success("Booking Created Successfully!", {
+          description: `Booking for ${bookingFormData.customerName} has been created from the requested itinerary.`,
+        });
+
+        navigate("/bookings");
+      },
+      onError: (error: any) => {
+        console.error("Booking creation error:", error);
+        toast.error("Failed to Create Booking", {
+          description:
+            error.response?.data?.message ||
+            error.message ||
+            "Please try again.",
         });
       },
     });
@@ -1086,75 +1729,31 @@ export function Itinerary({
 
     return (
       <div className="space-y-4">
-        {filteredBookings.map((booking) => (
-          <div
-            key={booking.id}
-            className="relative"
-            ref={(el) => {
-              requestedRefs.current[booking.id] = el;
-            }}
-          >
-            <BookingListCard
-              booking={{
-                id: booking.id,
-                bookingCode: booking.bookingCode!,
-                customerName: booking.customer,
-                customerEmail: booking.email,
-                customerMobile: booking.mobile,
-                destination: booking.destination,
-                bookedDate: booking.dates,
-                travelers: booking.travelers,
-                totalPrice: parseInt(booking.totalAmount),
+        {filteredBookings.map((booking) => {
+          const transformedBooking = transformBookingForListCard(
+            booking.rawBooking
+          );
+
+          return (
+            <div
+              key={booking.id}
+              className="relative"
+              ref={(el) => {
+                requestedRefs.current[booking.id] = el;
               }}
-              onViewDetails={() => {
-                setSelectedRequestedId(booking.id);
-                setRequestedViewMode("detail");
-              }}
-              additionalBadges={
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      booking.sentStatus === "sent"
-                        ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]"
-                        : "bg-[rgba(100,116,139,0.1)] text-[#64748B] border border-[rgba(100,116,139,0.2)]"
-                    }`}
-                  >
-                    {booking.sentStatus === "sent" ? "Sent" : "Unsent"}
-                  </span>
-                  {booking.sentStatus === "sent" && booking.confirmStatus && (
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        booking.confirmStatus === "confirmed"
-                          ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border border-[rgba(10,122,255,0.2)]"
-                          : "bg-[rgba(255,193,7,0.1)] text-[#FFC107] border border-[rgba(255,193,7,0.2)]"
-                      }`}
-                    >
-                      {booking.confirmStatus === "confirmed"
-                        ? "Confirmed"
-                        : "Unconfirmed"}
-                    </span>
-                  )}
-                  {/* Update status badge to use actual status */}
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      booking.status === "completed"
-                        ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]"
-                        : booking.status === "in-progress"
-                        ? "bg-[rgba(255,193,7,0.1)] text-[#FFC107] border border-[rgba(255,193,7,0.2)]"
-                        : "bg-[rgba(100,116,139,0.1)] text-[#64748B] border border-[rgba(100,116,139,0.2)]"
-                    }`}
-                  >
-                    {booking.status === "completed"
-                      ? "Completed"
-                      : booking.status === "in-progress"
-                      ? "In Progress"
-                      : "Pending"}
-                  </span>
-                </div>
-              }
-            />
-          </div>
-        ))}
+            >
+              <BookingListCard
+                booking={transformedBooking as Booking}
+                onViewDetails={() => {
+                  setSelectedRequestedId(booking.id);
+                  setRequestedViewMode("detail");
+                }}
+                context="requested"
+                showViewDetailsButton={true}
+              />
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -1223,43 +1822,24 @@ export function Itinerary({
               booking={{
                 id: bookingDetailData.data.id,
                 bookingCode: bookingDetailData.data.bookingCode,
-                customer:
-                  bookingDetailData.data.customerName ||
-                  selectedRequested?.customer ||
-                  "Unknown Customer",
-                email:
-                  bookingDetailData.data.customerEmail ||
-                  selectedRequested?.email ||
-                  "N/A",
-                mobile:
-                  bookingDetailData.data.customerMobile ||
-                  selectedRequested?.mobile ||
-                  "N/A",
-                destination:
-                  bookingDetailData.data.destination ||
-                  selectedRequested?.destination,
+                customer: bookingDetailData.data.customerName,
+                email: bookingDetailData.data.customerEmail,
+                mobile: bookingDetailData.data.customerMobile,
+                destination: bookingDetailData.data.destination,
                 itinerary:
-                  bookingDetailData.data.itinerary?.title ||
-                  selectedRequested?.destination ||
-                  "Custom Itinerary",
-                dates:
-                  bookingDetailData.data.startDate &&
+                  bookingDetailData.data.itinerary?.title || "Custom Itinerary",
+                dates: formatDateRange(
+                  bookingDetailData.data.startDate,
                   bookingDetailData.data.endDate
-                    ? formatDateRange(
-                        bookingDetailData.data.startDate,
-                        bookingDetailData.data.endDate
-                      )
-                    : selectedRequested?.dates || "Dates not set",
-                travelers:
-                  bookingDetailData.data.travelers ||
-                  selectedRequested?.travelers ||
-                  1,
+                ),
+                travelers: bookingDetailData.data.travelers,
                 total: `₱${parseFloat(
                   bookingDetailData.data.totalPrice.toString()
                 ).toLocaleString()}`,
-                bookedDate:
+                bookedDate: formatDate(
                   bookingDetailData.data.bookedDate ||
-                  selectedRequested?.bookedDate,
+                    bookingDetailData.data.createdAt
+                ),
                 status: bookingDetailData.data.status,
                 paymentStatus: bookingDetailData.data.paymentStatus,
                 type: bookingDetailData.data.type,
@@ -1267,15 +1847,173 @@ export function Itinerary({
                 startDate: bookingDetailData.data.startDate,
                 endDate: bookingDetailData.data.endDate,
                 paymentReceiptUrl: bookingDetailData.data.paymentReceiptUrl,
-                rejectionReason: bookingDetailData.data.rejectionReason!,
-                rejectionResolution:
-                  bookingDetailData.data.rejectionResolution!,
+                rejectionReason: bookingDetailData.data.rejectionReason,
+                rejectionResolution: bookingDetailData.data.rejectionResolution,
                 isResolved: bookingDetailData.data.isResolved,
                 ownership: bookingDetailData.data.ownership,
+                payments: paymentsData?.data || [],
+                bookingType: bookingDetailData.data.type,
+                resolutionStatus: bookingDetailData.data.isResolved
+                  ? "resolved"
+                  : "unresolved",
               }}
               itinerary={bookingDetailData.data.itinerary?.days || []}
               onBack={() => setRequestedViewMode("list")}
-              actionButtons={<div />}
+              onSendToClient={() =>
+                handleSendToClient(bookingDetailData.data.id)
+              }
+              onCancelBooking={() =>
+                handleCancelBooking(bookingDetailData.data.id)
+              }
+              onUpdateStatus={(status, reason, resolution) => {
+                setStatusUpdateData({
+                  status,
+                  rejectionReason: reason,
+                  rejectionResolution: resolution,
+                });
+                setStatusUpdateModalOpen(true);
+              }}
+              actionButtons={
+                <div className="space-y-3">
+                  {bookingDetailData.data.status !== "CONFIRMED" && (
+                    <button
+                      onClick={() =>
+                        handleSendToClient(bookingDetailData.data.id)
+                      }
+                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          Send to Client
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {bookingDetailData.data.status === "CONFIRMED" && (
+                    <button
+                      onClick={() => {
+                        setSelectedRequestedForBooking(
+                          bookingDetailData.data.id
+                        );
+                        setRequestedBookingModalOpen(true);
+                      }}
+                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
+                    >
+                      <BookOpen className="w-5 h-5" />
+                      Book This Trip
+                    </button>
+                  )}
+
+                  {(bookingDetailData.data.status === "DRAFT" ||
+                    bookingDetailData.data.status === "PENDING" ||
+                    bookingDetailData.data.status === "APPROVED") && (
+                    <button
+                      onClick={() => {
+                        const itineraryData = {
+                          id: bookingDetailData.data.id,
+                          bookingCode: bookingDetailData.data.bookingCode,
+                          title:
+                            bookingDetailData.data.itinerary?.title ||
+                            bookingDetailData.data.destination,
+                          destination: bookingDetailData.data.destination,
+                          itineraryDetails:
+                            bookingDetailData.data.itinerary?.days || [],
+                          itineraryDays:
+                            bookingDetailData.data.itinerary?.days || [],
+                          days: (bookingDetailData.data.itinerary?.days || [])
+                            .length,
+                          category: "Custom",
+                          pricePerPax: bookingDetailData.data.totalPrice,
+                          image: "",
+                          customerName: bookingDetailData.data.customerName,
+                          customerEmail: bookingDetailData.data.customerEmail,
+                          customerMobile: bookingDetailData.data.customerMobile,
+                          travelers: bookingDetailData.data.travelers,
+                          startDate: bookingDetailData.data.startDate,
+                          endDate: bookingDetailData.data.endDate,
+                          tourType: bookingDetailData.data.tourType,
+                          status: bookingDetailData.data.status,
+                          type: bookingDetailData.data.type,
+                        };
+
+                        navigate(
+                          `/itinerary/edit-requested/${bookingDetailData.data.id}`,
+                          {
+                            state: {
+                              itineraryData:
+                                serializeItineraryData(itineraryData),
+                            },
+                          }
+                        );
+                      }}
+                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit Booking
+                    </button>
+                  )}
+
+                  {bookingDetailData.data.status === "DRAFT" && (
+                    <button
+                      onClick={() => {
+                        confirmDelete({
+                          id: bookingDetailData.data.id,
+                          type: "local",
+                          title:
+                            bookingDetailData.data.itinerary?.title ||
+                            bookingDetailData.data.destination,
+                          destination: bookingDetailData.data.destination,
+                        });
+                      }}
+                      className="w-full h-11 px-4 rounded-xl bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Booking
+                    </button>
+                  )}
+
+                  {bookingDetailData.data.status === "PENDING" && (
+                    <div className="flex items-start gap-2 p-3 bg-[rgba(255,193,7,0.1)] border border-[rgba(255,193,7,0.2)] rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-[#FFC107] mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-[#8B6914]">
+                        This booking is awaiting approval. You can edit or
+                        delete it before confirmation.
+                      </p>
+                    </div>
+                  )}
+
+                  {bookingDetailData.data.status === "CONFIRMED" && (
+                    <div className="flex items-start gap-2 p-3 bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] rounded-lg">
+                      <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-[#065F46]">
+                        This booking has been confirmed. You can now create a
+                        trip booking from this itinerary.
+                      </p>
+                    </div>
+                  )}
+
+                  {(bookingDetailData.data.status === "COMPLETED" ||
+                    bookingDetailData.data.status === "CANCELLED") &&
+                    bookingDetailData.data.isResolved && (
+                      <div className="flex items-start gap-2 p-3 bg-[rgba(100,116,139,0.1)] border border-[rgba(100,116,139,0.2)] rounded-lg">
+                        <AlertCircle className="w-4 h-4 text-[#64748B] mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-[#475569]">
+                          This booking is{" "}
+                          {bookingDetailData.data.status.toLowerCase()} and
+                          resolved. No further actions available.
+                        </p>
+                      </div>
+                    )}
+                </div>
+              }
               breadcrumbPage="Requested"
               isRequestedItinerary={true}
             />
@@ -1533,7 +2271,7 @@ export function Itinerary({
         </DialogContent>
       </Dialog>
 
-      {/* Standard Itinerary Booking Modal */}
+      {/* Standard Itinerary Booking Modal with Customer Search */}
       <ConfirmationModal
         open={standardBookingModalOpen}
         onOpenChange={setStandardBookingModalOpen}
@@ -1553,55 +2291,149 @@ export function Itinerary({
               >
                 Customer Name <span className="text-[#FF6B6B]">*</span>
               </Label>
-              <Input
-                id="customerName"
-                value={bookingFormData.customerName}
-                onChange={(e) =>
-                  setBookingFormData({
-                    ...bookingFormData,
-                    customerName: e.target.value,
-                  })
-                }
-                placeholder="Enter customer name"
-                className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
-              />
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="customerName"
+                  value={bookingFormData.customerName}
+                  onChange={(e) => handleUserNameInput(e.target.value)}
+                  placeholder="Search existing customer or enter new"
+                  className="h-11 pl-10 pr-10 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                />
+
+                {isSearchingUsers && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-[#14B8A6] border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+
+                {bookingFormData.customerId && !isSearchingUsers && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingFormData((prev) => ({
+                        ...prev,
+                        customerName: "",
+                        customerId: "",
+                        email: "",
+                        mobile: "",
+                      }));
+                      setUserSearchParams((prev) => ({
+                        ...prev,
+                        q: undefined,
+                      }));
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] transition-colors"
+                    title="Clear selection"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {isUserSearching && userSuggestions.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                  <div className="sticky top-0 bg-white border-b border-[#F1F5F9] px-3 py-2">
+                    <span className="text-xs font-medium text-[#64748B]">
+                      Found {userSuggestions.length} user
+                      {userSuggestions.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  {userSuggestions.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => selectUserSuggestion(user)}
+                      className="w-full px-3 py-2 text-left hover:bg-[rgba(20,184,166,0.05)] border-b border-[#F1F5F9] last:border-0"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#14B8A6] to-[#10B981] flex items-center justify-center">
+                          <span className="text-white text-xs font-medium">
+                            {user.firstName?.charAt(0)}
+                            {user.lastName?.charAt(0)}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[#1A2B4F] truncate">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-xs text-[#64748B] truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
             <div>
               <Label htmlFor="email" className="text-[#1A2B4F] mb-2 block">
                 Email Address <span className="text-[#FF6B6B]">*</span>
               </Label>
-              <Input
-                id="email"
-                type="email"
-                value={bookingFormData.email}
-                onChange={(e) =>
-                  setBookingFormData({
-                    ...bookingFormData,
-                    email: e.target.value,
-                  })
-                }
-                placeholder="customer@email.com"
-                className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={bookingFormData.email}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      email: e.target.value,
+                    })
+                  }
+                  placeholder="customer@email.com"
+                  className={`h-11 pl-10 ${
+                    bookingFormData.customerId
+                      ? "bg-[#F8FAFB] text-[#94A3B8]"
+                      : ""
+                  } border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10`}
+                  disabled={!!bookingFormData.customerId}
+                />
+                {bookingFormData.customerId && (
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#94A3B8]" />
+                )}
+              </div>
+              {bookingFormData.customerId && (
+                <p className="text-xs text-[#94A3B8] mt-1">
+                  Linked to existing customer profile
+                </p>
+              )}
             </div>
+
             <div>
               <Label htmlFor="mobile" className="text-[#1A2B4F] mb-2 block">
                 Mobile Number <span className="text-[#FF6B6B]">*</span>
               </Label>
-              <Input
-                id="mobile"
-                type="tel"
-                value={bookingFormData.mobile}
-                onChange={(e) =>
-                  setBookingFormData({
-                    ...bookingFormData,
-                    mobile: e.target.value,
-                  })
-                }
-                placeholder="+63 9XX XXX XXXX"
-                className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
-              />
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="mobile"
+                  type="tel"
+                  value={bookingFormData.mobile}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      mobile: e.target.value,
+                    })
+                  }
+                  placeholder="+63 9XX XXX XXXX"
+                  className={`h-11 pl-10 ${
+                    bookingFormData.customerId
+                      ? "bg-[#F8FAFB] text-[#94A3B8]"
+                      : ""
+                  } border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10`}
+                  disabled={!!bookingFormData.customerId}
+                />
+                {bookingFormData.customerId && (
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#94A3B8]" />
+                )}
+              </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label
@@ -1610,18 +2442,21 @@ export function Itinerary({
                 >
                   Travel Start Date <span className="text-[#FF6B6B]">*</span>
                 </Label>
-                <Input
-                  id="travelDateFrom"
-                  type="date"
-                  value={bookingFormData.travelDateFrom}
-                  onChange={(e) =>
-                    setBookingFormData({
-                      ...bookingFormData,
-                      travelDateFrom: e.target.value,
-                    })
-                  }
-                  className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelDateFrom"
+                    type="date"
+                    value={bookingFormData.travelDateFrom}
+                    onChange={(e) =>
+                      setBookingFormData({
+                        ...bookingFormData,
+                        travelDateFrom: e.target.value,
+                      })
+                    }
+                    className="h-11 pl-10 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                  />
+                </div>
               </div>
               <div>
                 <Label
@@ -1630,20 +2465,24 @@ export function Itinerary({
                 >
                   Travel End Date <span className="text-[#FF6B6B]">*</span>
                 </Label>
-                <Input
-                  id="travelDateTo"
-                  type="date"
-                  value={bookingFormData.travelDateTo}
-                  onChange={(e) =>
-                    setBookingFormData({
-                      ...bookingFormData,
-                      travelDateTo: e.target.value,
-                    })
-                  }
-                  className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelDateTo"
+                    type="date"
+                    value={bookingFormData.travelDateTo}
+                    onChange={(e) =>
+                      setBookingFormData({
+                        ...bookingFormData,
+                        travelDateTo: e.target.value,
+                      })
+                    }
+                    className="h-11 pl-10 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                  />
+                </div>
               </div>
             </div>
+
             <div>
               <Label htmlFor="tourType" className="text-[#1A2B4F] mb-2 block">
                 Tour Type <span className="text-[#FF6B6B]">*</span>
@@ -1663,6 +2502,7 @@ export function Itinerary({
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <Label htmlFor="travelers" className="text-[#1A2B4F] mb-2 block">
                 Number of Travelers <span className="text-[#FF6B6B]">*</span>
@@ -1681,6 +2521,7 @@ export function Itinerary({
                 className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
               />
             </div>
+
             {selectedStandardForBooking &&
               templates.find((t) => t.id === selectedStandardForBooking)
                 ?.pricePerPax && (
@@ -1726,17 +2567,331 @@ export function Itinerary({
           setSelectedStandardForBooking(null);
           setBookingFormData({
             customerName: "",
+            customerId: "",
             email: "",
             mobile: "",
             travelDateFrom: "",
             travelDateTo: "",
             travelers: "1",
-            tourType: "" as any,
+            tourType: "Private" as any,
           });
         }}
         confirmText="Create Booking"
         cancelText="Cancel"
         confirmVariant="success"
+      />
+
+      {/* Requested Itinerary Booking Modal */}
+      <ConfirmationModal
+        open={requestedBookingModalOpen}
+        onOpenChange={setRequestedBookingModalOpen}
+        title="Create Booking from Requested Itinerary"
+        description="Convert this requested itinerary into an actual booking by providing customer details."
+        icon={<BookOpen className="w-5 h-5 text-white" />}
+        iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
+        iconShadow="shadow-[#0A7AFF]/20"
+        contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.05)] to-[rgba(20,184,166,0.05)]"
+        contentBorder="border-[rgba(10,122,255,0.2)]"
+        content={
+          <div className="space-y-4">
+            <div>
+              <Label
+                htmlFor="customerName"
+                className="text-[#1A2B4F] mb-2 block"
+              >
+                Customer Name <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="customerName"
+                  value={bookingFormData.customerName}
+                  onChange={(e) => handleUserNameInput(e.target.value)}
+                  placeholder="Search existing customer or enter new"
+                  className="h-11 pl-10 pr-10 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                />
+
+                {isSearchingUsers && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-[#0A7AFF] border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+
+                {bookingFormData.customerId && !isSearchingUsers && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingFormData((prev) => ({
+                        ...prev,
+                        customerName: "",
+                        customerId: "",
+                        email: "",
+                        mobile: "",
+                      }));
+                      setUserSearchParams((prev) => ({
+                        ...prev,
+                        q: undefined,
+                      }));
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] transition-colors"
+                    title="Clear selection"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {isUserSearching && userSuggestions.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                  <div className="sticky top-0 bg-white border-b border-[#F1F5F9] px-3 py-2">
+                    <span className="text-xs font-medium text-[#64748B]">
+                      Found {userSuggestions.length} user
+                      {userSuggestions.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  {userSuggestions.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => selectUserSuggestion(user)}
+                      className="w-full px-3 py-2 text-left hover:bg-[rgba(10,122,255,0.05)] border-b border-[#F1F5F9] last:border-0"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                          <span className="text-white text-xs font-medium">
+                            {user.firstName?.charAt(0)}
+                            {user.lastName?.charAt(0)}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[#1A2B4F] truncate">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-xs text-[#64748B] truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="email" className="text-[#1A2B4F] mb-2 block">
+                Email Address <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={bookingFormData.email}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      email: e.target.value,
+                    })
+                  }
+                  placeholder="customer@email.com"
+                  className={`h-11 pl-10 ${
+                    bookingFormData.customerId
+                      ? "bg-[#F8FAFB] text-[#94A3B8]"
+                      : ""
+                  } border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10`}
+                  disabled={!!bookingFormData.customerId}
+                />
+                {bookingFormData.customerId && (
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#94A3B8]" />
+                )}
+              </div>
+              {bookingFormData.customerId && (
+                <p className="text-xs text-[#94A3B8] mt-1">
+                  Linked to existing customer profile
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="mobile" className="text-[#1A2B4F] mb-2 block">
+                Mobile Number <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="mobile"
+                  type="tel"
+                  value={bookingFormData.mobile}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      mobile: e.target.value,
+                    })
+                  }
+                  placeholder="+63 9XX XXX XXXX"
+                  className={`h-11 pl-10 ${
+                    bookingFormData.customerId
+                      ? "bg-[#F8FAFB] text-[#94A3B8]"
+                      : ""
+                  } border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10`}
+                  disabled={!!bookingFormData.customerId}
+                />
+                {bookingFormData.customerId && (
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#94A3B8]" />
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label
+                  htmlFor="travelDateFrom"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Travel Start Date <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelDateFrom"
+                    type="date"
+                    value={bookingFormData.travelDateFrom}
+                    onChange={(e) =>
+                      setBookingFormData({
+                        ...bookingFormData,
+                        travelDateFrom: e.target.value,
+                      })
+                    }
+                    className="h-11 pl-10 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label
+                  htmlFor="travelDateTo"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Travel End Date <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelDateTo"
+                    type="date"
+                    value={bookingFormData.travelDateTo}
+                    onChange={(e) =>
+                      setBookingFormData({
+                        ...bookingFormData,
+                        travelDateTo: e.target.value,
+                      })
+                    }
+                    className="h-11 pl-10 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="tourType" className="text-[#1A2B4F] mb-2 block">
+                  Tour Type <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <Select
+                  value={bookingFormData.tourType}
+                  onValueChange={(value: "Joiner" | "Private") =>
+                    setBookingFormData({ ...bookingFormData, tourType: value })
+                  }
+                >
+                  <SelectTrigger className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
+                    <SelectValue placeholder="Choose Tour Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Joiner">Joiner</SelectItem>
+                    <SelectItem value="Private">Private Tour</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label
+                  htmlFor="travelers"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Travelers <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <Input
+                  id="travelers"
+                  type="number"
+                  min="1"
+                  value={bookingFormData.travelers}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      travelers: e.target.value,
+                    })
+                  }
+                  className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                />
+              </div>
+            </div>
+
+            {selectedRequestedForBooking && selectedRequested && (
+              <div className="pt-4 border-t border-[rgba(10,122,255,0.3)]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-[#64748B]">Total Amount:</span>
+                  <span className="text-sm font-medium text-[#1A2B4F]">
+                    {selectedRequested.totalAmount}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-[#64748B]">
+                    Number of Travelers:
+                  </span>
+                  <span className="text-sm font-medium text-[#1A2B4F]">
+                    {bookingFormData.travelers || 1}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-[rgba(10,122,255,0.3)]">
+                  <span className="font-semibold text-[#1A2B4F]">
+                    Final Total:
+                  </span>
+                  <span className="font-semibold text-[#0A7AFF]">
+                    {selectedRequested.totalAmount}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        }
+        onConfirm={() => {
+          if (
+            !bookingFormData.customerName ||
+            !bookingFormData.email ||
+            !bookingFormData.mobile
+          ) {
+            toast.error("Please fill in all required fields");
+            return;
+          }
+          handleCreateBookingFromRequested();
+        }}
+        onCancel={() => {
+          setRequestedBookingModalOpen(false);
+          setSelectedRequestedForBooking(null);
+          setBookingFormData({
+            customerName: "",
+            customerId: "",
+            email: "",
+            mobile: "",
+            travelDateFrom: "",
+            travelDateTo: "",
+            travelers: "1",
+            tourType: "Private" as any,
+          });
+        }}
+        confirmText="Create Booking"
+        cancelText="Cancel"
+        confirmVariant="default"
       />
 
       {/* Confirmation Modal for Creating Booking */}
@@ -1871,6 +3026,180 @@ export function Itinerary({
         cancelText="Cancel"
         confirmVariant="destructive"
       />
+
+      {/* Status Update Modal */}
+      <ConfirmationModal
+        open={statusUpdateModalOpen}
+        onOpenChange={setStatusUpdateModalOpen}
+        title="Update Booking Status"
+        description="Change the status of this booking"
+        icon={<CheckCircle2 className="w-5 h-5 text-white" />}
+        iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
+        iconShadow="shadow-[#0A7AFF]/20"
+        contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.05)] to-[rgba(20,184,166,0.05)]"
+        contentBorder="border-[rgba(10,122,255,0.2)]"
+        content={
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="status" className="text-[#1A2B4F] mb-2 block">
+                Status <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <Select
+                value={statusUpdateData.status}
+                onValueChange={(value) =>
+                  setStatusUpdateData({ ...statusUpdateData, status: value })
+                }
+              >
+                <SelectTrigger className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="APPROVED">Approved</SelectItem>
+                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {statusUpdateData.status === "CANCELLED" && (
+              <>
+                <div>
+                  <Label
+                    htmlFor="rejectionReason"
+                    className="text-[#1A2B4F] mb-2 block"
+                  >
+                    Reason for Cancellation
+                  </Label>
+                  <Input
+                    id="rejectionReason"
+                    value={statusUpdateData.rejectionReason || ""}
+                    onChange={(e) =>
+                      setStatusUpdateData({
+                        ...statusUpdateData,
+                        rejectionReason: e.target.value,
+                      })
+                    }
+                    placeholder="Enter reason for cancellation"
+                    className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="rejectionResolution"
+                    className="text-[#1A2B4F] mb-2 block"
+                  >
+                    Resolution/Next Steps
+                  </Label>
+                  <Input
+                    id="rejectionResolution"
+                    value={statusUpdateData.rejectionResolution || ""}
+                    onChange={(e) =>
+                      setStatusUpdateData({
+                        ...statusUpdateData,
+                        rejectionResolution: e.target.value,
+                      })
+                    }
+                    placeholder="Enter resolution or next steps"
+                    className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        }
+        onConfirm={() => {
+          if (selectedRequestedId) {
+            handleUpdateBookingStatus(
+              selectedRequestedId,
+              statusUpdateData.status,
+              statusUpdateData.rejectionReason,
+              statusUpdateData.rejectionResolution
+            );
+          }
+        }}
+        onCancel={() => {
+          setStatusUpdateModalOpen(false);
+          setStatusUpdateData({
+            status: "",
+            rejectionReason: "",
+            rejectionResolution: "",
+          });
+        }}
+        confirmText={isUpdatingStatus ? "Updating..." : "Update Status"}
+        cancelText="Cancel"
+        confirmVariant="default"
+      />
+
+      {/* Delete Draft Confirmation Modal */}
+      {draftToDelete && (
+        <ConfirmationModal
+          open={deleteDraftConfirmOpen}
+          onOpenChange={(open) => !open && setDraftToDelete(null)}
+          title="Delete Draft"
+          description="Are you sure you want to delete this draft? This action cannot be undone."
+          icon={<Trash2 className="w-5 h-5 text-white" />}
+          iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
+          iconShadow="shadow-[#FF6B6B]/30"
+          contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.05)] to-[rgba(255,82,82,0.05)]"
+          contentBorder="border-[rgba(255,107,107,0.2)]"
+          content={
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                <span className="text-sm text-[#64748B]">Type:</span>
+                <span className="text-sm font-medium text-[#1A2B4F]">
+                  {draftToDelete.type === "requested"
+                    ? "Requested"
+                    : "Standard"}{" "}
+                  Draft
+                </span>
+              </div>
+              {draftToDelete.customerName && (
+                <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                  <span className="text-sm text-[#64748B]">Customer:</span>
+                  <span className="text-sm font-medium text-[#1A2B4F]">
+                    {draftToDelete.customerName}
+                  </span>
+                </div>
+              )}
+              {draftToDelete.title && (
+                <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                  <span className="text-sm text-[#64748B]">Title:</span>
+                  <span className="text-sm font-medium text-[#1A2B4F]">
+                    {draftToDelete.title}
+                  </span>
+                </div>
+              )}
+              {draftToDelete.destination && (
+                <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                  <span className="text-sm text-[#64748B]">Destination:</span>
+                  <span className="text-sm font-medium text-[#1A2B4F]">
+                    {draftToDelete.destination}
+                  </span>
+                </div>
+              )}
+              <p className="text-xs text-[#64748B] pt-2">
+                This will permanently remove the draft from your list.
+              </p>
+            </div>
+          }
+          onConfirm={() => {
+            if (onDeleteDraft && draftToDelete) {
+              onDeleteDraft(draftToDelete.id);
+              toast.success("Draft deleted successfully!");
+            }
+            setDraftToDelete(null);
+            setDeleteDraftConfirmOpen(false);
+          }}
+          onCancel={() => {
+            setDraftToDelete(null);
+            setDeleteDraftConfirmOpen(false);
+          }}
+          confirmText="Delete Draft"
+          cancelText="Cancel"
+          confirmVariant="destructive"
+        />
+      )}
     </div>
   );
 }

@@ -24,7 +24,7 @@ import {
 import { ItineraryDetailDisplay } from "./ItineraryDetailDisplay";
 
 type ItineraryDay = {
-  day: number;
+  dayNumber: number;
   title: string;
   activities: {
     time: string;
@@ -261,7 +261,7 @@ export function BookingDetailView({
                     </Label>
                     <Select
                       value={booking.paymentStatus}
-                      onValueChange={(value) =>
+                      onValueChange={(value: any) =>
                         onPaymentStatusChange(booking.id, value)
                       }
                     >
@@ -368,7 +368,7 @@ export function BookingDetailView({
 
         {/* Right Column - Itinerary */}
         <div className="col-span-2">
-          <ItineraryDetailDisplay itinerary={itinerary} />
+          <ItineraryDetailDisplay itinerary={itinerary.days} />
         </div>
       </div>
 
