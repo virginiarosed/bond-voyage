@@ -95,7 +95,7 @@ import {
   useTourPackages,
 } from "../hooks/useTourPackages";
 import { toast } from "sonner";
-import { TourPackage } from "../types/types";
+import { Booking, TourPackage } from "../types/types";
 import { queryKeys } from "../utils/lib/queryKeys";
 import {
   useBookingDetail,
@@ -172,7 +172,6 @@ const transformStandardItineraryDetailsForPayload = (
   if (!days || days.length === 0) return [];
 
   return days.map((day, index) => {
-    // Calculate date if startDate is provided
     let date = null;
     if (startDate) {
       const dayDate = new Date(startDate);
@@ -346,9 +345,39 @@ const formatDateRange = (
   }
 };
 
+const formatDate = (dateString: string | Date | null): string => {
+  if (!dateString) return "Date not available";
+
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid date";
+
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch (error) {
+    return "Invalid date";
+  }
+};
+
+const formatDateISO = (dateString: string | Date | null): string => {
+  if (!dateString) return new Date().toISOString().split("T")[0];
+
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return new Date().toISOString().split("T")[0];
+
+    return date.toISOString().split("T")[0];
+  } catch (error) {
+    return new Date().toISOString().split("T")[0];
+  }
+};
+
 const getStatusBadge = (
   status: string,
-  isResolved: boolean
+  isResolved?: boolean
 ): "pending" | "in-progress" | "completed" => {
   if (isResolved) return "completed";
 
@@ -359,15 +388,21 @@ const getStatusBadge = (
     APPROVED: "in-progress",
     COMPLETED: "completed",
     CANCELLED: "completed",
+    REJECTED: "completed",
   };
 
   return statusMap[status] || "pending";
 };
 
-const getSentStatus = (status: string, type: string): "sent" | "unsent" => {
-  if (type === "REQUESTED") {
-    return status === "CONFIRMED" ? "sent" : "unsent";
+const getSentStatus = (booking: any): "sent" | "unsent" => {
+  const sentAt = booking.itinerary?.sentAt || booking.sentAt;
+  const sentStatus = booking.itinerary?.sentStatus || booking.sentStatus;
+  const status = booking.status || booking.itinerary?.status;
+
+  if (sentAt || sentStatus === "sent" || status === "CONFIRMED") {
+    return "sent";
   }
+
   return "unsent";
 };
 
@@ -375,31 +410,134 @@ const getConfirmStatus = (status: string): "confirmed" | "unconfirmed" => {
   return status === "CONFIRMED" ? "confirmed" : "unconfirmed";
 };
 
-// Transform API booking to component format
-const transformApiBooking = (booking: any): RequestedItineraryBooking => {
+const getActivityIcon = (title: string) => {
+  const lowerTitle = title?.toLowerCase() || "";
+  if (lowerTitle.includes("flight") || lowerTitle.includes("arrival"))
+    return "Plane";
+  if (lowerTitle.includes("hotel") || lowerTitle.includes("check-in"))
+    return "Hotel";
+  if (lowerTitle.includes("photo") || lowerTitle.includes("view"))
+    return "Camera";
+  if (
+    lowerTitle.includes("lunch") ||
+    lowerTitle.includes("dinner") ||
+    lowerTitle.includes("breakfast")
+  )
+    return "UtensilsCrossed";
+  if (lowerTitle.includes("transfer") || lowerTitle.includes("drive"))
+    return "Car";
+  return "MapPin";
+};
+
+// Main transformation function
+const transformApiBooking = (apiBooking: any) => {
+  // Get dates
+  const start =
+    apiBooking.startDate ||
+    apiBooking.itinerary?.startDate ||
+    apiBooking.itinerary?.days?.[0]?.date;
+  const end =
+    apiBooking.endDate ||
+    apiBooking.itinerary?.endDate ||
+    apiBooking.itinerary?.days?.[apiBooking.itinerary?.days?.length - 1]?.date;
+
+  const startDate = formatDateISO(start);
+  const endDate = formatDateISO(end);
+
+  // Format dates for display
+  const formattedDates =
+    start && end
+      ? `${formatDate(start)} - ${formatDate(end)}`
+      : "Date not available";
+
+  // Parse booked date
+  const bookedDate = formatDate(apiBooking.bookedDate || apiBooking.createdAt);
+
+  // Parse total amount
+  const totalAmount = parseFloat(
+    apiBooking.totalPrice || apiBooking.itinerary?.estimatedCost || 0
+  );
+  const formattedTotal = `₱${totalAmount.toLocaleString()}`;
+
+  // Get customer information
+  const customerName =
+    apiBooking.customerName ||
+    apiBooking.itinerary?.userId ||
+    "Unknown Customer";
+  const customerEmail =
+    apiBooking.customerEmail || apiBooking.itinerary?.user?.email || "";
+  const customerMobile = apiBooking.customerMobile || "N/A";
+
+  // Transform itinerary details
+  const itineraryDetails =
+    apiBooking.itinerary?.days?.map((day: any) => ({
+      day: day.dayNumber,
+      title: `Day ${day.dayNumber}`,
+      activities:
+        (day.activities || []).map((act: any) => ({
+          time: act.time || "",
+          icon: getActivityIcon(act.title),
+          title: act.title || "",
+          description: act.description || "",
+          location: act.location || "",
+        })) || [],
+    })) || [];
+
   return {
-    id: booking.id,
-    bookingCode: booking.bookingCode,
-    customer: booking.customerName || "Unknown Customer",
-    email: booking.customerEmail || "N/A",
-    mobile: booking.customerMobile || "N/A",
-    destination: booking.destination || "N/A",
-    itinerary:
-      booking.itinerary?.title || booking.destination || "Custom Itinerary",
-    dates:
-      booking.startDate && booking.endDate
-        ? formatDateRange(booking.startDate, booking.endDate)
-        : "Dates not set",
-    travelers: booking.travelers || 1,
-    totalAmount: booking.totalPrice
-      ? `₱${parseFloat(booking.totalPrice.toString()).toLocaleString()}`
-      : "₱0",
-    paid: "₱0", // You might need to calculate this from payments
-    bookedDate: booking.bookedDate || booking.createdAt,
-    status: getStatusBadge(booking.status, booking.isResolved),
-    sentStatus: getSentStatus(booking.status, booking.type),
-    confirmStatus: getConfirmStatus(booking.status),
-    rawBooking: booking,
+    id: apiBooking.id,
+    bookingCode: apiBooking.bookingCode,
+    customer: customerName,
+    email: customerEmail,
+    mobile: customerMobile,
+    destination: apiBooking.destination || apiBooking.itinerary?.destination,
+    dates: formattedDates,
+    startDate: startDate,
+    endDate: endDate,
+    travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
+    total: formattedTotal,
+    totalAmount: totalAmount,
+    bookedDate: bookedDate,
+    status: apiBooking.status,
+    bookingType: apiBooking.type,
+    tourType:
+      apiBooking.tourType || apiBooking.itinerary?.tourType || "PRIVATE",
+    rejectionReason: apiBooking.rejectionReason,
+    rejectionResolution: apiBooking.rejectionResolution,
+    resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
+    itineraryDetails: itineraryDetails,
+  };
+};
+
+// Simplified transformation for BookingListCard
+const transformBookingForListCard = (apiBooking: any) => {
+  const transformed = transformApiBooking(apiBooking);
+
+  return {
+    id: transformed.id,
+    bookingCode: transformed.bookingCode,
+    customer: transformed.customer,
+    email: transformed.email,
+    mobile: transformed.mobile,
+    destination: transformed.destination,
+    startDate: transformed.startDate,
+    endDate: transformed.endDate,
+    travelers: transformed.travelers,
+    total: transformed.total,
+    totalAmount: transformed.totalAmount,
+    bookedDate: transformed.bookedDate,
+    status: transformed.status,
+    bookingType: transformed.bookingType,
+    tourType: transformed.tourType,
+    rejectionReason: transformed.rejectionReason,
+    rejectionResolution: transformed.rejectionResolution,
+    resolutionStatus: transformed.resolutionStatus,
+    // For BookingListCard props
+    customerName: transformed.customer,
+    customerEmail: transformed.email,
+    customerMobile: transformed.mobile,
+    totalAmountNum: transformed.totalAmount,
+    // Keep raw booking for reference
+    rawBooking: apiBooking,
   };
 };
 
@@ -563,7 +701,7 @@ export function Itinerary({
     travelDateFrom: "",
     travelDateTo: "",
     travelers: "1",
-    tourType: "" as any,
+    tourType: "Private" as any,
   });
 
   // Status update states
@@ -798,10 +936,52 @@ export function Itinerary({
   useEffect(() => {
     if (bookingsData?.data) {
       const transformedBookings: RequestedItineraryBooking[] =
-        bookingsData.data.map(transformApiBooking);
+        bookingsData.data.map((apiBooking: any) => {
+          const transformed = transformApiBooking(apiBooking);
+
+          // Determine sent status
+          const sentAt = apiBooking.itinerary?.sentAt || apiBooking.sentAt;
+          const sentStatus =
+            apiBooking.itinerary?.sentStatus ||
+            bookingDetailData?.data?.itinerary.sentStatus;
+          const sent =
+            sentAt || sentStatus === "sent" || apiBooking.status === "CONFIRMED"
+              ? "sent"
+              : "unsent";
+
+          // Determine confirm status
+          const confirmStatus =
+            apiBooking.status === "CONFIRMED" ? "confirmed" : "unconfirmed";
+
+          // Determine status badge
+          const statusBadge = getStatusBadge(
+            apiBooking.status,
+            apiBooking.isResolved
+          );
+
+          return {
+            id: transformed.id,
+            bookingCode: transformed.bookingCode,
+            customer: transformed.customer,
+            email: transformed.email,
+            mobile: transformed.mobile,
+            destination: transformed.destination,
+            itinerary: transformed.destination,
+            dates: transformed.dates,
+            travelers: transformed.travelers,
+            totalAmount: transformed.total,
+            paid: "₱0",
+            bookedDate: transformed.bookedDate,
+            status: statusBadge,
+            sentStatus: sent,
+            confirmStatus: confirmStatus,
+            rawBooking: apiBooking,
+          };
+        });
+
       setRequestedBookings(transformedBookings);
     }
-  }, [bookingsData]);
+  }, [bookingsData, bookingDetailData]);
 
   useEffect(() => {
     if (
@@ -830,7 +1010,7 @@ export function Itinerary({
             : "₱0",
           bookedDate: booking.bookedDate,
           status: "pending",
-          sentStatus: getSentStatus(booking.status, booking.type),
+          sentStatus: getSentStatus(booking),
           confirmStatus: getConfirmStatus(booking.status),
         })
       );
@@ -1144,7 +1324,7 @@ export function Itinerary({
       destination: standard.destination,
       travelers: travelers,
       totalPrice: totalAmount,
-      type: "STANDARD", // Changed from "STANDARD" to match the enum (check your backend enum values)
+      type: "STANDARD",
       tourType: bookingFormData.tourType.toUpperCase(),
       customerName: bookingFormData.customerName,
       customerEmail: bookingFormData.email,
@@ -1163,7 +1343,7 @@ export function Itinerary({
             standard.title || `Standard Itinerary - ${standard.destination}`,
           destination: standard.destination,
           travelers: travelers,
-          type: "STANDARD", // Changed to match the enum
+          type: "STANDARD",
           tourType: bookingFormData.tourType.toUpperCase(),
           days: itineraryDays,
         },
@@ -1182,7 +1362,7 @@ export function Itinerary({
           travelDateFrom: "",
           travelDateTo: "",
           travelers: "1",
-          tourType: "" as any,
+          tourType: "Private" as any,
         });
         setCreateBookingConfirmOpen(false);
         setStandardBookingModalOpen(false);
@@ -1222,7 +1402,7 @@ export function Itinerary({
 
     // Extract numeric value from the formatted string
     const totalAmount = parseFloat(
-      requestedBooking.totalAmount.replace(/[^0-9.]/g, "")
+      requestedBooking?.totalAmount?.replace(/[^0-9.]/g, "")
     );
 
     // Get the detailed booking data to extract itinerary information
@@ -1234,7 +1414,7 @@ export function Itinerary({
       destination: requestedBooking.destination,
       travelers: parseInt(bookingFormData.travelers),
       totalPrice: totalAmount,
-      type: "REQUESTED", // Changed to match the enum
+      type: "REQUESTED",
       tourType: bookingFormData.tourType.toUpperCase(),
       customerName: bookingFormData.customerName,
       customerEmail: bookingFormData.email,
@@ -1258,7 +1438,7 @@ export function Itinerary({
             `Requested Itinerary - ${requestedBooking.destination}`,
           destination: requestedBooking.destination,
           travelers: parseInt(bookingFormData.travelers),
-          type: "CUSTOMIZED", // Changed to match the enum
+          type: "CUSTOMIZED",
           tourType: bookingFormData.tourType.toUpperCase(),
           days: transformRequestedItineraryForPayload(
             bookingDetail.itinerary?.days || []
@@ -1279,7 +1459,7 @@ export function Itinerary({
           travelDateFrom: "",
           travelDateTo: "",
           travelers: "1",
-          tourType: "" as any,
+          tourType: "Private" as any,
         });
         setRequestedBookingModalOpen(false);
         setSelectedRequestedForBooking(null);
@@ -1549,76 +1729,31 @@ export function Itinerary({
 
     return (
       <div className="space-y-4">
-        {filteredBookings.map((booking) => (
-          <div
-            key={booking.id}
-            className="relative"
-            ref={(el) => {
-              requestedRefs.current[booking.id] = el;
-            }}
-          >
-            <BookingListCard
-              booking={{
-                id: booking.id,
-                bookingCode: booking.bookingCode!,
-                customerName: booking.customer,
-                customerEmail: booking.email,
-                customerMobile: booking.mobile,
-                destination: booking.destination,
-                bookedDate: booking.dates,
-                travelers: booking.travelers,
-                totalPrice: parseInt(
-                  booking.totalAmount.replace(/[^0-9]/g, "")
-                ),
+        {filteredBookings.map((booking) => {
+          const transformedBooking = transformBookingForListCard(
+            booking.rawBooking
+          );
+
+          return (
+            <div
+              key={booking.id}
+              className="relative"
+              ref={(el) => {
+                requestedRefs.current[booking.id] = el;
               }}
-              onViewDetails={() => {
-                setSelectedRequestedId(booking.id);
-                setRequestedViewMode("detail");
-              }}
-              additionalBadges={
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      booking.sentStatus === "sent"
-                        ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]"
-                        : "bg-[rgba(100,116,139,0.1)] text-[#64748B] border border-[rgba(100,116,139,0.2)]"
-                    }`}
-                  >
-                    {booking.sentStatus === "sent" ? "Sent" : "Unsent"}
-                  </span>
-                  {booking.sentStatus === "sent" && booking.confirmStatus && (
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        booking.confirmStatus === "confirmed"
-                          ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border border-[rgba(10,122,255,0.2)]"
-                          : "bg-[rgba(255,193,7,0.1)] text-[#FFC107] border border-[rgba(255,193,7,0.2)]"
-                      }`}
-                    >
-                      {booking.confirmStatus === "confirmed"
-                        ? "Confirmed"
-                        : "Unconfirmed"}
-                    </span>
-                  )}
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      booking.status === "completed"
-                        ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]"
-                        : booking.status === "in-progress"
-                        ? "bg-[rgba(255,193,7,0.1)] text-[#FFC107] border border-[rgba(255,193,7,0.2)]"
-                        : "bg-[rgba(100,116,139,0.1)] text-[#64748B] border border-[rgba(100,116,139,0.2)]"
-                    }`}
-                  >
-                    {booking.status === "completed"
-                      ? "Completed"
-                      : booking.status === "in-progress"
-                      ? "In Progress"
-                      : "Pending"}
-                  </span>
-                </div>
-              }
-            />
-          </div>
-        ))}
+            >
+              <BookingListCard
+                booking={transformedBooking as Booking}
+                onViewDetails={() => {
+                  setSelectedRequestedId(booking.id);
+                  setRequestedViewMode("detail");
+                }}
+                context="requested"
+                showViewDetailsButton={true}
+              />
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -1693,19 +1828,18 @@ export function Itinerary({
                 destination: bookingDetailData.data.destination,
                 itinerary:
                   bookingDetailData.data.itinerary?.title || "Custom Itinerary",
-                dates:
-                  bookingDetailData.data.startDate &&
+                dates: formatDateRange(
+                  bookingDetailData.data.startDate,
                   bookingDetailData.data.endDate
-                    ? formatDateRange(
-                        bookingDetailData.data.startDate,
-                        bookingDetailData.data.endDate
-                      )
-                    : "Dates not set",
+                ),
                 travelers: bookingDetailData.data.travelers,
                 total: `₱${parseFloat(
                   bookingDetailData.data.totalPrice.toString()
                 ).toLocaleString()}`,
-                bookedDate: bookingDetailData.data.bookedDate,
+                bookedDate: formatDate(
+                  bookingDetailData.data.bookedDate ||
+                    bookingDetailData.data.createdAt
+                ),
                 status: bookingDetailData.data.status,
                 paymentStatus: bookingDetailData.data.paymentStatus,
                 type: bookingDetailData.data.type,
@@ -1718,6 +1852,10 @@ export function Itinerary({
                 isResolved: bookingDetailData.data.isResolved,
                 ownership: bookingDetailData.data.ownership,
                 payments: paymentsData?.data || [],
+                bookingType: bookingDetailData.data.type,
+                resolutionStatus: bookingDetailData.data.isResolved
+                  ? "resolved"
+                  : "unresolved",
               }}
               itinerary={bookingDetailData.data.itinerary?.days || []}
               onBack={() => setRequestedViewMode("list")}
@@ -2435,7 +2573,7 @@ export function Itinerary({
             travelDateFrom: "",
             travelDateTo: "",
             travelers: "1",
-            tourType: "" as any,
+            tourType: "Private" as any,
           });
         }}
         confirmText="Create Booking"
@@ -2748,7 +2886,7 @@ export function Itinerary({
             travelDateFrom: "",
             travelDateTo: "",
             travelers: "1",
-            tourType: "" as any,
+            tourType: "Private" as any,
           });
         }}
         confirmText="Create Booking"
