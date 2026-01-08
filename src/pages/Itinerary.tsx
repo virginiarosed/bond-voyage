@@ -56,6 +56,11 @@ import {
   ShoppingCart,
   Search,
   Send,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  Lock,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -100,9 +105,9 @@ import {
   useCancelBooking,
   useUpdateBookingStatus,
   useBookingPayments,
-  usePaymentProofImage,
 } from "../hooks/useBookings";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUsers } from "../hooks/useUsers";
 
 interface RequestedItineraryBooking {
   id: string;
@@ -141,6 +146,7 @@ interface ItineraryDay {
 
 interface BookingFormData {
   customerName: string;
+  customerId?: string;
   email: string;
   mobile: string;
   travelDateFrom: string;
@@ -157,6 +163,77 @@ interface ItineraryProps {
   onEditStandardDraft?: (draft: any) => void;
   onDeleteDraft?: (draftId: string) => void;
 }
+
+// Helper function to transform standard itinerary details for payload
+const transformStandardItineraryDetailsForPayload = (
+  days: ItineraryDay[],
+  startDate?: string
+): any[] => {
+  if (!days || days.length === 0) return [];
+
+  return days.map((day, index) => {
+    // Calculate date if startDate is provided
+    let date = null;
+    if (startDate) {
+      const dayDate = new Date(startDate);
+      dayDate.setDate(dayDate.getDate() + index);
+      date = dayDate.toISOString();
+    }
+
+    return {
+      dayNumber: day.dayNumber || index + 1,
+      date: date,
+      activities: (day.activities || []).map((activity, activityIndex) => ({
+        time: activity.time || "00:00",
+        title: activity.title || `Activity ${activityIndex + 1}`,
+        description: activity.description || "",
+        location: activity.location || "",
+        icon: activity.icon || null,
+        order: activity.order || activityIndex,
+      })),
+    };
+  });
+};
+
+// Helper function to transform API days for payload
+const transformApiDaysToItineraryDetailsForPayload = (days: any[]): any[] => {
+  if (!days || days.length === 0) return [];
+
+  return days.map((day, index) => ({
+    dayNumber: day.dayNumber || index + 1,
+    date: day.date || null,
+    activities: (day.activities || []).map(
+      (activity: any, activityIndex: number) => ({
+        time: activity.time || "00:00",
+        title: activity.title || `Activity ${activityIndex + 1}`,
+        description: activity.description || "",
+        location: activity.location || "",
+        icon: activity.icon || null,
+        order: activity.order || activityIndex,
+      })
+    ),
+  }));
+};
+
+// Helper function to transform requested itinerary for payload
+const transformRequestedItineraryForPayload = (days: any[]): any[] => {
+  if (!days || days.length === 0) return [];
+
+  return days.map((day, index) => ({
+    dayNumber: day.dayNumber || index + 1,
+    date: day.date || null,
+    activities: (day.activities || []).map(
+      (activity: any, activityIndex: number) => ({
+        time: activity.time || "00:00",
+        title: activity.title || `Activity ${activityIndex + 1}`,
+        description: activity.description || "",
+        location: activity.location || "",
+        icon: activity.icon || null,
+        order: activity.order || activityIndex,
+      })
+    ),
+  }));
+};
 
 // Icon mapping helper
 const ICON_MAP: Record<string, any> = {
@@ -441,40 +518,29 @@ export function Itinerary({
         });
       },
     });
+
   // Payment hooks
   const { data: paymentsData } = useBookingPayments(selectedRequestedId!);
 
-  const handleDeleteTourPackage = (id: string) => {
-    deleteTourPackage(
-      { id },
-      {
-        onSuccess: () => {
-          toast.success("Tour package deleted successfully!");
-          refetchTourPackages();
-        },
-        onError: () => {
-          toast.error("Failed to delete tour package");
-        },
-      }
-    );
-  };
+  // User search states
+  const [userSearchParams, setUserSearchParams] = useState<{
+    q?: string;
+    limit?: number;
+  }>({
+    q: "",
+    limit: 5,
+  });
 
-  const tourPackages: TourPackage[] = useMemo(() => {
-    if (!tourPackagesResponse?.data) return [];
-    return Array.isArray(tourPackagesResponse.data)
-      ? tourPackagesResponse.data
-      : [];
-  }, [tourPackagesResponse?.data]);
+  const [userSuggestions, setUserSuggestions] = useState<any[]>([]);
+  const [isUserSearching, setIsUserSearching] = useState(false);
 
-  // Standard itinerary states
-  const [viewMode, setViewMode] = useState<"grid" | "detail">("grid");
-  const [selectedStandardId, setSelectedStandardId] = useState<string | null>(
-    null
-  );
-
-  // Requested itinerary states
-  const [requestedViewMode, setRequestedViewMode] = useState<"list" | "detail">(
-    "list"
+  const { data: usersData, isLoading: isSearchingUsers } = useUsers(
+    userSearchParams,
+    {
+      enabled: !!userSearchParams.q && userSearchParams.q?.length >= 2,
+      staleTime: 30000,
+      queryKey: [queryKeys.users.list],
+    }
   );
 
   // Booking modal states
@@ -491,6 +557,7 @@ export function Itinerary({
   // Booking form data
   const [bookingFormData, setBookingFormData] = useState<BookingFormData>({
     customerName: "",
+    customerId: "",
     email: "",
     mobile: "",
     travelDateFrom: "",
@@ -527,6 +594,14 @@ export function Itinerary({
     title?: string;
     destination?: string;
   } | null>(null);
+
+  const [selectedStandardId, setSelectedStandardId] = useState<string | null>(
+    null
+  );
+
+  const [requestedViewMode, setRequestedViewMode] = useState<"list" | "detail">(
+    "list"
+  );
 
   // Delete draft states
   const [deleteDraftConfirmOpen, setDeleteDraftConfirmOpen] = useState(false);
@@ -607,6 +682,58 @@ export function Itinerary({
     }));
   };
 
+  // User search handlers
+  const handleUserNameInput = (value: string) => {
+    setBookingFormData((prev) => ({
+      ...prev,
+      customerName: value,
+      ...(value !== prev.customerName &&
+        value.length < 2 && {
+          customerId: "",
+          email: "",
+          mobile: "",
+        }),
+    }));
+
+    if (value.length >= 2) {
+      setUserSearchParams((prev) => ({
+        ...prev,
+        q: value,
+      }));
+    } else {
+      setUserSearchParams((prev) => ({
+        ...prev,
+        q: undefined,
+      }));
+      setUserSuggestions([]);
+      setIsUserSearching(false);
+    }
+  };
+
+  const selectUserSuggestion = (user: any) => {
+    setBookingFormData((prev) => ({
+      ...prev,
+      customerName: `${user.firstName} ${user.lastName}`,
+      customerId: user.id,
+      email: user.email || "",
+      mobile: user.mobile || "",
+    }));
+
+    setUserSearchParams((prev) => ({
+      ...prev,
+      q: undefined,
+    }));
+    setUserSuggestions([]);
+    setIsUserSearching(false);
+  };
+
+  const tourPackages: TourPackage[] = useMemo(() => {
+    if (!tourPackagesResponse?.data) return [];
+    return Array.isArray(tourPackagesResponse.data)
+      ? tourPackagesResponse.data
+      : [];
+  }, [tourPackagesResponse?.data]);
+
   // Combine API itineraries with newly created ones
   const apiItineraries = useMemo(() => {
     return tourPackages.map((pkg, index) =>
@@ -627,6 +754,11 @@ export function Itinerary({
   const [standardItineraryDetails, setStandardItineraryDetails] = useState<
     Record<string, ItineraryDay[]>
   >({});
+
+  // Standard itinerary states
+  const [viewMode, setViewMode] = useState<"grid" | "detail">("grid");
+
+  // Requested itinerary states
 
   useEffect(() => {
     if (selectedTourPackageDetail?.data) {
@@ -756,13 +888,44 @@ export function Itinerary({
     }
   }, [location.state, navigate, location.pathname]);
 
+  // User search effects
+  useEffect(() => {
+    if (usersData?.data?.users) {
+      setUserSuggestions(usersData.data.users);
+      setIsUserSearching(true);
+    } else {
+      setUserSuggestions([]);
+    }
+  }, [usersData]);
+
+  useEffect(() => {
+    if (!userSearchParams.q || userSearchParams.q.length < 2) {
+      setUserSuggestions([]);
+      setIsUserSearching(false);
+    }
+  }, [userSearchParams.q]);
+
+  const handleDeleteTourPackage = (id: string) => {
+    deleteTourPackage(
+      { id },
+      {
+        onSuccess: () => {
+          toast.success("Tour package deleted successfully!");
+          refetchTourPackages();
+        },
+        onError: () => {
+          toast.error("Failed to delete tour package");
+        },
+      }
+    );
+  };
+
   const handleSendToClient = (bookingId: string) => {
     submitBooking(bookingId, {
       onSuccess: () => {
         toast.success("Itinerary Sent to Client!", {
           description: "The requested itinerary has been marked as sent.",
         });
-        // Invalidate queries to refresh data
         queryClient.invalidateQueries({
           queryKey: queryKeys.bookings.detail(bookingId),
         });
@@ -962,38 +1125,58 @@ export function Itinerary({
       ? standard.pricePerPax * travelers
       : 0;
 
-    let itineraryDetails: any[] = [];
+    // Transform itinerary details to match expected format
+    let itineraryDays: any[] = [];
 
     if (selectedBookingPackageDetail?.data?.days) {
-      itineraryDetails = transformApiDaysToItineraryDetails(
+      itineraryDays = transformApiDaysToItineraryDetailsForPayload(
         selectedBookingPackageDetail.data.days
       );
     } else if (standardItineraryDetails[standard.id]) {
-      itineraryDetails = standardItineraryDetails[standard.id];
+      itineraryDays = transformStandardItineraryDetailsForPayload(
+        standardItineraryDetails[standard.id],
+        bookingFormData.travelDateFrom
+      );
     }
 
+    // Create the booking payload matching the expected API format
     const newBooking = {
+      destination: standard.destination,
+      travelers: travelers,
+      totalPrice: totalAmount,
+      type: "STANDARD", // Changed from "STANDARD" to match the enum (check your backend enum values)
+      tourType: bookingFormData.tourType.toUpperCase(),
       customerName: bookingFormData.customerName,
       customerEmail: bookingFormData.email,
       customerMobile: bookingFormData.mobile,
-      destination: standard.destination,
-      startDate: bookingFormData.travelDateFrom,
-      endDate: bookingFormData.travelDateTo,
-      travelers: travelers,
-      totalPrice: totalAmount,
-      paid: 0,
-      paymentStatus: "PENDING",
-      bookedDate: new Date().toISOString(),
-      status: "PENDING",
-      type: "STANDARD" as const,
-      tourType: bookingFormData.tourType.toUpperCase(),
-      itinerary: itineraryDetails,
+      ...(bookingFormData.customerId && { userId: bookingFormData.customerId }),
+      ...(bookingFormData.travelDateFrom && {
+        startDate: bookingFormData.travelDateFrom,
+      }),
+      ...(bookingFormData.travelDateTo && {
+        endDate: bookingFormData.travelDateTo,
+      }),
+      // Include itinerary data if available
+      ...(itineraryDays.length > 0 && {
+        itinerary: {
+          title:
+            standard.title || `Standard Itinerary - ${standard.destination}`,
+          destination: standard.destination,
+          travelers: travelers,
+          type: "STANDARD", // Changed to match the enum
+          tourType: bookingFormData.tourType.toUpperCase(),
+          days: itineraryDays,
+        },
+      }),
     };
 
+    console.log("Creating standard booking payload:", newBooking);
+
     createBooking(newBooking, {
-      onSuccess: () => {
+      onSuccess: (response) => {
         setBookingFormData({
           customerName: "",
+          customerId: "",
           email: "",
           mobile: "",
           travelDateFrom: "",
@@ -1011,10 +1194,109 @@ export function Itinerary({
         navigate("/bookings");
       },
       onError: (error: any) => {
+        console.error("Booking creation error:", error);
         toast.error("Standard Booking Failed!", {
           description:
+            error.response?.data?.message ||
             error.message ||
             `Booking for ${bookingFormData.customerName} has failed.`,
+        });
+      },
+    });
+  };
+
+  const handleCreateBookingFromRequested = () => {
+    if (!selectedRequestedForBooking || !bookingFormData.customerName) {
+      toast.error("Missing required information");
+      return;
+    }
+
+    const requestedBooking = requestedBookings.find(
+      (b) => b.id === selectedRequestedForBooking
+    );
+
+    if (!requestedBooking) {
+      toast.error("Requested itinerary not found");
+      return;
+    }
+
+    // Extract numeric value from the formatted string
+    const totalAmount = parseFloat(
+      requestedBooking.totalAmount.replace(/[^0-9.]/g, "")
+    );
+
+    // Get the detailed booking data to extract itinerary information
+    const bookingDetail =
+      bookingDetailData?.data || requestedBooking.rawBooking;
+
+    // Create the booking payload matching the expected API format
+    const newBooking = {
+      destination: requestedBooking.destination,
+      travelers: parseInt(bookingFormData.travelers),
+      totalPrice: totalAmount,
+      type: "REQUESTED", // Changed to match the enum
+      tourType: bookingFormData.tourType.toUpperCase(),
+      customerName: bookingFormData.customerName,
+      customerEmail: bookingFormData.email,
+      customerMobile: bookingFormData.mobile,
+      ...(bookingFormData.customerId && { userId: bookingFormData.customerId }),
+      ...(bookingFormData.travelDateFrom && {
+        startDate: bookingFormData.travelDateFrom,
+      }),
+      ...(bookingFormData.travelDateTo && {
+        endDate: bookingFormData.travelDateTo,
+      }),
+      // Include original requested itinerary ID
+      ...(bookingDetail?.itineraryId && {
+        itineraryId: bookingDetail.itineraryId,
+      }),
+      // Or include full itinerary data if needed
+      ...(bookingDetail?.itinerary && {
+        itinerary: {
+          title:
+            bookingDetail.itinerary.title ||
+            `Requested Itinerary - ${requestedBooking.destination}`,
+          destination: requestedBooking.destination,
+          travelers: parseInt(bookingFormData.travelers),
+          type: "CUSTOMIZED", // Changed to match the enum
+          tourType: bookingFormData.tourType.toUpperCase(),
+          days: transformRequestedItineraryForPayload(
+            bookingDetail.itinerary?.days || []
+          ),
+        },
+      }),
+    };
+
+    console.log("Creating requested booking payload:", newBooking);
+
+    createBooking(newBooking, {
+      onSuccess: (response) => {
+        setBookingFormData({
+          customerName: "",
+          customerId: "",
+          email: "",
+          mobile: "",
+          travelDateFrom: "",
+          travelDateTo: "",
+          travelers: "1",
+          tourType: "" as any,
+        });
+        setRequestedBookingModalOpen(false);
+        setSelectedRequestedForBooking(null);
+
+        toast.success("Booking Created Successfully!", {
+          description: `Booking for ${bookingFormData.customerName} has been created from the requested itinerary.`,
+        });
+
+        navigate("/bookings");
+      },
+      onError: (error: any) => {
+        console.error("Booking creation error:", error);
+        toast.error("Failed to Create Booking", {
+          description:
+            error.response?.data?.message ||
+            error.message ||
+            "Please try again.",
         });
       },
     });
@@ -1317,7 +1599,6 @@ export function Itinerary({
                         : "Unconfirmed"}
                     </span>
                   )}
-                  {/* Update status badge to use actual status */}
                   <span
                     className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                       booking.status === "completed"
@@ -1436,7 +1717,6 @@ export function Itinerary({
                 rejectionResolution: bookingDetailData.data.rejectionResolution,
                 isResolved: bookingDetailData.data.isResolved,
                 ownership: bookingDetailData.data.ownership,
-                // Pass payment data if available
                 payments: paymentsData?.data || [],
               }}
               itinerary={bookingDetailData.data.itinerary?.days || []}
@@ -1457,8 +1737,6 @@ export function Itinerary({
               }}
               actionButtons={
                 <div className="space-y-3">
-                  {/* Action Buttons */}
-
                   {bookingDetailData.data.status !== "CONFIRMED" && (
                     <button
                       onClick={() =>
@@ -1481,7 +1759,6 @@ export function Itinerary({
                     </button>
                   )}
 
-                  {/* Book This Trip - Show only for CONFIRMED status */}
                   {bookingDetailData.data.status === "CONFIRMED" && (
                     <button
                       onClick={() => {
@@ -1497,7 +1774,6 @@ export function Itinerary({
                     </button>
                   )}
 
-                  {/* Edit Booking - Show for DRAFT, PENDING, or APPROVED status */}
                   {(bookingDetailData.data.status === "DRAFT" ||
                     bookingDetailData.data.status === "PENDING" ||
                     bookingDetailData.data.status === "APPROVED") && (
@@ -1547,12 +1823,6 @@ export function Itinerary({
                     </button>
                   )}
 
-                  {/* Cancel Booking Button */}
-                  {!["COMPLETED", "CANCELLED"].includes(
-                    bookingDetailData.data.status
-                  ) && null}
-
-                  {/* Delete Booking - Show only for draft bookings */}
                   {bookingDetailData.data.status === "DRAFT" && (
                     <button
                       onClick={() => {
@@ -1572,7 +1842,6 @@ export function Itinerary({
                     </button>
                   )}
 
-                  {/* Status Information Badge - Optional helper text */}
                   {bookingDetailData.data.status === "PENDING" && (
                     <div className="flex items-start gap-2 p-3 bg-[rgba(255,193,7,0.1)] border border-[rgba(255,193,7,0.2)] rounded-lg">
                       <AlertCircle className="w-4 h-4 text-[#FFC107] mt-0.5 flex-shrink-0" />
@@ -1864,7 +2133,7 @@ export function Itinerary({
         </DialogContent>
       </Dialog>
 
-      {/* Standard Itinerary Booking Modal */}
+      {/* Standard Itinerary Booking Modal with Customer Search */}
       <ConfirmationModal
         open={standardBookingModalOpen}
         onOpenChange={setStandardBookingModalOpen}
@@ -1884,55 +2153,149 @@ export function Itinerary({
               >
                 Customer Name <span className="text-[#FF6B6B]">*</span>
               </Label>
-              <Input
-                id="customerName"
-                value={bookingFormData.customerName}
-                onChange={(e) =>
-                  setBookingFormData({
-                    ...bookingFormData,
-                    customerName: e.target.value,
-                  })
-                }
-                placeholder="Enter customer name"
-                className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
-              />
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="customerName"
+                  value={bookingFormData.customerName}
+                  onChange={(e) => handleUserNameInput(e.target.value)}
+                  placeholder="Search existing customer or enter new"
+                  className="h-11 pl-10 pr-10 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                />
+
+                {isSearchingUsers && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-[#14B8A6] border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+
+                {bookingFormData.customerId && !isSearchingUsers && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingFormData((prev) => ({
+                        ...prev,
+                        customerName: "",
+                        customerId: "",
+                        email: "",
+                        mobile: "",
+                      }));
+                      setUserSearchParams((prev) => ({
+                        ...prev,
+                        q: undefined,
+                      }));
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] transition-colors"
+                    title="Clear selection"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {isUserSearching && userSuggestions.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                  <div className="sticky top-0 bg-white border-b border-[#F1F5F9] px-3 py-2">
+                    <span className="text-xs font-medium text-[#64748B]">
+                      Found {userSuggestions.length} user
+                      {userSuggestions.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  {userSuggestions.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => selectUserSuggestion(user)}
+                      className="w-full px-3 py-2 text-left hover:bg-[rgba(20,184,166,0.05)] border-b border-[#F1F5F9] last:border-0"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#14B8A6] to-[#10B981] flex items-center justify-center">
+                          <span className="text-white text-xs font-medium">
+                            {user.firstName?.charAt(0)}
+                            {user.lastName?.charAt(0)}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[#1A2B4F] truncate">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-xs text-[#64748B] truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
             <div>
               <Label htmlFor="email" className="text-[#1A2B4F] mb-2 block">
                 Email Address <span className="text-[#FF6B6B]">*</span>
               </Label>
-              <Input
-                id="email"
-                type="email"
-                value={bookingFormData.email}
-                onChange={(e) =>
-                  setBookingFormData({
-                    ...bookingFormData,
-                    email: e.target.value,
-                  })
-                }
-                placeholder="customer@email.com"
-                className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={bookingFormData.email}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      email: e.target.value,
+                    })
+                  }
+                  placeholder="customer@email.com"
+                  className={`h-11 pl-10 ${
+                    bookingFormData.customerId
+                      ? "bg-[#F8FAFB] text-[#94A3B8]"
+                      : ""
+                  } border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10`}
+                  disabled={!!bookingFormData.customerId}
+                />
+                {bookingFormData.customerId && (
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#94A3B8]" />
+                )}
+              </div>
+              {bookingFormData.customerId && (
+                <p className="text-xs text-[#94A3B8] mt-1">
+                  Linked to existing customer profile
+                </p>
+              )}
             </div>
+
             <div>
               <Label htmlFor="mobile" className="text-[#1A2B4F] mb-2 block">
                 Mobile Number <span className="text-[#FF6B6B]">*</span>
               </Label>
-              <Input
-                id="mobile"
-                type="tel"
-                value={bookingFormData.mobile}
-                onChange={(e) =>
-                  setBookingFormData({
-                    ...bookingFormData,
-                    mobile: e.target.value,
-                  })
-                }
-                placeholder="+63 9XX XXX XXXX"
-                className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
-              />
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="mobile"
+                  type="tel"
+                  value={bookingFormData.mobile}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      mobile: e.target.value,
+                    })
+                  }
+                  placeholder="+63 9XX XXX XXXX"
+                  className={`h-11 pl-10 ${
+                    bookingFormData.customerId
+                      ? "bg-[#F8FAFB] text-[#94A3B8]"
+                      : ""
+                  } border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10`}
+                  disabled={!!bookingFormData.customerId}
+                />
+                {bookingFormData.customerId && (
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#94A3B8]" />
+                )}
+              </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label
@@ -1941,18 +2304,21 @@ export function Itinerary({
                 >
                   Travel Start Date <span className="text-[#FF6B6B]">*</span>
                 </Label>
-                <Input
-                  id="travelDateFrom"
-                  type="date"
-                  value={bookingFormData.travelDateFrom}
-                  onChange={(e) =>
-                    setBookingFormData({
-                      ...bookingFormData,
-                      travelDateFrom: e.target.value,
-                    })
-                  }
-                  className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelDateFrom"
+                    type="date"
+                    value={bookingFormData.travelDateFrom}
+                    onChange={(e) =>
+                      setBookingFormData({
+                        ...bookingFormData,
+                        travelDateFrom: e.target.value,
+                      })
+                    }
+                    className="h-11 pl-10 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                  />
+                </div>
               </div>
               <div>
                 <Label
@@ -1961,20 +2327,24 @@ export function Itinerary({
                 >
                   Travel End Date <span className="text-[#FF6B6B]">*</span>
                 </Label>
-                <Input
-                  id="travelDateTo"
-                  type="date"
-                  value={bookingFormData.travelDateTo}
-                  onChange={(e) =>
-                    setBookingFormData({
-                      ...bookingFormData,
-                      travelDateTo: e.target.value,
-                    })
-                  }
-                  className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelDateTo"
+                    type="date"
+                    value={bookingFormData.travelDateTo}
+                    onChange={(e) =>
+                      setBookingFormData({
+                        ...bookingFormData,
+                        travelDateTo: e.target.value,
+                      })
+                    }
+                    className="h-11 pl-10 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                  />
+                </div>
               </div>
             </div>
+
             <div>
               <Label htmlFor="tourType" className="text-[#1A2B4F] mb-2 block">
                 Tour Type <span className="text-[#FF6B6B]">*</span>
@@ -1994,6 +2364,7 @@ export function Itinerary({
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <Label htmlFor="travelers" className="text-[#1A2B4F] mb-2 block">
                 Number of Travelers <span className="text-[#FF6B6B]">*</span>
@@ -2012,6 +2383,7 @@ export function Itinerary({
                 className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
               />
             </div>
+
             {selectedStandardForBooking &&
               templates.find((t) => t.id === selectedStandardForBooking)
                 ?.pricePerPax && (
@@ -2057,6 +2429,7 @@ export function Itinerary({
           setSelectedStandardForBooking(null);
           setBookingFormData({
             customerName: "",
+            customerId: "",
             email: "",
             mobile: "",
             travelDateFrom: "",
@@ -2068,6 +2441,319 @@ export function Itinerary({
         confirmText="Create Booking"
         cancelText="Cancel"
         confirmVariant="success"
+      />
+
+      {/* Requested Itinerary Booking Modal */}
+      <ConfirmationModal
+        open={requestedBookingModalOpen}
+        onOpenChange={setRequestedBookingModalOpen}
+        title="Create Booking from Requested Itinerary"
+        description="Convert this requested itinerary into an actual booking by providing customer details."
+        icon={<BookOpen className="w-5 h-5 text-white" />}
+        iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
+        iconShadow="shadow-[#0A7AFF]/20"
+        contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.05)] to-[rgba(20,184,166,0.05)]"
+        contentBorder="border-[rgba(10,122,255,0.2)]"
+        content={
+          <div className="space-y-4">
+            <div>
+              <Label
+                htmlFor="customerName"
+                className="text-[#1A2B4F] mb-2 block"
+              >
+                Customer Name <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="customerName"
+                  value={bookingFormData.customerName}
+                  onChange={(e) => handleUserNameInput(e.target.value)}
+                  placeholder="Search existing customer or enter new"
+                  className="h-11 pl-10 pr-10 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                />
+
+                {isSearchingUsers && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-[#0A7AFF] border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+
+                {bookingFormData.customerId && !isSearchingUsers && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingFormData((prev) => ({
+                        ...prev,
+                        customerName: "",
+                        customerId: "",
+                        email: "",
+                        mobile: "",
+                      }));
+                      setUserSearchParams((prev) => ({
+                        ...prev,
+                        q: undefined,
+                      }));
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] transition-colors"
+                    title="Clear selection"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {isUserSearching && userSuggestions.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                  <div className="sticky top-0 bg-white border-b border-[#F1F5F9] px-3 py-2">
+                    <span className="text-xs font-medium text-[#64748B]">
+                      Found {userSuggestions.length} user
+                      {userSuggestions.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  {userSuggestions.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => selectUserSuggestion(user)}
+                      className="w-full px-3 py-2 text-left hover:bg-[rgba(10,122,255,0.05)] border-b border-[#F1F5F9] last:border-0"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                          <span className="text-white text-xs font-medium">
+                            {user.firstName?.charAt(0)}
+                            {user.lastName?.charAt(0)}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[#1A2B4F] truncate">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-xs text-[#64748B] truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="email" className="text-[#1A2B4F] mb-2 block">
+                Email Address <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={bookingFormData.email}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      email: e.target.value,
+                    })
+                  }
+                  placeholder="customer@email.com"
+                  className={`h-11 pl-10 ${
+                    bookingFormData.customerId
+                      ? "bg-[#F8FAFB] text-[#94A3B8]"
+                      : ""
+                  } border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10`}
+                  disabled={!!bookingFormData.customerId}
+                />
+                {bookingFormData.customerId && (
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#94A3B8]" />
+                )}
+              </div>
+              {bookingFormData.customerId && (
+                <p className="text-xs text-[#94A3B8] mt-1">
+                  Linked to existing customer profile
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="mobile" className="text-[#1A2B4F] mb-2 block">
+                Mobile Number <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                <Input
+                  id="mobile"
+                  type="tel"
+                  value={bookingFormData.mobile}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      mobile: e.target.value,
+                    })
+                  }
+                  placeholder="+63 9XX XXX XXXX"
+                  className={`h-11 pl-10 ${
+                    bookingFormData.customerId
+                      ? "bg-[#F8FAFB] text-[#94A3B8]"
+                      : ""
+                  } border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10`}
+                  disabled={!!bookingFormData.customerId}
+                />
+                {bookingFormData.customerId && (
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#94A3B8]" />
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label
+                  htmlFor="travelDateFrom"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Travel Start Date <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelDateFrom"
+                    type="date"
+                    value={bookingFormData.travelDateFrom}
+                    onChange={(e) =>
+                      setBookingFormData({
+                        ...bookingFormData,
+                        travelDateFrom: e.target.value,
+                      })
+                    }
+                    className="h-11 pl-10 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label
+                  htmlFor="travelDateTo"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Travel End Date <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelDateTo"
+                    type="date"
+                    value={bookingFormData.travelDateTo}
+                    onChange={(e) =>
+                      setBookingFormData({
+                        ...bookingFormData,
+                        travelDateTo: e.target.value,
+                      })
+                    }
+                    className="h-11 pl-10 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="tourType" className="text-[#1A2B4F] mb-2 block">
+                  Tour Type <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <Select
+                  value={bookingFormData.tourType}
+                  onValueChange={(value: "Joiner" | "Private") =>
+                    setBookingFormData({ ...bookingFormData, tourType: value })
+                  }
+                >
+                  <SelectTrigger className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
+                    <SelectValue placeholder="Choose Tour Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Joiner">Joiner</SelectItem>
+                    <SelectItem value="Private">Private Tour</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label
+                  htmlFor="travelers"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Travelers <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <Input
+                  id="travelers"
+                  type="number"
+                  min="1"
+                  value={bookingFormData.travelers}
+                  onChange={(e) =>
+                    setBookingFormData({
+                      ...bookingFormData,
+                      travelers: e.target.value,
+                    })
+                  }
+                  className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                />
+              </div>
+            </div>
+
+            {selectedRequestedForBooking && selectedRequested && (
+              <div className="pt-4 border-t border-[rgba(10,122,255,0.3)]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-[#64748B]">Total Amount:</span>
+                  <span className="text-sm font-medium text-[#1A2B4F]">
+                    {selectedRequested.totalAmount}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-[#64748B]">
+                    Number of Travelers:
+                  </span>
+                  <span className="text-sm font-medium text-[#1A2B4F]">
+                    {bookingFormData.travelers || 1}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-[rgba(10,122,255,0.3)]">
+                  <span className="font-semibold text-[#1A2B4F]">
+                    Final Total:
+                  </span>
+                  <span className="font-semibold text-[#0A7AFF]">
+                    {selectedRequested.totalAmount}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        }
+        onConfirm={() => {
+          if (
+            !bookingFormData.customerName ||
+            !bookingFormData.email ||
+            !bookingFormData.mobile
+          ) {
+            toast.error("Please fill in all required fields");
+            return;
+          }
+          handleCreateBookingFromRequested();
+        }}
+        onCancel={() => {
+          setRequestedBookingModalOpen(false);
+          setSelectedRequestedForBooking(null);
+          setBookingFormData({
+            customerName: "",
+            customerId: "",
+            email: "",
+            mobile: "",
+            travelDateFrom: "",
+            travelDateTo: "",
+            travelers: "1",
+            tourType: "" as any,
+          });
+        }}
+        confirmText="Create Booking"
+        cancelText="Cancel"
+        confirmVariant="default"
       />
 
       {/* Confirmation Modal for Creating Booking */}
@@ -2306,6 +2992,76 @@ export function Itinerary({
         cancelText="Cancel"
         confirmVariant="default"
       />
+
+      {/* Delete Draft Confirmation Modal */}
+      {draftToDelete && (
+        <ConfirmationModal
+          open={deleteDraftConfirmOpen}
+          onOpenChange={(open) => !open && setDraftToDelete(null)}
+          title="Delete Draft"
+          description="Are you sure you want to delete this draft? This action cannot be undone."
+          icon={<Trash2 className="w-5 h-5 text-white" />}
+          iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
+          iconShadow="shadow-[#FF6B6B]/30"
+          contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.05)] to-[rgba(255,82,82,0.05)]"
+          contentBorder="border-[rgba(255,107,107,0.2)]"
+          content={
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                <span className="text-sm text-[#64748B]">Type:</span>
+                <span className="text-sm font-medium text-[#1A2B4F]">
+                  {draftToDelete.type === "requested"
+                    ? "Requested"
+                    : "Standard"}{" "}
+                  Draft
+                </span>
+              </div>
+              {draftToDelete.customerName && (
+                <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                  <span className="text-sm text-[#64748B]">Customer:</span>
+                  <span className="text-sm font-medium text-[#1A2B4F]">
+                    {draftToDelete.customerName}
+                  </span>
+                </div>
+              )}
+              {draftToDelete.title && (
+                <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                  <span className="text-sm text-[#64748B]">Title:</span>
+                  <span className="text-sm font-medium text-[#1A2B4F]">
+                    {draftToDelete.title}
+                  </span>
+                </div>
+              )}
+              {draftToDelete.destination && (
+                <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                  <span className="text-sm text-[#64748B]">Destination:</span>
+                  <span className="text-sm font-medium text-[#1A2B4F]">
+                    {draftToDelete.destination}
+                  </span>
+                </div>
+              )}
+              <p className="text-xs text-[#64748B] pt-2">
+                This will permanently remove the draft from your list.
+              </p>
+            </div>
+          }
+          onConfirm={() => {
+            if (onDeleteDraft && draftToDelete) {
+              onDeleteDraft(draftToDelete.id);
+              toast.success("Draft deleted successfully!");
+            }
+            setDraftToDelete(null);
+            setDeleteDraftConfirmOpen(false);
+          }}
+          onCancel={() => {
+            setDraftToDelete(null);
+            setDeleteDraftConfirmOpen(false);
+          }}
+          confirmText="Delete Draft"
+          cancelText="Cancel"
+          confirmVariant="destructive"
+        />
+      )}
     </div>
   );
 }
