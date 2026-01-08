@@ -1550,33 +1550,7 @@ export function Itinerary({
                   {/* Cancel Booking Button */}
                   {!["COMPLETED", "CANCELLED"].includes(
                     bookingDetailData.data.status
-                  ) && (
-                    <button
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Are you sure you want to cancel this booking?"
-                          )
-                        ) {
-                          handleCancelBooking(bookingDetailData.data.id);
-                        }
-                      }}
-                      className="w-full h-11 px-4 rounded-xl bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
-                      disabled={isCancelling}
-                    >
-                      {isCancelling ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin" />
-                          Cancelling...
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="w-4 h-4" />
-                          Cancel Booking
-                        </>
-                      )}
-                    </button>
-                  )}
+                  ) && null}
 
                   {/* Delete Booking - Show only for draft bookings */}
                   {bookingDetailData.data.status === "DRAFT" && (
