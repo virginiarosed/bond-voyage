@@ -53,28 +53,6 @@ export function UserFilterContent({
       <div className="p-5 space-y-4">
         <div>
           <Label className="text-sm font-medium text-[#1A2B4F] mb-2.5 block">
-            Role
-          </Label>
-          <Select
-            value={roleFilter ?? "all"}
-            onValueChange={(v: string) =>
-              onRoleFilterChange &&
-              onRoleFilterChange(v as "all" | "USER" | "ADMIN")
-            }
-          >
-            <SelectTrigger className="w-full h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="USER">User</SelectItem>
-              <SelectItem value="ADMIN">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label className="text-sm font-medium text-[#1A2B4F] mb-2.5 block">
             Status
           </Label>
           <Select
