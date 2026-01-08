@@ -55,6 +55,7 @@ import {
   Gift,
   ShoppingCart,
   Search,
+  Send,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -91,8 +92,17 @@ import {
 import { toast } from "sonner";
 import { TourPackage } from "../types/types";
 import { queryKeys } from "../utils/lib/queryKeys";
-import { useBookingDetail, useCreateBooking } from "../hooks/useBookings";
-import { useAdminBookings } from "../hooks/useBookings";
+import {
+  useBookingDetail,
+  useCreateBooking,
+  useAdminBookings,
+  useSubmitBooking,
+  useCancelBooking,
+  useUpdateBookingStatus,
+  useBookingPayments,
+  usePaymentProofImage,
+} from "../hooks/useBookings";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface RequestedItineraryBooking {
   id: string;
@@ -230,6 +240,92 @@ const serializeItineraryData = (data: any) => {
   return serialized;
 };
 
+// Helper functions for status transformation
+const formatDateRange = (
+  startDate: string | Date | null,
+  endDate: string | Date | null
+): string => {
+  if (!startDate || !endDate) return "Dates not set";
+
+  try {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return "Invalid dates";
+    }
+
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    };
+
+    return `${formatDate(start)} – ${formatDate(end)}`;
+  } catch (error) {
+    return "Invalid date format";
+  }
+};
+
+const getStatusBadge = (
+  status: string,
+  isResolved: boolean
+): "pending" | "in-progress" | "completed" => {
+  if (isResolved) return "completed";
+
+  const statusMap: Record<string, "pending" | "in-progress" | "completed"> = {
+    DRAFT: "pending",
+    PENDING: "pending",
+    CONFIRMED: "in-progress",
+    APPROVED: "in-progress",
+    COMPLETED: "completed",
+    CANCELLED: "completed",
+  };
+
+  return statusMap[status] || "pending";
+};
+
+const getSentStatus = (status: string, type: string): "sent" | "unsent" => {
+  if (type === "REQUESTED") {
+    return status === "CONFIRMED" ? "sent" : "unsent";
+  }
+  return "unsent";
+};
+
+const getConfirmStatus = (status: string): "confirmed" | "unconfirmed" => {
+  return status === "CONFIRMED" ? "confirmed" : "unconfirmed";
+};
+
+// Transform API booking to component format
+const transformApiBooking = (booking: any): RequestedItineraryBooking => {
+  return {
+    id: booking.id,
+    bookingCode: booking.bookingCode,
+    customer: booking.customerName || "Unknown Customer",
+    email: booking.customerEmail || "N/A",
+    mobile: booking.customerMobile || "N/A",
+    destination: booking.destination || "N/A",
+    itinerary:
+      booking.itinerary?.title || booking.destination || "Custom Itinerary",
+    dates:
+      booking.startDate && booking.endDate
+        ? formatDateRange(booking.startDate, booking.endDate)
+        : "Dates not set",
+    travelers: booking.travelers || 1,
+    totalAmount: booking.totalPrice
+      ? `₱${parseFloat(booking.totalPrice.toString()).toLocaleString()}`
+      : "₱0",
+    paid: "₱0", // You might need to calculate this from payments
+    bookedDate: booking.bookedDate || booking.createdAt,
+    status: getStatusBadge(booking.status, booking.isResolved),
+    sentStatus: getSentStatus(booking.status, booking.type),
+    confirmStatus: getConfirmStatus(booking.status),
+    rawBooking: booking,
+  };
+};
+
 export function Itinerary({
   requestedBookingsFromBookings = [],
   newStandardItineraries = [],
@@ -240,6 +336,7 @@ export function Itinerary({
 }: ItineraryProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const standardRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const requestedRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -253,6 +350,10 @@ export function Itinerary({
     page: 1,
     limit: 10,
   });
+
+  const [selectedRequestedId, setSelectedRequestedId] = useState<string | null>(
+    null
+  );
 
   const {
     data: bookingsData,
@@ -275,6 +376,73 @@ export function Itinerary({
     useCreateBooking();
 
   const { mutate: deleteTourPackage, isPending } = useDeleteTourPackage({});
+
+  const { mutate: submitBooking, isPending: isSubmitting } = useSubmitBooking(
+    selectedRequestedId || "",
+    {
+      onSuccess: () => {
+        toast.success("Itinerary Sent to Client!", {
+          description: "The requested itinerary has been marked as sent.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(selectedRequestedId!),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+      },
+      onError: (error: any) => {
+        toast.error("Failed to send itinerary", {
+          description: error.message || "Please try again.",
+        });
+      },
+    }
+  );
+
+  const { mutate: cancelBooking, isPending: isCancelling } = useCancelBooking(
+    selectedRequestedId || "",
+    {
+      onSuccess: () => {
+        toast.success("Booking Cancelled", {
+          description: "The booking has been cancelled successfully.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(selectedRequestedId!),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+      },
+      onError: (error: any) => {
+        toast.error("Failed to cancel booking", {
+          description: error.message || "Please try again.",
+        });
+      },
+    }
+  );
+
+  const { mutate: updateBookingStatus, isPending: isUpdatingStatus } =
+    useUpdateBookingStatus(selectedRequestedId || "", {
+      onSuccess: () => {
+        toast.success("Status Updated", {
+          description: "Booking status has been updated successfully.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(selectedRequestedId!),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+        setStatusUpdateModalOpen(false);
+      },
+      onError: (error: any) => {
+        toast.error("Failed to update status", {
+          description: error.message || "Please try again.",
+        });
+      },
+    });
+  // Payment hooks
+  const { data: paymentsData } = useBookingPayments(selectedRequestedId!);
 
   const handleDeleteTourPackage = (id: string) => {
     deleteTourPackage(
@@ -308,9 +476,6 @@ export function Itinerary({
   const [requestedViewMode, setRequestedViewMode] = useState<"list" | "detail">(
     "list"
   );
-  const [selectedRequestedId, setSelectedRequestedId] = useState<string | null>(
-    null
-  );
 
   // Booking modal states
   const [standardBookingModalOpen, setStandardBookingModalOpen] =
@@ -332,6 +497,18 @@ export function Itinerary({
     travelDateTo: "",
     travelers: "1",
     tourType: "" as any,
+  });
+
+  // Status update states
+  const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
+  const [statusUpdateData, setStatusUpdateData] = useState<{
+    status: string;
+    rejectionReason?: string;
+    rejectionResolution?: string;
+  }>({
+    status: "",
+    rejectionReason: "",
+    rejectionResolution: "",
   });
 
   const { data: selectedBookingPackageDetail } = useTourPackageDetail(
@@ -489,59 +666,10 @@ export function Itinerary({
   useEffect(() => {
     if (bookingsData?.data) {
       const transformedBookings: RequestedItineraryBooking[] =
-        bookingsData.data.map((booking: any) => ({
-          id: booking.id,
-          bookingCode: booking.bookingCode,
-          customer: booking.customerName || "Unknown Customer",
-          email: booking.customerEmail || "N/A",
-          mobile: booking.customerMobile || "N/A",
-          destination: booking.destination || "N/A",
-          itinerary: booking.destination || "N/A",
-          dates:
-            booking.startDate && booking.endDate
-              ? formatDateRange(booking.startDate, booking.endDate)
-              : "Dates not set",
-          travelers: booking.travelers || 1,
-          totalAmount: `₱${parseFloat(
-            booking.totalPrice || "0"
-          ).toLocaleString()}`,
-          paid: "₱0",
-          bookedDate: booking.bookedDate || booking.createdAt,
-          status: getStatusBadge(booking.status, booking.isResolved),
-          sentStatus: booking.status === "CONFIRMED" ? "sent" : "unsent",
-          confirmStatus:
-            booking.status === "CONFIRMED" ? "confirmed" : "unconfirmed",
-          rawBooking: booking,
-        }));
-
+        bookingsData.data.map(transformApiBooking);
       setRequestedBookings(transformedBookings);
     }
   }, [bookingsData]);
-
-  const getSentStatus = (status: string, type: string) => {
-    if (type === "REQUESTED") {
-      return status === "CONFIRMED" ? "sent" : "unsent";
-    }
-    return "unsent";
-  };
-
-  const getConfirmStatus = (status: string) => {
-    return status === "CONFIRMED" ? "confirmed" : "unconfirmed";
-  };
-
-  const getStatusBadge = (status: string, isResolved: boolean) => {
-    const statusMap: Record<string, "pending" | "in-progress" | "completed"> = {
-      DRAFT: "pending",
-      PENDING: "pending",
-      CONFIRMED: "in-progress",
-      APPROVED: "in-progress",
-      COMPLETED: "completed",
-      CANCELLED: "completed",
-    };
-
-    if (isResolved) return "completed";
-    return statusMap[status] || "pending";
-  };
 
   useEffect(() => {
     if (
@@ -628,32 +756,84 @@ export function Itinerary({
     }
   }, [location.state, navigate, location.pathname]);
 
-  const formatDateRange = (
-    startDate: string | null,
-    endDate: string | null
-  ): string => {
-    if (!startDate || !endDate) return "Dates not set";
-
-    try {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        return "Invalid dates";
-      }
-
-      const formatDate = (date: Date) => {
-        return date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
+  const handleSendToClient = (bookingId: string) => {
+    submitBooking(bookingId, {
+      onSuccess: () => {
+        toast.success("Itinerary Sent to Client!", {
+          description: "The requested itinerary has been marked as sent.",
         });
-      };
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(bookingId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+      },
+      onError: (error: any) => {
+        toast.error("Failed to send itinerary", {
+          description: error.message || "Please try again.",
+        });
+      },
+    });
+  };
 
-      return `${formatDate(start)} – ${formatDate(end)}`;
-    } catch (error) {
-      return "Invalid date format";
-    }
+  const handleCancelBooking = (bookingId: string) => {
+    cancelBooking(bookingId, {
+      onSuccess: () => {
+        toast.success("Booking Cancelled", {
+          description: "The booking has been cancelled successfully.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(bookingId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+      },
+      onError: (error: any) => {
+        toast.error("Failed to cancel booking", {
+          description: error.message || "Please try again.",
+        });
+      },
+    });
+  };
+
+  const handleUpdateBookingStatus = (
+    bookingId: string,
+    status: string,
+    rejectionReason?: string,
+    rejectionResolution?: string
+  ) => {
+    updateBookingStatus(
+      {
+        id: bookingId,
+        data: {
+          status,
+          ...(rejectionReason && { rejectionReason }),
+          ...(rejectionResolution && { rejectionResolution }),
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Status Updated", {
+            description: "Booking status has been updated successfully.",
+          });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.bookings.detail(bookingId),
+          });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.bookings.adminBookings(queryParams),
+          });
+          setStatusUpdateModalOpen(false);
+        },
+        onError: (error: any) => {
+          toast.error("Failed to update status", {
+            description: error.message || "Please try again.",
+          });
+        },
+      }
+    );
   };
 
   const handleDeleteItinerary = () => {
@@ -793,19 +973,18 @@ export function Itinerary({
     }
 
     const newBooking = {
-      customer: bookingFormData.customerName,
-      email: bookingFormData.email,
-      mobile: bookingFormData.mobile,
+      customerName: bookingFormData.customerName,
+      customerEmail: bookingFormData.email,
+      customerMobile: bookingFormData.mobile,
       destination: standard.destination,
       startDate: bookingFormData.travelDateFrom,
       endDate: bookingFormData.travelDateTo,
       travelers: travelers,
       totalPrice: totalAmount,
       paid: 0,
-      paymentStatus: "Unpaid",
-      bookedDate: new Date().toISOString().split("T")[0],
-      bookedDateObj: new Date(),
-      status: "pending",
+      paymentStatus: "PENDING",
+      bookedDate: new Date().toISOString(),
+      status: "PENDING",
       type: "STANDARD" as const,
       tourType: bookingFormData.tourType.toUpperCase(),
       itinerary: itineraryDetails,
@@ -831,9 +1010,11 @@ export function Itinerary({
         });
         navigate("/bookings");
       },
-      onError: () => {
+      onError: (error: any) => {
         toast.error("Standard Booking Failed!", {
-          description: `Booking for ${bookingFormData.customerName} has failed.`,
+          description:
+            error.message ||
+            `Booking for ${bookingFormData.customerName} has failed.`,
         });
       },
     });
@@ -1104,7 +1285,9 @@ export function Itinerary({
                 destination: booking.destination,
                 bookedDate: booking.dates,
                 travelers: booking.travelers,
-                totalPrice: parseInt(booking.totalAmount),
+                totalPrice: parseInt(
+                  booking.totalAmount.replace(/[^0-9]/g, "")
+                ),
               }}
               onViewDetails={() => {
                 setSelectedRequestedId(booking.id);
@@ -1223,25 +1406,12 @@ export function Itinerary({
               booking={{
                 id: bookingDetailData.data.id,
                 bookingCode: bookingDetailData.data.bookingCode,
-                customer:
-                  bookingDetailData.data.customerName ||
-                  selectedRequested?.customer ||
-                  "Unknown Customer",
-                email:
-                  bookingDetailData.data.customerEmail ||
-                  selectedRequested?.email ||
-                  "N/A",
-                mobile:
-                  bookingDetailData.data.customerMobile ||
-                  selectedRequested?.mobile ||
-                  "N/A",
-                destination:
-                  bookingDetailData.data.destination ||
-                  selectedRequested?.destination,
+                customer: bookingDetailData.data.customerName,
+                email: bookingDetailData.data.customerEmail,
+                mobile: bookingDetailData.data.customerMobile,
+                destination: bookingDetailData.data.destination,
                 itinerary:
-                  bookingDetailData.data.itinerary?.title ||
-                  selectedRequested?.destination ||
-                  "Custom Itinerary",
+                  bookingDetailData.data.itinerary?.title || "Custom Itinerary",
                 dates:
                   bookingDetailData.data.startDate &&
                   bookingDetailData.data.endDate
@@ -1249,17 +1419,12 @@ export function Itinerary({
                         bookingDetailData.data.startDate,
                         bookingDetailData.data.endDate
                       )
-                    : selectedRequested?.dates || "Dates not set",
-                travelers:
-                  bookingDetailData.data.travelers ||
-                  selectedRequested?.travelers ||
-                  1,
+                    : "Dates not set",
+                travelers: bookingDetailData.data.travelers,
                 total: `₱${parseFloat(
                   bookingDetailData.data.totalPrice.toString()
                 ).toLocaleString()}`,
-                bookedDate:
-                  bookingDetailData.data.bookedDate ||
-                  selectedRequested?.bookedDate,
+                bookedDate: bookingDetailData.data.bookedDate,
                 status: bookingDetailData.data.status,
                 paymentStatus: bookingDetailData.data.paymentStatus,
                 type: bookingDetailData.data.type,
@@ -1267,15 +1432,207 @@ export function Itinerary({
                 startDate: bookingDetailData.data.startDate,
                 endDate: bookingDetailData.data.endDate,
                 paymentReceiptUrl: bookingDetailData.data.paymentReceiptUrl,
-                rejectionReason: bookingDetailData.data.rejectionReason!,
-                rejectionResolution:
-                  bookingDetailData.data.rejectionResolution!,
+                rejectionReason: bookingDetailData.data.rejectionReason,
+                rejectionResolution: bookingDetailData.data.rejectionResolution,
                 isResolved: bookingDetailData.data.isResolved,
                 ownership: bookingDetailData.data.ownership,
+                // Pass payment data if available
+                payments: paymentsData?.data || [],
               }}
               itinerary={bookingDetailData.data.itinerary?.days || []}
               onBack={() => setRequestedViewMode("list")}
-              actionButtons={<div />}
+              onSendToClient={() =>
+                handleSendToClient(bookingDetailData.data.id)
+              }
+              onCancelBooking={() =>
+                handleCancelBooking(bookingDetailData.data.id)
+              }
+              onUpdateStatus={(status, reason, resolution) => {
+                setStatusUpdateData({
+                  status,
+                  rejectionReason: reason,
+                  rejectionResolution: resolution,
+                });
+                setStatusUpdateModalOpen(true);
+              }}
+              actionButtons={
+                <div className="space-y-3">
+                  {/* Action Buttons */}
+
+                  {bookingDetailData.data.status !== "CONFIRMED" && (
+                    <button
+                      onClick={() =>
+                        handleSendToClient(bookingDetailData.data.id)
+                      }
+                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          Send to Client
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Book This Trip - Show only for CONFIRMED status */}
+                  {bookingDetailData.data.status === "CONFIRMED" && (
+                    <button
+                      onClick={() => {
+                        setSelectedRequestedForBooking(
+                          bookingDetailData.data.id
+                        );
+                        setRequestedBookingModalOpen(true);
+                      }}
+                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
+                    >
+                      <BookOpen className="w-5 h-5" />
+                      Book This Trip
+                    </button>
+                  )}
+
+                  {/* Edit Booking - Show for DRAFT, PENDING, or APPROVED status */}
+                  {(bookingDetailData.data.status === "DRAFT" ||
+                    bookingDetailData.data.status === "PENDING" ||
+                    bookingDetailData.data.status === "APPROVED") && (
+                    <button
+                      onClick={() => {
+                        const itineraryData = {
+                          id: bookingDetailData.data.id,
+                          bookingCode: bookingDetailData.data.bookingCode,
+                          title:
+                            bookingDetailData.data.itinerary?.title ||
+                            bookingDetailData.data.destination,
+                          destination: bookingDetailData.data.destination,
+                          itineraryDetails:
+                            bookingDetailData.data.itinerary?.days || [],
+                          itineraryDays:
+                            bookingDetailData.data.itinerary?.days || [],
+                          days: (bookingDetailData.data.itinerary?.days || [])
+                            .length,
+                          category: "Custom",
+                          pricePerPax: bookingDetailData.data.totalPrice,
+                          image: "",
+                          customerName: bookingDetailData.data.customerName,
+                          customerEmail: bookingDetailData.data.customerEmail,
+                          customerMobile: bookingDetailData.data.customerMobile,
+                          travelers: bookingDetailData.data.travelers,
+                          startDate: bookingDetailData.data.startDate,
+                          endDate: bookingDetailData.data.endDate,
+                          tourType: bookingDetailData.data.tourType,
+                          status: bookingDetailData.data.status,
+                          type: bookingDetailData.data.type,
+                        };
+
+                        navigate(
+                          `/itinerary/edit-requested/${bookingDetailData.data.id}`,
+                          {
+                            state: {
+                              itineraryData:
+                                serializeItineraryData(itineraryData),
+                            },
+                          }
+                        );
+                      }}
+                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit Booking
+                    </button>
+                  )}
+
+                  {/* Cancel Booking Button */}
+                  {!["COMPLETED", "CANCELLED"].includes(
+                    bookingDetailData.data.status
+                  ) && (
+                    <button
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Are you sure you want to cancel this booking?"
+                          )
+                        ) {
+                          handleCancelBooking(bookingDetailData.data.id);
+                        }
+                      }}
+                      className="w-full h-11 px-4 rounded-xl bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
+                      disabled={isCancelling}
+                    >
+                      {isCancelling ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin" />
+                          Cancelling...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4" />
+                          Cancel Booking
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Delete Booking - Show only for draft bookings */}
+                  {bookingDetailData.data.status === "DRAFT" && (
+                    <button
+                      onClick={() => {
+                        confirmDelete({
+                          id: bookingDetailData.data.id,
+                          type: "local",
+                          title:
+                            bookingDetailData.data.itinerary?.title ||
+                            bookingDetailData.data.destination,
+                          destination: bookingDetailData.data.destination,
+                        });
+                      }}
+                      className="w-full h-11 px-4 rounded-xl bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Booking
+                    </button>
+                  )}
+
+                  {/* Status Information Badge - Optional helper text */}
+                  {bookingDetailData.data.status === "PENDING" && (
+                    <div className="flex items-start gap-2 p-3 bg-[rgba(255,193,7,0.1)] border border-[rgba(255,193,7,0.2)] rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-[#FFC107] mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-[#8B6914]">
+                        This booking is awaiting approval. You can edit or
+                        delete it before confirmation.
+                      </p>
+                    </div>
+                  )}
+
+                  {bookingDetailData.data.status === "CONFIRMED" && (
+                    <div className="flex items-start gap-2 p-3 bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] rounded-lg">
+                      <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-[#065F46]">
+                        This booking has been confirmed. You can now create a
+                        trip booking from this itinerary.
+                      </p>
+                    </div>
+                  )}
+
+                  {(bookingDetailData.data.status === "COMPLETED" ||
+                    bookingDetailData.data.status === "CANCELLED") &&
+                    bookingDetailData.data.isResolved && (
+                      <div className="flex items-start gap-2 p-3 bg-[rgba(100,116,139,0.1)] border border-[rgba(100,116,139,0.2)] rounded-lg">
+                        <AlertCircle className="w-4 h-4 text-[#64748B] mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-[#475569]">
+                          This booking is{" "}
+                          {bookingDetailData.data.status.toLowerCase()} and
+                          resolved. No further actions available.
+                        </p>
+                      </div>
+                    )}
+                </div>
+              }
               breadcrumbPage="Requested"
               isRequestedItinerary={true}
             />
@@ -1870,6 +2227,110 @@ export function Itinerary({
         confirmText={isPending ? "Deleting..." : "Delete"}
         cancelText="Cancel"
         confirmVariant="destructive"
+      />
+
+      {/* Status Update Modal */}
+      <ConfirmationModal
+        open={statusUpdateModalOpen}
+        onOpenChange={setStatusUpdateModalOpen}
+        title="Update Booking Status"
+        description="Change the status of this booking"
+        icon={<CheckCircle2 className="w-5 h-5 text-white" />}
+        iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
+        iconShadow="shadow-[#0A7AFF]/20"
+        contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.05)] to-[rgba(20,184,166,0.05)]"
+        contentBorder="border-[rgba(10,122,255,0.2)]"
+        content={
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="status" className="text-[#1A2B4F] mb-2 block">
+                Status <span className="text-[#FF6B6B]">*</span>
+              </Label>
+              <Select
+                value={statusUpdateData.status}
+                onValueChange={(value) =>
+                  setStatusUpdateData({ ...statusUpdateData, status: value })
+                }
+              >
+                <SelectTrigger className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="APPROVED">Approved</SelectItem>
+                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {statusUpdateData.status === "CANCELLED" && (
+              <>
+                <div>
+                  <Label
+                    htmlFor="rejectionReason"
+                    className="text-[#1A2B4F] mb-2 block"
+                  >
+                    Reason for Cancellation
+                  </Label>
+                  <Input
+                    id="rejectionReason"
+                    value={statusUpdateData.rejectionReason || ""}
+                    onChange={(e) =>
+                      setStatusUpdateData({
+                        ...statusUpdateData,
+                        rejectionReason: e.target.value,
+                      })
+                    }
+                    placeholder="Enter reason for cancellation"
+                    className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="rejectionResolution"
+                    className="text-[#1A2B4F] mb-2 block"
+                  >
+                    Resolution/Next Steps
+                  </Label>
+                  <Input
+                    id="rejectionResolution"
+                    value={statusUpdateData.rejectionResolution || ""}
+                    onChange={(e) =>
+                      setStatusUpdateData({
+                        ...statusUpdateData,
+                        rejectionResolution: e.target.value,
+                      })
+                    }
+                    placeholder="Enter resolution or next steps"
+                    className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        }
+        onConfirm={() => {
+          if (selectedRequestedId) {
+            handleUpdateBookingStatus(
+              selectedRequestedId,
+              statusUpdateData.status,
+              statusUpdateData.rejectionReason,
+              statusUpdateData.rejectionResolution
+            );
+          }
+        }}
+        onCancel={() => {
+          setStatusUpdateModalOpen(false);
+          setStatusUpdateData({
+            status: "",
+            rejectionReason: "",
+            rejectionResolution: "",
+          });
+        }}
+        confirmText={isUpdatingStatus ? "Updating..." : "Update Status"}
+        cancelText="Cancel"
+        confirmVariant="default"
       />
     </div>
   );
