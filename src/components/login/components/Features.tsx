@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import {
-  Wand2,
+  Sparkles,
   Route,
   Ticket,
   Clock,
   CloudSun,
   Languages,
   Target,
-  LayoutGrid,
+  Home,
   BarChart3,
   Users,
   CheckCircle,
@@ -17,9 +17,14 @@ import {
   MessageSquare,
   Briefcase,
   CalendarPlus,
-  Settings,
+  FileText,
   Star,
   MessagesSquare,
+  Bell,
+  Map,
+  Users2,
+  Bot,
+  FileEdit,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -28,29 +33,44 @@ import { features } from "process";
 
 const userFeatures = [
   {
-    icon: LayoutGrid,
-    title: "Personal Dashboard",
-    description: "Your travel hub overview",
+  icon: Home,
+  title: "User Dashboard",
+  description: "Dashboard with profile stats, weather forecast, travel tips, and contact form",
+  },
+  {
+    icon: MessagesSquare,
+    title: "AI-Powered FAQ and System Assistant",
+    description: "Get instant answers, guidance, and smart suggestions, especially for account features.",
   },
   {
     icon: Briefcase,
     title: "Travel Management",
-    description: "Organize and manage your trips",
+    description: "Track and manage all your travel plans across different statuses - draft, pending, and rejected bookings",
+  },
+    {
+    icon: Users2,
+    title: "Create Collaborative Customized Itinerary", 
+    description: "Create detailed day-by-day travel plans with friends in real-time",
   },
   {
-    icon: Wand2,
-    title: "Booking Approvals",
-    description: "Customize your itinerary with AI help",
+    icon: Bot,
+    title: "AI Travel Assistant",
+    description: "Chat with AI to plan with day-by-day itinerary suggestions and guidance", 
   },
   {
-    icon: Route,
+    icon: Map,
+    title: "Route Optimization & Map Routing",
+    description: "Analyze and optimize daily routes to save travel time and create the most efficient itinerary with map visualization.",
+  },
+  {
+    icon: Sparkles,
     title: "Smart Trip Generator",
-    description: "Automatic planning based on preferences",
+    description: "Automatically generate itineraries based on user's travel preferences",
   },
   {
-    icon: Ticket,
+    icon: FileText,
     title: "Booking Management",
-    description: "Track and manage all your reservations",
+    description: "Manage your bookings with payment tracking, itinerary details, and trip status updates",
   },
   {
     icon: Clock,
@@ -58,29 +78,19 @@ const userFeatures = [
     description: "Access past trips and memories",
   },
   {
-    icon: MessagesSquare,
-    title: "Inquiries Management",
-    description: "Manage and communicate with admin about your inquiries",
-  },
-  {
     icon: Star,
     title: "User Feedback",
     description: "Share your travel experiences",
   },
   {
+    icon: Bell,
+    title: "Notification Management",
+    description: "View and manage all your notifications at a glance.",
+  },
+  {
     icon: CloudSun,
     title: "Weather Forecasts",
-    description: "Real-time climate data for destinations",
-  },
-  {
-    icon: Languages,
-    title: "Multi-Language Translation",
-    description: "Foreign languages & PH dialects",
-  },
-  {
-    icon: Target,
-    title: "Decision Spinning Wheel",
-    description: "Make trip decisions with an interactive wheel",
+    description: "Get real-time weather updates, detailed stats, and 7-day forecasts.",
   },
 ];
 
@@ -91,53 +101,75 @@ const adminFeatures = [
     description: "System metrics and analytics",
   },
   {
+    icon: MessagesSquare,
+    title: "FAQ Management",
+    description: "Create, update, and manage frequently asked questions to quickly address user inquiries.",
+  },
+  {
     icon: Users,
     title: "User Management",
-    description: "Control accounts and permissions",
+    description: "Manage users, roles, status, and account details",
+  },
+  {
+    icon: CalendarPlus,
+    title: "Create Standard Itinerary",
+    description: "Create polished, reusable itineraries for your travel packages",
+  },
+  {
+    icon: FileEdit,
+    title: "Create Requested Itinerary",
+    description: "Create custom itineraries based on user requests",
+  },
+  {
+    icon: Map,
+    title: "Route Optimization & Map Routing",
+    description: "Analyze and optimize daily routes to save travel time and create the most efficient itinerary with map visualization.",
+  },
+  {
+    icon: Bot,
+    title: "AI Travel Assistant",
+    description: "Chat with AI to plan with day-by-day itinerary suggestions and guidance", 
   },
   {
     icon: CheckCircle,
     title: "Booking Approvals",
-    description: "Review and approve requests",
+    description: "Review and manage booking approvals, rejections, and resolutions",
   },
   {
-    icon: CalendarPlus,
-    title: "Create Standard/Requested Itinerary",
-    description: "Build custom and standard trip plans",
-  },
-  {
-    icon: Settings,
+    icon: FileText,
     title: "Booking Management",
-    description: "Oversee all booking operations",
+    description: "Comprehensive booking oversight with payment verification, itinerary viewing, status updates, and complete booking booking lifecycle",
   },
   {
     icon: Archive,
     title: "Bookings Archive",
-    description: "Complete booking records",
-  },
-  {
-    icon: MessagesSquare,
-    title: "Inquiries Management",
-    description: "Respond to and manage client inquiries",
+    description: "View, search, filter, and export completed or cancelled bookings with statistics and detailed itineraries",
   },
   {
     icon: MessageSquare,
     title: "Feedback Management",
-    description: "Reviews and user responses",
+    description: "View, filter, and respond to customer feedback efficiently.",
+  },
+  {
+    icon: Bell,
+    title: "Notification Management",
+    description: "View and manage all your notifications at a glance.",
   },
 ];
 
 export function Features() {
-  const [activeTab, setActiveTab] = useState("user");
+  // Change default activeTab to "admin" to show admin features first
+  const [activeTab, setActiveTab] = useState("admin");
   const { hash } = useLocation();
 
   useEffect(() => {
     const hashValue = decodeURIComponent(hash.substring(1));
 
-    if (hashValue === "user features") {
-      setActiveTab("user");
-    } else if (hashValue === "admin features") {
+    // Update the order of hash checks to match the new tab order
+    if (hashValue === "admin features") {
       setActiveTab("admin");
+    } else if (hashValue === "user features") {
+      setActiveTab("user");
     }
 
     if (hashValue.includes("features")) {
@@ -179,20 +211,10 @@ export function Features() {
           </h2>
         </motion.div>
 
-        {/* Tabbed Interface */}
+        {/* Tabbed Interface - SWAPPED ORDER */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-12 h-auto p-1">
-            <TabsTrigger
-              value="user"
-              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
-              style={{
-                fontSize: "15px",
-                fontWeight: 500,
-                padding: "12px 24px",
-              }}
-            >
-              👤 User Features
-            </TabsTrigger>
+            {/* Admin tab first */}
             <TabsTrigger
               value="admin"
               className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
@@ -204,14 +226,27 @@ export function Features() {
             >
               🔧 Admin Features
             </TabsTrigger>
+            {/* User tab second */}
+            <TabsTrigger
+              value="user"
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              style={{
+                fontSize: "15px",
+                fontWeight: 500,
+                padding: "12px 24px",
+              }}
+            >
+              👤 User Features
+            </TabsTrigger>
           </TabsList>
 
-          {/* User Features Tab */}
-          <TabsContent value="user">
+          {/* SWAPPED: Admin Features Tab FIRST - SWITCHED TO USER COLORS */}
+          <TabsContent value="admin">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center">
-              {userFeatures.map((feature, index) => (
+              {adminFeatures.map((feature, index) => (
                 <motion.div
                   key={feature.title}
+                  // SWITCHED: Now using ocean-blue for admin features
                   className="bg-white border border-(--silver) rounded-xl p-8 hover:border-(--ocean-blue) hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer w-full"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -225,6 +260,7 @@ export function Features() {
                       style={{
                         width: "32px",
                         height: "32px",
+                        // SWITCHED: Now using ocean-blue for admin features
                         color: "var(--ocean-blue)",
                       }}
                     />
@@ -257,12 +293,13 @@ export function Features() {
             </div>
           </TabsContent>
 
-          {/* Admin Features Tab */}
-          <TabsContent value="admin">
+          {/* SWAPPED: User Features Tab SECOND - SWITCHED TO ADMIN COLORS */}
+          <TabsContent value="user">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center">
-              {adminFeatures.map((feature, index) => (
+              {userFeatures.map((feature, index) => (
                 <motion.div
                   key={feature.title}
+                  // SWITCHED: Now using sunset-coral for user features
                   className="bg-white border border-(--silver) rounded-xl p-8 hover:border-(--sunset-coral) hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer w-full"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -276,6 +313,7 @@ export function Features() {
                       style={{
                         width: "32px",
                         height: "32px",
+                        // SWITCHED: Now using sunset-coral for user features
                         color: "var(--sunset-coral)",
                       }}
                     />

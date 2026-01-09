@@ -7,8 +7,8 @@ import {
   MessageSquare,
   LayoutDashboard,
   Calendar,
-  Mail,
   BarChart3,
+  HelpCircle,
 } from "lucide-react";
 
 type ActivityType =
@@ -17,9 +17,9 @@ type ActivityType =
   | "approvals"
   | "itinerary"
   | "bookings"
-  | "inquiries"
   | "feedback"
-  | "analytics";
+  | "analytics"
+  | "faq";
 
 interface Activity {
   type: ActivityType;
@@ -38,47 +38,53 @@ const activities: Activity[] = [
     color: "#0A7AFF", // Ocean Blue
   },
   {
+    type: "analytics",
+    label: "Viewing Analytics",
+    sublabel: "Performance reports",
+    icon: BarChart3,
+    color: "#F59E0B", // Orange
+  },
+  {
+    type: "faq",
+    label: "Managing FAQ",
+    sublabel: "FAQ management",
+    icon: HelpCircle,
+    color: "#10B981", // Jade Green
+  },
+  {
     type: "users",
     label: "Managing Users",
-    sublabel: "User permissions & access",
+    sublabel: "User details & status",
     icon: Users,
-    color: "#10B981", // Jade Green
+    color: "#EC4899", // Pink
   },
   {
     type: "approvals",
     label: "Approving Bookings",
-    sublabel: "Processing requests",
+    sublabel: "Approval of Customized Itinerary",
     icon: CheckCircle,
     color: "#FFB84D", // Golden Hour
   },
   {
     type: "itinerary",
     label: "Creating Itinerary",
-    sublabel: "Building travel plans",
+    sublabel: "Standard and Requested itineraries",
     icon: FileText,
     color: "#14B8A6", // Tropical Teal
   },
   {
     type: "bookings",
     label: "Managing Bookings",
-    sublabel: "Organizing reservations",
+    sublabel: "Booking oversight",
     icon: Calendar,
     color: "#8B5CF6", // Purple
   },
-
   {
     type: "feedback",
     label: "Managing Feedback",
     sublabel: "Customer insights",
     icon: MessageSquare,
     color: "#FF6B6B", // Sunset Coral
-  },
-  {
-    type: "analytics",
-    label: "Viewing Analytics",
-    sublabel: "Performance reports",
-    icon: BarChart3,
-    color: "#F59E0B", // Orange
   },
 ];
 
@@ -1573,6 +1579,247 @@ export function TravelingAvatar() {
                       }}
                     />
                   ))}
+                </g>
+              )}
+
+              {/* Managing FAQ */}
+              {currentActivity.type === "faq" && (
+                <g>
+                  <motion.g
+                    animate={{
+                      y: [0, -4, 0],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    {/* FAQ Container */}
+                    <rect
+                      x="65"
+                      y="70"
+                      width="90"
+                      height="90"
+                      rx="10"
+                      fill="white"
+                      opacity="0.95"
+                    />
+
+                    {/* FAQ Header */}
+                    <rect
+                      x="65"
+                      y="70"
+                      width="90"
+                      height="18"
+                      rx="10"
+                      fill={currentActivity.color}
+                      opacity="0.8"
+                    />
+                    <text
+                      x="110"
+                      y="82"
+                      textAnchor="middle"
+                      fill="white"
+                      style={{ fontSize: "10px", fontWeight: "bold" }}
+                    >
+                      FAQ
+                    </text>
+
+                    {/* FAQ Items */}
+                    {[0, 1, 2].map((i) => (
+                      <g key={`faq-${i}`}>
+                        {/* Question Bubble */}
+                        <motion.rect
+                          x="75"
+                          y={95 + i * 18}
+                          width="70"
+                          height="14"
+                          rx="7"
+                          fill={currentActivity.color}
+                          opacity="0.15"
+                          animate={{
+                            scaleX: [1, 1.02, 1],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            delay: i * 0.3,
+                          }}
+                        />
+                        
+                        {/* Question Mark Icon */}
+                        <motion.path
+                          d={`M ${
+                            80 + i * 2
+                          } ${104 + i * 18} a 1.5 1.5 0 0 1 0 3 a 1.5 1.5 0 0 1 0 -3 M ${
+                            78 + i * 2
+                          } ${98 + i * 18} a 3 3 0 0 1 6 0 a 3 3 0 0 1 -3 3 v 3`}
+                          stroke={currentActivity.color}
+                          strokeWidth="1.5"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          animate={{
+                            rotate: [0, 5, 0],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                          }}
+                        />
+                        
+                        {/* Question Text */}
+                        <rect
+                          x="88"
+                          y={99 + i * 18}
+                          width="52"
+                          height="2"
+                          rx="1"
+                          fill="#6B7280"
+                          opacity="0.7"
+                        />
+                        <rect
+                          x="88"
+                          y={103 + i * 18}
+                          width="45"
+                          height="1.5"
+                          rx="0.75"
+                          fill="#9CA3AF"
+                          opacity="0.5"
+                        />
+                        
+                        {/* Answer Indicator */}
+                        <motion.circle
+                          cx="140"
+                          cy={104 + i * 18}
+                          r="4"
+                          fill="#10B981"
+                          opacity="0.7"
+                          animate={{
+                            scale: [1, 1.2, 1],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            delay: i * 0.4,
+                          }}
+                        />
+                        <path
+                          d={`M ${138} ${104 + i * 18} l 2 2 l 4 -4`}
+                          stroke="white"
+                          strokeWidth="1.5"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </g>
+                    ))}
+
+                    {/* Add FAQ Button */}
+                    <motion.rect
+                      x="85"
+                      y="155"
+                      width="50"
+                      height="8"
+                      rx="4"
+                      fill={currentActivity.color}
+                      opacity="0.8"
+                      animate={{
+                        opacity: [0.8, 1, 0.8],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                      }}
+                    />
+                    <text
+                      x="110"
+                      y="160"
+                      textAnchor="middle"
+                      fill="white"
+                      style={{ fontSize: "8px", fontWeight: "bold" }}
+                    >
+                      + Add FAQ
+                    </text>
+                  </motion.g>
+
+                  {/* Floating Question Marks */}
+                  {[0, 1, 2].map((i) => (
+                    <motion.text
+                      key={`float-q-${i}`}
+                      x={50 + i * 40}
+                      y={170 + i * 5}
+                      textAnchor="middle"
+                      fill={currentActivity.color}
+                      opacity="0.6"
+                      style={{ fontSize: "20px", fontWeight: "bold" }}
+                      animate={{
+                        y: [170 + i * 5, 160 + i * 5, 170 + i * 5],
+                        opacity: [0.4, 0.8, 0.4],
+                        scale: [1, 1.3, 1],
+                      }}
+                      transition={{
+                        duration: 2.5,
+                        repeat: Infinity,
+                        delay: i * 0.3,
+                      }}
+                    >
+                      ?
+                    </motion.text>
+                  ))}
+
+                  {/* Knowledge Sparkles */}
+                  {[0, 1, 2].map((i) => (
+                    <motion.path
+                      key={`faq-sparkle-${i}`}
+                      d={`M ${160 + i * 8} ${
+                        75 - i * 10
+                      } l 1.5 4 l 4 1.5 l -4 1.5 l -1.5 4 l -1.5 -4 l -4 -1.5 l 4 -1.5 Z`}
+                      fill={currentActivity.color}
+                      opacity="0.6"
+                      animate={{
+                        opacity: [0, 0.8, 0],
+                        scale: [0, 1.2, 0],
+                        rotate: [0, 180, 360],
+                      }}
+                      transition={{
+                        duration: 2.5,
+                        repeat: Infinity,
+                        delay: i * 0.6,
+                      }}
+                    />
+                  ))}
+
+                  {/* Search Icon */}
+                  <motion.g
+                    animate={{
+                      scale: [1, 1.05, 1],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                    }}
+                  >
+                    <circle
+                      cx="45"
+                      cy="85"
+                      r="6"
+                      fill="white"
+                      stroke={currentActivity.color}
+                      strokeWidth="1.5"
+                    />
+                    <line
+                      x1="48"
+                      y1="88"
+                      x2="52"
+                      y2="92"
+                      stroke={currentActivity.color}
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </motion.g>
                 </g>
               )}
             </svg>

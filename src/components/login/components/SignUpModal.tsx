@@ -1203,30 +1203,6 @@ export function SignUpModal({
                           </div>
                         )}
 
-                        {/* OTP Information */}
-                        {showOTPEmail && (
-                          <div className="mb-6 p-4 bg-linear-to-br from-[#F0F9FF] to-[#F0FDFA] rounded-xl border border-[#0A7AFF]/20">
-                            <div className="flex items-start gap-3 mb-3">
-                              <Mail className="w-5 h-5 text-[#0A7AFF] shrink-0 mt-0.5" />
-                              <div>
-                                <p
-                                  className="text-[#1A2B4F]"
-                                  style={{ fontSize: "13px", fontWeight: 600 }}
-                                >
-                                  Check Your Email
-                                </p>
-                                <p
-                                  className="text-[#64748B] mt-1"
-                                  style={{ fontSize: "12px" }}
-                                >
-                                  Enter the 6-digit code sent to your email
-                                  address
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
                         <form onSubmit={handleVerifyOTP} className="space-y-6">
                           <div>
                             <label

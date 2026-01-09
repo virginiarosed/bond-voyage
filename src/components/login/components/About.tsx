@@ -7,23 +7,23 @@ import { Sparkles, Brain, CalendarCheck } from "lucide-react";
 const valueProps = [
   {
     icon: Sparkles,
-    title: "Simple & Clean",
+    title: "Effortless Travel Planning",
     description:
-      "Navigate complex travel planning with an intuitive, beautiful interface designed for everyone.",
+      "Turn every trip into a smooth experience. From smart itineraries and route optimization to collaborative trip planning, manage every aspect of your travels effortlessly. With AI-powered tools, every trip is easier, smarter, and more enjoyable.",
     iconColor: "var(--ocean-blue)",
   },
   {
     icon: Brain,
-    title: "AI-Powered Intelligence",
+    title: "Smart Travel Planning Assistant",
     description:
-      "Let our smart algorithms craft personalized itineraries based on your preferences and budget.",
+      "Plan smarter with our AI Travel Assistant, which assists in creating day-by-day itineraries and provides expert guidance for every trip. Need help on the go? Our AI-Powered FAQ Assistant delivers instant answers and smart suggestions, especially for navigating system features.",
     iconColor: "var(--golden-hour)",
   },
   {
     icon: CalendarCheck,
-    title: "Stay Organized",
+    title: "All-in-One Travel Management",
     description:
-      "Keep all your bookings, documents, and plans in one secure, accessible place.",
+      "Manage all your trips, bookings, itineraries, and travel plans in one centralized, easy-to-use platform designed for both travelers and administrators. Keep track of every detail, from trip history to feedback, so you always stay in control of your travel experience.",
     iconColor: "var(--jade-green)",
   },
 ];
@@ -105,7 +105,7 @@ export function About() {
                 with powerful tools for user management, booking approvals,
                 itinerary creation, analytics, and feedback oversight—ensuring a
                 smooth, intelligent, and well-managed travel experience for both
-                travelers and operators
+                travelers and operators.
               </p>
             </div>
           </motion.div>
@@ -118,7 +118,7 @@ export function About() {
             transition={{ duration: 0.6 }}
           >
             <ImageWithFallback
-              src="user_home.png"
+              src="bv_home.png"
               alt="Team collaboration"
               className="w-full rounded-2xl shadow-2xl"
             />
