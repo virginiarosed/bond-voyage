@@ -246,8 +246,15 @@ export function Dashboard() {
                     <p className="text-xs text-white/70 whitespace-nowrap">
                       Customer Satisfaction
                     </p>
-                    <p className="text-sm text-white">
-                      {profileData ? profileData.customerRating : ""}
+                    <p className="text-sm text-white flex items-center gap-1">
+                      {profileData && profileData.customerRating !== undefined 
+                        ? (
+                          <>
+                            <span className="font-semibold">{profileData.customerRating}</span>
+                            <span className="text-white/80">/ 5 stars</span>
+                          </>
+                        )
+                        : "N/A"}
                     </p>
                   </div>
                 </div>

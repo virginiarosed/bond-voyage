@@ -84,7 +84,7 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/20">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-white opacity-60">
+          <div className="flex flex-col sm:flex-row items-center justify-center text-sm text-white opacity-60">
             <p>© 2025 BondVoyage. All rights reserved.</p>
           </div>
         </div>
