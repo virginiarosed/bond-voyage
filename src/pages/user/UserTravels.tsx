@@ -25,15 +25,28 @@ import {
   AlertTriangle,
   XCircle,
   ChevronLeft,
+  MessageSquare,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ContentCard } from "../../components/ContentCard";
 import { BookingListCard } from "../../components/BookingListCard";
 import { BookingDetailView } from "../../components/BookingDetailView";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
 import { ScrollArea } from "../../components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 import { useBreadcrumbs } from "../../components/BreadcrumbContext";
 import { useBookings } from "../../components/BookingContext";
 import { toast } from "sonner@2.0.3";
@@ -61,7 +74,12 @@ export function UserTravels() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
-  const { userTravels, updateUserTravel, moveUserTravelToPending, deleteUserTravel } = useBookings();
+  const {
+    userTravels,
+    updateUserTravel,
+    moveUserTravelToPending,
+    deleteUserTravel,
+  } = useBookings();
   const bookingRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [selectedTab, setSelectedTab] = useState<
     "in-progress" | "pending" | "rejected"
@@ -69,43 +87,33 @@ export function UserTravels() {
   const [selectedFilter, setSelectedFilter] = useState<
     "all" | "owned" | "collaborated" | "requested"
   >("all");
-  const [requestedSubTab, setRequestedSubTab] = useState<"all" | "confirmed" | "unconfirmed">("all");
+  const [requestedSubTab, setRequestedSubTab] = useState<
+    "all" | "confirmed" | "unconfirmed"
+  >("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinTravelModal, setShowJoinTravelModal] = useState(false);
   const [joinTravelId, setJoinTravelId] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "detail">("list");
-  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
+    null
+  );
   const [showBookConfirmModal, setShowBookConfirmModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [showConfirmBookingModal, setShowConfirmBookingModal] = useState(false);
   const [showConfirmStatusModal, setShowConfirmStatusModal] = useState(false);
   const [showShareQRModal, setShowShareQRModal] = useState(false);
   const [shareQRBookingId, setShareQRBookingId] = useState<string | null>(null);
-  const [joinMethod, setJoinMethod] = useState<"manual" | "scan" | "upload">("manual");
+  const [joinMethod, setJoinMethod] = useState<"manual" | "scan" | "upload">(
+    "manual"
+  );
   const [scannedQRData, setScannedQRData] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const qrCodeCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Current logged in user (Maria Santos)
   const currentUser = "Maria Santos";
-
-  // Conversation state for requested bookings
-  const [conversations, setConversations] = useState<Record<string, Array<{ sender: "user" | "admin"; message: string; time: string }>>>({
-    "BV-2025-005": [
-      { sender: "user", message: "Hello! I would like to request this custom itinerary for my upcoming trip.", time: "Nov 6, 2024, 10:00 AM" },
-      { sender: "admin", message: "Thank you for your request! We're reviewing your itinerary details and will get back to you shortly.", time: "Nov 6, 2024, 2:30 PM" },
-    ],
-    "BV-2025-006": [
-      { sender: "user", message: "I'm excited about this Boracay beach getaway!", time: "Nov 5, 2024, 9:00 AM" },
-      { sender: "admin", message: "Great! We've prepared a wonderful itinerary for you. Please review and confirm.", time: "Nov 5, 2024, 11:00 AM" },
-    ],
-    "BV-2025-007": [
-      { sender: "user", message: "Can you help me with the Vigan heritage tour arrangements?", time: "Nov 4, 2024, 8:00 AM" },
-    ],
-  });
-  const [currentMessage, setCurrentMessage] = useState<Record<string, string>>({});
 
   // Mock data for different statuses - converted to state
   const [mockTravels, setMockTravels] = useState<TravelPlan[]>([
@@ -147,8 +155,10 @@ export function UserTravels() {
       owner: "Maria Santos",
       collaborators: ["Sofia Ramos", "Gabriel Torres", "Isabella Garcia"],
       createdOn: "September 10, 2024",
-      rejectionReason: "Incomplete travel documentation submitted. Missing valid IDs for 2 travelers.",
-      rejectionResolution: "Please upload clear copies of valid government IDs for all travelers and resubmit the booking.",
+      rejectionReason:
+        "Incomplete travel documentation submitted. Missing valid IDs for 2 travelers.",
+      rejectionResolution:
+        "Please upload clear copies of valid government IDs for all travelers and resubmit the booking.",
       resolutionStatus: "unresolved",
     },
     {
@@ -161,7 +171,12 @@ export function UserTravels() {
       bookingType: "Standard",
       ownership: "collaborated",
       owner: "Miguel Fernandez",
-      collaborators: ["Maria Santos", "Juan Dela Cruz", "Ana Reyes", "Sofia Ramos"],
+      collaborators: [
+        "Maria Santos",
+        "Juan Dela Cruz",
+        "Ana Reyes",
+        "Sofia Ramos",
+      ],
       createdOn: "November 1, 2024",
     },
     {
@@ -209,12 +224,20 @@ export function UserTravels() {
   ]);
 
   // Merge context travels with mock travels
-  const contextTravelsConverted: TravelPlan[] = userTravels.map(travel => {
+  const contextTravelsConverted: TravelPlan[] = userTravels.map((travel) => {
     // Parse dates carefully to avoid timezone offset issues
-    const startDate = new Date(travel.startDate + 'T12:00:00');
-    const endDate = new Date(travel.endDate + 'T12:00:00');
-    const dateRange = `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} – ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
-    
+    const startDate = new Date(travel.startDate + "T12:00:00");
+    const endDate = new Date(travel.endDate + "T12:00:00");
+    const dateRange = `${startDate.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })} – ${endDate.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })}`;
+
     return {
       id: travel.id,
       destination: travel.destination,
@@ -266,11 +289,11 @@ export function UserTravels() {
     }
 
     // Check if booking exists in either mockTravels or userTravels
-    const existingBooking = travels.find(t => t.id === trimmedId);
-    
+    const existingBooking = travels.find((t) => t.id === trimmedId);
+
     if (!existingBooking) {
       toast.error("Booking Not Found", {
-        description: `No booking found with ID: ${trimmedId}`
+        description: `No booking found with ID: ${trimmedId}`,
       });
       return;
     }
@@ -278,39 +301,44 @@ export function UserTravels() {
     // Check if user is already a collaborator or owner
     if (existingBooking.owner === currentUser) {
       toast.error("You Already Own This Booking", {
-        description: "You cannot join your own booking as a collaborator"
+        description: "You cannot join your own booking as a collaborator",
       });
       return;
     }
 
     if (existingBooking.collaborators.includes(currentUser)) {
       toast.error("Already a Collaborator", {
-        description: "You are already a collaborator on this booking"
+        description: "You are already a collaborator on this booking",
       });
       return;
     }
 
     // Add current user as collaborator
-    if (mockTravels.find(t => t.id === trimmedId)) {
+    if (mockTravels.find((t) => t.id === trimmedId)) {
       // Update in mock data
-      setMockTravels(prev => prev.map(travel => 
-        travel.id === trimmedId 
-          ? { ...travel, collaborators: [...travel.collaborators, currentUser] }
-          : travel
-      ));
+      setMockTravels((prev) =>
+        prev.map((travel) =>
+          travel.id === trimmedId
+            ? {
+                ...travel,
+                collaborators: [...travel.collaborators, currentUser],
+              }
+            : travel
+        )
+      );
     } else {
       // Update in context
-      const travelInContext = userTravels.find(t => t.id === trimmedId);
+      const travelInContext = userTravels.find((t) => t.id === trimmedId);
       if (travelInContext) {
         updateUserTravel(trimmedId, {
           ...travelInContext,
-          collaborators: [...travelInContext.collaborators, currentUser]
+          collaborators: [...travelInContext.collaborators, currentUser],
         });
       }
     }
 
     toast.success("Successfully Joined!", {
-      description: `You are now a collaborator on booking ${trimmedId}`
+      description: `You are now a collaborator on booking ${trimmedId}`,
     });
 
     setShowJoinTravelModal(false);
@@ -322,7 +350,9 @@ export function UserTravels() {
     navigate("/user/standard-itinerary");
   };
 
-  const [travelResolutionStatus, setTravelResolutionStatus] = useState<Record<string, "resolved" | "unresolved">>({
+  const [travelResolutionStatus, setTravelResolutionStatus] = useState<
+    Record<string, "resolved" | "unresolved">
+  >({
     "BV-2025-003": "unresolved",
   });
 
@@ -774,47 +804,49 @@ export function UserTravels() {
   useEffect(() => {
     if (location.state?.scrollToId) {
       const { scrollToId, tab, activeTab, mockDataUpdate } = location.state;
-      
+
       // Handle mock data updates from EditCustomizedBooking
       if (mockDataUpdate) {
-        setMockTravels(prev => prev.map(travel => {
-          if (travel.id === mockDataUpdate.id) {
-            return {
-              ...travel,
-              destination: mockDataUpdate.destination,
-              dates: mockDataUpdate.dates,
-              travelers: mockDataUpdate.travelers,
-              budget: mockDataUpdate.budget,
-            };
-          }
-          return travel;
-        }));
-        
+        setMockTravels((prev) =>
+          prev.map((travel) => {
+            if (travel.id === mockDataUpdate.id) {
+              return {
+                ...travel,
+                destination: mockDataUpdate.destination,
+                dates: mockDataUpdate.dates,
+                travelers: mockDataUpdate.travelers,
+                budget: mockDataUpdate.budget,
+              };
+            }
+            return travel;
+          })
+        );
+
         // Update itinerary data if provided
         if (mockDataUpdate.itinerary) {
-          setItineraryData(prev => ({
+          setItineraryData((prev) => ({
             ...prev,
-            [mockDataUpdate.id]: mockDataUpdate.itinerary
+            [mockDataUpdate.id]: mockDataUpdate.itinerary,
           }));
         }
       }
-      
+
       // Set the correct tab - support both 'tab' and 'activeTab' parameters
       const targetTab = tab || activeTab;
       if (targetTab) {
         setSelectedTab(targetTab);
       }
-      
+
       // Clear the location state
       navigate(location.pathname, { replace: true, state: {} });
-      
+
       // Scroll to the booking after a short delay to ensure rendering
       setTimeout(() => {
         const element = bookingRefs.current[scrollToId];
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
           // Add highlight effect
-          element.style.animation = 'highlight 2s ease-in-out';
+          element.style.animation = "highlight 2s ease-in-out";
         }
       }, 300);
     }
@@ -823,33 +855,41 @@ export function UserTravels() {
   // Update breadcrumbs based on view mode
   useEffect(() => {
     if (viewMode === "detail" && selectedBookingId) {
-      const tabLabel = 
-        selectedTab === "in-progress" ? "In Progress" :
-        selectedTab === "pending" ? "Pending" :
-        "Rejected";
-      
+      const tabLabel =
+        selectedTab === "in-progress"
+          ? "In Progress"
+          : selectedTab === "pending"
+          ? "Pending"
+          : "Rejected";
+
       setBreadcrumbs([
         { label: "Home", path: "/user/home" },
         { label: "Travels", path: "/user/travels" },
         { label: tabLabel },
-        { label: `Booking ${selectedBookingId}` }
+        { label: `Booking ${selectedBookingId}` },
       ]);
     } else {
       resetBreadcrumbs();
     }
-  }, [viewMode, selectedBookingId, selectedTab, setBreadcrumbs, resetBreadcrumbs]);
+  }, [
+    viewMode,
+    selectedBookingId,
+    selectedTab,
+    setBreadcrumbs,
+    resetBreadcrumbs,
+  ]);
 
   const handleMarkAsResolved = (id: string) => {
-    setTravelResolutionStatus(prev => ({
+    setTravelResolutionStatus((prev) => ({
       ...prev,
-      [id]: "resolved"
+      [id]: "resolved",
     }));
   };
 
   const handleMarkAsUnresolved = (id: string) => {
-    setTravelResolutionStatus(prev => ({
+    setTravelResolutionStatus((prev) => ({
       ...prev,
-      [id]: "unresolved"
+      [id]: "unresolved",
     }));
   };
 
@@ -861,14 +901,14 @@ export function UserTravels() {
     if (selectedBookingId) {
       // Move to pending and add to admin approvals
       moveUserTravelToPending(selectedBookingId);
-      
+
       toast.success("Booking Submitted!", {
-        description: "Your booking request has been sent for approval."
+        description: "Your booking request has been sent for approval.",
       });
       setShowBookConfirmModal(false);
       setViewMode("list");
       setSelectedBookingId(null);
-      
+
       // Switch to pending tab to show the moved booking
       setSelectedTab("pending");
     }
@@ -880,11 +920,12 @@ export function UserTravels() {
       toast.error("Booking not found");
       return;
     }
-    
+
     // Get itinerary - check if it's from context first (has itinerary property), otherwise use mock data
-    const travelInContext = userTravels.find(t => t.id === selectedBookingId);
-    const rawItinerary = travelInContext?.itinerary || itineraryData[selectedBookingId] || [];
-    
+    const travelInContext = userTravels.find((t) => t.id === selectedBookingId);
+    const rawItinerary =
+      travelInContext?.itinerary || itineraryData[selectedBookingId] || [];
+
     // Convert icon components to string names for serialization
     const serializableItinerary = rawItinerary.map((day: any) => ({
       ...day,
@@ -902,21 +943,21 @@ export function UserTravels() {
             iconName = activity.icon.displayName;
           }
         }
-        
+
         return {
           ...activity,
-          icon: iconName
+          icon: iconName,
         };
-      })
+      }),
     }));
-    
+
     // Navigate to edit customized booking page with booking data and itinerary
     navigate(`/user/travels/edit/${selectedBookingId}`, {
       state: {
         bookingData: selectedBooking,
         itinerary: serializableItinerary,
-        tabStatus: selectedTab
-      }
+        tabStatus: selectedTab,
+      },
     });
   };
 
@@ -927,19 +968,23 @@ export function UserTravels() {
   const handleConfirmDelete = () => {
     if (selectedBookingId) {
       // Delete from context if it exists there
-      const travelInContext = userTravels.find(t => t.id === selectedBookingId);
+      const travelInContext = userTravels.find(
+        (t) => t.id === selectedBookingId
+      );
       if (travelInContext) {
         deleteUserTravel(selectedBookingId);
       }
-      
+
       // Also delete from mock data if it exists there
-      const travelInMock = mockTravels.find(t => t.id === selectedBookingId);
+      const travelInMock = mockTravels.find((t) => t.id === selectedBookingId);
       if (travelInMock) {
-        setMockTravels(prev => prev.filter(t => t.id !== selectedBookingId));
+        setMockTravels((prev) =>
+          prev.filter((t) => t.id !== selectedBookingId)
+        );
       }
-      
+
       toast.success("Booking Deleted", {
-        description: "The travel booking has been permanently removed."
+        description: "The travel booking has been permanently removed.",
       });
     }
     setShowDeleteConfirmModal(false);
@@ -950,14 +995,16 @@ export function UserTravels() {
   const handleConfirmStatus = () => {
     if (selectedBookingId) {
       // Update in mock data
-      setMockTravels(prev => prev.map(travel => 
-        travel.id === selectedBookingId 
-          ? { ...travel, confirmationStatus: "confirmed" as const }
-          : travel
-      ));
-      
+      setMockTravels((prev) =>
+        prev.map((travel) =>
+          travel.id === selectedBookingId
+            ? { ...travel, confirmationStatus: "confirmed" as const }
+            : travel
+        )
+      );
+
       toast.success("Booking Confirmed", {
-        description: "The booking status has been updated to Confirmed."
+        description: "The booking status has been updated to Confirmed.",
       });
     }
     setShowConfirmStatusModal(false);
@@ -967,7 +1014,7 @@ export function UserTravels() {
   const handleShareBooking = async (bookingId: string) => {
     setShareQRBookingId(bookingId);
     setShowShareQRModal(true);
-    
+
     // Generate QR code after modal opens
     setTimeout(() => {
       generateQRCode(bookingId);
@@ -977,19 +1024,19 @@ export function UserTravels() {
   const generateQRCode = async (bookingId: string) => {
     const canvas = qrCodeCanvasRef.current;
     if (!canvas) return;
-    
+
     try {
-      const QRCode = (await import('qrcode')).default;
+      const QRCode = (await import("qrcode")).default;
       await QRCode.toCanvas(canvas, bookingId, {
         width: 200,
         margin: 2,
         color: {
-          dark: '#0A7AFF',
-          light: '#FFFFFF'
-        }
+          dark: "#0A7AFF",
+          light: "#FFFFFF",
+        },
       });
     } catch (error) {
-      console.error('Failed to generate QR code:', error);
+      console.error("Failed to generate QR code:", error);
       toast.error("Failed to generate QR code");
     }
   };
@@ -997,11 +1044,11 @@ export function UserTravels() {
   const handleDownloadQR = () => {
     const canvas = qrCodeCanvasRef.current;
     if (!canvas || !shareQRBookingId) return;
-    
+
     canvas.toBlob((blob) => {
       if (blob) {
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.download = `booking-${shareQRBookingId}-qr.png`;
         link.href = url;
         link.click();
@@ -1014,31 +1061,32 @@ export function UserTravels() {
   const handleStartScanning = async () => {
     setIsScanning(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
-        
+
         // Start scanning for QR codes
         scanQRCode();
       }
     } catch (error: any) {
-      console.error('Failed to access camera:', error);
-      
+      console.error("Failed to access camera:", error);
+
       // Provide specific error messages based on the error type
-      if (error.name === 'NotAllowedError') {
+      if (error.name === "NotAllowedError") {
         toast.error("Camera Permission Denied", {
-          description: "Please enable camera access in your browser settings to scan QR codes"
+          description:
+            "Please enable camera access in your browser settings to scan QR codes",
         });
-      } else if (error.name === 'NotFoundError') {
+      } else if (error.name === "NotFoundError") {
         toast.error("Camera Not Found", {
-          description: "No camera device was detected on your device"
+          description: "No camera device was detected on your device",
         });
       } else {
         toast.error("Failed to access camera", {
-          description: "Please check your camera permissions and try again"
+          description: "Please check your camera permissions and try again",
         });
       }
       setIsScanning(false);
@@ -1047,19 +1095,27 @@ export function UserTravels() {
 
   const scanQRCode = async () => {
     if (!videoRef.current || !isScanning) return;
-    
+
     try {
-      const jsQR = (await import('jsqr')).default;
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      
-      if (context && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+      const jsQR = (await import("jsqr")).default;
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+
+      if (
+        context &&
+        videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA
+      ) {
         canvas.width = videoRef.current.videoWidth;
         canvas.height = videoRef.current.videoHeight;
         context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
         const code = jsQR(imageData.data, imageData.width, imageData.height);
-        
+
         if (code) {
           setScannedQRData(code.data);
           setJoinTravelId(code.data);
@@ -1069,9 +1125,9 @@ export function UserTravels() {
         }
       }
     } catch (error) {
-      console.error('QR scanning error:', error);
+      console.error("QR scanning error:", error);
     }
-    
+
     // Continue scanning
     if (isScanning) {
       requestAnimationFrame(scanQRCode);
@@ -1082,32 +1138,43 @@ export function UserTravels() {
     setIsScanning(false);
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     try {
-      const jsQR = (await import('jsqr')).default;
+      const jsQR = (await import("jsqr")).default;
       const img = new Image();
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+
           if (context) {
             canvas.width = img.width;
             canvas.height = img.height;
             context.drawImage(img, 0, 0);
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-            
+            const imageData = context.getImageData(
+              0,
+              0,
+              canvas.width,
+              canvas.height
+            );
+            const code = jsQR(
+              imageData.data,
+              imageData.width,
+              imageData.height
+            );
+
             if (code) {
               setScannedQRData(code.data);
               /**
@@ -1120,13 +1187,13 @@ export function UserTravels() {
             }
           }
         };
-        
+
         img.src = e.target?.result as string;
       };
-      
+
       reader.readAsDataURL(file);
     } catch (error) {
-      console.error('Failed to read QR code from file:', error);
+      console.error("Failed to read QR code from file:", error);
       toast.error("Failed to read QR code from file");
     }
   };
@@ -1143,15 +1210,14 @@ export function UserTravels() {
   const filteredTravels = travels.filter((travel) => {
     const statusMatch = travel.status === selectedTab;
     const ownershipMatch =
-      selectedFilter === "all" ||
-      travel.ownership === selectedFilter;
-    
+      selectedFilter === "all" || travel.ownership === selectedFilter;
+
     // If requested filter is active, also filter by confirmation status sub-tab
     if (selectedFilter === "requested" && requestedSubTab !== "all") {
       const confirmationMatch = travel.confirmationStatus === requestedSubTab;
       return statusMatch && ownershipMatch && confirmationMatch;
     }
-    
+
     return statusMatch && ownershipMatch;
   });
 
@@ -1163,17 +1229,22 @@ export function UserTravels() {
       return null;
     }
 
-    const tabLabel = 
-      selectedTab === "in-progress" ? "In Progress" :
-      selectedTab === "pending" ? "Pending" :
-      "Rejected Bookings";
-    
+    const tabLabel =
+      selectedTab === "in-progress"
+        ? "In Progress"
+        : selectedTab === "pending"
+        ? "Pending"
+        : "Rejected Bookings";
+
     const isOwner = selectedBooking.owner === currentUser;
-    const currentResolutionStatus = travelResolutionStatus[selectedBooking.id] || selectedBooking.resolutionStatus;
+    const currentResolutionStatus =
+      travelResolutionStatus[selectedBooking.id] ||
+      selectedBooking.resolutionStatus;
 
     // Get itinerary - check if it's from context first (has itinerary property), otherwise use mock data
-    const travelInContext = userTravels.find(t => t.id === selectedBookingId);
-    const itinerary = travelInContext?.itinerary || itineraryData[selectedBooking.id] || [];
+    const travelInContext = userTravels.find((t) => t.id === selectedBookingId);
+    const itinerary =
+      travelInContext?.itinerary || itineraryData[selectedBooking.id] || [];
 
     // Render detail view manually instead of using BookingDetailView
     if (selectedTab === "rejected") {
@@ -1196,7 +1267,7 @@ export function UserTravels() {
               border-radius: 1rem;
             }
           `}</style>
-          
+
           <div className="space-y-6">
             {/* Header with back button */}
             <div className="flex items-center gap-4">
@@ -1207,20 +1278,26 @@ export function UserTravels() {
                 <ChevronLeft className="w-5 h-5 text-[#64748B]" />
               </button>
               <div>
-                <h2 className="text-[#1A2B4F] font-semibold">{selectedBooking.destination}</h2>
+                <h2 className="text-[#1A2B4F] font-semibold">
+                  {selectedBooking.destination}
+                </h2>
               </div>
             </div>
-            
+
             {/* Booking Header Card */}
             <div className="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] rounded-2xl p-8 text-white shadow-lg">
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-3xl font-semibold">{selectedBooking.destination}</h1>
+                    <h1 className="text-3xl font-semibold">
+                      {selectedBooking.destination}
+                    </h1>
                   </div>
                   <div className="flex items-center gap-2 text-white/90">
                     <MapPin className="w-4 h-4" />
-                    <span className="text-lg">{selectedBooking.destination}</span>
+                    <span className="text-lg">
+                      {selectedBooking.destination}
+                    </span>
                   </div>
                 </div>
                 <div className="text-right">
@@ -1239,7 +1316,8 @@ export function UserTravels() {
                   <Users className="w-5 h-5 mb-2 text-white/80" />
                   <p className="text-white/80 text-xs mb-1">Travelers</p>
                   <p className="font-medium">
-                    {selectedBooking.travelers} {selectedBooking.travelers > 1 ? "People" : "Person"}
+                    {selectedBooking.travelers}{" "}
+                    {selectedBooking.travelers > 1 ? "People" : "Person"}
                   </p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
@@ -1265,80 +1343,109 @@ export function UserTravels() {
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                         <Users className="w-5 h-5 text-white" />
                       </div>
-                      <h3 className="font-semibold text-[#1A2B4F]">Customer Information</h3>
+                      <h3 className="font-semibold text-[#1A2B4F]">
+                        Customer Information
+                      </h3>
                     </div>
                   </div>
                   <div className="p-6 space-y-4">
                     <div>
                       <p className="text-xs text-[#64748B] mb-1">Full Name</p>
-                      <p className="text-[#1A2B4F] font-medium">{selectedBooking.owner}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-[#64748B] mb-1">Collaborators</p>
-                      <p className="text-[#334155]">
-                        {selectedBooking.collaborators.length > 0 
-                          ? selectedBooking.collaborators.join(", ")
-                          : "No collaborators"
-                        }
+                      <p className="text-[#1A2B4F] font-medium">
+                        {selectedBooking.owner}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-[#64748B] mb-1">Booking Type</p>
-                      <p className="text-[#334155]">{selectedBooking.bookingType}</p>
+                      <p className="text-xs text-[#64748B] mb-1">
+                        Collaborators
+                      </p>
+                      <p className="text-[#334155]">
+                        {selectedBooking.collaborators.length > 0
+                          ? selectedBooking.collaborators.join(", ")
+                          : "No collaborators"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#64748B] mb-1">
+                        Booking Type
+                      </p>
+                      <p className="text-[#334155]">
+                        {selectedBooking.bookingType}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-[#64748B] mb-1">Ownership</p>
                       <p className="text-[#334155]">
-                        {selectedBooking.ownership === "owned" ? "Owned" : 
-                         selectedBooking.ownership === "collaborated" ? "Collaborated" : "Requested"}
+                        {selectedBooking.ownership === "owned"
+                          ? "Owned"
+                          : selectedBooking.ownership === "collaborated"
+                          ? "Collaborated"
+                          : "Requested"}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Rejection Details Section - BELOW Customer Information */}
-                {selectedBooking.rejectionReason && selectedBooking.rejectionResolution && (
-                  <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
-                    <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[rgba(255,107,107,0.05)] to-white">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
-                          <AlertTriangle className="w-5 h-5 text-white" />
+                {selectedBooking.rejectionReason &&
+                  selectedBooking.rejectionResolution && (
+                    <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
+                      <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[rgba(255,107,107,0.05)] to-white">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+                            <AlertTriangle className="w-5 h-5 text-white" />
+                          </div>
+                          <h3 className="font-semibold text-[#FF6B6B]">
+                            Rejection Details
+                          </h3>
                         </div>
-                        <h3 className="font-semibold text-[#FF6B6B]">Rejection Details</h3>
+                      </div>
+                      <div className="p-6 space-y-4">
+                        <div>
+                          <p className="text-xs font-semibold text-[#FF6B6B] mb-1">
+                            Rejection Reason:
+                          </p>
+                          <p className="text-sm text-[#334155]">
+                            {selectedBooking.rejectionReason}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-[#FF6B6B] mb-1">
+                            Required Action:
+                          </p>
+                          <p className="text-sm text-[#334155]">
+                            {selectedBooking.rejectionResolution}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between pt-3 border-t border-[#E5E7EB]">
+                          <p className="text-xs font-semibold text-[#64748B]">
+                            Action Status:
+                          </p>
+                          {currentResolutionStatus === "resolved" ? (
+                            <button
+                              onClick={() =>
+                                handleMarkAsUnresolved(selectedBooking.id)
+                              }
+                              className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)] hover:bg-[rgba(16,185,129,0.15)] transition-all"
+                            >
+                              <CheckCircle className="w-3 h-3 inline mr-1" />
+                              Resolved - Click to mark Unresolved
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                handleMarkAsResolved(selectedBooking.id)
+                              }
+                              className="px-3 py-1.5 rounded-lg bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)] hover:bg-[rgba(255,152,0,0.15)] transition-all"
+                            >
+                              <AlertTriangle className="w-3 h-3 inline mr-1" />
+                              Unresolved - Click to mark Resolved
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Rejection Reason:</p>
-                        <p className="text-sm text-[#334155]">{selectedBooking.rejectionReason}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-[#FF6B6B] mb-1">Required Action:</p>
-                        <p className="text-sm text-[#334155]">{selectedBooking.rejectionResolution}</p>
-                      </div>
-                      <div className="flex items-center justify-between pt-3 border-t border-[#E5E7EB]">
-                        <p className="text-xs font-semibold text-[#64748B]">Action Status:</p>
-                        {currentResolutionStatus === "resolved" ? (
-                          <button
-                            onClick={() => handleMarkAsUnresolved(selectedBooking.id)}
-                            className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)] hover:bg-[rgba(16,185,129,0.15)] transition-all"
-                          >
-                            <CheckCircle className="w-3 h-3 inline mr-1" />
-                            Resolved - Click to mark Unresolved
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleMarkAsResolved(selectedBooking.id)}
-                            className="px-3 py-1.5 rounded-lg bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)] hover:bg-[rgba(255,152,0,0.15)] transition-all"
-                          >
-                            <AlertTriangle className="w-3 h-3 inline mr-1" />
-                            Unresolved - Click to mark Resolved
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Actions */}
                 <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 space-y-3">
@@ -1368,50 +1475,65 @@ export function UserTravels() {
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8B5CF6] to-[#A78BFA] flex items-center justify-center shadow-lg shadow-[#8B5CF6]/20">
                         <Calendar className="w-5 h-5 text-white" />
                       </div>
-                      <h3 className="font-semibold text-[#1A2B4F]">Travel Itinerary</h3>
+                      <h3 className="font-semibold text-[#1A2B4F]">
+                        Travel Itinerary
+                      </h3>
                     </div>
                   </div>
                   <div className="p-6">
                     {itinerary.length === 0 ? (
                       <div className="text-center py-12">
                         <Calendar className="w-16 h-16 text-[#E5E7EB] mx-auto mb-4" />
-                        <p className="text-[#64748B]">No itinerary details available</p>
+                        <p className="text-[#64748B]">
+                          No itinerary details available
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-6">
                         {itinerary.map((day) => (
-                          <div key={day.day} className="border border-[#E5E7EB] rounded-xl overflow-hidden">
+                          <div
+                            key={day.day}
+                            className="border border-[#E5E7EB] rounded-xl overflow-hidden"
+                          >
                             <div className="p-4 bg-gradient-to-r from-[#F8FAFB] to-white border-b border-[#E5E7EB]">
                               <h4 className="font-semibold text-[#1A2B4F]">
                                 Day {day.day}: {day.title}
                               </h4>
                             </div>
                             <div className="p-4 space-y-4">
-                              {day.activities.map((activity: any, index: number) => {
-                                const IconComponent = activity.icon || Clock;
-                                return (
-                                  <div key={index} className="flex gap-4">
-                                    <div className="flex-shrink-0">
-                                      <div className="w-10 h-10 rounded-lg bg-[rgba(10,122,255,0.1)] border border-[rgba(10,122,255,0.2)] flex items-center justify-center">
-                                        <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
-                                      </div>
-                                    </div>
-                                    <div className="flex-1">
-                                      <div className="flex items-center justify-between mb-1">
-                                        <p className="font-medium text-[#1A2B4F]">{activity.title}</p>
-                                        <p className="text-sm text-[#64748B]">{activity.time}</p>
-                                      </div>
-                                      <p className="text-sm text-[#64748B] mb-1">{activity.description}</p>
-                                      {activity.location && (
-                                        <div className="flex items-center gap-1 text-xs text-[#0A7AFF]">
-                                          <MapPin className="w-3 h-3" />
-                                          <span>{activity.location}</span>
+                              {day.activities.map(
+                                (activity: any, index: number) => {
+                                  const IconComponent = activity.icon || Clock;
+                                  return (
+                                    <div key={index} className="flex gap-4">
+                                      <div className="flex-shrink-0">
+                                        <div className="w-10 h-10 rounded-lg bg-[rgba(10,122,255,0.1)] border border-[rgba(10,122,255,0.2)] flex items-center justify-center">
+                                          <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
                                         </div>
-                                      )}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <p className="font-medium text-[#1A2B4F]">
+                                            {activity.title}
+                                          </p>
+                                          <p className="text-sm text-[#64748B]">
+                                            {activity.time}
+                                          </p>
+                                        </div>
+                                        <p className="text-sm text-[#64748B] mb-1">
+                                          {activity.description}
+                                        </p>
+                                        {activity.location && (
+                                          <div className="flex items-center gap-1 text-xs text-[#0A7AFF]">
+                                            <MapPin className="w-3 h-3" />
+                                            <span>{activity.location}</span>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                );
-                              })}
+                                  );
+                                }
+                              )}
                             </div>
                           </div>
                         ))}
@@ -1440,25 +1562,32 @@ export function UserTravels() {
               content={
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                    <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Customer:</span>
+                    <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                      Customer:
+                    </span>
                     <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
                       {selectedBooking.owner}
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                    <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Booking Type:</span>
+                    <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                      Booking Type:
+                    </span>
                     <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
                       {selectedBooking.bookingType}
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                    <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Destination:</span>
+                    <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                      Destination:
+                    </span>
                     <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
                       {selectedBooking.destination}
                     </span>
                   </div>
                   <p className="text-xs text-[#64748B] dark:text-[#94A3B8] pt-2">
-                    This will permanently remove the customized booking from your list.
+                    This will permanently remove the customized booking from
+                    your list.
                   </p>
                 </div>
               }
@@ -1479,7 +1608,10 @@ export function UserTravels() {
         <BookingDetailView
           booking={{
             id: selectedBooking.id,
-            customer: selectedBooking.ownership === "requested" ? currentUser : selectedBooking.owner,
+            customer:
+              selectedBooking.ownership === "requested"
+                ? currentUser
+                : selectedBooking.owner,
             email: "maria.santos@email.com",
             mobile: "+63 917 123 4567",
             destination: selectedBooking.destination,
@@ -1493,156 +1625,141 @@ export function UserTravels() {
           onBack={handleBackToList}
           breadcrumbPage={tabLabel}
           headerVariant={
-            selectedTab === "rejected" ? "cancelled" :
-            selectedTab === "pending" ? "approval" :
-            "default"
+            selectedTab === "rejected"
+              ? "cancelled"
+              : selectedTab === "pending"
+              ? "approval"
+              : "default"
           }
           isRequestedItinerary={true}
-          actionButtons={
-            selectedTab === "pending" ? undefined : (
-              <>
-                {/* Conversation Section for Requested Bookings */}
-                {selectedBooking.ownership === "requested" && (
-                  <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden mb-3">
-                    <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                          <Send className="w-5 h-5 text-white" />
-                        </div>
-                        <h3 className="font-semibold text-[#1A2B4F]">Conversation</h3>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="space-y-3 p-4 bg-accent/50 rounded-xl max-h-64 overflow-y-auto mb-4">
-                        {(conversations[selectedBooking.id] || []).length === 0 ? (
-                          <div className="text-center py-8 text-muted-foreground text-sm">
-                            No messages yet. Start the conversation!
-                          </div>
-                        ) : (
-                          (conversations[selectedBooking.id] || []).map((msg, index) => (
-                            <div key={index} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-                              <div className={`max-w-[75%] p-4 rounded-xl shadow-sm ${
-                                msg.sender === "user" 
-                                  ? "bg-primary text-primary-foreground" 
-                                  : "bg-card border border-border"
-                              }`}>
-                                <p className="text-sm leading-relaxed">{msg.message}</p>
-                                <p className={`text-xs mt-2 ${msg.sender === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                                  {msg.time}
-                                </p>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Type your message..."
-                          value={currentMessage[selectedBooking.id] || ""}
-                          onChange={(e) => setCurrentMessage({ ...currentMessage, [selectedBooking.id]: e.target.value })}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter" && currentMessage[selectedBooking.id]?.trim()) {
-                              const newMsg = {
-                                sender: "user" as const,
-                                message: currentMessage[selectedBooking.id].trim(),
-                                time: new Date().toLocaleString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                }),
-                              };
-                              setConversations({
-                                ...conversations,
-                                [selectedBooking.id]: [...(conversations[selectedBooking.id] || []), newMsg],
-                              });
-                              setCurrentMessage({ ...currentMessage, [selectedBooking.id]: "" });
-                              toast.success("Message sent!", {
-                                description: "Your message has been sent to the admin."
-                              });
-                            }
-                          }}
-                          className="flex-1 px-4 py-3 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                        />
-                        <button
-                          onClick={() => {
-                            if (currentMessage[selectedBooking.id]?.trim()) {
-                              const newMsg = {
-                                sender: "user" as const,
-                                message: currentMessage[selectedBooking.id].trim(),
-                                time: new Date().toLocaleString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                }),
-                              };
-                              setConversations({
-                                ...conversations,
-                                [selectedBooking.id]: [...(conversations[selectedBooking.id] || []), newMsg],
-                              });
-                              setCurrentMessage({ ...currentMessage, [selectedBooking.id]: "" });
-                              toast.success("Message sent!", {
-                                description: "Your message has been sent to the admin."
-                              });
-                            }
-                          }}
-                          className="px-5 py-3 rounded-xl transition-all shadow-md hover:shadow-lg bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
-                        >
-                          <Send className="w-5 h-5" strokeWidth={2} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+actionButtons={
+  selectedTab === "pending" ? undefined : (
+    <>
+      {/* Notice Feature for Requested Bookings */}
+      {selectedBooking.ownership === "requested" && (
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden mb-3">
+          <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[#1A2B4F]">Need Assistance?</h3>
+                <p className="text-xs text-[#64748B] mt-1">Questions or adjustments for your requested itinerary</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div className="p-4 bg-gradient-to-r from-[#FFF7ED] to-[#FFEDD5] border border-[#FDBA74] rounded-xl">
+                <p className="text-sm text-[#92400E]">
+                  <span className="font-semibold">Note:</span> Should you have any requests, wish to make adjustments, or have any concerns regarding your itinerary, please do not hesitate to reach out to 4B's Travel and Tours. Our team will be more than happy to assist you.
+                </p>
+                <p className="text-sm text-[#92400E]">
+                  <br/>For a smooth and efficient process, we kindly ask that you include your <span className="font-semibold">Booking ID</span> in your message so we may address your concern promptly and seamlessly.
+                </p>
+              </div>
+              
+              <div className="p-4 bg-gradient-to-r from-[#F0F9FF] to-[#E0F2FE] border border-[#7DD3FC] rounded-xl">
+  <div className="mb-3">
+    <p className="text-sm font-medium text-[#0369A1] mb-2">Contact Options:</p>
+    <div className="space-y-2 text-xs text-[#0C4A6E] bg-white/50 p-3 rounded-lg">
+      <div className="flex items-start gap-2">
+        <span className="text-[#0A7AFF] font-medium">•</span>
+        <div>
+          <p className="font-medium text-sm">Email</p>
+          <p className="text-[#0C4A6E]/80">4bstravelandtours2019@gmail.com</p>
+        </div>
+      </div>
+      <div className="flex items-start gap-2">
+        <span className="text-[#0A7AFF] font-medium">•</span>
+        <div>
+          <p className="font-medium text-sm">Phone</p>
+          <p className="text-[#0C4A6E]/80">+63 123 456 7890</p>
+        </div>
+      </div>
+      <div className="flex items-start gap-2">
+        <span className="text-[#0A7AFF] font-medium">•</span>
+        <div>
+          <p className="font-medium text-sm">Support Hours</p>
+          <p className="text-[#0C4A6E]/80">Mon-Sun, 8AM-8PM</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <button
+    onClick={() => {
+      // Navigate to UserHome and scroll to the Contact section
+      navigate("/user/home", {
+        state: { scrollToContact: true }
+      });
+      
+      // Close the detail view
+      setViewMode("list");
+      setSelectedBookingId(null);
+      
+      toast.success("Redirecting to Contact Section", {
+        description: "You'll be redirected to the Contact 4B's Travel and Tours section."
+      });
+    }}
+    className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] hover:from-[#0970e6] hover:to-[#12a594] text-white text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+  >
+    <MessageSquare className="w-4 h-4" />
+    Go to Contact Section
+  </button>
+</div>
+              
+              <div className="text-xs text-[#64748B] italic text-center pt-2">
+                You can attach travel documents or photos when contacting us.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-                {/* Action Buttons */}
-                {/* Confirm button for requested + unconfirmed bookings */}
-                {selectedBooking.ownership === "requested" && selectedBooking.confirmationStatus === "unconfirmed" && (
-                  <button
-                    onClick={() => setShowConfirmStatusModal(true)}
-                    className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Confirm Booking
-                  </button>
-                )}
-                {isOwner && (
-                  <button
-                    onClick={handleBookThisTrip}
-                    className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
-                  >
-                    <BookOpen className="w-4 h-4" />
-                    Book This Trip
-                  </button>
-                )}
-                {/* Only show Edit Booking button if NOT a requested booking OR if requested but no confirmation status */}
-                {!(selectedBooking.ownership === "requested" && (selectedBooking.confirmationStatus === "unconfirmed" || selectedBooking.confirmationStatus === "confirmed")) && (
-                  <button
-                    onClick={handleEditBooking}
-                    className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Edit Booking
-                  </button>
-                )}
-                {isOwner && (
-                  <button
-                    onClick={handleDeleteBooking}
-                    className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Booking
-                  </button>
-                )}
-              </>
-            )
-          }
+      {/* Action Buttons */}
+      {/* Confirm button for requested + unconfirmed bookings */}
+      {selectedBooking.ownership === "requested" && selectedBooking.confirmationStatus === "unconfirmed" && (
+        <button
+          onClick={() => setShowConfirmStatusModal(true)}
+          className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20"
+        >
+          <CheckCircle className="w-4 h-4" />
+          Confirm Booking
+        </button>
+      )}
+      {isOwner && (
+        <button
+          onClick={handleBookThisTrip}
+          className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
+        >
+          <BookOpen className="w-4 h-4" />
+          Book This Trip
+        </button>
+      )}
+      {/* Only show Edit Booking button if NOT a requested booking OR if requested but no confirmation status */}
+      {!(selectedBooking.ownership === "requested" && (selectedBooking.confirmationStatus === "unconfirmed" || selectedBooking.confirmationStatus === "confirmed")) && (
+        <button
+          onClick={handleEditBooking}
+          className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
+        >
+          <Edit className="w-4 h-4" />
+          Edit Booking
+        </button>
+      )}
+      {isOwner && (
+        <button
+          onClick={handleDeleteBooking}
+          className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete Booking
+        </button>
+      )}
+    </>
+  )
+}
         />
 
         {/* Book This Trip Confirmation Modal */}
@@ -1658,12 +1775,15 @@ export function UserTravels() {
           content={
             <div className="text-card-foreground">
               <p className="mb-3">
-                Are you sure you want to submit this travel plan as a booking request?
+                Are you sure you want to submit this travel plan as a booking
+                request?
               </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Destination:</span>
-                  <span className="font-medium">{selectedBooking.destination}</span>
+                  <span className="font-medium">
+                    {selectedBooking.destination}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Dates:</span>
@@ -1700,25 +1820,32 @@ export function UserTravels() {
           content={
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Customer:</span>
+                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                  Customer:
+                </span>
                 <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
                   {selectedBooking.owner}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Booking Type:</span>
+                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                  Booking Type:
+                </span>
                 <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
                   {selectedBooking.bookingType}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Destination:</span>
+                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                  Destination:
+                </span>
                 <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
                   {selectedBooking.destination}
                 </span>
               </div>
               <p className="text-xs text-[#64748B] dark:text-[#94A3B8] pt-2">
-                This will permanently remove the customized booking from your list.
+                This will permanently remove the customized booking from your
+                list.
               </p>
             </div>
           }
@@ -1743,19 +1870,25 @@ export function UserTravels() {
           content={
             <div className="space-y-3 mt-4 mb-2">
               <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Booking ID:</span>
+                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                  Booking ID:
+                </span>
                 <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
                   {selectedBooking.id}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Destination:</span>
+                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                  Destination:
+                </span>
                 <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
                   {selectedBooking.destination}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">Travel Dates:</span>
+                <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                  Travel Dates:
+                </span>
                 <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
                   {selectedBooking.dates}
                 </span>
@@ -1810,7 +1943,13 @@ export function UserTravels() {
 
       {/* Travels List with Filter Buttons */}
       <ContentCard
-        title={`${selectedTab === "in-progress" ? "In Progress" : selectedTab === "pending" ? "Pending" : "Rejected Bookings"} ${filteredTravels.length > 0 ? `(${filteredTravels.length})` : ''}`}
+        title={`${
+          selectedTab === "in-progress"
+            ? "In Progress"
+            : selectedTab === "pending"
+            ? "Pending"
+            : "Rejected Bookings"
+        } ${filteredTravels.length > 0 ? `(${filteredTravels.length})` : ""}`}
         icon={MapPin}
         action={
           <div className="flex gap-2 items-center">
@@ -1818,10 +1957,7 @@ export function UserTravels() {
               onClick={handleBookFromStandard}
               className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg text-sm bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white"
             >
-              <BookOpen
-                className="w-4 h-4 sm:w-5 sm:h-5"
-                strokeWidth={2}
-              />
+              <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
               <span className="hidden sm:inline">
                 Book from Standard Itinerary
               </span>
@@ -1836,13 +1972,8 @@ export function UserTravels() {
                 color: "white",
               }}
             >
-              <Plus
-                className="w-4 h-4 sm:w-5 sm:h-5"
-                strokeWidth={2}
-              />
-              <span className="hidden sm:inline">
-                Add Travel
-              </span>
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
+              <span className="hidden sm:inline">Add Travel</span>
               <span className="sm:hidden">Add</span>
             </button>
           </div>
@@ -1941,7 +2072,12 @@ export function UserTravels() {
           {/* Dropdown for Requested filter */}
           {selectedFilter === "requested" && (
             <div className="pt-3 pb-2">
-              <Select value={requestedSubTab} onValueChange={(value: "all" | "confirmed" | "unconfirmed") => setRequestedSubTab(value)}>
+              <Select
+                value={requestedSubTab}
+                onValueChange={(value: "all" | "confirmed" | "unconfirmed") =>
+                  setRequestedSubTab(value)
+                }
+              >
                 <SelectTrigger className="w-[180px] h-10 border-2 border-border bg-card text-card-foreground">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -1961,10 +2097,7 @@ export function UserTravels() {
                 <MapPin className="w-10 h-10 text-primary opacity-50" />
               </div>
               <h3 className="text-lg text-card-foreground mb-2">
-                No{" "}
-                {selectedTab === "in-progress"
-                  ? "in progress"
-                  : selectedTab}{" "}
+                No {selectedTab === "in-progress" ? "in progress" : selectedTab}{" "}
                 travel plans
               </h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
@@ -1990,16 +2123,21 @@ export function UserTravels() {
           ) : (
             <div className="space-y-4">
               {filteredTravels.map((travel) => {
-                const currentResolutionStatus = travelResolutionStatus[travel.id] || travel.resolutionStatus;
+                const currentResolutionStatus =
+                  travelResolutionStatus[travel.id] || travel.resolutionStatus;
                 return (
-                  <div 
+                  <div
                     key={travel.id}
-                    ref={(el) => bookingRefs.current[travel.id] = el}
+                    ref={(el) => (bookingRefs.current[travel.id] = el)}
                   >
                     <BookingListCard
                       booking={{
                         id: travel.id,
-                        customer: travel.owner + (travel.collaborators.length > 0 ? `, ${travel.collaborators.join(", ")}` : ""),
+                        customer:
+                          travel.owner +
+                          (travel.collaborators.length > 0
+                            ? `, ${travel.collaborators.join(", ")}`
+                            : ""),
                         email: "",
                         mobile: "",
                         destination: travel.destination,
@@ -2010,8 +2148,14 @@ export function UserTravels() {
                         resolutionStatus: currentResolutionStatus,
                       }}
                       onViewDetails={handleViewDetails}
-                      onShare={selectedTab === "in-progress" ? handleShareBooking : undefined}
-                      variant={travel.status === "rejected" ? "rejected" : "default"}
+                      onShare={
+                        selectedTab === "in-progress"
+                          ? handleShareBooking
+                          : undefined
+                      }
+                      variant={
+                        travel.status === "rejected" ? "rejected" : "default"
+                      }
                       userSide={true}
                       additionalBadges={
                         <>
@@ -2032,17 +2176,20 @@ export function UserTravels() {
                               : "Requested"}
                           </span>
                           {/* Confirmation Status Badge for Requested Bookings */}
-                          {travel.ownership === "requested" && travel.confirmationStatus && (
-                            <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                                travel.confirmationStatus === "confirmed"
-                                  ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border border-[rgba(10,122,255,0.2)]"
-                                  : "bg-[rgba(255,193,7,0.1)] text-[#FFC107] border border-[rgba(255,193,7,0.2)]"
-                              }`}
-                            >
-                              {travel.confirmationStatus === "confirmed" ? "Confirmed" : "Unconfirmed"}
-                            </span>
-                          )}
+                          {travel.ownership === "requested" &&
+                            travel.confirmationStatus && (
+                              <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                                  travel.confirmationStatus === "confirmed"
+                                    ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border border-[rgba(10,122,255,0.2)]"
+                                    : "bg-[rgba(255,193,7,0.1)] text-[#FFC107] border border-[rgba(255,193,7,0.2)]"
+                                }`}
+                              >
+                                {travel.confirmationStatus === "confirmed"
+                                  ? "Confirmed"
+                                  : "Unconfirmed"}
+                              </span>
+                            )}
                           {/* Resolution Status Badge for Rejected Bookings */}
                           {travel.status === "rejected" && (
                             <span
@@ -2068,7 +2215,8 @@ export function UserTravels() {
                         travel.status === "pending" && (
                           <div className="w-full p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center">
                             <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                              Waiting for admin review. You'll be notified once reviewed.
+                              Waiting for admin review. You'll be notified once
+                              reviewed.
                             </p>
                           </div>
                         )
@@ -2082,77 +2230,145 @@ export function UserTravels() {
         </div>
       </ContentCard>
 
-      {/* Add Travel Modal */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 pb-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                <Plus className="w-5 h-5 text-white" />
-              </div>
-              Add Travel
-            </DialogTitle>
-            <DialogDescription className="pb-4">
-              Choose how you'd like to add your travel plan.
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[calc(90vh-180px)]">
-            <div className="px-8 py-2 space-y-4 pb-6">
-              {/* Start New Travel Option */}
-              <button
-                onClick={handleStartNewTravel}
-                className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white dark:bg-[#1E293B] hover:bg-[rgba(10,122,255,0.02)] dark:hover:bg-[rgba(10,122,255,0.05)] transition-all duration-200 text-left group"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 group-hover:scale-110 transition-transform">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-[#1A2B4F] dark:text-white mb-1 group-hover:text-[#0A7AFF] dark:group-hover:text-[#0A7AFF] transition-colors">Start New Travel</h3>
-                    <p className="text-sm text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
-                      Use our Smart Trip Generator to create a personalized travel itinerary.
-                    </p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border border-[rgba(10,122,255,0.2)]">
-                        Customizable
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border border-[rgba(139,92,246,0.2)]">
-                        Flexible
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Join Existing Travel Option */}
-              <button
-                onClick={handleJoinExisting}
-                className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#8B5CF6] bg-white dark:bg-[#1E293B] hover:bg-[rgba(139,92,246,0.02)] dark:hover:bg-[rgba(139,92,246,0.05)] transition-all duration-200 text-left group"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8B5CF6] to-[#A78BFA] flex items-center justify-center shadow-lg shadow-[#8B5CF6]/20 group-hover:scale-110 transition-transform">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-[#1A2B4F] dark:text-white mb-1 group-hover:text-[#8B5CF6] dark:group-hover:text-[#8B5CF6] transition-colors">Join Existing Travel</h3>
-                    <p className="text-sm text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
-                      Collaborate with others on their travel plans.
-                    </p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border border-[rgba(139,92,246,0.2)]">
-                        Collaborative
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]">
-                        Join Group
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </button>
+{/* Add Travel Modal */}
+<Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+  <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-3 pb-2">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+          <Plus className="w-5 h-5 text-white" />
+        </div>
+        Add Travel
+      </DialogTitle>
+      <DialogDescription className="pb-4">
+        Choose how you'd like to add your travel plan.
+      </DialogDescription>
+    </DialogHeader>
+    <ScrollArea className="max-h-[calc(90vh-180px)]">
+      <div className="px-8 py-2 space-y-4 pb-6">
+        {/* Start New Travel Option */}
+        <button
+          onClick={handleStartNewTravel}
+          className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white dark:bg-[#1E293B] hover:bg-[rgba(10,122,255,0.02)] dark:hover:bg-[rgba(10,122,255,0.05)] transition-all duration-200 text-left group"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 group-hover:scale-110 transition-transform">
+              <Sparkles className="w-6 h-6 text-white" />
             </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+            <div className="flex-1">
+              <h3 className="font-semibold text-[#1A2B4F] dark:text-white mb-1 group-hover:text-[#0A7AFF] dark:group-hover:text-[#0A7AFF] transition-colors">
+                Start New Travel
+              </h3>
+              <p className="text-sm text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
+                Use our Smart Trip Generator to create a personalized travel itinerary.
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border border-[rgba(10,122,255,0.2)]">
+                  Customizable
+                </span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border border-[rgba(139,92,246,0.2)]">
+                  Flexible
+                </span>
+              </div>
+            </div>
+          </div>
+        </button>
+
+        {/* Join Existing Travel Option */}
+        <button
+          onClick={handleJoinExisting}
+          className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#8B5CF6] bg-white dark:bg-[#1E293B] hover:bg-[rgba(139,92,246,0.02)] dark:hover:bg-[rgba(139,92,246,0.05)] transition-all duration-200 text-left group"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8B5CF6] to-[#A78BFA] flex items-center justify-center shadow-lg shadow-[#8B5CF6]/20 group-hover:scale-110 transition-transform">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-[#1A2B4F] dark:text-white mb-1 group-hover:text-[#8B5CF6] dark:group-hover:text-[#8B5CF6] transition-colors">
+                Join Existing Travel
+              </h3>
+              <p className="text-sm text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
+                Collaborate with others on their travel plans.
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border border-[rgba(139,92,246,0.2)]">
+                  Collaborative
+                </span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]">
+                  Join Group
+                </span>
+              </div>
+            </div>
+          </div>
+        </button>
+
+        {/* Request Custom Itinerary Section */}
+        <div className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-gradient-to-br from-[#0A7AFF]/10 via-[#14B8A6]/8 to-[#0A7AFF]/15 dark:from-[#2596be]/15 dark:via-[#25bce0]/12 dark:to-[#2596be]/20 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+          {/* Decorative Background Elements */}
+          <div className="absolute inset-0 rounded-2xl overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#0A7AFF]/20 to-[#14B8A6]/15 dark:from-[#2596be]/25 dark:to-[#25bce0]/20 rounded-full blur-2xl -translate-y-24 translate-x-24" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-[#14B8A6]/15 to-[#0A7AFF]/20 dark:from-[#25bce0]/20 dark:to-[#2596be]/25 rounded-full blur-2xl translate-y-16 -translate-x-16" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-gray-900/30 mix-blend-overlay" />
+          </div>
+
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/40 ring-2 ring-white/20 dark:ring-white/10">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[#1A2B4F] dark:text-white">
+                  Need a Custom Itinerary?
+                </h3>
+                <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                  4B's Travel and Tours has got your back!
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <p className="text-[#334155] dark:text-[#E5E7EB] text-sm">
+                If you want a <span className="font-semibold text-[#0A7AFF] dark:text-[#2596be]">customized itinerary</span> but don't want to do it yourself, 4B's Travel and Tours offers personalized "Requested Itinerary" services.
+              </p>
+              
+              {/* Contact Button */}
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  navigate('/user/home', { 
+                    state: { scrollToContact: true } 
+                  });
+                  toast.success("Redirecting to Contact Section", {
+                    description: "You'll be redirected to the Contact 4B's Travel and Tours section."
+                  });
+                }}
+                className="w-full group relative px-2 py-2.5 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl overflow-hidden shadow-lg"
+                style={{
+                  background: 'linear-gradient(135deg, var(--gradient-from), var(--gradient-to))',
+                  boxShadow: '0 8px 25px rgba(10, 122, 255, 0.25), 0 4px 10px rgba(10, 122, 255, 0.2)'
+                }}
+              >
+                {/* Hover effect background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                
+                <div className="relative flex items-center justify-center gap-2">
+                  <Send className="w-4 h-4 text-white" />
+                  <span className="text-white font-semibold text-sm">
+                    Contact 4B's Travel and Tours
+                  </span>
+                </div>
+              </button>
+              
+              <p className="text-xs text-[#64748B] dark:text-[#94A3B8] text-center">
+                You'll be redirected to the Contact section on the homepage
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ScrollArea>
+  </DialogContent>
+</Dialog>
 
       {/* Join Travel Modal */}
       <ConfirmationModal
@@ -2243,7 +2459,8 @@ export function UserTravels() {
                 />
                 <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg mt-3">
                   <p className="text-xs text-blue-600 dark:text-blue-400">
-                    💡 Tip: Ask the travel owner for their booking ID to join their travel plan as a collaborator.
+                    💡 Tip: Ask the travel owner for their booking ID to join
+                    their travel plan as a collaborator.
                   </p>
                 </div>
               </div>
@@ -2275,7 +2492,9 @@ export function UserTravels() {
                     <div className="w-full h-full flex items-center justify-center">
                       <div className="text-center">
                         <QrCode className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-sm text-muted-foreground">Camera will activate</p>
+                        <p className="text-sm text-muted-foreground">
+                          Camera will activate
+                        </p>
                       </div>
                     </div>
                   )}
@@ -2305,8 +2524,12 @@ export function UserTravels() {
                   className="w-full px-4 py-8 border-2 border-dashed border-border hover:border-primary rounded-xl bg-muted/50 hover:bg-muted transition-all"
                 >
                   <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-card-foreground font-medium">Click to upload QR code image</p>
-                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    Click to upload QR code image
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    PNG, JPG up to 10MB
+                  </p>
                 </button>
                 {scannedQRData && (
                   <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg mt-3">
@@ -2354,14 +2577,17 @@ export function UserTravels() {
               </div>
               <div className="flex items-center gap-2 mt-4">
                 <p className="text-sm text-muted-foreground">
-                  Booking ID: <span className="font-semibold text-card-foreground">{shareQRBookingId}</span>
+                  Booking ID:{" "}
+                  <span className="font-semibold text-card-foreground">
+                    {shareQRBookingId}
+                  </span>
                 </p>
                 <button
                   onClick={() => {
                     if (shareQRBookingId) {
                       navigator.clipboard.writeText(shareQRBookingId);
                       toast.success("Copied to clipboard!", {
-                        description: `Booking ID ${shareQRBookingId} copied`
+                        description: `Booking ID ${shareQRBookingId} copied`,
                       });
                     }
                   }}
@@ -2375,10 +2601,15 @@ export function UserTravels() {
 
             {/* Instructions */}
             <div className="p-5 bg-blue-500/10 border border-blue-500/20 rounded-xl mx-6">
-              <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">How to use:</h4>
+              <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">
+                How to use:
+              </h4>
               <ol className="text-xs text-blue-600 dark:text-blue-400 space-y-1 list-decimal list-inside">
                 <li>Download the QR code or let others scan it directly</li>
-                <li>Others can scan or upload this QR code in "Join Existing Travel"</li>
+                <li>
+                  Others can scan or upload this QR code in "Join Existing
+                  Travel"
+                </li>
                 <li>They will be added as collaborators to this booking</li>
               </ol>
             </div>

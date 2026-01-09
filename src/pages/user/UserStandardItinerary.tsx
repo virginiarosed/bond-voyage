@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { BookOpen, Eye, Search, ArrowLeft, MapPin, Calendar, DollarSign, Users, Plane, Hotel, Camera, UtensilsCrossed, Car, Package, Send, ChevronLeft } from "lucide-react";
+import { BookOpen, Eye, Search, ArrowLeft, MapPin, Calendar, DollarSign, Users, Plane, Hotel, Camera, UtensilsCrossed, Car, Package, Send, ChevronLeft, Sparkles, ArrowRight } from "lucide-react";
 import { ContentCard } from "../../components/ContentCard";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { SearchFilterToolbar, SortOrder } from "../../components/SearchFilterToolbar";
@@ -858,6 +858,96 @@ export function UserStandardItinerary() {
   </div>
 )}
       </ContentCard>
+
+      {/* Notice Section: Custom Itinerary Request */}
+      <div className="mt-8">
+        <div className="relative rounded-2xl overflow-hidden border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-gradient-to-br from-[#0A7AFF]/10 via-[#14B8A6]/8 to-[#0A7AFF]/15 dark:from-[#2596be]/15 dark:via-[#25bce0]/12 dark:to-[#2596be]/20 shadow-xl hover:shadow-2xl transition-all duration-300 backdrop-blur-sm">
+          {/* Enhanced Decorative Background Elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#0A7AFF]/20 to-[#14B8A6]/15 dark:from-[#2596be]/25 dark:to-[#25bce0]/20 rounded-full blur-3xl -translate-y-32 translate-x-32" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#14B8A6]/15 to-[#0A7AFF]/20 dark:from-[#25bce0]/20 dark:to-[#2596be]/25 rounded-full blur-3xl translate-y-24 -translate-x-24" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-gray-900/30 mix-blend-overlay" />
+          
+          <div className="relative p-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/40 ring-2 ring-white/20 dark:ring-white/10">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-[#1A2B4F] dark:text-white">
+                  Need a Custom Itinerary?
+                </h3>
+                <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                  4B's Travel and Tours has got your back!
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <p className="text-[#334155] dark:text-[#E5E7EB]">
+                If you want a <span className="font-semibold text-[#0A7AFF] dark:text-[#2596be]">customized itinerary</span> but don't want to do it yourself, 4B's Travel and Tours offers personalized "Requested Itinerary" services.
+              </p>
+              
+              {/* How It Works Section */}
+              <div className="pt-4">
+                <h4 className="font-semibold text-[#1A2B4F] dark:text-white mb-4">How It Works</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Step 1 */}
+                  <div className="flex flex-col items-center text-center p-4 rounded-xl bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-800/60 dark:to-gray-900/60 border border-white/30 dark:border-gray-700/50 backdrop-blur-sm shadow-lg">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center text-white font-bold mb-3 shadow-lg">
+                      1
+                    </div>
+                    <h5 className="font-medium text-[#1A2B4F] dark:text-white mb-2">Contact us</h5>
+                  </div>
+                  
+                  {/* Step 2 */}
+                  <div className="flex flex-col items-center text-center p-4 rounded-xl bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-800/60 dark:to-gray-900/60 border border-white/30 dark:border-gray-700/50 backdrop-blur-sm shadow-lg">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center text-white font-bold mb-3 shadow-lg">
+                      2
+                    </div>
+                    <h5 className="font-medium text-[#1A2B4F] dark:text-white mb-2">Share your preferences and requirements</h5>
+                  </div>
+                  
+                  {/* Step 3 */}
+                  <div className="flex flex-col items-center text-center p-4 rounded-xl bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-800/60 dark:to-gray-900/60 border border-white/30 dark:border-gray-700/50 backdrop-blur-sm shadow-lg">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center text-white font-bold mb-3 shadow-lg">
+                      3
+                    </div>
+                    <h5 className="font-medium text-[#1A2B4F] dark:text-white mb-2">Receive your requested travel plan</h5>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Contact Button Below How It Works */}
+              <div className="flex justify-center pt-6">
+                <button
+                  onClick={() => navigate('/user/home', { state: { scrollToContact: true } })}
+                  className="group relative px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl overflow-hidden shadow-lg"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--gradient-from), var(--gradient-to))',
+                    boxShadow: '0 10px 30px rgba(10, 122, 255, 0.3), 0 4px 10px rgba(10, 122, 255, 0.2)'
+                  }}
+                >
+                  {/* Hover effect background */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                  
+                  <div className="relative flex items-center gap-3">
+                    <Send className="w-5 h-5 text-white" />
+                    <div className="text-left">
+                      <span className="block text-white font-semibold text-base">
+                        Contact 4B's Travel and Tours
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              
+              <p className="text-xs text-[#64748B] dark:text-[#94A3B8] text-center mt-2">
+                You'll be redirected to the Contact section on the homepage
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

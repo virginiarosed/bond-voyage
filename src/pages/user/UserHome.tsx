@@ -62,11 +62,17 @@ import { toast } from "sonner@2.0.3";
 import { motion, AnimatePresence } from "motion/react";
 import { useProfile } from "../../components/ProfileContext";
 import { useBookings } from "../../components/BookingContext";
-import EmojiPicker, { EmojiClickData, EmojiStyle, Theme } from 'emoji-picker-react';
+import EmojiPicker, {
+  EmojiClickData,
+  EmojiStyle,
+  Theme,
+} from "emoji-picker-react";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { useLocation } from "react-router-dom"; // Add this import at the top
 
 export function UserHome() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userProfileData } = useProfile();
   const { userTravels } = useBookings();
   const [selectedLocation, setSelectedLocation] = useState("Manila");
@@ -85,9 +91,11 @@ export function UserHome() {
   const [showFilePreview, setShowFilePreview] = useState(false);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [previewFileUrl, setPreviewFileUrl] = useState<string>("");
-  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("left");
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">(
+    "left"
+  );
   const [showTextAlignIndicator, setShowTextAlignIndicator] = useState(false);
-  
+
   const messageRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -396,6 +404,49 @@ export function UserHome() {
     ],
   ];
 
+// Add this useEffect to handle scrolling to Contact section
+useEffect(() => {
+  if (location.state?.scrollToContact) {
+    // Wait for the component to render, then scroll to Contact section
+    setTimeout(() => {
+      const contactSection = document.getElementById('contact-4bs-section');
+      if (contactSection) {
+        contactSection.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+        
+        // Add highlight effect
+        contactSection.style.animation = 'highlight-contact 2s ease-in-out';
+        
+        // Define the animation
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes highlight-contact {
+            0%, 100% {
+              box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            }
+            50% {
+              box-shadow: 0 0 0 3px rgba(10,122,255,0.3), 0 4px 6px rgba(10,122,255,0.1);
+              transform: scale(1.005);
+            }
+          }
+        `;
+        document.head.appendChild(style);
+        
+        // Remove animation after it completes
+        setTimeout(() => {
+          contactSection.style.animation = '';
+          style.remove();
+        }, 2000);
+      }
+      
+      // Clear the location state
+      navigate(location.pathname, { replace: true, state: {} });
+    }, 300);
+  }
+}, [location.state, navigate, location.pathname]);
+
   // Auto-rotate tips every 20 seconds (giving users time to read)
   useEffect(() => {
     const interval = setInterval(() => {
@@ -408,17 +459,20 @@ export function UserHome() {
   // Close emoji picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
         setShowEmojiPicker(false);
       }
     };
 
     if (showEmojiPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showEmojiPicker]);
 
@@ -426,15 +480,15 @@ export function UserHome() {
   useEffect(() => {
     const applyLinkStyles = () => {
       if (messageRef.current) {
-        const links = messageRef.current.querySelectorAll('a');
-        links.forEach(link => {
-          link.style.color = '#3b82f6';
-          link.style.textDecoration = 'underline';
-          link.style.textDecorationStyle = 'dashed';
-          link.style.textUnderlineOffset = '2px';
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          link.classList.add('link-element');
+        const links = messageRef.current.querySelectorAll("a");
+        links.forEach((link) => {
+          link.style.color = "#3b82f6";
+          link.style.textDecoration = "underline";
+          link.style.textDecorationStyle = "dashed";
+          link.style.textUnderlineOffset = "2px";
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.classList.add("link-element");
         });
       }
     };
@@ -446,7 +500,7 @@ export function UserHome() {
         childList: true,
         subtree: true,
         attributes: true,
-        characterData: true
+        characterData: true,
       });
     }
 
@@ -505,38 +559,38 @@ export function UserHome() {
   // Update all formatting indicator states
   const updateFormattingIndicators = () => {
     if (document.queryCommandState) {
-      setIsBold(document.queryCommandState('bold'));
-      setIsItalic(document.queryCommandState('italic'));
-      setIsUnderline(document.queryCommandState('underline'));
-      
+      setIsBold(document.queryCommandState("bold"));
+      setIsItalic(document.queryCommandState("italic"));
+      setIsUnderline(document.queryCommandState("underline"));
+
       // Check if cursor is inside a list
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
         let node = range.commonAncestorContainer;
-        
+
         // Go up through parent nodes to find list elements
         while (node && node.nodeType !== Node.ELEMENT_NODE) {
           node = node.parentNode;
         }
-        
+
         if (node) {
           let currentNode = node as Element;
           let isInUL = false;
           let isInOL = false;
-          
+
           while (currentNode && currentNode !== document.body) {
-            if (currentNode.tagName === 'UL') {
+            if (currentNode.tagName === "UL") {
               isInUL = true;
               break;
             }
-            if (currentNode.tagName === 'OL') {
+            if (currentNode.tagName === "OL") {
               isInOL = true;
               break;
             }
             currentNode = currentNode.parentElement as Element;
           }
-          
+
           setIsBulletList(isInUL);
           setIsNumberedList(isInOL);
         } else {
@@ -547,10 +601,10 @@ export function UserHome() {
         setIsBulletList(false);
         setIsNumberedList(false);
       }
-      
+
       // Update text alignment
       if (messageRef.current) {
-        const textAlignStyle = messageRef.current.style.textAlign || 'left';
+        const textAlignStyle = messageRef.current.style.textAlign || "left";
         if (textAlignStyle !== textAlign) {
           setTextAlign(textAlignStyle as "left" | "center" | "right");
         }
@@ -563,13 +617,13 @@ export function UserHome() {
     if (messageRef.current) {
       // Focus the editor
       messageRef.current.focus();
-      
+
       // Execute command
       document.execCommand(command, false, value);
-      
+
       // Update indicators
       updateFormattingIndicators();
-      
+
       // Update content
       if (messageRef.current.innerHTML !== contactMessage) {
         setContactMessage(messageRef.current.innerHTML);
@@ -583,11 +637,11 @@ export function UserHome() {
       messageRef.current.focus();
       setTextAlign(alignment);
       messageRef.current.style.textAlign = alignment;
-      
+
       // Show visual indicator
       setShowTextAlignIndicator(true);
       setTimeout(() => setShowTextAlignIndicator(false), 1000);
-      
+
       // Update formatting indicators
       updateFormattingIndicators();
       setContactMessage(messageRef.current.innerHTML);
@@ -595,26 +649,26 @@ export function UserHome() {
   };
 
   // FIXED: Proper list insertion function - now inserts actual bullets/numbers
-  const handleListInsert = (type: 'unordered' | 'ordered') => {
+  const handleListInsert = (type: "unordered" | "ordered") => {
     if (messageRef.current) {
       messageRef.current.focus();
-      
+
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
-        
+
         // Check if we're already in a list
         let node = range.commonAncestorContainer;
         while (node && node.nodeType !== Node.ELEMENT_NODE) {
           node = node.parentNode;
         }
-        
+
         if (node) {
           let currentNode = node as Element;
           while (currentNode && currentNode !== document.body) {
-            if (currentNode.tagName === 'UL' || currentNode.tagName === 'OL') {
+            if (currentNode.tagName === "UL" || currentNode.tagName === "OL") {
               // We're already in a list, toggle it off
-              document.execCommand('outdent');
+              document.execCommand("outdent");
               updateFormattingIndicators();
               setContactMessage(messageRef.current.innerHTML);
               return;
@@ -622,20 +676,25 @@ export function UserHome() {
             currentNode = currentNode.parentElement as Element;
           }
         }
-        
+
         // If text is selected, use the browser's built-in list command
         if (!range.collapsed) {
-          document.execCommand(type === 'unordered' ? 'insertUnorderedList' : 'insertOrderedList');
+          document.execCommand(
+            type === "unordered" ? "insertUnorderedList" : "insertOrderedList"
+          );
         } else {
           // If no text is selected, just execute the command - browser will handle it
-          document.execCommand(type === 'unordered' ? 'insertUnorderedList' : 'insertOrderedList');
+          document.execCommand(
+            type === "unordered" ? "insertUnorderedList" : "insertOrderedList"
+          );
         }
       } else {
         // Fallback for when there's no selection
-        const command = type === 'unordered' ? 'insertUnorderedList' : 'insertOrderedList';
+        const command =
+          type === "unordered" ? "insertUnorderedList" : "insertOrderedList";
         document.execCommand(command, false);
       }
-      
+
       updateFormattingIndicators();
       setContactMessage(messageRef.current.innerHTML);
     }
@@ -643,20 +702,20 @@ export function UserHome() {
 
   // FIXED: Tab indentation function
   const handleTabIndent = (e: React.KeyboardEvent) => {
-    if (e.key === 'Tab') {
+    if (e.key === "Tab") {
       e.preventDefault();
-      
+
       if (messageRef.current) {
         messageRef.current.focus();
-        
+
         if (e.shiftKey) {
           // Shift+Tab for outdent
-          document.execCommand('outdent');
+          document.execCommand("outdent");
         } else {
           // Tab for indent
-          document.execCommand('indent');
+          document.execCommand("indent");
         }
-        
+
         updateFormattingIndicators();
         setContactMessage(messageRef.current.innerHTML);
       }
@@ -666,7 +725,7 @@ export function UserHome() {
   const insertEmoji = (emojiData: EmojiClickData) => {
     if (messageRef.current) {
       messageRef.current.focus();
-      
+
       // Insert emoji at cursor position
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
@@ -682,7 +741,7 @@ export function UserHome() {
         // Fallback: append at end
         messageRef.current.innerHTML += emojiData.emoji;
       }
-      
+
       setContactMessage(messageRef.current.innerHTML);
       updateFormattingIndicators();
     }
@@ -690,53 +749,59 @@ export function UserHome() {
 
   const handleFileAttach = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    
+
     // Validate file types and size
-    const validFiles = files.filter(file => {
+    const validFiles = files.filter((file) => {
       const maxSize = 10 * 1024 * 1024; // 10MB
       const allowedTypes = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'application/pdf', 'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ];
-      
+
       if (file.size > maxSize) {
         toast.error(`File too large: ${file.name}`, {
           description: `Maximum file size is 10MB`,
         });
         return false;
       }
-      
+
       if (!allowedTypes.includes(file.type)) {
         toast.error(`Invalid file type: ${file.name}`, {
           description: `Allowed types: Images, PDF, Word documents`,
         });
         return false;
       }
-      
+
       return true;
     });
-    
+
     if (validFiles.length > 0) {
-      setAttachedFiles(prev => [...prev, ...validFiles]);
+      setAttachedFiles((prev) => [...prev, ...validFiles]);
       toast.success(`${validFiles.length} file(s) attached successfully`, {
-        description: `Total attached files: ${attachedFiles.length + validFiles.length}`,
+        description: `Total attached files: ${
+          attachedFiles.length + validFiles.length
+        }`,
       });
     }
-    
+
     // Reset input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const removeAttachedFile = (index: number) => {
-    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const previewAttachedFile = (file: File) => {
     setPreviewFile(file);
-    
+
     // Create object URL for preview
     const url = URL.createObjectURL(file);
     setPreviewFileUrl(url);
@@ -745,17 +810,17 @@ export function UserHome() {
 
   const downloadFile = () => {
     if (!previewFile) return;
-    
+
     try {
       const url = URL.createObjectURL(previewFile);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = previewFile.name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       toast.success("Download started", {
         description: `Downloading ${previewFile.name}`,
       });
@@ -783,20 +848,24 @@ export function UserHome() {
 
     try {
       // Simulate API call to send email
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // In a real app, this would be an API call to your backend
       const emailData = {
-        to: '4bstravelandtours.bondvoyage@gmail.com',
+        to: "4bstravelandtours2019@gmail.com",
         from: `${userProfile.firstName} ${userProfile.lastName} <${userProfile.email}>`,
         subject: contactSubject,
         message: contactMessage,
-        attachments: attachedFiles.length
+        attachments: attachedFiles.length,
       };
 
       // Show success message
       toast.success("Email sent successfully!", {
-        description: `Your message has been sent to 4B's Travel and Tours. ${attachedFiles.length > 0 ? `(${attachedFiles.length} attachment(s) included)` : ''}`,
+        description: `Your message has been sent to 4B's Travel and Tours. ${
+          attachedFiles.length > 0
+            ? `(${attachedFiles.length} attachment(s) included)`
+            : ""
+        }`,
         duration: 5000,
       });
 
@@ -809,10 +878,10 @@ export function UserHome() {
         messageRef.current.innerHTML = "";
         messageRef.current.style.textAlign = "left";
       }
-      
     } catch (error) {
       toast.error("Failed to send email", {
-        description: "Please try again or contact support if the issue persists",
+        description:
+          "Please try again or contact support if the issue persists",
       });
     } finally {
       setIsSending(false);
@@ -826,7 +895,7 @@ export function UserHome() {
         URL.revokeObjectURL(previewFileUrl);
       }
       // Clean up all file URLs
-      attachedFiles.forEach(file => {
+      attachedFiles.forEach((file) => {
         URL.revokeObjectURL(URL.createObjectURL(file));
       });
     };
@@ -834,9 +903,9 @@ export function UserHome() {
 
   // Get file type icon
   const getFileIcon = (file: File) => {
-    if (file.type.startsWith('image/')) {
+    if (file.type.startsWith("image/")) {
       return <ImageIcon className="h-5 w-5 text-blue-500" />;
-    } else if (file.type === 'application/pdf') {
+    } else if (file.type === "application/pdf") {
       return <FileText className="h-5 w-5 text-red-500" />;
     } else {
       return <File className="h-5 w-5 text-purple-500" />;
@@ -845,9 +914,9 @@ export function UserHome() {
 
   // Get file type name
   const getFileTypeName = (file: File) => {
-    if (file.type.startsWith('image/')) {
+    if (file.type.startsWith("image/")) {
       return "IMAGE";
-    } else if (file.type === 'application/pdf') {
+    } else if (file.type === "application/pdf") {
       return "PDF";
     } else {
       return "DOCUMENT";
@@ -856,9 +925,9 @@ export function UserHome() {
 
   // Get icon for file preview modal
   const getFilePreviewIcon = (file: File) => {
-    if (file.type.startsWith('image/')) {
+    if (file.type.startsWith("image/")) {
       return <ImageIcon className="h-5 w-5 text-white" />;
-    } else if (file.type === 'application/pdf') {
+    } else if (file.type === "application/pdf") {
       return <FileText className="h-5 w-5 text-white" />;
     } else {
       return <File className="h-5 w-5 text-white" />;
@@ -1143,7 +1212,8 @@ export function UserHome() {
                 id: "act-5",
                 text: "Added collaborators to Siargao Surfing Adventure plan",
                 time: "3 weeks ago",
-              },{
+              },
+              {
                 id: "act-5",
                 text: "Added collaborators to Siargao Surfing Adventure plan",
                 time: "3 weeks ago",
@@ -1306,7 +1376,8 @@ export function UserHome() {
       </ContentCard>
 
       {/* Contact 4B's Travel and Tours Section */}
-      <ContentCard title="Contact 4B's Travel and Tours" icon={Mail}>
+<div id="contact-4bs-section">
+  <ContentCard title="Contact 4B's Travel and Tours" icon={Mail}>
         <div className="space-y-6">
           {/* Sender Info */}
           <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
@@ -1326,7 +1397,7 @@ export function UserHome() {
                   4B's Travel and Tours
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  4bstravelandtours.bondvoyage@gmail.com
+                  4bstravelandtours2019@gmail.com
                 </p>
               </div>
             </div>
@@ -1351,28 +1422,40 @@ export function UserHome() {
             <label className="block text-sm font-medium text-card-foreground px-4 pt-4 mb-2">
               Message
             </label>
-            
+
             {/* Enhanced Toolbar with Text Alignment */}
             <div className="flex flex-wrap items-center gap-1 p-3 bg-accent border-b border-border">
               {/* Font Formatting with Indicators */}
               <div className="flex items-center gap-1 border-r border-border pr-2">
                 <button
-                  onClick={() => handleFormat('bold')}
-                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${isBold ? 'bg-primary/20 text-primary border border-primary/30' : 'hover:bg-card border border-transparent'}`}
+                  onClick={() => handleFormat("bold")}
+                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${
+                    isBold
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "hover:bg-card border border-transparent"
+                  }`}
                   title="Bold (Ctrl+B)"
                 >
                   <Bold className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleFormat('italic')}
-                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${isItalic ? 'bg-primary/20 text-primary border border-primary/30' : 'hover:bg-card border border-transparent'}`}
+                  onClick={() => handleFormat("italic")}
+                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${
+                    isItalic
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "hover:bg-card border border-transparent"
+                  }`}
                   title="Italic (Ctrl+I)"
                 >
                   <Italic className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleFormat('underline')}
-                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${isUnderline ? 'bg-primary/20 text-primary border border-primary/30' : 'hover:bg-card border border-transparent'}`}
+                  onClick={() => handleFormat("underline")}
+                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${
+                    isUnderline
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "hover:bg-card border border-transparent"
+                  }`}
                   title="Underline (Ctrl+U)"
                 >
                   <Underline className="w-4 h-4" />
@@ -1382,15 +1465,23 @@ export function UserHome() {
               {/* FIXED: Lists with proper indicators */}
               <div className="flex items-center gap-1 border-r border-border pr-2">
                 <button
-                  onClick={() => handleListInsert('unordered')}
-                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${isBulletList ? 'bg-primary/20 text-primary border border-primary/30' : 'hover:bg-card border border-transparent'}`}
+                  onClick={() => handleListInsert("unordered")}
+                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${
+                    isBulletList
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "hover:bg-card border border-transparent"
+                  }`}
                   title="Bulleted List"
                 >
                   <List className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleListInsert('ordered')}
-                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${isNumberedList ? 'bg-primary/20 text-primary border border-primary/30' : 'hover:bg-card border border-transparent'}`}
+                  onClick={() => handleListInsert("ordered")}
+                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${
+                    isNumberedList
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "hover:bg-card border border-transparent"
+                  }`}
                   title="Numbered List"
                 >
                   <ListOrdered className="w-4 h-4" />
@@ -1401,21 +1492,33 @@ export function UserHome() {
               <div className="flex items-center gap-1 border-r border-border pr-2">
                 <button
                   onClick={() => handleTextAlignment("left")}
-                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${textAlign === "left" ? 'bg-primary/20 text-primary border border-primary/30' : 'hover:bg-card border border-transparent'}`}
+                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${
+                    textAlign === "left"
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "hover:bg-card border border-transparent"
+                  }`}
                   title="Align Left"
                 >
                   <AlignLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleTextAlignment("center")}
-                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${textAlign === "center" ? 'bg-primary/20 text-primary border border-primary/30' : 'hover:bg-card border border-transparent'}`}
+                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${
+                    textAlign === "center"
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "hover:bg-card border border-transparent"
+                  }`}
                   title="Align Center"
                 >
                   <AlignCenter className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleTextAlignment("right")}
-                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${textAlign === "right" ? 'bg-primary/20 text-primary border border-primary/30' : 'hover:bg-card border border-transparent'}`}
+                  className={`w-9 h-9 flex items-center justify-center rounded transition-all ${
+                    textAlign === "right"
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "hover:bg-card border border-transparent"
+                  }`}
                   title="Align Right"
                 >
                   <AlignRight className="w-4 h-4" />
@@ -1425,21 +1528,25 @@ export function UserHome() {
               {/* Enhanced Font Options */}
               <div className="flex items-center gap-2 border-r border-border pr-2">
                 <select
-                  onChange={(e) => handleFormat('fontName', e.target.value)}
+                  onChange={(e) => handleFormat("fontName", e.target.value)}
                   className="px-2 py-1.5 bg-card border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary hover:border-primary/50 transition-colors"
                 >
                   <option value="Arial, sans-serif">Arial</option>
                   <option value="'Segoe UI', sans-serif">Segoe UI</option>
-                  <option value="'Helvetica Neue', sans-serif">Helvetica</option>
+                  <option value="'Helvetica Neue', sans-serif">
+                    Helvetica
+                  </option>
                   <option value="Georgia, serif">Georgia</option>
-                  <option value="'Times New Roman', serif">Times New Roman</option>
+                  <option value="'Times New Roman', serif">
+                    Times New Roman
+                  </option>
                   <option value="'Courier New', monospace">Courier New</option>
                   <option value="'Inter', sans-serif">Inter</option>
                   <option value="'Roboto', sans-serif">Roboto</option>
                   <option value="'Open Sans', sans-serif">Open Sans</option>
                 </select>
                 <select
-                  onChange={(e) => handleFormat('fontSize', e.target.value)}
+                  onChange={(e) => handleFormat("fontSize", e.target.value)}
                   className="px-2 py-1.5 bg-card border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary hover:border-primary/50 transition-colors"
                 >
                   <option value="1">8px</option>
@@ -1456,7 +1563,7 @@ export function UserHome() {
               <div className="flex items-center gap-1 border-r border-border pr-2">
                 <input
                   type="color"
-                  onChange={(e) => handleFormat('foreColor', e.target.value)}
+                  onChange={(e) => handleFormat("foreColor", e.target.value)}
                   className="w-9 h-9 cursor-pointer rounded border border-border hover:border-primary transition-colors"
                   title="Text Color"
                 />
@@ -1467,9 +1574,9 @@ export function UserHome() {
                 <button
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   className={`w-9 h-9 flex items-center justify-center rounded transition-all border ${
-                    showEmojiPicker 
-                      ? 'bg-primary/20 text-primary border-primary/30' 
-                      : 'hover:bg-card border-transparent hover:border-border'
+                    showEmojiPicker
+                      ? "bg-primary/20 text-primary border-primary/30"
+                      : "hover:bg-card border-transparent hover:border-border"
                   }`}
                   title="Insert Emoji"
                 >
@@ -1509,9 +1616,9 @@ export function UserHome() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className={`w-9 h-9 flex items-center justify-center rounded transition-all border ${
-                    attachedFiles.length > 0 
-                      ? 'bg-primary/20 text-primary border-primary/30' 
-                      : 'hover:bg-card border-transparent hover:border-border'
+                    attachedFiles.length > 0
+                      ? "bg-primary/20 text-primary border-primary/30"
+                      : "hover:bg-card border-transparent hover:border-border"
                   }`}
                   title="Attach File"
                 >
@@ -1554,24 +1661,33 @@ export function UserHome() {
               onKeyUp={updateFormattingIndicators}
               onMouseUp={updateFormattingIndicators}
               style={{
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
                 textAlign: textAlign,
               }}
             />
-            
+
             <div className="px-4 py-2 border-t border-border bg-accent/50">
               <div className="text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="flex items-center gap-1">
                     <Check className="w-3 h-3 text-green-500" />
-                    <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-xs">Tab</kbd> to indent
+                    <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-xs">
+                      Tab
+                    </kbd>{" "}
+                    to indent
                   </span>
                   <span className="hidden sm:inline">•</span>
                   <span>Shortcuts:</span>
-                  <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-xs">Ctrl+B</kbd>
-                  <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-xs">Ctrl+I</kbd>
-                  <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-xs">Ctrl+U</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-xs">
+                    Ctrl+B
+                  </kbd>
+                  <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-xs">
+                    Ctrl+I
+                  </kbd>
+                  <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-xs">
+                    Ctrl+U
+                  </kbd>
                 </div>
                 <div className="text-right">
                   {attachedFiles.length} file(s) attached • Click to preview
@@ -1638,7 +1754,8 @@ export function UserHome() {
                     Attached Files ({attachedFiles.length})
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Click on any file to preview • Files will be included with your email
+                    Click on any file to preview • Files will be included with
+                    your email
                   </p>
                 </div>
                 <button
@@ -1656,13 +1773,15 @@ export function UserHome() {
                     className="flex items-center justify-between p-4 bg-card rounded-lg border border-border hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                        file.type.startsWith('image/') 
-                          ? 'bg-blue-500/10 text-blue-500' 
-                          : file.type === 'application/pdf'
-                          ? 'bg-red-500/10 text-red-500'
-                          : 'bg-purple-500/10 text-purple-500'
-                      }`}>
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                          file.type.startsWith("image/")
+                            ? "bg-blue-500/10 text-blue-500"
+                            : file.type === "application/pdf"
+                            ? "bg-red-500/10 text-red-500"
+                            : "bg-purple-500/10 text-purple-500"
+                        }`}
+                      >
                         {getFileIcon(file)}
                       </div>
                       <div className="min-w-0">
@@ -1670,7 +1789,8 @@ export function UserHome() {
                           {file.name}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {(file.size / 1024).toFixed(1)}KB • {getFileTypeName(file)}
+                          {(file.size / 1024).toFixed(1)}KB •{" "}
+                          {getFileTypeName(file)}
                         </p>
                       </div>
                     </div>
@@ -1727,11 +1847,19 @@ export function UserHome() {
               </button>
               <button
                 onClick={handleSendEmail}
-                disabled={isSending || (!contactSubject.trim() && !contactMessage.trim() && attachedFiles.length === 0)}
+                disabled={
+                  isSending ||
+                  (!contactSubject.trim() &&
+                    !contactMessage.trim() &&
+                    attachedFiles.length === 0)
+                }
                 className={`px-6 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2 min-w-[140px] justify-center ${
-                  isSending || (!contactSubject.trim() && !contactMessage.trim() && attachedFiles.length === 0)
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:scale-105 active:scale-95'
+                  isSending ||
+                  (!contactSubject.trim() &&
+                    !contactMessage.trim() &&
+                    attachedFiles.length === 0)
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:scale-105 active:scale-95"
                 }`}
                 style={{
                   background:
@@ -1757,9 +1885,10 @@ export function UserHome() {
           {/* Help Text */}
           <div className="p-4 rounded-lg bg-gradient-to-r from-blue-500/5 to-primary/5 border border-primary/20">
             <p className="text-sm text-muted-foreground">
-              <strong>💡 Pro Tip:</strong> For urgent inquiries, mention "URGENT" in the subject line. 
-              Attach travel documents, photos, or itineraries if needed. 
-              Your email will be sent directly to 4B's Travel and Tours support team.
+              <strong>💡 Pro Tip:</strong> For urgent inquiries, mention
+              "URGENT" in the subject line. Attach travel documents, photos, or
+              itineraries if needed. Your email will be sent directly to 4B's
+              Travel and Tours support team.
             </p>
           </div>
         </div>
@@ -1769,18 +1898,24 @@ export function UserHome() {
           open={showFilePreview}
           onOpenChange={setShowFilePreview}
           title="File Preview"
-          icon={previewFile ? getFilePreviewIcon(previewFile) : <Eye className="h-5 w-5 text-white" />}
+          icon={
+            previewFile ? (
+              getFilePreviewIcon(previewFile)
+            ) : (
+              <Eye className="h-5 w-5 text-white" />
+            )
+          }
           iconGradient={
-            previewFile?.type.startsWith('image/') 
+            previewFile?.type.startsWith("image/")
               ? "bg-gradient-to-r from-blue-500 to-cyan-500"
-              : previewFile?.type === 'application/pdf'
+              : previewFile?.type === "application/pdf"
               ? "bg-gradient-to-r from-red-500 to-orange-500"
               : "bg-gradient-to-r from-purple-500 to-pink-500"
           }
           iconShadow={
-            previewFile?.type.startsWith('image/') 
+            previewFile?.type.startsWith("image/")
               ? "shadow-blue-500/30"
-              : previewFile?.type === 'application/pdf'
+              : previewFile?.type === "application/pdf"
               ? "shadow-red-500/30"
               : "shadow-purple-500/30"
           }
@@ -1804,13 +1939,15 @@ export function UserHome() {
             previewFile && (
               <div className="space-y-4">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                    previewFile.type.startsWith('image/') 
-                      ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30' 
-                      : previewFile.type === 'application/pdf'
-                      ? 'bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30'
-                      : 'bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30'
-                  }`}>
+                  <div
+                    className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                      previewFile.type.startsWith("image/")
+                        ? "bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30"
+                        : previewFile.type === "application/pdf"
+                        ? "bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30"
+                        : "bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30"
+                    }`}
+                  >
                     {getFileIcon(previewFile)}
                   </div>
                   <div className="flex-1">
@@ -1818,12 +1955,13 @@ export function UserHome() {
                       {previewFile.name}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {(previewFile.size / 1024).toFixed(1)} KB • {getFileTypeName(previewFile)}
+                      {(previewFile.size / 1024).toFixed(1)} KB •{" "}
+                      {getFileTypeName(previewFile)}
                     </p>
                   </div>
                 </div>
-                
-                {previewFile.type.startsWith('image/') ? (
+
+                {previewFile.type.startsWith("image/") ? (
                   <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                     <img
                       src={previewFileUrl}
@@ -1831,7 +1969,7 @@ export function UserHome() {
                       className="w-full max-h-[400px] object-contain bg-gray-50 dark:bg-gray-800"
                     />
                   </div>
-                ) : previewFile.type === 'application/pdf' ? (
+                ) : previewFile.type === "application/pdf" ? (
                   <div className="h-[50vh]">
                     <iframe
                       src={previewFileUrl}
@@ -1852,13 +1990,14 @@ export function UserHome() {
                     </div>
                   </div>
                 )}
-                
+
                 <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Last modified: {new Date(previewFile.lastModified).toLocaleDateString()}
+                    Last modified:{" "}
+                    {new Date(previewFile.lastModified).toLocaleDateString()}
                   </div>
                   <button
-                    onClick={() => window.open(previewFileUrl, '_blank')}
+                    onClick={() => window.open(previewFileUrl, "_blank")}
                     className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2"
                   >
                     <ExternalLink className="h-3 w-3" />
@@ -1870,6 +2009,7 @@ export function UserHome() {
           }
         />
       </ContentCard>
+    </div>
     </div>
   );
 }
