@@ -435,7 +435,7 @@ export function LoginModal({
               {/* Right Column: Visual Hero */}
               <div className="relative hidden lg:block lg:w-[48%] overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1621217308295-afe2f0b40a69?w=1080&q=80"
+                  src="https://i0.wp.com/handluggageonly.co.uk/wp-content/uploads/2018/12/Hand-Luggage-Only-10-5.jpg?w=1600&ssl=1"
                   alt="Philippine Travel"
                   className="w-full h-full object-cover brightness-75"
                 />
