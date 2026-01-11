@@ -397,8 +397,16 @@ export interface Place {
 }
 
 export interface RouteCalculationRequest {
-  origin: string;
-  destination: string;
+  activities: Array<{
+    id: string;
+    lat: number;
+    lng: number;
+    name?: string;
+    location?: string;
+    time?: string | null;
+  }>;
+  origin?: string;
+  destination?: string;
   mode?: "drive" | "walk" | "bike" | "transit";
 }
 
