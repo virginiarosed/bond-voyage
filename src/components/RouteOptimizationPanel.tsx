@@ -97,6 +97,7 @@ export function RouteOptimizationPanel({
 
   const optimizationTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const pendingOptimizationsRef = useRef<Set<string>>(new Set());
+  const processedDaysRef = useRef<Map<string, string>>(new Map());
 
   const { mutate: optimizeRoute } = useOptimizeRoute();
   const { mutate: calculateRoute } = useCalculateRoute();
@@ -168,10 +169,7 @@ export function RouteOptimizationPanel({
         typeof a.locationData.lng === "number"
     );
 
-    console.log("📍 Meaningful activities:", meaningfulActivities.length);
-
     if (meaningfulActivities.length < 4) {
-      console.log("❌ Not enough meaningful activities");
       return null;
     }
 
@@ -208,12 +206,10 @@ export function RouteOptimizationPanel({
     }
 
     if (formattedActivities.length < 4) {
-      console.log("❌ Not enough formatted activities");
       return null;
     }
 
     if (!firstCoords || !lastCoords) {
-      console.log("❌ Missing first or last coords");
       return null;
     }
 
@@ -226,105 +222,14 @@ export function RouteOptimizationPanel({
       destination: destinationString,
     };
 
-    console.log("✅ Optimization data prepared:", result);
     return result;
   }, []);
-
-  const calculateOriginalRouteDistance = useCallback(
-    (activities: Activity[], dayId: string) => {
-      const activitiesWithValidLocations = activities.filter(
-        (a) =>
-          isMeaningfulLocation(a.location) &&
-          a.locationData &&
-          typeof a.locationData.lat === "number" &&
-          typeof a.locationData.lng === "number"
-      );
-
-      if (activitiesWithValidLocations.length < 2) {
-        console.log("⚠️ Not enough activities for route calculation");
-        return;
-      }
-
-      const formattedActivities = activitiesWithValidLocations.map(
-        (activity, i) => ({
-          id: activity.id || `activity-${Date.now()}-${i}`,
-          lat: activity.locationData!.lat,
-          lng: activity.locationData!.lng,
-          name: activity.title || "Untitled Activity",
-          location: activity.location,
-          time: activity.time || "",
-        })
-      );
-
-      const firstActivity = activitiesWithValidLocations[0];
-      const lastActivity =
-        activitiesWithValidLocations[activitiesWithValidLocations.length - 1];
-
-      const origin = `${firstActivity.locationData!.lat},${
-        firstActivity.locationData!.lng
-      }`;
-      const destination = `${lastActivity.locationData!.lat},${
-        lastActivity.locationData!.lng
-      }`;
-
-      console.log("📍 Calculating original route distance:", {
-        activities: formattedActivities,
-        origin,
-        destination,
-      });
-
-      calculateRoute(
-        {
-          activities: formattedActivities,
-          origin,
-          destination,
-          mode: "drive",
-        },
-        {
-          onSuccess: (response) => {
-            console.log("✅ Original route calculated:", response);
-
-            // Backend returns distance in meters, convert to km
-            const distance = response.data?.totalDistance
-              ? response.data.totalDistance / 1000
-              : 0;
-            // Backend returns duration in seconds, convert to minutes
-            const duration = response.data?.totalTime
-              ? Math.round(response.data.totalTime / 60)
-              : 0;
-
-            setDayAnalyses((prev) => {
-              const updated = new Map(prev);
-              const current = updated.get(dayId);
-              if (current) {
-                updated.set(dayId, {
-                  ...current,
-                  routeAnalysis: {
-                    ...current.routeAnalysis,
-                    originalDistance: distance,
-                    totalTime: duration,
-                  },
-                });
-              }
-              return updated;
-            });
-          },
-          onError: (error) => {
-            console.error("❌ Failed to calculate original route:", error);
-          },
-        }
-      );
-    },
-    [calculateRoute]
-  );
 
   const processOptimizationResponse = useCallback(
     (
       response: any,
       originalActivities: Activity[]
     ): { optimizedActivities: Activity[]; routeData?: any } => {
-      console.log("📦 Processing optimization response:", response);
-
       if (
         response?.data?.activities &&
         Array.isArray(response.data.activities)
@@ -381,18 +286,206 @@ export function RouteOptimizationPanel({
     []
   );
 
+  const proceedWithOptimization = useCallback(
+    (
+      dayId: string,
+      originalActivities: Activity[],
+      calculatedRouteData: any,
+      activityFingerprint: string
+    ) => {
+      const optimizationData = calculatedRouteData
+        ? {
+            activities: calculatedRouteData.activities,
+            origin: `${calculatedRouteData.activities[0].lat},${calculatedRouteData.activities[0].lng}`,
+            destination: `${
+              calculatedRouteData.activities[
+                calculatedRouteData.activities.length - 1
+              ].lat
+            },${
+              calculatedRouteData.activities[
+                calculatedRouteData.activities.length - 1
+              ].lng
+            }`,
+          }
+        : prepareRouteOptimizationData(originalActivities);
+
+      if (!optimizationData) {
+        return;
+      }
+
+      const isValid = validateOptimizationData(optimizationData);
+
+      if (!isValid) {
+        return;
+      }
+
+      setDayAnalyses((prev) => {
+        const updated = new Map(prev);
+        const current = updated.get(dayId);
+        if (current) {
+          updated.set(dayId, {
+            ...current,
+            isLoading: true,
+          });
+        }
+        return updated;
+      });
+
+      optimizeRoute(optimizationData, {
+        onSuccess: (response) => {
+          const { optimizedActivities, routeData } =
+            processOptimizationResponse(response, originalActivities);
+
+          const optimizedDistance = routeData?.totalDistance || 0;
+          const optimizedTime = routeData?.totalTime
+            ? Math.round(routeData.totalTime / 60)
+            : 0;
+
+          setDayAnalyses((prev) => {
+            const updated = new Map(prev);
+            const current = updated.get(dayId);
+            if (current) {
+              const originalTime = current.routeAnalysis.totalTime || 0;
+              const timeSaved = originalTime - optimizedTime;
+
+              updated.set(dayId, {
+                ...current,
+                optimizedActivities,
+                routeAnalysis: {
+                  ...current.routeAnalysis,
+                  optimizedDistance,
+                  timeSaved,
+                  routeGeometry: routeData?.geometry,
+                  totalTime: optimizedTime,
+                },
+                isLoading: false,
+              });
+            }
+            return updated;
+          });
+
+          processedDaysRef.current.set(dayId, activityFingerprint);
+          pendingOptimizationsRef.current.delete(dayId);
+        },
+        onError: (error: any) => {},
+      });
+    },
+    [
+      optimizeRoute,
+      prepareRouteOptimizationData,
+      validateOptimizationData,
+      processOptimizationResponse,
+    ]
+  );
+
+  const calculateOriginalRouteDistance = useCallback(
+    (activities: Activity[], dayId: string, activityFingerprint: string) => {
+      const activitiesWithValidLocations = activities.filter(
+        (a) =>
+          isMeaningfulLocation(a.location) &&
+          a.locationData &&
+          typeof a.locationData.lat === "number" &&
+          typeof a.locationData.lng === "number"
+      );
+
+      const formattedActivities = activitiesWithValidLocations.map(
+        (activity, i) => ({
+          id: activity.id || `activity-${Date.now()}-${i}`,
+          lat: activity.locationData!.lat,
+          lng: activity.locationData!.lng,
+          name: activity.title || "Untitled Activity",
+          location: activity.location,
+          time: activity.time || "",
+        })
+      );
+
+      const firstActivity = activitiesWithValidLocations[0];
+      const lastActivity =
+        activitiesWithValidLocations[activitiesWithValidLocations.length - 1];
+
+      const origin = `${firstActivity.locationData!.lat},${
+        firstActivity.locationData!.lng
+      }`;
+      const destination = `${lastActivity.locationData!.lat},${
+        lastActivity.locationData!.lng
+      }`;
+
+      const routeRequest = {
+        activities: formattedActivities,
+        origin,
+        destination,
+        mode: "drive" as const,
+      };
+
+      calculateRoute(routeRequest, {
+        onSuccess: (response) => {
+          const distance = response.data?.totalDistance
+            ? response.data.totalDistance / 1000
+            : 0;
+          const duration = response.data?.totalTime
+            ? Math.round(response.data.totalTime / 60)
+            : 0;
+
+          setDayAnalyses((prev) => {
+            const updated = new Map(prev);
+            const current = updated.get(dayId);
+            if (current) {
+              updated.set(dayId, {
+                ...current,
+                routeAnalysis: {
+                  ...current.routeAnalysis,
+                  originalDistance: distance,
+                  totalTime: duration,
+                  routeGeometry: response.data?.routeGeometry,
+                },
+              });
+            }
+            return updated;
+          });
+
+          proceedWithOptimization(
+            dayId,
+            activitiesWithValidLocations,
+            response.data,
+            activityFingerprint
+          );
+        },
+        onError: (error) => {
+          toast.error("Route Calculation Failed", {
+            description: "Could not calculate original route distance.",
+          });
+
+          processedDaysRef.current.set(dayId, activityFingerprint);
+          pendingOptimizationsRef.current.delete(dayId);
+        },
+      });
+    },
+    [calculateRoute, proceedWithOptimization]
+  );
+
   const sendOptimizationRequest = useCallback(
     (day: Day, dayId: string) => {
-      console.log("🎯 sendOptimizationRequest called for:", dayId);
+      const activityFingerprint = day.activities
+        .filter(
+          (a) =>
+            isMeaningfulLocation(a.location) &&
+            a.locationData &&
+            typeof a.locationData.lat === "number" &&
+            typeof a.locationData.lng === "number"
+        )
+        .map((a) => `${a.id}-${a.location}-${a.order}`)
+        .join("|");
 
-      if (pendingOptimizationsRef.current.has(dayId)) {
-        console.log("⏸️ Already pending, skipping:", dayId);
+      const lastFingerprint = processedDaysRef.current.get(dayId);
+      if (
+        lastFingerprint === activityFingerprint ||
+        pendingOptimizationsRef.current.has(dayId)
+      ) {
         return;
       }
 
       const existing = optimizationTimerRef.current.get(dayId);
       if (existing) {
-        console.log("🔄 Clearing existing timer for:", dayId);
         clearTimeout(existing);
       }
 
@@ -405,7 +498,6 @@ export function RouteOptimizationPanel({
         ).length >= 2;
 
       if (!hasValidLocations) {
-        console.log("❌ No valid locations, exiting");
         const stale = optimizationTimerRef.current.get(dayId);
         if (stale) {
           clearTimeout(stale);
@@ -415,7 +507,6 @@ export function RouteOptimizationPanel({
       }
 
       const timer = setTimeout(() => {
-        console.log("⏰ Timer fired for:", dayId);
         optimizationTimerRef.current.delete(dayId);
 
         const originalActivities = day.activities.filter(
@@ -426,26 +517,8 @@ export function RouteOptimizationPanel({
             typeof a.locationData.lng === "number"
         );
 
-        console.log("🔍 DEBUG:", {
-          dayId,
-          totalActivities: day.activities.length,
-          validActivities: originalActivities.length,
-          activities: originalActivities.map((a) => ({
-            title: a.title,
-            location: a.location,
-            hasLocationData: !!a.locationData,
-            coords: a.locationData
-              ? [a.locationData.lat, a.locationData.lng]
-              : null,
-          })),
-        });
-
-        // Calculate original route distance using backend
-        calculateOriginalRouteDistance(originalActivities, dayId);
-
+        // Check if we have enough activities
         if (originalActivities.length < 4) {
-          console.log("⚠️ Less than 4 activities, skipping optimization");
-
           setDayAnalyses((prev) => {
             const updated = new Map(prev);
             const current = updated.get(dayId);
@@ -464,184 +537,23 @@ export function RouteOptimizationPanel({
             return updated;
           });
 
+          processedDaysRef.current.set(dayId, activityFingerprint);
           pendingOptimizationsRef.current.delete(dayId);
           return;
         }
 
-        if (originalActivities.length < 2) {
-          console.log("⚠️ Less than 2 activities, exiting");
-          return;
-        }
-
-        console.log("➕ Adding to pending optimizations:", dayId);
         pendingOptimizationsRef.current.add(dayId);
 
-        const optimizationData =
-          prepareRouteOptimizationData(originalActivities);
-
-        console.log("📦 Optimization data prepared:", optimizationData);
-
-        if (!optimizationData) {
-          console.log("❌ prepareRouteOptimizationData returned null");
-
-          setDayAnalyses((prev) => {
-            const updated = new Map(prev);
-            const current = updated.get(dayId);
-            if (current) {
-              updated.set(dayId, {
-                ...current,
-                optimizedActivities: originalActivities,
-                routeAnalysis: {
-                  ...current.routeAnalysis,
-                  optimizedDistance: current.routeAnalysis.originalDistance,
-                  timeSaved: 0,
-                },
-                isLoading: false,
-              });
-            }
-            return updated;
-          });
-
-          pendingOptimizationsRef.current.delete(dayId);
-          return;
-        }
-
-        const isValid = validateOptimizationData(optimizationData);
-        console.log("🔍 Validation result:", isValid);
-
-        if (!isValid) {
-          console.log(
-            "❌ Validation failed! Data:",
-            JSON.stringify(optimizationData, null, 2)
-          );
-
-          setDayAnalyses((prev) => {
-            const updated = new Map(prev);
-            const current = updated.get(dayId);
-            if (current) {
-              updated.set(dayId, {
-                ...current,
-                optimizedActivities: originalActivities,
-                routeAnalysis: {
-                  ...current.routeAnalysis,
-                  optimizedDistance: current.routeAnalysis.originalDistance,
-                  timeSaved: 0,
-                },
-                isLoading: false,
-              });
-            }
-            return updated;
-          });
-
-          pendingOptimizationsRef.current.delete(dayId);
-          return;
-        }
-
-        console.log("✅ Validation passed! Setting loading state...");
-
-        setDayAnalyses((prev) => {
-          const updated = new Map(prev);
-          const current = updated.get(dayId);
-          if (current) {
-            updated.set(dayId, {
-              ...current,
-              isLoading: true,
-            });
-          }
-          return updated;
-        });
-
-        console.log(
-          "🚀 Calling API with payload:",
-          JSON.stringify(optimizationData, null, 2)
+        calculateOriginalRouteDistance(
+          originalActivities,
+          dayId,
+          activityFingerprint
         );
-
-        optimizeRoute(optimizationData, {
-          onSuccess: (response) => {
-            console.log("✅ API Success! Response:", response);
-
-            const { optimizedActivities, routeData } =
-              processOptimizationResponse(response, originalActivities);
-
-            const optimizedDistance = routeData?.totalDistance || 0;
-            const optimizedTime = routeData?.totalTime
-              ? Math.round(routeData.totalTime / 60)
-              : 0;
-
-            setDayAnalyses((prev) => {
-              const updated = new Map(prev);
-              const current = updated.get(dayId);
-              if (current) {
-                const originalTime = current.routeAnalysis.totalTime || 0;
-                const timeSaved = originalTime - optimizedTime;
-
-                updated.set(dayId, {
-                  ...current,
-                  optimizedActivities,
-                  routeAnalysis: {
-                    ...current.routeAnalysis,
-                    optimizedDistance,
-                    timeSaved,
-                    routeGeometry: routeData?.geometry,
-                    totalTime: optimizedTime,
-                  },
-                  isLoading: false,
-                });
-              }
-              return updated;
-            });
-
-            pendingOptimizationsRef.current.delete(dayId);
-          },
-          onError: (error: any) => {
-            console.error("❌ API Error:", {
-              message: error.message,
-              response: error.response?.data,
-              status: error.response?.status,
-            });
-
-            const errorMessage =
-              error.response?.data?.message ||
-              error.message ||
-              "Could not optimize route";
-
-            toast.error("Optimization Failed", {
-              description: `${errorMessage}`,
-            });
-
-            setDayAnalyses((prev) => {
-              const updated = new Map(prev);
-              const current = updated.get(dayId);
-              if (current) {
-                updated.set(dayId, {
-                  ...current,
-                  optimizedActivities: originalActivities,
-                  routeAnalysis: {
-                    ...current.routeAnalysis,
-                    optimizedDistance: current.routeAnalysis.originalDistance,
-                    timeSaved: 0,
-                  },
-                  isLoading: false,
-                });
-              }
-              return updated;
-            });
-
-            pendingOptimizationsRef.current.delete(dayId);
-          },
-        });
       }, 1500);
 
-      console.log("⏲️ Timer set for:", dayId, "(will fire in 1.5s)");
       optimizationTimerRef.current.set(dayId, timer);
     },
-    [
-      optimizeRoute,
-      calculateOriginalRouteDistance,
-      prepareRouteOptimizationData,
-      validateOptimizationData,
-      processOptimizationResponse,
-    ]
+    [calculateOriginalRouteDistance]
   );
 
   const initializeMap = async () => {
@@ -677,7 +589,6 @@ export function RouteOptimizationPanel({
         setIsMapLoading(false);
       }, 100);
     } catch (error) {
-      console.error("Error initializing map:", error);
       setIsMapLoading(false);
       toast.error("Map Error", {
         description: "Could not load map. Please try again.",
@@ -884,7 +795,7 @@ export function RouteOptimizationPanel({
             typeof a.locationData.lat === "number" &&
             typeof a.locationData.lng === "number"
         );
-        if (originalActivities.length < 2) continue;
+        if (originalActivities.length < 4) continue;
 
         newAnalyses.set(day.id, {
           day,
@@ -897,7 +808,10 @@ export function RouteOptimizationPanel({
           isLoading: false,
         });
 
-        sendOptimizationRequest(day, day.id);
+        // CRITICAL FIX: Only optimize if not already processed
+        if (!processedDaysRef.current.has(day.id)) {
+          sendOptimizationRequest(day, day.id);
+        }
       }
 
       setDayAnalyses(newAnalyses);
@@ -923,6 +837,7 @@ export function RouteOptimizationPanel({
       }
       optimizationTimerRef.current.clear();
       pendingOptimizationsRef.current.clear();
+      processedDaysRef.current.clear();
     };
   }, [daysWithValidLocations, selectedDayId, sendOptimizationRequest]);
 
@@ -948,7 +863,6 @@ export function RouteOptimizationPanel({
             }, 50);
           }
         } catch (error) {
-          console.warn("Map container error, reinitializing:", error);
           if (mapRef.current?.map) {
             try {
               mapRef.current.map.remove();

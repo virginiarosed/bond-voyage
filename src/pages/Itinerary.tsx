@@ -1845,6 +1845,7 @@ export function Itinerary({
             </div>
           ) : bookingDetailData?.data ? (
             <BookingDetailView
+              // Core booking data
               booking={{
                 id: bookingDetailData.data.id,
                 bookingCode: bookingDetailData.data.bookingCode,
@@ -1866,11 +1867,16 @@ export function Itinerary({
                 total: `₱${parseFloat(
                   bookingDetailData.data.totalPrice.toString()
                 ).toLocaleString()}`,
+                totalAmount: parseFloat(
+                  bookingDetailData.data.totalPrice.toString()
+                ),
+                paid: 0, // Will be calculated from payment submissions
+                paymentStatus:
+                  bookingDetailData.data.paymentStatus || "PENDING",
                 bookedDate:
                   bookingDetailData.data.bookedDateDisplay ||
                   formatDate(bookingDetailData.data.bookedDate),
-                tripStatus: bookingDetailData.data.itinerary?.status,
-                paymentStatus: bookingDetailData.data.paymentStatus,
+                tripStatus: bookingDetailData.data.status,
                 rejectionReason:
                   bookingDetailData.data.rejectionReason ||
                   bookingDetailData.data.itinerary?.rejectionReason ||
@@ -1885,23 +1891,17 @@ export function Itinerary({
               }}
               itinerary={bookingDetailData.data.itinerary}
               onBack={() => setRequestedViewMode("list")}
-              onSendToClient={() =>
-                handleSendToClient(bookingDetailData.data?.id!)
-              }
-              onCancelBooking={() =>
-                handleCancelBooking(bookingDetailData.data?.id!)
-              }
-              onUpdateStatus={(status: any, reason: any, resolution: any) => {
-                setStatusUpdateData({
-                  status,
-                  rejectionReason: reason,
-                  rejectionResolution: resolution,
-                });
-                setStatusUpdateModalOpen(true);
-              }}
+              onSendToClient={() => {}}
+              onCancelBooking={() => {}}
+              onUpdateStatus={() => {}}
+              headerVariant="default"
+              breadcrumbPage="Requested Itineraries"
+              isRequestedItinerary={true}
+              useBackButtonHeader={true}
+              backButtonSubtitle="Requested Itinerary Details"
               actionButtons={
                 <div className="space-y-3">
-                  {/* Action buttons remain the same */}
+                  {/* Send to Client Button */}
                   {bookingDetailData.data.status !== "CONFIRMED" && (
                     <button
                       onClick={() =>
@@ -1924,6 +1924,7 @@ export function Itinerary({
                     </button>
                   )}
 
+                  {/* Book This Trip Button */}
                   {bookingDetailData.data.status === "CONFIRMED" && (
                     <button
                       onClick={() => {
@@ -1939,6 +1940,7 @@ export function Itinerary({
                     </button>
                   )}
 
+                  {/* Edit Booking Button */}
                   {(bookingDetailData.data.status === "DRAFT" ||
                     bookingDetailData.data.status === "PENDING" ||
                     bookingDetailData.data.status === "CONFIRMED") && (
@@ -1989,6 +1991,7 @@ export function Itinerary({
                     </button>
                   )}
 
+                  {/* Delete Booking Button */}
                   {bookingDetailData.data.status === "DRAFT" && (
                     <button
                       onClick={() => {
@@ -2009,6 +2012,7 @@ export function Itinerary({
                     </button>
                   )}
 
+                  {/* Status Info Messages */}
                   {bookingDetailData.data.status === "PENDING" && (
                     <div className="flex items-start gap-2 p-3 bg-[rgba(255,193,7,0.1)] border border-[rgba(255,193,7,0.2)] rounded-lg">
                       <AlertCircle className="w-4 h-4 text-[#FFC107] mt-0.5 shrink-0" />
@@ -2041,10 +2045,16 @@ export function Itinerary({
                         </p>
                       </div>
                     )}
+
+                  {/* Back to List Button */}
+                  <button
+                    onClick={() => setRequestedViewMode("list")}
+                    className="w-full h-11 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-[#334155] font-medium transition-all"
+                  >
+                    Back to List
+                  </button>
                 </div>
               }
-              breadcrumbPage="Requested"
-              isRequestedItinerary={true}
             />
           ) : (
             <div className="text-center py-12">

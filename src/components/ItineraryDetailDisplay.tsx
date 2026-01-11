@@ -113,8 +113,8 @@ export function ItineraryDetailDisplay({
       <div className="p-6">
         {processedItinerary.length > 0 ? (
           <div className="space-y-8">
-            {processedItinerary.map((day) => (
-              <div key={day.dayNumber} className="relative">
+            {processedItinerary.map((day, index) => (
+              <div key={index} className="relative">
                 {/* Day Header */}
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">

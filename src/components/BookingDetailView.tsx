@@ -23,6 +23,7 @@ import {
 } from "./ui/select";
 import { ItineraryDetailDisplay } from "./ItineraryDetailDisplay";
 import { Itinerary } from "../types/types";
+import { PaymentSection } from "./PaymentSection";
 
 type ItineraryDay = {
   dayNumber: number;
@@ -239,125 +240,7 @@ export function BookingDetailView({
           </div>
 
           {/* Payment Information */}
-          {showPaymentDetails && booking.totalAmount !== undefined && (
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
-              <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
-                    <CreditCard className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-[#1A2B4F]">
-                    Payment Details
-                  </h3>
-                </div>
-              </div>
-              <div className="p-6 space-y-4">
-                {booking.paymentStatus && onPaymentStatusChange && (
-                  <div>
-                    <Label
-                      htmlFor="payment-status"
-                      className="text-[#1A2B4F] mb-2 block"
-                    >
-                      Payment Status
-                    </Label>
-                    <Select
-                      value={booking.paymentStatus}
-                      onValueChange={(value: any) =>
-                        onPaymentStatusChange(booking.id, value)
-                      }
-                    >
-                      <SelectTrigger
-                        id="payment-status"
-                        className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Paid">Paid</SelectItem>
-                        <SelectItem value="Partial">Partial</SelectItem>
-                        <SelectItem value="Unpaid">Unpaid</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div className="pt-4 border-t border-[#E5E7EB]">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-[#64748B]">Total Amount</span>
-                    <span className="font-semibold text-[#1A2B4F]">
-                      ₱{booking.totalAmount.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-[#64748B]">Amount Paid</span>
-                    {booking.paymentStatus === "Partial" &&
-                    onPaidAmountChange ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-[#64748B]">₱</span>
-                        <Input
-                          type="number"
-                          value={booking.paid || 0}
-                          onChange={(e) => {
-                            const newPaid = Math.min(
-                              Number(e.target.value),
-                              booking.totalAmount!
-                            );
-                            onPaidAmountChange(
-                              booking.id,
-                              Math.max(0, newPaid)
-                            );
-                          }}
-                          className="w-32 h-8 text-sm font-semibold text-[#10B981] text-right"
-                          min="0"
-                          max={booking.totalAmount}
-                        />
-                      </div>
-                    ) : (
-                      <span className="font-semibold text-[#10B981]">
-                        ₱{(booking.paid || 0).toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-[#E5E7EB]">
-                    <span className="text-sm font-medium text-[#1A2B4F]">
-                      Balance
-                    </span>
-                    <span className="font-semibold text-[#FF6B6B]">
-                      ₱
-                      {(
-                        booking.totalAmount - (booking.paid || 0)
-                      ).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                {booking.totalAmount > 0 && (
-                  <div>
-                    <div className="flex justify-between text-xs text-[#64748B] mb-2">
-                      <span>Payment Progress</span>
-                      <span>
-                        {Math.round(
-                          ((booking.paid || 0) / booking.totalAmount) * 100
-                        )}
-                        %
-                      </span>
-                    </div>
-                    <div className="h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-linear-to-r from-[#10B981] to-[#14B8A6] transition-all duration-300"
-                        style={{
-                          width: `${
-                            ((booking.paid || 0) / booking.totalAmount) * 100
-                          }%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          <PaymentSection booking={booking} />
 
           {/* Actions */}
           {actionButtons && (

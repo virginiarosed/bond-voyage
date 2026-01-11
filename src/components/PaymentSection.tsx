@@ -67,6 +67,7 @@ export function PaymentSection({
     data: paymentsResponse,
     isLoading: isPaymentsLoading,
     isFetching: isPaymentsFetching,
+    refetch: refetchPayment,
   } = useBookingPayments(booking.id);
 
   const payments: PaymentSubmission[] = paymentsResponse?.data || [];
@@ -108,6 +109,7 @@ export function PaymentSection({
       setPaymentDetailModalOpen(false);
       setSelectedPayment(null); // Clear selected payment after verification
       onPaymentUpdate?.();
+      refetchPayment();
     } catch (error) {
       toast.error("Failed to verify payment");
     }
@@ -157,7 +159,7 @@ export function PaymentSection({
     return (
       <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-lg overflow-hidden animate-pulse">
         <div className="relative p-6 border-b border-[#E5E7EB]">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#10B981]/5 via-[#14B8A6]/5 to-[#0A7AFF]/5" />
+          <div className="absolute inset-0 bg-linear-to-r from-[#10B981]/5 via-[#14B8A6]/5 to-[#0A7AFF]/5" />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-gray-200" />
@@ -172,7 +174,7 @@ export function PaymentSection({
 
         <div className="p-6 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="relative flex-shrink-0">
+            <div className="relative shrink-0">
               <div className="w-32 h-32 rounded-full bg-gray-100" />
             </div>
             <div className="flex-1 space-y-2">
@@ -195,7 +197,7 @@ export function PaymentSection({
   if (!booking.id) {
     return (
       <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-lg p-6 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-[#F8FAFB] to-[#E5E7EB] rounded-full flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-4 bg-linear-to-br from-[#F8FAFB] to-[#E5E7EB] rounded-full flex items-center justify-center">
           <CreditCard className="w-8 h-8 text-[#64748B]" />
         </div>
         <h4 className="text-lg font-semibold text-[#1A2B4F] mb-2">
@@ -214,10 +216,10 @@ export function PaymentSection({
       {/* Payment Information Card */}
       <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-lg overflow-hidden">
         <div className="relative p-6 border-b border-[#E5E7EB]">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#10B981]/5 via-[#14B8A6]/5 to-[#0A7AFF]/5" />
+          <div className="absolute inset-0 bg-linear-to-r from-[#10B981]/5 via-[#14B8A6]/5 to-[#0A7AFF]/5" />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/30">
+              <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/30">
                 <CreditCard className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -244,7 +246,7 @@ export function PaymentSection({
               {payments.length === 0 ? (
                 // No payments at all
                 <>
-                  <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#F8FAFB] to-[#E5E7EB] rounded-full flex items-center justify-center">
+                  <div className="w-20 h-20 mx-auto mb-4 bg-linear-to-br from-[#F8FAFB] to-[#E5E7EB] rounded-full flex items-center justify-center">
                     <Wallet className="w-8 h-8 text-[#64748B]" />
                   </div>
                   <h4 className="text-lg font-semibold text-[#1A2B4F] mb-2">
@@ -257,7 +259,7 @@ export function PaymentSection({
               ) : (
                 // Has pending payments (but no verified payments)
                 <>
-                  <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#FFB84D] to-[#FF9800] rounded-full flex items-center justify-center">
+                  <div className="w-20 h-20 mx-auto mb-4 bg-linear-to-br from-[#FFB84D] to-[#FF9800] rounded-full flex items-center justify-center">
                     <Clock className="w-8 h-8 text-white" />
                   </div>
                   <h4 className="text-lg font-semibold text-[#1A2B4F] mb-2">
@@ -272,18 +274,19 @@ export function PaymentSection({
               )}
 
               {/* Balance information */}
-              <div className="bg-gradient-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB] mb-6">
+              <div className="bg-linear-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB] mb-6">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-[#64748B]">
                       Total Package Cost
                     </span>
                     <span className="font-bold text-[#1A2B4F] text-lg">
-                      ₱{totalAmount.toLocaleString()}
+                      ₱
+                      {totalAmount?.toLocaleString() || totalAmount?.toString()}
                     </span>
                   </div>
 
-                  <div className="h-px bg-gradient-to-r from-transparent via-[#E5E7EB] to-transparent" />
+                  <div className="h-px bg-linear-to-r from-transparent via-[#E5E7EB] to-transparent" />
 
                   <div className="flex justify-between items-center pt-1">
                     <div className="flex items-center gap-2">
@@ -400,7 +403,7 @@ export function PaymentSection({
           {paymentSectionState === "partial" && (
             <>
               <div className="flex items-center gap-3">
-                <div className="relative flex-shrink-0">
+                <div className="relative shrink-0">
                   <svg className="w-32 h-32 transform -rotate-90">
                     <circle
                       cx="64"
@@ -442,7 +445,7 @@ export function PaymentSection({
                   </div>
                 </div>
                 <div className="flex-1 space-y-2">
-                  <div className="bg-gradient-to-r from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-3 border border-[#10B981]/20">
+                  <div className="bg-linear-to-r from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-3 border border-[#10B981]/20">
                     <div className="flex items-center gap-2 mb-1">
                       <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
                       <span className="text-xs font-medium text-[#10B981]">
@@ -453,7 +456,7 @@ export function PaymentSection({
                       ₱{displayTotalPaid.toLocaleString()}
                     </p>
                   </div>
-                  <div className="bg-gradient-to-r from-[#EF4444]/10 to-[#F87171]/10 rounded-xl p-3 border border-[#EF4444]/20">
+                  <div className="bg-linear-to-r from-[#EF4444]/10 to-[#F87171]/10 rounded-xl p-3 border border-[#EF4444]/20">
                     <div className="flex items-center gap-2 mb-1">
                       <Wallet className="w-3.5 h-3.5 text-[#EF4444]" />
                       <span className="text-xs font-medium text-[#EF4444]">
@@ -567,7 +570,7 @@ export function PaymentSection({
           {/* FULLY PAID STATE */}
           {paymentSectionState === "fullyPaid" && (
             <div className="text-center py-8">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#10B981] to-[#14B8A6] rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 mx-auto mb-4 bg-linear-to-br from-[#10B981] to-[#14B8A6] rounded-full flex items-center justify-center shadow-lg">
                 <CheckCircle2 className="w-10 h-10 text-white" />
               </div>
               <h4 className="text-xl font-bold text-[#1A2B4F] mb-2">
@@ -577,7 +580,7 @@ export function PaymentSection({
                 This booking has been completely paid.
               </p>
 
-              <div className="bg-gradient-to-br from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-4 border border-[#10B981]/20 mb-6">
+              <div className="bg-linear-to-br from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-4 border border-[#10B981]/20 mb-6">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-[#64748B]">
                     Total Amount Paid
