@@ -22,6 +22,8 @@ import { useOptimizeRoute } from "../hooks/useOptimizeRoute";
 import { isMeaningfulLocation } from "../utils/helpers/isMeaningFulLocation";
 import { LOCATION_COORDS } from "../utils/constants/constants";
 import type { Place } from "../types/types";
+import "leaflet/dist/leaflet.css";
+import * as L from "leaflet";
 
 interface Activity {
   id: string;
@@ -631,9 +633,6 @@ export function RouteOptimizationPanel({
 
     try {
       setIsMapLoading(true);
-      const L = await import("leaflet");
-
-      await import("leaflet/dist/leaflet.css");
 
       const map = L.map(mapContainerRef.current, {
         preferCanvas: true,
