@@ -168,10 +168,7 @@ export function RouteOptimizationPanel({
         typeof a.locationData.lng === "number"
     );
 
-    console.log("📍 Meaningful activities:", meaningfulActivities.length);
-
     if (meaningfulActivities.length < 4) {
-      console.log("❌ Not enough meaningful activities");
       return null;
     }
 
@@ -208,12 +205,10 @@ export function RouteOptimizationPanel({
     }
 
     if (formattedActivities.length < 4) {
-      console.log("❌ Not enough formatted activities");
       return null;
     }
 
     if (!firstCoords || !lastCoords) {
-      console.log("❌ Missing first or last coords");
       return null;
     }
 
@@ -226,7 +221,6 @@ export function RouteOptimizationPanel({
       destination: destinationString,
     };
 
-    console.log("✅ Optimization data prepared:", result);
     return result;
   }, []);
 
@@ -239,11 +233,6 @@ export function RouteOptimizationPanel({
           typeof a.locationData.lat === "number" &&
           typeof a.locationData.lng === "number"
       );
-
-      if (activitiesWithValidLocations.length < 2) {
-        console.log("⚠️ Not enough activities for route calculation");
-        return;
-      }
 
       const formattedActivities = activitiesWithValidLocations.map(
         (activity, i) => ({
@@ -267,12 +256,6 @@ export function RouteOptimizationPanel({
         lastActivity.locationData!.lng
       }`;
 
-      console.log("📍 Calculating original route distance:", {
-        activities: formattedActivities,
-        origin,
-        destination,
-      });
-
       calculateRoute(
         {
           activities: formattedActivities,
@@ -282,8 +265,6 @@ export function RouteOptimizationPanel({
         },
         {
           onSuccess: (response) => {
-            console.log("✅ Original route calculated:", response);
-
             // Backend returns distance in meters, convert to km
             const distance = response.data?.totalDistance
               ? response.data.totalDistance / 1000
@@ -309,9 +290,7 @@ export function RouteOptimizationPanel({
               return updated;
             });
           },
-          onError: (error) => {
-            console.error("❌ Failed to calculate original route:", error);
-          },
+          onError: (error) => {},
         }
       );
     },
@@ -323,8 +302,6 @@ export function RouteOptimizationPanel({
       response: any,
       originalActivities: Activity[]
     ): { optimizedActivities: Activity[]; routeData?: any } => {
-      console.log("📦 Processing optimization response:", response);
-
       if (
         response?.data?.activities &&
         Array.isArray(response.data.activities)
@@ -383,16 +360,12 @@ export function RouteOptimizationPanel({
 
   const sendOptimizationRequest = useCallback(
     (day: Day, dayId: string) => {
-      console.log("🎯 sendOptimizationRequest called for:", dayId);
-
       if (pendingOptimizationsRef.current.has(dayId)) {
-        console.log("⏸️ Already pending, skipping:", dayId);
         return;
       }
 
       const existing = optimizationTimerRef.current.get(dayId);
       if (existing) {
-        console.log("🔄 Clearing existing timer for:", dayId);
         clearTimeout(existing);
       }
 
@@ -405,7 +378,6 @@ export function RouteOptimizationPanel({
         ).length >= 2;
 
       if (!hasValidLocations) {
-        console.log("❌ No valid locations, exiting");
         const stale = optimizationTimerRef.current.get(dayId);
         if (stale) {
           clearTimeout(stale);
@@ -415,7 +387,6 @@ export function RouteOptimizationPanel({
       }
 
       const timer = setTimeout(() => {
-        console.log("⏰ Timer fired for:", dayId);
         optimizationTimerRef.current.delete(dayId);
 
         const originalActivities = day.activities.filter(
@@ -426,26 +397,10 @@ export function RouteOptimizationPanel({
             typeof a.locationData.lng === "number"
         );
 
-        console.log("🔍 DEBUG:", {
-          dayId,
-          totalActivities: day.activities.length,
-          validActivities: originalActivities.length,
-          activities: originalActivities.map((a) => ({
-            title: a.title,
-            location: a.location,
-            hasLocationData: !!a.locationData,
-            coords: a.locationData
-              ? [a.locationData.lat, a.locationData.lng]
-              : null,
-          })),
-        });
-
         // Calculate original route distance using backend
         calculateOriginalRouteDistance(originalActivities, dayId);
 
         if (originalActivities.length < 4) {
-          console.log("⚠️ Less than 4 activities, skipping optimization");
-
           setDayAnalyses((prev) => {
             const updated = new Map(prev);
             const current = updated.get(dayId);
@@ -469,21 +424,15 @@ export function RouteOptimizationPanel({
         }
 
         if (originalActivities.length < 2) {
-          console.log("⚠️ Less than 2 activities, exiting");
           return;
         }
 
-        console.log("➕ Adding to pending optimizations:", dayId);
         pendingOptimizationsRef.current.add(dayId);
 
         const optimizationData =
           prepareRouteOptimizationData(originalActivities);
 
-        console.log("📦 Optimization data prepared:", optimizationData);
-
         if (!optimizationData) {
-          console.log("❌ prepareRouteOptimizationData returned null");
-
           setDayAnalyses((prev) => {
             const updated = new Map(prev);
             const current = updated.get(dayId);
@@ -507,14 +456,8 @@ export function RouteOptimizationPanel({
         }
 
         const isValid = validateOptimizationData(optimizationData);
-        console.log("🔍 Validation result:", isValid);
 
         if (!isValid) {
-          console.log(
-            "❌ Validation failed! Data:",
-            JSON.stringify(optimizationData, null, 2)
-          );
-
           setDayAnalyses((prev) => {
             const updated = new Map(prev);
             const current = updated.get(dayId);
@@ -537,8 +480,6 @@ export function RouteOptimizationPanel({
           return;
         }
 
-        console.log("✅ Validation passed! Setting loading state...");
-
         setDayAnalyses((prev) => {
           const updated = new Map(prev);
           const current = updated.get(dayId);
@@ -551,15 +492,8 @@ export function RouteOptimizationPanel({
           return updated;
         });
 
-        console.log(
-          "🚀 Calling API with payload:",
-          JSON.stringify(optimizationData, null, 2)
-        );
-
         optimizeRoute(optimizationData, {
           onSuccess: (response) => {
-            console.log("✅ API Success! Response:", response);
-
             const { optimizedActivities, routeData } =
               processOptimizationResponse(response, originalActivities);
 
@@ -594,12 +528,6 @@ export function RouteOptimizationPanel({
             pendingOptimizationsRef.current.delete(dayId);
           },
           onError: (error: any) => {
-            console.error("❌ API Error:", {
-              message: error.message,
-              response: error.response?.data,
-              status: error.response?.status,
-            });
-
             const errorMessage =
               error.response?.data?.message ||
               error.message ||
@@ -632,7 +560,6 @@ export function RouteOptimizationPanel({
         });
       }, 1500);
 
-      console.log("⏲️ Timer set for:", dayId, "(will fire in 1.5s)");
       optimizationTimerRef.current.set(dayId, timer);
     },
     [
@@ -677,7 +604,6 @@ export function RouteOptimizationPanel({
         setIsMapLoading(false);
       }, 100);
     } catch (error) {
-      console.error("Error initializing map:", error);
       setIsMapLoading(false);
       toast.error("Map Error", {
         description: "Could not load map. Please try again.",
@@ -948,7 +874,6 @@ export function RouteOptimizationPanel({
             }, 50);
           }
         } catch (error) {
-          console.warn("Map container error, reinitializing:", error);
           if (mapRef.current?.map) {
             try {
               mapRef.current.map.remove();
