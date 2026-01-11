@@ -693,7 +693,7 @@ export function Bookings({
           rejectionResolution: selectedBooking.rejectionResolution || "",
           resolutionStatus: selectedBooking.resolutionStatus || "unresolved",
         }}
-        itinerary={bookingDetailData?.data?.itinerary!}
+        itinerary={bookingDetailData?.data?.itinerary}
         onBack={handleBackToList}
         onSendToClient={() => {
           toast.info("This booking is already confirmed");

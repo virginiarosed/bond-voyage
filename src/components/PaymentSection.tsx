@@ -281,7 +281,8 @@ export function PaymentSection({
                       Total Package Cost
                     </span>
                     <span className="font-bold text-[#1A2B4F] text-lg">
-                      ₱{totalAmount.toLocaleString()}
+                      ₱
+                      {totalAmount?.toLocaleString() || totalAmount?.toString()}
                     </span>
                   </div>
 
