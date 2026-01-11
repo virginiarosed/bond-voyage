@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { ItineraryDetailDisplay } from "./ItineraryDetailDisplay";
+import { Itinerary } from "../types/types";
 
 type ItineraryDay = {
   dayNumber: number;
@@ -57,7 +58,7 @@ interface BookingDetailViewProps {
     rejectionResolution?: string;
     resolutionStatus?: string;
   };
-  itinerary: ItineraryDay[];
+  itinerary: Itinerary;
   onBack: () => void;
   actionButtons?: React.ReactNode;
   breadcrumbPage?: string;
@@ -73,7 +74,7 @@ interface BookingDetailViewProps {
 
 export function BookingDetailView({
   booking,
-  itinerary = [],
+  itinerary,
   onBack,
   actionButtons,
   breadcrumbPage = "",

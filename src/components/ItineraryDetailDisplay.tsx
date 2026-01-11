@@ -9,6 +9,8 @@ import {
   Car,
   Clock,
 } from "lucide-react";
+import { convertTimeStringToPhilippineTime } from "../utils/helpers/convertTime";
+import { Day, Itinerary } from "../types/types";
 
 // Icon mapping for string icon names
 const iconMap: Record<string, any> = {
@@ -66,7 +68,7 @@ interface ItineraryDataObject {
 }
 
 interface ItineraryDetailDisplayProps {
-  itinerary?: ItineraryDay[];
+  itinerary?: Day[];
   itineraryData?: ItineraryDataObject;
   daysCount?: number;
 }
@@ -76,8 +78,7 @@ export function ItineraryDetailDisplay({
   itineraryData,
   daysCount,
 }: ItineraryDetailDisplayProps) {
-  // Convert itineraryData format to itinerary format if provided
-  const processedItinerary: ItineraryDay[] = itineraryData
+  const processedItinerary: any[] = itineraryData
     ? itineraryData.days.map((day) => ({
         day: day.day,
         title: day.title,
@@ -113,7 +114,7 @@ export function ItineraryDetailDisplay({
         {processedItinerary.length > 0 ? (
           <div className="space-y-8">
             {processedItinerary.map((day) => (
-              <div key={day.day} className="relative">
+              <div key={day.dayNumber} className="relative">
                 {/* Day Header */}
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
@@ -129,7 +130,7 @@ export function ItineraryDetailDisplay({
 
                 {/* Timeline */}
                 <div className="ml-6 border-l-2 border-[#E5E7EB] pl-6 space-y-6">
-                  {day.activities.map((activity, idx) => {
+                  {day.activities.map((activity: any, idx: any) => {
                     // Get icon component - handle both string names and component references
                     let IconComponent = Clock; // Default icon
 
@@ -165,7 +166,9 @@ export function ItineraryDetailDisplay({
                                   </p>
                                 </div>
                                 <span className="text-xs font-medium text-[#0A7AFF] bg-[#0A7AFF]/10 px-2 py-1 rounded-lg whitespace-nowrap">
-                                  {activity.time}
+                                  {convertTimeStringToPhilippineTime(
+                                    activity.time
+                                  )}
                                 </span>
                               </div>
                               {activity.location && (

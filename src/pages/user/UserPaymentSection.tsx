@@ -561,10 +561,10 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
       {/* Payment Information Card */}
       <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-lg overflow-hidden">
         <div className="relative p-6 border-b border-[#E5E7EB]">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#10B981]/5 via-[#14B8A6]/5 to-[#0A7AFF]/5" />
+          <div className="absolute inset-0 bg-linear-to-r from-[#10B981]/5 via-[#14B8A6]/5 to-[#0A7AFF]/5" />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/30">
+              <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/30">
                 <CreditCard className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -867,7 +867,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                               parseFloat(partialAmount) === 0 ||
                               parseFloat(partialAmount) > displayBalance))
                         }
-                        className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(16,185,129,0.35)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+                        className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(16,185,129,0.35)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
                       >
                         <Save className="w-4 h-4" />
                         {submitPaymentMutation.isPending
@@ -899,7 +899,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
               ) : (
                 // NON-EDITING STATE - Empty state with "Make First Payment" button
                 <div className="text-center py-8">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#F8FAFB] to-[#E5E7EB] rounded-full flex items-center justify-center">
+                  <div className="w-20 h-20 mx-auto mb-4 bg-linear-to-br from-[#F8FAFB] to-[#E5E7EB] rounded-full flex items-center justify-center">
                     <Wallet className="w-8 h-8 text-[#64748B]" />
                   </div>
                   <h4 className="text-lg font-semibold text-[#1A2B4F] mb-2">
@@ -910,7 +910,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                   </p>
 
                   {/* Payment Summary Card */}
-                  <div className="bg-gradient-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB] mb-6">
+                  <div className="bg-linear-to-br from-[#F8FAFB] to-[#F1F5F9] rounded-2xl p-5 border border-[#E5E7EB] mb-6">
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-[#64748B]">
@@ -921,7 +921,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                         </span>
                       </div>
 
-                      <div className="h-px bg-gradient-to-r from-transparent via-[#E5E7EB] to-transparent" />
+                      <div className="h-px bg-linear-to-r from-transparent via-[#E5E7EB] to-transparent" />
 
                       <div className="flex justify-between items-center pt-1">
                         <div className="flex items-center gap-2">
@@ -940,7 +940,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                   {/* Make First Payment CTA */}
                   <button
                     onClick={() => setEditingPayment(true)}
-                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#0A7AFF] via-[#0A7AFF] to-[#14B8A6] text-white font-semibold shadow-lg shadow-[#0A7AFF]/30 hover:shadow-xl hover:shadow-[#0A7AFF]/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group"
+                    className="w-full h-14 rounded-2xl bg-linear-to-r from-[#0A7AFF] via-[#0A7AFF] to-[#14B8A6] text-white font-semibold shadow-lg shadow-[#0A7AFF]/30 hover:shadow-xl hover:shadow-[#0A7AFF]/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group"
                   >
                     <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
                     Make First Payment
@@ -1237,7 +1237,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                               parseFloat(partialAmount) === 0 ||
                               parseFloat(partialAmount) > displayBalance))
                         }
-                        className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(16,185,129,0.35)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+                        className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(16,185,129,0.35)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
                       >
                         <Save className="w-4 h-4" />
                         {submitPaymentMutation.isPending
@@ -1318,7 +1318,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                       </div>
 
                       <div className="flex-1 space-y-2">
-                        <div className="bg-gradient-to-r from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-3 border border-[#10B981]/20">
+                        <div className="bg-linear-to-r from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-3 border border-[#10B981]/20">
                           <div className="flex items-center gap-2 mb-1">
                             <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
                             <span className="text-xs font-medium text-[#10B981]">
@@ -1329,7 +1329,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                             ₱{displayTotalPaid.toLocaleString()}
                           </p>
                         </div>
-                        <div className="bg-gradient-to-r from-[#EF4444]/10 to-[#F87171]/10 rounded-xl p-3 border border-[#EF4444]/20">
+                        <div className="bg-linear-to-r from-[#EF4444]/10 to-[#F87171]/10 rounded-xl p-3 border border-[#EF4444]/20">
                           <div className="flex items-center gap-2 mb-1">
                             <Wallet className="w-3.5 h-3.5 text-[#EF4444]" />
                             <span className="text-xs font-medium text-[#EF4444]">
@@ -1346,7 +1346,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                     {/* Make Payment Button */}
                     <button
                       onClick={() => setEditingPayment(true)}
-                      className="w-full h-12 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white font-semibold shadow-lg shadow-[#0A7AFF]/30 hover:shadow-xl hover:shadow-[#0A7AFF]/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group"
+                      className="w-full h-12 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white font-semibold shadow-lg shadow-[#0A7AFF]/30 hover:shadow-xl hover:shadow-[#0A7AFF]/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group"
                     >
                       <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
                       Make Another Payment
@@ -1360,7 +1360,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
           {/* FULLY PAID STATE */}
           {paymentSectionState === "fullyPaid" && (
             <div className="text-center py-8">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#10B981] to-[#14B8A6] rounded-full flex items-center justify-center shadow-lg shadow-[#10B981]/30">
+              <div className="w-20 h-20 mx-auto mb-4 bg-linear-to-br from-[#10B981] to-[#14B8A6] rounded-full flex items-center justify-center shadow-lg shadow-[#10B981]/30">
                 <CheckCircle2 className="w-10 h-10 text-white" />
               </div>
               <h4 className="text-xl font-bold text-[#1A2B4F] mb-2">
@@ -1370,7 +1370,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                 This booking has been completely paid.
               </p>
 
-              <div className="bg-gradient-to-br from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-4 border border-[#10B981]/20 mb-6">
+              <div className="bg-linear-to-br from-[#10B981]/10 to-[#14B8A6]/10 rounded-xl p-4 border border-[#10B981]/20 mb-6">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-[#64748B]">
                     Total Amount Paid
@@ -1877,7 +1877,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                       <div className="space-y-4">
                         {/* Step 1 */}
                         <div className="flex items-start gap-4 p-3 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
-                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 text-sm font-bold">
                             1
                           </div>
                           <div className="flex-1">
@@ -1893,7 +1893,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
 
                         {/* Step 2 */}
                         <div className="flex items-start gap-4 p-3 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
-                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 text-sm font-bold">
                             2
                           </div>
                           <div className="flex-1">
@@ -1911,7 +1911,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
 
                         {/* Step 3 */}
                         <div className="flex items-start gap-4 p-3 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
-                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 text-sm font-bold">
                             3
                           </div>
                           <div className="flex-1">
@@ -1927,7 +1927,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
 
                         {/* Step 4 */}
                         <div className="flex items-start gap-4 p-3 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
-                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 text-sm font-bold">
                             4
                           </div>
                           <div className="flex-1">
@@ -1943,7 +1943,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
 
                         {/* Step 5 */}
                         <div className="flex items-start gap-4 p-3 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
-                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 text-sm font-bold">
                             5
                           </div>
                           <div className="flex-1">
@@ -1962,7 +1962,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
                     {/* Important Notes */}
                     <div className="bg-[#FFF3E0] border border-[#FFB74D] rounded-xl p-4">
                       <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-[#FF9800] flex-shrink-0 mt-0.5" />
+                        <AlertCircle className="w-5 h-5 text-[#FF9800] shrink-0 mt-0.5" />
                         <div className="space-y-2">
                           <h5 className="text-sm font-semibold text-[#1A2B4F]">
                             Important Reminders
@@ -2535,7 +2535,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
           {selectedPayment && (
             <div className="space-y-6 p-6">
               {/* Payment Header */}
-              <div className="bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
+              <div className="bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
                 <div className="flex justify-between items-center">
                   <div>
                     <h3 className="text-lg font-semibold">
@@ -2698,7 +2698,7 @@ export function UserPaymentSection({ booking }: UserPaymentSectionProps) {
           <div className="space-y-4 px-6 py-2">
             <div className="bg-[#FFF3F3] border border-[#FFE0E0] rounded-xl p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#FF6B6B] flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[#FF6B6B] flex items-center justify-center shrink-0">
                   <AlertCircle className="w-5 h-5 text-white" />
                 </div>
                 <div className="space-y-2">
