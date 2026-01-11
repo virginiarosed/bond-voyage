@@ -105,6 +105,7 @@ import {
   useCancelBooking,
   useUpdateBookingStatus,
   useBookingPayments,
+  useDeleteBooking,
 } from "../hooks/useBookings";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUsers } from "../hooks/useUsers";
@@ -652,6 +653,31 @@ export function Itinerary({
       },
     });
 
+  const { mutate: deleteBooking, isPending: isDeletingBooking } =
+    useDeleteBooking(selectedRequestedId || "", {
+      onSuccess: () => {
+        toast.success("Booking Deleted", {
+          description: "The booking has been deleted successfully.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(selectedRequestedId!),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+        refetchBookings();
+        setDeleteConfirmOpen(false);
+        setItemToDelete(null);
+        setRequestedViewMode("list");
+        setSelectedRequestedId(null);
+      },
+      onError: (error: any) => {
+        toast.error("Failed to delete booking", {
+          description: error.response?.data?.message || "Please try again.",
+        });
+      },
+    });
+
   // Payment hooks
   const { data: paymentsData } = useBookingPayments(selectedRequestedId!);
 
@@ -723,7 +749,7 @@ export function Itinerary({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{
     id: string;
-    type: "api" | "local";
+    type: "api" | "local" | "booking";
     title?: string;
     destination?: string;
   } | null>(null);
@@ -1178,8 +1204,13 @@ export function Itinerary({
     if (!itemToDelete) return;
 
     if (itemToDelete.type === "api") {
+      // For standard tour packages
       handleDeleteTourPackage(itemToDelete.id);
+    } else if (itemToDelete.type === "booking") {
+      // For requested bookings - use the delete booking hook
+      deleteBooking();
     } else {
+      // For local drafts
       if (onDeleteDraft) {
         onDeleteDraft(itemToDelete.id);
         toast.success("Draft deleted successfully!");
@@ -1963,7 +1994,7 @@ export function Itinerary({
                       onClick={() => {
                         confirmDelete({
                           id: bookingDetailData.data?.id!,
-                          type: "local",
+                          type: "booking",
                           title:
                             bookingDetailData.data?.itinerary?.title ||
                             bookingDetailData.data?.destination,
@@ -1971,9 +2002,10 @@ export function Itinerary({
                         });
                       }}
                       className="w-full h-11 px-4 rounded-xl bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
+                      disabled={isDeletingBooking}
                     >
                       <Trash2 className="w-4 h-4" />
-                      Delete Booking
+                      {isDeletingBooking ? "Deleting..." : "Delete Booking"}
                     </button>
                   )}
 
@@ -2975,11 +3007,15 @@ export function Itinerary({
         title={
           itemToDelete?.type === "api"
             ? "Delete Tour Package"
+            : itemToDelete?.type === "booking"
+            ? "Delete Booking"
             : "Delete Itinerary"
         }
         description={
           itemToDelete?.type === "api"
             ? "Are you sure you want to delete this tour package? This will remove it from the system."
+            : itemToDelete?.type === "booking"
+            ? "Are you sure you want to delete this booking? This action cannot be undone and will permanently remove the booking from the system."
             : "Are you sure you want to delete this itinerary? This action cannot be undone."
         }
         icon={<Trash2 className="w-5 h-5 text-white" />}
@@ -3009,6 +3045,8 @@ export function Itinerary({
               <p className="text-xs text-[#64748B] pt-2">
                 {itemToDelete.type === "api"
                   ? "This will remove the package from your tour packages list."
+                  : itemToDelete.type === "booking"
+                  ? "This will permanently remove the booking and all associated data."
                   : "This will permanently remove the itinerary from your list."}
               </p>
             </div>
@@ -3019,7 +3057,7 @@ export function Itinerary({
           setItemToDelete(null);
           setDeleteConfirmOpen(false);
         }}
-        confirmText={isPending ? "Deleting..." : "Delete"}
+        confirmText={isPending || isDeletingBooking ? "Deleting..." : "Delete"}
         cancelText="Cancel"
         confirmVariant="destructive"
       />
