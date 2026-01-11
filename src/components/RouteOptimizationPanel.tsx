@@ -290,13 +290,12 @@ export function RouteOptimizationPanel({
     (
       dayId: string,
       originalActivities: Activity[],
-      calculatedRouteData: any, // Add this parameter
+      calculatedRouteData: any,
       activityFingerprint: string
     ) => {
-      // Use the calculated route data directly for optimization
       const optimizationData = calculatedRouteData
         ? {
-            activities: calculatedRouteData.activities, // Use activities from calculate route
+            activities: calculatedRouteData.activities,
             origin: `${calculatedRouteData.activities[0].lat},${calculatedRouteData.activities[0].lng}`,
             destination: `${
               calculatedRouteData.activities[
@@ -308,18 +307,15 @@ export function RouteOptimizationPanel({
               ].lng
             }`,
           }
-        : prepareRouteOptimizationData(originalActivities); // Fallback
+        : prepareRouteOptimizationData(originalActivities);
 
       if (!optimizationData) {
-        // ... handle no optimization data
         return;
       }
 
-      // Validate and proceed with optimization
       const isValid = validateOptimizationData(optimizationData);
 
       if (!isValid) {
-        // ... handle invalid data
         return;
       }
 
@@ -371,9 +367,7 @@ export function RouteOptimizationPanel({
           processedDaysRef.current.set(dayId, activityFingerprint);
           pendingOptimizationsRef.current.delete(dayId);
         },
-        onError: (error: any) => {
-          // ... handle error
-        },
+        onError: (error: any) => {},
       });
     },
     [
@@ -394,7 +388,6 @@ export function RouteOptimizationPanel({
           typeof a.locationData.lng === "number"
       );
 
-      // Create formatted activities for calculate route
       const formattedActivities = activitiesWithValidLocations.map(
         (activity, i) => ({
           id: activity.id || `activity-${Date.now()}-${i}`,
@@ -426,7 +419,6 @@ export function RouteOptimizationPanel({
 
       calculateRoute(routeRequest, {
         onSuccess: (response) => {
-          // Store original route data
           const distance = response.data?.totalDistance
             ? response.data.totalDistance / 1000
             : 0;
@@ -451,11 +443,10 @@ export function RouteOptimizationPanel({
             return updated;
           });
 
-          // 🔥 PASS THE CALCULATE ROUTE RESPONSE TO OPTIMIZATION
           proceedWithOptimization(
             dayId,
             activitiesWithValidLocations,
-            response.data, // Pass the calculated route data
+            response.data,
             activityFingerprint
           );
         },
@@ -469,7 +460,7 @@ export function RouteOptimizationPanel({
         },
       });
     },
-    [calculateRoute, proceedWithOptimization] // Add proceedWithOptimization to deps
+    [calculateRoute, proceedWithOptimization]
   );
 
   const sendOptimizationRequest = useCallback(
@@ -551,10 +542,8 @@ export function RouteOptimizationPanel({
           return;
         }
 
-        // Mark as pending
         pendingOptimizationsRef.current.add(dayId);
 
-        // Start the chain: calculate → then optimize
         calculateOriginalRouteDistance(
           originalActivities,
           dayId,
