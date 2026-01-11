@@ -208,6 +208,7 @@ export function RouteOptimizationPanel({
 
   const prepareRouteOptimizationData = useCallback(
     (activities: Activity[]) => {
+      // Filter for meaningful activities with valid locations and coordinates
       const meaningfulActivities = activities.filter(
         (a) =>
           isMeaningfulLocation(a.location) &&
@@ -215,12 +216,14 @@ export function RouteOptimizationPanel({
           typeof a.locationData.lat === "number" &&
           typeof a.locationData.lng === "number"
       );
-      if (meaningfulActivities.length < 2) {
+
+      // Check if we have enough activities for the API (minimum 4)
+      if (meaningfulActivities.length < 4) {
         console.log(
-          "Not enough activities with valid locations:",
+          "Not enough activities with valid locations for API optimization:",
           meaningfulActivities.length
         );
-        return null;
+        return null; // Will fall back to local optimization
       }
 
       const formattedActivities = [];
@@ -239,13 +242,16 @@ export function RouteOptimizationPanel({
 
         const activityId = activity.id || `activity-${Date.now()}-${i}`;
 
+        // Ensure time is a string (not null) - use empty string if null
+        const activityTime = activity.time || "";
+
         formattedActivities.push({
           id: activityId,
           lat: coords[0],
           lng: coords[1],
           name: activity.title,
           location: activity.location,
-          time: activity.time || null,
+          time: activityTime, // Always a string
         });
 
         if (formattedActivities.length === 1) {
@@ -254,16 +260,20 @@ export function RouteOptimizationPanel({
         lastCoords = coords;
       }
 
-      if (formattedActivities.length < 2) {
+      // Final check - need at least 4 activities for API
+      if (formattedActivities.length < 4) {
         console.log(
-          "Not enough valid coordinates:",
+          "Not enough valid coordinates for API optimization:",
           formattedActivities.length
         );
-        return null;
+        return null; // Will fall back to local optimization
       }
 
       console.log("Preparing optimization data for API:", {
         activitiesCount: formattedActivities.length,
+        hasTimeFields: formattedActivities.every(
+          (a) => typeof a.time === "string"
+        ),
       });
 
       // Ensure we always have origin and destination
@@ -483,6 +493,7 @@ export function RouteOptimizationPanel({
       const timer = setTimeout(() => {
         // remove scheduled timer reference immediately
         optimizationTimerRef.current.delete(dayId);
+        // In your sendOptimizationRequest function, add this check:
         const originalActivities = day.activities.filter(
           (a) =>
             isMeaningfulLocation(a.location) &&
@@ -491,15 +502,48 @@ export function RouteOptimizationPanel({
             typeof a.locationData.lng === "number"
         );
 
+        const originalDistance =
+          calculateOriginalRouteDistance(originalActivities);
+
+        // Check if we have enough activities for API optimization (minimum 4)
+        if (originalActivities.length < 4) {
+          console.log(
+            "Not enough activities for API optimization, using local optimization"
+          );
+          const optimized = optimizeRouteLocally(originalActivities);
+          const optimizedDistance = calculateOriginalRouteDistance(optimized);
+          const timeSaved =
+            calculateTravelTime(originalDistance) -
+            calculateTravelTime(optimizedDistance);
+
+          setDayAnalyses((prev) => {
+            const updated = new Map(prev);
+            const current = updated.get(dayId);
+            if (current) {
+              updated.set(dayId, {
+                ...current,
+                optimizedActivities: optimized,
+                routeAnalysis: {
+                  originalDistance,
+                  optimizedDistance,
+                  timeSaved,
+                },
+                isLoading: false,
+              });
+            }
+            return updated;
+          });
+
+          pendingOptimizationsRef.current.delete(dayId);
+          return;
+        }
+
         if (originalActivities.length < 2) {
           console.log("Not enough valid locations after delay for day:", dayId);
           return;
         }
 
         pendingOptimizationsRef.current.add(dayId);
-
-        const originalDistance =
-          calculateOriginalRouteDistance(originalActivities);
 
         const optimizationData =
           prepareRouteOptimizationData(originalActivities);
@@ -751,21 +795,21 @@ export function RouteOptimizationPanel({
           </div>
           <h3 className="text-[#1A2B4F] mb-2">Route Optimization Ready</h3>
           <p className="text-sm text-[#64748B] mb-4">
-            Add at least 2 activities with valid Philippine locations from the
-            location suggestions to any day and I'll analyze the most efficient
-            routes for you.
+            Add at least 4 activities with valid Philippine locations from the
+            location suggestions to any day for AI-powered optimization. For 2-3
+            activities, basic local optimization will be used.
           </p>
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F8FAFB] border border-[#E5E7EB]">
             <Info className="w-4 h-4 text-[#14B8A6]" />
             <span className="text-xs text-[#64748B]">
-              Saves time by reordering activities based on location proximity
+              AI optimization (4+ activities) • Local optimization (2-3
+              activities)
             </span>
           </div>
         </div>
       </motion.div>
     );
   }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
