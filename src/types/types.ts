@@ -271,20 +271,6 @@ export interface WeatherResponse {
   name?: string;
 }
 
-export interface RouteOptimizationRequest {
-  activities: Array<{
-    id: string;
-    lat: number;
-    lng: number;
-    name: string;
-    location: string;
-    time: string;
-  }>;
-  origin: string;
-  destination: string;
-  mode?: "drive" | "walk" | "bike" | "transit";
-}
-
 export interface ChatbotRequest {
   question: string;
 }
@@ -395,6 +381,20 @@ export interface Place {
   address: string;
   lat: number;
   lng: number;
+}
+
+export interface RouteOptimizationRequest {
+  activities: Array<{
+    id: string;
+    lat: number;
+    lng: number;
+    name: string;
+    location: string;
+    time: string;
+  }>;
+  origin: string;
+  destination: string;
+  mode?: "drive" | "walk" | "bike" | "transit";
 }
 
 export interface RouteCalculationRequest {

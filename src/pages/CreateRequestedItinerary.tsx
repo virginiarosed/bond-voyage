@@ -1579,23 +1579,55 @@ export function CreateRequestedItinerary({
           );
           return validLocations.length >= 2;
         }) && (
-          <RouteOptimizationPanel
-            itineraryDays={itineraryDays}
-            selectedDayId={
-              selectedDayForRoute ||
-              itineraryDays.find((d) => {
-                const validLocations = d.activities.filter(
-                  (a) =>
-                    a.location &&
-                    a.locationData &&
-                    typeof a.locationData.lat === "number" &&
-                    typeof a.locationData.lng === "number"
-                );
-                return validLocations.length >= 2;
-              })?.id
-            }
-            onAcceptOptimization={handleAcceptOptimization}
-          />
+          <div className="space-y-3">
+            <div className="p-4 rounded-xl bg-linear-to-r from-[rgba(10,122,255,0.05)] to-[rgba(20,184,166,0.05)] border border-[#0A7AFF]/20">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-[#1A2B4F] mb-1">
+                    AI Route Optimization Available
+                  </h4>
+                  <p className="text-xs text-[#64748B] leading-relaxed">
+                    {
+                      itineraryDays.filter((d) => {
+                        const validLocations = d.activities.filter(
+                          (a) =>
+                            a.location &&
+                            a.locationData &&
+                            typeof a.locationData.lat === "number" &&
+                            typeof a.locationData.lng === "number"
+                        );
+                        return validLocations.length >= 4;
+                      }).length
+                    }{" "}
+                    day(s) with 4+ locations can be optimized for efficient
+                    routing. The AI will analyze each day independently and
+                    suggest the best route order.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <RouteOptimizationPanel
+              itineraryDays={itineraryDays}
+              selectedDayId={
+                selectedDayForRoute ||
+                itineraryDays.find((d) => {
+                  const validLocations = d.activities.filter(
+                    (a) =>
+                      a.location &&
+                      a.locationData &&
+                      typeof a.locationData.lat === "number" &&
+                      typeof a.locationData.lng === "number"
+                  );
+                  return validLocations.length >= 2;
+                })?.id
+              }
+              onAcceptOptimization={handleAcceptOptimization}
+            />
+          </div>
         )}
 
         {/* Day-by-Day Itinerary */}
