@@ -152,7 +152,7 @@ export function BookingListCard({
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
             <span className="text-white text-lg">🎫</span>
           </div>
           <div>
@@ -248,7 +248,7 @@ export function BookingListCard({
       {context === "rejected" && booking.rejectionReason && (
         <div className="mt-4 pt-4 border-t border-[#E5E7EB]">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-[#FF6B6B] mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-[#FF6B6B] mt-0.5 shrink-0" />
             <div className="space-y-1">
               <p className="text-xs font-semibold text-[#FF6B6B]">
                 Rejection Reason:

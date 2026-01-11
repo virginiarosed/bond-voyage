@@ -821,45 +821,82 @@ export function UserTravels() {
   ]);
 
   // Detail view
-  if (viewMode === "detail" && selectedBooking) {
+  // Detail view - Complete section
+  if (viewMode === "detail" && selectedBookingId && selectedBookingData?.data) {
     const tabLabel =
       selectedTab === "draft"
         ? "In Progress"
         : selectedTab === "pending"
         ? "Pending"
         : "Rejected Bookings";
-    const isOwner = selectedBooking.ownership === "owned";
+
+    const bookingDetail = selectedBookingData.data;
+    const isOwner = bookingDetail.ownership === "OWNED";
 
     return (
       <>
         <style>{`
-          @keyframes highlight {
-            0%, 100% {
-              box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-              transform: scale(1);
-            }
-            50% {
-              box-shadow: 0 0 0 3px rgba(255,107,107,0.3), 0 4px 6px rgba(255,107,107,0.1);
-              transform: scale(1.005);
-            }
+        @keyframes highlight {
+          0%, 100% {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transform: scale(1);
           }
-        `}</style>
+          50% {
+            box-shadow: 0 0 0 3px rgba(255,107,107,0.3), 0 4px 6px rgba(255,107,107,0.1);
+            transform: scale(1.005);
+          }
+        }
+      `}</style>
 
         <BookingDetailView
           booking={{
-            id: selectedBooking.id,
-            bookingCode: selectedBooking.bookingCode,
-            customer: selectedBooking.owner,
-            email: selectedBooking.email,
-            mobile: selectedBooking.mobile,
-            destination: selectedBooking.destination,
-            dates: selectedBooking.dates,
-            travelers: selectedBooking.travelers,
-            total: selectedBooking.budget,
-            bookedDate: selectedBooking.bookedDate,
-            resolutionStatus: selectedBooking.resolutionStatus,
+            id: bookingDetail.id,
+            bookingCode: bookingDetail.bookingCode,
+            customer: bookingDetail.customerName!,
+            email: bookingDetail.customerEmail!,
+            mobile: bookingDetail.customerMobile!,
+            destination: bookingDetail.destination,
+            itinerary: bookingDetail.itinerary?.title || "Custom Itinerary",
+            dates:
+              bookingDetail.startDate && bookingDetail.endDate
+                ? `${new Date(bookingDetail.startDate).toLocaleDateString(
+                    "en-US",
+                    { month: "long", day: "numeric", year: "numeric" }
+                  )} – ${new Date(bookingDetail.endDate).toLocaleDateString(
+                    "en-US",
+                    { month: "long", day: "numeric", year: "numeric" }
+                  )}`
+                : "Dates TBD",
+            travelers: bookingDetail.travelers,
+            total: `₱${parseFloat(
+              bookingDetail.totalPrice.toString()
+            ).toLocaleString()}`,
+            bookedDate:
+              bookingDetail.bookedDateDisplay ||
+              (bookingDetail.bookedDate
+                ? new Date(bookingDetail.bookedDate).toLocaleDateString(
+                    "en-US",
+                    { month: "long", day: "numeric", year: "numeric" }
+                  )
+                : new Date(bookingDetail.createdAt).toLocaleDateString(
+                    "en-US",
+                    { month: "long", day: "numeric", year: "numeric" }
+                  )),
+            tripStatus: bookingDetail.itinerary?.status,
+            paymentStatus: bookingDetail.paymentStatus,
+            rejectionReason:
+              bookingDetail.rejectionReason ||
+              bookingDetail.itinerary?.rejectionReason ||
+              "",
+            rejectionResolution:
+              bookingDetail.rejectionResolution ||
+              bookingDetail.itinerary?.rejectionResolution ||
+              "",
+            resolutionStatus: bookingDetail.isResolved
+              ? "resolved"
+              : "unresolved",
           }}
-          itinerary={transformedItinerary}
+          itinerary={bookingDetail.itinerary}
           onBack={handleBackToList}
           breadcrumbPage={tabLabel}
           headerVariant={
@@ -869,15 +906,15 @@ export function UserTravels() {
               ? "approval"
               : "default"
           }
-          isRequestedItinerary={selectedBooking.ownership === "requested"}
+          isRequestedItinerary={bookingDetail.ownership === "REQUESTED"}
           actionButtons={
             selectedTab === "pending" ? undefined : (
               <>
-                {selectedBooking.ownership === "requested" && (
+                {bookingDetail.ownership === "REQUESTED" && (
                   <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden mb-3">
-                    <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+                    <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                           <Send className="w-5 h-5 text-white" />
                         </div>
                         <h3 className="font-semibold text-[#1A2B4F]">
@@ -887,13 +924,13 @@ export function UserTravels() {
                     </div>
                     <div className="p-6">
                       <div className="space-y-3 p-4 bg-accent/50 rounded-xl max-h-64 overflow-y-auto mb-4">
-                        {(conversations[selectedBooking.id] || []).length ===
+                        {(conversations[bookingDetail.id] || []).length ===
                         0 ? (
                           <div className="text-center py-8 text-muted-foreground text-sm">
                             No messages yet. Start the conversation!
                           </div>
                         ) : (
-                          (conversations[selectedBooking.id] || []).map(
+                          (conversations[bookingDetail.id] || []).map(
                             (msg, index) => (
                               <div
                                 key={index}
@@ -932,22 +969,22 @@ export function UserTravels() {
                         <input
                           type="text"
                           placeholder="Type your message..."
-                          value={currentMessage[selectedBooking.id] || ""}
+                          value={currentMessage[bookingDetail.id] || ""}
                           onChange={(e) =>
                             setCurrentMessage({
                               ...currentMessage,
-                              [selectedBooking.id]: e.target.value,
+                              [bookingDetail.id]: e.target.value,
                             })
                           }
                           onKeyPress={(e) => {
                             if (
                               e.key === "Enter" &&
-                              currentMessage[selectedBooking.id]?.trim()
+                              currentMessage[bookingDetail.id]?.trim()
                             ) {
                               const newMsg = {
                                 sender: "user" as const,
                                 message:
-                                  currentMessage[selectedBooking.id].trim(),
+                                  currentMessage[bookingDetail.id].trim(),
                                 time: new Date().toLocaleString("en-US", {
                                   month: "short",
                                   day: "numeric",
@@ -959,14 +996,14 @@ export function UserTravels() {
                               };
                               setConversations({
                                 ...conversations,
-                                [selectedBooking.id]: [
-                                  ...(conversations[selectedBooking.id] || []),
+                                [bookingDetail.id]: [
+                                  ...(conversations[bookingDetail.id] || []),
                                   newMsg,
                                 ],
                               });
                               setCurrentMessage({
                                 ...currentMessage,
-                                [selectedBooking.id]: "",
+                                [bookingDetail.id]: "",
                               });
                               toast.success("Message sent!", {
                                 description:
@@ -978,11 +1015,11 @@ export function UserTravels() {
                         />
                         <button
                           onClick={() => {
-                            if (currentMessage[selectedBooking.id]?.trim()) {
+                            if (currentMessage[bookingDetail.id]?.trim()) {
                               const newMsg = {
                                 sender: "user" as const,
                                 message:
-                                  currentMessage[selectedBooking.id].trim(),
+                                  currentMessage[bookingDetail.id].trim(),
                                 time: new Date().toLocaleString("en-US", {
                                   month: "short",
                                   day: "numeric",
@@ -994,14 +1031,14 @@ export function UserTravels() {
                               };
                               setConversations({
                                 ...conversations,
-                                [selectedBooking.id]: [
-                                  ...(conversations[selectedBooking.id] || []),
+                                [bookingDetail.id]: [
+                                  ...(conversations[bookingDetail.id] || []),
                                   newMsg,
                                 ],
                               });
                               setCurrentMessage({
                                 ...currentMessage,
-                                [selectedBooking.id]: "",
+                                [bookingDetail.id]: "",
                               });
                               toast.success("Message sent!", {
                                 description:
@@ -1009,7 +1046,7 @@ export function UserTravels() {
                               });
                             }
                           }}
-                          className="px-5 py-3 rounded-xl transition-all shadow-md hover:shadow-lg bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
+                          className="px-5 py-3 rounded-xl transition-all shadow-md hover:shadow-lg bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
                         >
                           <Send className="w-5 h-5" strokeWidth={2} />
                         </button>
@@ -1021,7 +1058,7 @@ export function UserTravels() {
                 {isOwner && selectedTab === "draft" && (
                   <button
                     onClick={handleBookThisTrip}
-                    className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
+                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
                   >
                     <BookOpen className="w-4 h-4" />
                     Book This Trip
@@ -1031,7 +1068,7 @@ export function UserTravels() {
                 {selectedTab === "draft" && (
                   <button
                     onClick={handleEditBooking}
-                    className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
+                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
                   >
                     <Edit className="w-4 h-4" />
                     Edit Booking
@@ -1075,16 +1112,38 @@ export function UserTravels() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Destination:</span>
                   <span className="font-medium">
-                    {selectedBooking.destination}
+                    {bookingDetail.destination}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Dates:</span>
-                  <span className="font-medium">{selectedBooking.dates}</span>
+                  <span className="font-medium">
+                    {bookingDetail.dateRangeDisplay ||
+                      (bookingDetail.startDate && bookingDetail.endDate
+                        ? `${new Date(
+                            bookingDetail.startDate
+                          ).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })} – ${new Date(
+                            bookingDetail.endDate
+                          ).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })}`
+                        : "Dates TBD")}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Budget:</span>
-                  <span className="font-medium">{selectedBooking.budget}</span>
+                  <span className="font-medium">
+                    ₱
+                    {parseFloat(
+                      bookingDetail.totalPrice.toString()
+                    ).toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1114,7 +1173,7 @@ export function UserTravels() {
                   Destination:
                 </span>
                 <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
-                  {selectedBooking.destination}
+                  {bookingDetail.destination}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-lg">
@@ -1122,7 +1181,7 @@ export function UserTravels() {
                   Booking Type:
                 </span>
                 <span className="text-sm font-medium text-[#1A2B4F] dark:text-white">
-                  {selectedBooking.bookingType}
+                  {bookingDetail.type}
                 </span>
               </div>
             </div>
@@ -1161,7 +1220,7 @@ export function UserTravels() {
           onClick={() => setSelectedTab("draft")}
           className={`px-5 h-11 text-sm transition-colors whitespace-nowrap ${
             selectedTab === "draft"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
           }`}
         >
@@ -1171,7 +1230,7 @@ export function UserTravels() {
           onClick={() => setSelectedTab("pending")}
           className={`px-5 h-11 text-sm transition-colors whitespace-nowrap ${
             selectedTab === "pending"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
           }`}
         >
@@ -1181,7 +1240,7 @@ export function UserTravels() {
           onClick={() => setSelectedTab("rejected")}
           className={`px-5 h-11 text-sm transition-colors whitespace-nowrap ${
             selectedTab === "rejected"
-              ? "font-semibold text-[#FF6B6B] border-b-[3px] border-[#FF6B6B] -mb-[2px]"
+              ? "font-semibold text-[#FF6B6B] border-b-[3px] border-[#FF6B6B] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)]"
           }`}
         >
@@ -1203,7 +1262,7 @@ export function UserTravels() {
           <div className="flex gap-2 items-center">
             <button
               onClick={handleBookFromStandard}
-              className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg text-sm bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white"
+              className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg text-sm bg-linear-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white"
             >
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
               <span className="hidden sm:inline">
@@ -1213,7 +1272,7 @@ export function UserTravels() {
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg text-sm bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
+              className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg text-sm bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
             >
               <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
               <span className="hidden sm:inline">Add Travel</span>
@@ -1232,7 +1291,7 @@ export function UserTravels() {
               }}
               className={`px-5 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
                 selectedFilter === "all"
-                  ? "bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
+                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
                   : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
               }`}
             >
@@ -1245,7 +1304,7 @@ export function UserTravels() {
               }}
               className={`px-5 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
                 selectedFilter === "owned"
-                  ? "bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
+                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
                   : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
               }`}
             >
@@ -1258,7 +1317,7 @@ export function UserTravels() {
               }}
               className={`px-5 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
                 selectedFilter === "collaborated"
-                  ? "bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
+                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
                   : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
               }`}
             >
@@ -1268,7 +1327,7 @@ export function UserTravels() {
               onClick={() => setSelectedFilter("requested")}
               className={`px-5 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
                 selectedFilter === "requested"
-                  ? "bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
+                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
                   : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
               }`}
             >
@@ -1285,7 +1344,7 @@ export function UserTravels() {
                   setRequestedSubTab(value)
                 }
               >
-                <SelectTrigger className="w-[180px] h-10 border-2 border-border bg-card text-card-foreground">
+                <SelectTrigger className="w-45 h-10 border-2 border-border bg-card text-card-foreground">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1324,7 +1383,7 @@ export function UserTravels() {
               {selectedTab === "draft" && (
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="px-6 py-2.5 rounded-xl transition-all duration-200 inline-flex items-center gap-2 shadow-md hover:shadow-lg bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
+                  className="px-6 py-2.5 rounded-xl transition-all duration-200 inline-flex items-center gap-2 shadow-md hover:shadow-lg bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
                 >
                   <Plus className="w-5 h-5" strokeWidth={2} />
                   Create Travel Plan
@@ -1411,10 +1470,10 @@ export function UserTravels() {
 
       {/* Add Travel Modal */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
+        <DialogContent className="sm:max-w-150 max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 pb-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                 <Plus className="w-5 h-5 text-white" />
               </div>
               Add Travel
@@ -1430,7 +1489,7 @@ export function UserTravels() {
                 className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white dark:bg-[#1E293B] hover:bg-[rgba(10,122,255,0.02)] dark:hover:bg-[rgba(10,122,255,0.05)] transition-all duration-200 text-left group"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 group-hover:scale-110 transition-transform">
                     <Sparkles className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
@@ -1450,7 +1509,7 @@ export function UserTravels() {
                 className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#8B5CF6] bg-white dark:bg-[#1E293B] hover:bg-[rgba(139,92,246,0.02)] dark:hover:bg-[rgba(139,92,246,0.05)] transition-all duration-200 text-left group"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8B5CF6] to-[#A78BFA] flex items-center justify-center shadow-lg shadow-[#8B5CF6]/20 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#8B5CF6] to-[#A78BFA] flex items-center justify-center shadow-lg shadow-[#8B5CF6]/20 group-hover:scale-110 transition-transform">
                     <Users className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
@@ -1576,10 +1635,10 @@ export function UserTravels() {
       />
       {/* Share QR Code Modal */}
       <Dialog open={showShareQRModal} onOpenChange={setShowShareQRModal}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                 <Share2 className="w-5 h-5 text-white" />
               </div>
               Share Travel Booking
@@ -1620,7 +1679,7 @@ export function UserTravels() {
             <div className="flex gap-2 pt-2 mx-6">
               <button
                 onClick={handleDownloadQR}
-                className="flex-1 h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg hover:-translate-y-0.5 transition-all"
+                className="flex-1 h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg hover:-translate-y-0.5 transition-all"
               >
                 <Download className="w-4 h-4" />
                 Download QR Code
