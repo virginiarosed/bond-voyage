@@ -278,10 +278,11 @@ export interface RouteOptimizationRequest {
     lng: number;
     name: string;
     location: string;
-    time: string | null;
+    time: string;
   }>;
   origin: string;
   destination: string;
+  mode?: "drive" | "walk" | "bike" | "transit";
 }
 
 export interface ChatbotRequest {
@@ -401,23 +402,47 @@ export interface RouteCalculationRequest {
     id: string;
     lat: number;
     lng: number;
-    name?: string;
-    location?: string;
-    time?: string | null;
+    name: string;
+    location: string;
+    time: string;
   }>;
-  origin?: string;
-  destination?: string;
+  origin: string;
+  destination: string;
   mode?: "drive" | "walk" | "bike" | "transit";
+}
+
+export interface RouteGeometry {
+  type: "MultiLineString";
+  coordinates: number[][][];
+}
+
+export interface ActivityResponse {
+  id: string;
+  lat: number;
+  lng: number;
+  name: string;
+  location: string;
+  time: string;
 }
 
 export interface RouteCalculationResponse {
   success: boolean;
   message: string;
   data: {
-    route: {
-      distance: number;
-      duration: number;
-      polyline?: string;
-    };
+    activities: ActivityResponse[];
+    routeGeometry: RouteGeometry;
+    totalDistance: number;
+    totalTime: number;
+  };
+}
+
+export interface RouteOptimizationResponse {
+  success: boolean;
+  message: string;
+  data: {
+    activities: ActivityResponse[];
+    routeGeometry: RouteGeometry;
+    totalDistance: number;
+    totalTime: number;
   };
 }
