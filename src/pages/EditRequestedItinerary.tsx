@@ -2649,7 +2649,7 @@ export function EditRequestedItinerary() {
             </button>
             <button
               onClick={handleSaveClick}
-              className="h-11 px-8 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] hover:from-[#0865CC] hover:to-[#12A594] text-white flex items-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 transition-all"
+              className="h-11 px-8 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] hover:from-[#0865CC] hover:to-[#12A594] text-white flex items-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 transition-all"
               disabled={isUpdatingBooking}
             >
               <Save className="w-4 h-4" />
