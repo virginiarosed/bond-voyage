@@ -72,7 +72,7 @@ import { useUpdatePaymentStatus } from "../hooks/usePayments";
 import { queryKeys } from "../utils/lib/queryKeys";
 import { capitalize } from "../utils/helpers/capitalize";
 import { PaymentSection } from "../components/PaymentSection";
-import { transformDetailedBooking } from "../utils/helpers/transformTravelDetailBooking";
+import { BookingDetailView } from "../components/BookingDetailView";
 
 interface BookingsProps {
   onMoveToApprovals: (booking: any) => void;
@@ -207,8 +207,9 @@ export function Bookings({
       endDate: endDate,
       travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
       totalAmount: totalAmount,
-      paid: 0,
-      paymentStatus: "Unpaid",
+      paid: 0, // This will be calculated from actual payments
+      totalPaid: 0, // This will be calculated from actual payments
+      paymentStatus: apiBooking.paymentStatus || "PENDING", // ✅ Use actual status from API
       bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
       bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
       status: apiBooking.status,
@@ -219,7 +220,6 @@ export function Bookings({
       rejectionResolution: apiBooking.rejectionResolution,
       resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
       paymentHistory: [],
-      totalPaid: 0,
       bookingSource: apiBooking.type,
       itineraryDetails: [],
     };
@@ -228,7 +228,7 @@ export function Bookings({
   const bookings = bookingsData?.data?.map(transformBooking) || [];
   const selectedBooking = useMemo(() => {
     return bookingDetailData?.data
-      ? transformDetailedBooking(bookingDetailData.data)
+      ? transformBooking(bookingDetailData.data)
       : null;
   }, [bookingDetailData?.data]);
 
@@ -668,632 +668,155 @@ export function Bookings({
       );
     }
 
-    const { totalAmount, paidAmount, balance, progressPercent } =
-      calculatePaymentProgress(selectedBooking);
-    const paymentSectionState =
-      selectedBooking.paymentStatus === "Paid"
-        ? "fullyPaid"
-        : selectedBooking.paymentStatus === "Partial"
-        ? "partial"
-        : "unpaid";
-    const pendingPaymentsCount = getPendingPaymentsCount(selectedBooking);
-
     return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={handleBackToList}
-            className="w-10 h-10 rounded-xl bg-white border-2 border-[#E5E7EB] hover:border-[#0A7AFF] flex items-center justify-center transition-all"
-          >
-            <ChevronLeft className="w-5 h-5 text-[#64748B]" />
-          </button>
-          <div>
-            <h2 className="text-[#1A2B4F] font-semibold">
-              {selectedBooking.destination}
-            </h2>
-            <p className="text-sm text-[#64748B]">Booking Details</p>
-          </div>
-        </div>
-
-        {/* Booking Header Card */}
-        <div className="bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-semibold mb-2">
-                {selectedBooking.destination}
-              </h1>
-              <div className="flex items-center gap-2 text-white/90">
-                <MapPin className="w-4 h-4" />
-                <span className="text-lg">{selectedBooking.destination}</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-white/80 text-sm mb-1">Booking ID</p>
-              <p className="text-2xl font-semibold">
-                {selectedBooking.bookingCode}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-4 gap-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <Calendar className="w-5 h-5 mb-2 text-white/80" />
-              <p className="text-white/80 text-xs mb-1">Travel Dates</p>
-              <p className="font-medium">
-                {formatDateRange(
-                  selectedBooking.startDate,
-                  selectedBooking.endDate
-                )}
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <Users className="w-5 h-5 mb-2 text-white/80" />
-              <p className="text-white/80 text-xs mb-1">Travelers</p>
-              <p className="font-medium">
-                {selectedBooking.travelers}{" "}
-                {selectedBooking.travelers > 1 ? "People" : "Person"}
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <CreditCard className="w-5 h-5 mb-2 text-white/80" />
-              <p className="text-white/80 text-xs mb-1">Total Amount</p>
-              <p className="font-medium">
-                ₱{selectedBooking.totalAmount.toLocaleString()}
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <Clock className="w-5 h-5 mb-2 text-white/80" />
-              <p className="text-white/80 text-xs mb-1">Booked On</p>
-              <p className="font-medium">{selectedBooking.bookedDate}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-6">
-          {/* Left Column */}
-          <div className="space-y-6">
-            {/* Customer Information */}
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-[#1A2B4F]">
-                    Customer Information
-                  </h3>
-                </div>
-              </div>
-              <div className="p-6 space-y-4">
-                <div>
-                  <p className="text-xs text-[#64748B] mb-1">Full Name</p>
-                  <p className="text-[#1A2B4F] font-medium">
-                    {selectedBooking.customer}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-[#64748B] mb-1">Email Address</p>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-[#0A7AFF]" />
-                    <p className="text-[#334155]">{selectedBooking.email}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-[#64748B] mb-1">Mobile Number</p>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-[#14B8A6]" />
-                    <p className="text-[#334155]">{selectedBooking.mobile}</p>
-                  </div>
-                </div>
-              </div>
+      <BookingDetailView
+        booking={{
+          id: selectedBooking.id,
+          bookingCode: selectedBooking.bookingCode,
+          customer: selectedBooking.customer,
+          email: selectedBooking.email,
+          mobile: selectedBooking.mobile,
+          destination: selectedBooking.destination,
+          itinerary: selectedBooking.itinerary || selectedBooking.destination,
+          dates: formatDateRange(
+            selectedBooking.startDate,
+            selectedBooking.endDate
+          ),
+          travelers: selectedBooking.travelers,
+          total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
+          totalAmount: selectedBooking.totalAmount, // ✅ ADD THIS LINE
+          paid: selectedBooking.paid || selectedBooking.totalPaid || 0, // ✅ ADD THIS LINE
+          paymentStatus: selectedBooking.paymentStatus, // ✅ This is already correct
+          bookedDate: selectedBooking.bookedDate,
+          tripStatus: selectedBooking.status,
+          rejectionReason: selectedBooking.rejectionReason || "",
+          rejectionResolution: selectedBooking.rejectionResolution || "",
+          resolutionStatus: selectedBooking.resolutionStatus || "unresolved",
+        }}
+        itinerary={bookingDetailData?.data?.itinerary!}
+        onBack={handleBackToList}
+        onSendToClient={() => {
+          toast.info("This booking is already confirmed");
+        }}
+        onCancelBooking={() => handleCancelClick(selectedBooking)}
+        onUpdateStatus={(status: any, reason: any, resolution: any) => {
+          // Handle status update if needed
+          toast.info("Status update functionality coming soon");
+        }}
+        actionButtons={
+          <div className="space-y-3">
+            {/* Export Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  const bookingData = {
+                    id: selectedBooking.id,
+                    customer: selectedBooking.customer,
+                    email: selectedBooking.email,
+                    mobile: selectedBooking.mobile,
+                    destination: selectedBooking.destination,
+                    dates: formatDateRange(
+                      selectedBooking.startDate,
+                      selectedBooking.endDate
+                    ),
+                    travelers: selectedBooking.travelers,
+                    total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
+                    bookedDate: selectedBooking.bookedDate,
+                    status: selectedBooking.status,
+                  };
+                  exportBookingDetailToPDF(
+                    bookingData,
+                    selectedBooking.itineraryDetails
+                  );
+                  toast.success("Exporting booking as PDF...");
+                }}
+                className="h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 text-sm text-[#334155] hover:text-[#FF6B6B] font-medium transition-all"
+              >
+                <Download className="w-4 h-4" />
+                PDF
+              </button>
+              <button
+                onClick={() => {
+                  const bookingData = {
+                    id: selectedBooking.id,
+                    customer: selectedBooking.customer,
+                    email: selectedBooking.email,
+                    mobile: selectedBooking.mobile,
+                    destination: selectedBooking.destination,
+                    dates: formatDateRange(
+                      selectedBooking.startDate,
+                      selectedBooking.endDate
+                    ),
+                    travelers: selectedBooking.travelers,
+                    total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
+                    bookedDate: selectedBooking.bookedDate,
+                    status: selectedBooking.status,
+                  };
+                  exportBookingDetailToExcel(
+                    bookingData,
+                    selectedBooking.itineraryDetails
+                  );
+                  toast.success("Exporting booking as Excel...");
+                }}
+                className="h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#10B981] hover:bg-[rgba(16,185,129,0.05)] flex items-center justify-center gap-2 text-sm text-[#334155] hover:text-[#10B981] font-medium transition-all"
+              >
+                <Download className="w-4 h-4" />
+                Excel
+              </button>
             </div>
 
-            {/* Payment Information */}
+            {/* Edit/Move Buttons */}
+            {selectedBooking.bookingType === "STANDARD" ? (
+              <button
+                onClick={() => handleEditBooking(selectedBooking)}
+                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+              >
+                <Edit className="w-4 h-4" />
+                Edit Booking
+              </button>
+            ) : selectedBooking.bookingType === "REQUESTED" ? (
+              <button
+                onClick={() => handleMoveToRequestedClick(selectedBooking)}
+                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+              >
+                <Package className="w-4 h-4" />
+                Move to Requested
+              </button>
+            ) : (
+              <button
+                onClick={() => handleMoveToApprovalsClick(selectedBooking)}
+                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Move to Approvals
+              </button>
+            )}
 
-            <PaymentSection
-              booking={{
-                id: selectedBooking.id,
-                totalAmount: selectedBooking.totalAmount,
-                totalPaid: selectedBooking.totalPaid || 0,
-                paymentStatus: selectedBooking.paymentStatus || "Unpaid",
-              }}
-              onPaymentUpdate={() => {
-                refetch();
-              }}
-            />
-
-            {/* Actions */}
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-6 space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+            {/* Complete Button */}
+            {selectedBooking.status !== "COMPLETED" &&
+              selectedBooking.paymentStatus === "Paid" && (
                 <button
-                  onClick={() => {
-                    const bookingData = {
-                      id: selectedBooking.id,
-                      customer: selectedBooking.customer,
-                      email: selectedBooking.email,
-                      mobile: selectedBooking.mobile,
-                      destination: selectedBooking.destination,
-                      dates: formatDateRange(
-                        selectedBooking.startDate,
-                        selectedBooking.endDate
-                      ),
-                      travelers: selectedBooking.travelers,
-                      total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
-                      bookedDate: selectedBooking.bookedDate,
-                      status: selectedBooking.status,
-                    };
-                    exportBookingDetailToPDF(
-                      bookingData,
-                      selectedBooking.itineraryDetails
-                    );
-                    toast.success("Exporting booking as PDF...");
-                  }}
-                  className="h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 text-sm text-[#334155] hover:text-[#FF6B6B] font-medium transition-all"
+                  onClick={() => handleCompleteClick(selectedBooking)}
+                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
                 >
-                  <Download className="w-4 h-4" />
-                  PDF
-                </button>
-                <button
-                  onClick={() => {
-                    const bookingData = {
-                      id: selectedBooking.id,
-                      customer: selectedBooking.customer,
-                      email: selectedBooking.email,
-                      mobile: selectedBooking.mobile,
-                      destination: selectedBooking.destination,
-                      dates: formatDateRange(
-                        selectedBooking.startDate,
-                        selectedBooking.endDate
-                      ),
-                      travelers: selectedBooking.travelers,
-                      total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
-                      bookedDate: selectedBooking.bookedDate,
-                      status: selectedBooking.status,
-                    };
-                    exportBookingDetailToExcel(
-                      bookingData,
-                      selectedBooking.itineraryDetails
-                    );
-                    toast.success("Exporting booking as Excel...");
-                  }}
-                  className="h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#10B981] hover:bg-[rgba(16,185,129,0.05)] flex items-center justify-center gap-2 text-sm text-[#334155] hover:text-[#10B981] font-medium transition-all"
-                >
-                  <Download className="w-4 h-4" />
-                  Excel
-                </button>
-              </div>
-
-              {selectedBooking.bookingType === "STANDARD" ? (
-                <button
-                  onClick={() => handleEditBooking(selectedBooking)}
-                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit Booking
-                </button>
-              ) : selectedBooking.bookingType === "REQUESTED" ? (
-                <button
-                  onClick={() => handleMoveToRequestedClick(selectedBooking)}
-                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
-                >
-                  <Package className="w-4 h-4" />
-                  Move to Requested
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleMoveToApprovalsClick(selectedBooking)}
-                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Move to Approvals
+                  <CheckCircle2 className="w-4 h-4" />
+                  Mark as Complete
                 </button>
               )}
 
-              {selectedBooking.status !== "COMPLETED" &&
-                selectedBooking.paymentStatus === "Paid" && (
-                  <button
-                    onClick={() => handleCompleteClick(selectedBooking)}
-                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Mark as Complete
-                  </button>
-                )}
-
-              <button
-                onClick={() => handleCancelClick(selectedBooking)}
-                className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white flex items-center justify-center gap-2 font-medium transition-all"
-              >
-                <X className="w-4 h-4" />
-                Cancel Booking
-              </button>
-
-              <button
-                onClick={handleBackToList}
-                className="w-full h-11 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-[#334155] font-medium transition-all"
-              >
-                Back to List
-              </button>
-            </div>
+            {/* Cancel Button */}
+            <button
+              onClick={() => handleCancelClick(selectedBooking)}
+              className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white flex items-center justify-center gap-2 font-medium transition-all"
+            >
+              <X className="w-4 h-4" />
+              Cancel Booking
+            </button>
           </div>
-
-          {/* Right Column - Itinerary */}
-          <div className="col-span-2">
-            {selectedBooking.itineraryDetails &&
-            selectedBooking.itineraryDetails.length > 0 ? (
-              <ItineraryDetailDisplay
-                itinerary={selectedBooking.itineraryDetails}
-              />
-            ) : (
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 text-center">
-                <MapPin className="w-12 h-12 text-[#64748B] mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-[#1A2B4F] mb-2">
-                  No Itinerary Available
-                </h3>
-                <p className="text-sm text-[#64748B]">
-                  The itinerary details for this booking are not yet available.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Edit Booking Modal */}
-        <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Edit className="w-5 h-5 text-[#0A7AFF]" />
-                Edit Booking
-              </DialogTitle>
-              <DialogDescription>
-                Update the booking details for this standard itinerary.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="destination">Destination</Label>
-                <Input
-                  id="destination"
-                  value={editFormData.destination}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      destination: e.target.value,
-                    })
-                  }
-                  placeholder="Enter destination"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={editFormData.startDate}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        startDate: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={editFormData.endDate}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        endDate: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="travelers">Number of Travelers</Label>
-                <Input
-                  id="travelers"
-                  type="number"
-                  min="1"
-                  value={editFormData.travelers}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      travelers: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <ShadcnButton
-                variant="outline"
-                onClick={() => {
-                  setEditModalOpen(false);
-                  setBookingToEdit(null);
-                }}
-              >
-                Cancel
-              </ShadcnButton>
-              <ShadcnButton onClick={handleSaveEdit}>Save Changes</ShadcnButton>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Cancel Booking Modal */}
-        <ConfirmationModal
-          open={cancelDialogOpen}
-          onOpenChange={setCancelDialogOpen}
-          title="Cancel Booking"
-          description="Confirm that you want to cancel this booking."
-          icon={<X className="w-5 h-5 text-white" />}
-          iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
-          iconShadow="shadow-[#FF6B6B]/20"
-          contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)]"
-          contentBorder="border-[rgba(255,107,107,0.2)]"
-          content={
-            bookingToCancel && (
-              <>
-                <p className="text-sm text-[#334155] mb-4">
-                  Are you sure you want to cancel the booking for{" "}
-                  <span className="font-semibold text-[#FF6B6B]">
-                    {bookingToCancel.customer}
-                  </span>
-                  ?
-                </p>
-                <div>
-                  <Label htmlFor="cancellation-reason">
-                    Reason for Cancellation
-                  </Label>
-                  <Textarea
-                    id="cancellation-reason"
-                    placeholder="Enter reason..."
-                    value={cancellationReason}
-                    onChange={(e) => setCancellationReason(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-              </>
-            )
-          }
-          onConfirm={handleConfirmCancel}
-          onCancel={() => {
-            setCancelDialogOpen(false);
-            setCancellationReason("");
-          }}
-          confirmText="Cancel Booking"
-          cancelText="Go Back"
-          confirmVariant="destructive"
-        />
-
-        {/* Complete Booking Modal */}
-        <ConfirmationModal
-          open={completeDialogOpen}
-          onOpenChange={setCompleteDialogOpen}
-          title="Mark Trip as Complete"
-          description="Confirm that this trip has been successfully completed."
-          icon={<CheckCircle2 className="w-5 h-5 text-white" />}
-          iconGradient="bg-gradient-to-br from-[#10B981] to-[#34D399]"
-          iconShadow="shadow-[#10B981]/20"
-          contentGradient="bg-gradient-to-br from-[rgba(16,185,129,0.08)] to-[rgba(16,185,129,0.12)]"
-          contentBorder="border-[rgba(16,185,129,0.2)]"
-          content={
-            bookingToComplete && (
-              <p className="text-sm text-[#334155]">
-                Are you sure you want to mark the trip for{" "}
-                <span className="font-semibold text-[#10B981]">
-                  {bookingToComplete.customer}
-                </span>{" "}
-                as completed?
-              </p>
-            )
-          }
-          onConfirm={handleConfirmComplete}
-          onCancel={() => setCompleteDialogOpen(false)}
-          confirmText="Mark as Complete"
-          cancelText="Cancel"
-          confirmVariant="success"
-        />
-
-        {/* Move to Approvals Modal */}
-        <ConfirmationModal
-          open={moveToApprovalsDialogOpen}
-          onOpenChange={setMoveToApprovalsDialogOpen}
-          title="Move to Approvals"
-          description="This booking will be moved to the Approvals page for review."
-          icon={<RotateCcw className="w-5 h-5 text-white" />}
-          iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
-          iconShadow="shadow-[#0A7AFF]/20"
-          contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)]"
-          contentBorder="border-[rgba(10,122,255,0.2)]"
-          content={
-            bookingToMoveToApprovals && (
-              <p className="text-sm text-[#334155]">
-                Move booking for{" "}
-                <span className="font-semibold text-[#0A7AFF]">
-                  {bookingToMoveToApprovals.customer}
-                </span>{" "}
-                to Approvals for re-review?
-              </p>
-            )
-          }
-          onConfirm={handleConfirmMoveToApprovals}
-          onCancel={() => setMoveToApprovalsDialogOpen(false)}
-          confirmText="Move to Approvals"
-          cancelText="Cancel"
-          confirmVariant="default"
-        />
-
-        {/* Move to Requested Modal */}
-        <Dialog
-          open={moveToRequestedDialogOpen}
-          onOpenChange={setMoveToRequestedDialogOpen}
-        >
-          <DialogContent className="sm:max-w-125">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg">
-                  <Package className="w-5 h-5 text-white" />
-                </div>
-                Move to Requested
-              </DialogTitle>
-              <DialogDescription>
-                This booking will be moved to the Requested tab.
-              </DialogDescription>
-            </DialogHeader>
-
-            {bookingToMoveToRequested && (
-              <div className="py-4">
-                <p className="text-sm text-[#334155]">
-                  Move booking for{" "}
-                  <span className="font-semibold text-[#0A7AFF]">
-                    {bookingToMoveToRequested.customer}
-                  </span>{" "}
-                  to Requested Itinerary tab?
-                </p>
-              </div>
-            )}
-
-            <DialogFooter>
-              <ShadcnButton
-                variant="outline"
-                onClick={() => setMoveToRequestedDialogOpen(false)}
-              >
-                Cancel
-              </ShadcnButton>
-              <ShadcnButton onClick={handleConfirmMoveToRequested}>
-                <Package className="w-4 h-4 mr-2" />
-                Move to Requested
-              </ShadcnButton>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Payment Detail Modal */}
-        <Dialog
-          open={paymentDetailModalOpen}
-          onOpenChange={setPaymentDetailModalOpen}
-        >
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-[#0A7AFF]" />
-                Payment Details
-              </DialogTitle>
-            </DialogHeader>
-
-            {selectedPayment && (
-              <div className="space-y-4">
-                <div className="bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
-                  <div className="flex justify-between">
-                    <div className="text-right">
-                      <p className="text-sm">Amount</p>
-                      <p className="text-2xl font-bold">
-                        ₱{selectedPayment.amount.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedPayment.proofOfPayment && (
-                  <div>
-                    <Label>Proof of Payment</Label>
-                    <img
-                      src={selectedPayment.proofOfPayment}
-                      alt="Proof of payment"
-                      className="w-full rounded-lg border"
-                    />
-                  </div>
-                )}
-
-                {selectedPayment.status === "pending" && (
-                  <div className="flex gap-3">
-                    <ShadcnButton
-                      onClick={() => handleVerifyPayment(selectedPayment)}
-                      className="flex-1"
-                    >
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Verify Payment
-                    </ShadcnButton>
-                    <ShadcnButton
-                      variant="destructive"
-                      onClick={() =>
-                        handleOpenVerificationModal(selectedPayment)
-                      }
-                      className="flex-1"
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Reject Payment
-                    </ShadcnButton>
-                  </div>
-                )}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Payment Rejection Modal */}
-        <Dialog
-          open={verificationModalOpen}
-          onOpenChange={setVerificationModalOpen}
-        >
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-[#FF6B6B]" />
-                Reject Payment
-              </DialogTitle>
-              <DialogDescription>
-                Provide a reason for rejecting this payment.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="rejection-reason">Rejection Reason</Label>
-                <Textarea
-                  id="rejection-reason"
-                  placeholder="Enter reason for rejection..."
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  rows={4}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <ShadcnButton
-                variant="outline"
-                onClick={() => {
-                  setVerificationModalOpen(false);
-                  setRejectionReason("");
-                }}
-              >
-                Cancel
-              </ShadcnButton>
-              <ShadcnButton
-                variant="destructive"
-                onClick={() =>
-                  selectedPayment && handleRejectPayment(selectedPayment)
-                }
-                disabled={!rejectionReason.trim()}
-              >
-                <X className="w-4 h-4 mr-2" />
-                Reject Payment
-              </ShadcnButton>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+        }
+        breadcrumbPage="Bookings"
+        isRequestedItinerary={false}
+      />
     );
   }
 
