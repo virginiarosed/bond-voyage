@@ -18,9 +18,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
-import { useOptimizeRoute } from "../hooks/useOptimizeRoute";
+import { useOptimizeRoute, useCalculateRoute } from "../hooks/useOptimizeRoute";
 import { isMeaningfulLocation } from "../utils/helpers/isMeaningFulLocation";
-import { LOCATION_COORDS } from "../utils/constants/constants";
 import type { Place } from "../types/types";
 import "leaflet/dist/leaflet.css";
 import * as L from "leaflet";
@@ -99,7 +98,8 @@ export function RouteOptimizationPanel({
   const optimizationTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const pendingOptimizationsRef = useRef<Set<string>>(new Set());
 
-  const { mutate: optimizeRoute, isPending: isOptimizing } = useOptimizeRoute();
+  const { mutate: optimizeRoute } = useOptimizeRoute();
+  const { mutate: calculateRoute } = useCalculateRoute();
 
   const daysWithValidLocations = useMemo(
     () =>
@@ -129,51 +129,10 @@ export function RouteOptimizationPanel({
         return [p.lat, p.lng];
       }
 
-      const location = locationOrPlace as string;
-      if (!isMeaningfulLocation(location)) {
-        return null;
-      }
-
-      const normalizedLocation = location.toLowerCase().trim().split(",")[0];
-
-      if (LOCATION_COORDS[normalizedLocation]) {
-        return LOCATION_COORDS[normalizedLocation] as [number, number];
-      }
-
-      for (const [key, coords] of Object.entries(LOCATION_COORDS)) {
-        if (
-          normalizedLocation.includes(key) ||
-          key.includes(normalizedLocation)
-        ) {
-          return coords as [number, number];
-        }
-      }
-
       return null;
     },
     []
   );
-
-  const calculateDistance = useCallback(
-    (coord1: [number, number], coord2: [number, number]): number => {
-      const R = 6371;
-      const dLat = ((coord2[0] - coord1[0]) * Math.PI) / 180;
-      const dLon = ((coord2[1] - coord1[1]) * Math.PI) / 180;
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos((coord1[0] * Math.PI) / 180) *
-          Math.cos((coord2[0] * Math.PI) / 180) *
-          Math.sin(dLon / 2) *
-          Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    },
-    []
-  );
-
-  const calculateTravelTime = useCallback((distance: number): number => {
-    return Math.round((distance / 40) * 60);
-  }, []);
 
   const validateOptimizationData = useCallback((data: any): boolean => {
     if (!data || !data.activities || !Array.isArray(data.activities)) {
@@ -200,74 +159,79 @@ export function RouteOptimizationPanel({
     return true;
   }, []);
 
-  const prepareRouteOptimizationData = useCallback(
-    (activities: Activity[]) => {
-      const meaningfulActivities = activities.filter(
-        (a) =>
-          isMeaningfulLocation(a.location) &&
-          a.locationData &&
-          typeof a.locationData.lat === "number" &&
-          typeof a.locationData.lng === "number"
-      );
+  const prepareRouteOptimizationData = useCallback((activities: Activity[]) => {
+    const meaningfulActivities = activities.filter(
+      (a) =>
+        isMeaningfulLocation(a.location) &&
+        a.locationData &&
+        typeof a.locationData.lat === "number" &&
+        typeof a.locationData.lng === "number"
+    );
 
-      if (meaningfulActivities.length < 4) {
-        return null;
+    console.log("📍 Meaningful activities:", meaningfulActivities.length);
+
+    if (meaningfulActivities.length < 4) {
+      console.log("❌ Not enough meaningful activities");
+      return null;
+    }
+
+    const formattedActivities = [];
+    let firstCoords: [number, number] | null = null;
+    let lastCoords: [number, number] | null = null;
+
+    for (let i = 0; i < meaningfulActivities.length; i++) {
+      const activity = meaningfulActivities[i];
+
+      const coords: [number, number] = [
+        activity.locationData!.lat,
+        activity.locationData!.lng,
+      ];
+
+      const activityId = activity.id || `activity-${Date.now()}-${i}`;
+      const activityTime = activity.time || "";
+
+      formattedActivities.push({
+        id: activityId,
+        lat: coords[0],
+        lng: coords[1],
+        name: activity.title || "Untitled Activity",
+        location: activity.location,
+        time: activityTime,
+      });
+
+      if (i === 0) {
+        firstCoords = coords;
       }
-
-      const formattedActivities = [];
-      let firstCoords: [number, number] | null = null;
-      let lastCoords: [number, number] | null = null;
-
-      for (let i = 0; i < meaningfulActivities.length; i++) {
-        const activity = meaningfulActivities[i];
-        const coords = getCoordinates(
-          activity.locationData ?? activity.location
-        );
-        if (!coords) {
-          continue;
-        }
-
-        const activityId = activity.id || `activity-${Date.now()}-${i}`;
-        const activityTime = activity.time || "";
-
-        formattedActivities.push({
-          id: activityId,
-          lat: coords[0],
-          lng: coords[1],
-          name: activity.title,
-          location: activity.location,
-          time: activityTime,
-        });
-
-        if (formattedActivities.length === 1) {
-          firstCoords = coords;
-        }
+      if (i === meaningfulActivities.length - 1) {
         lastCoords = coords;
       }
+    }
 
-      if (formattedActivities.length < 4) {
-        return null;
-      }
+    if (formattedActivities.length < 4) {
+      console.log("❌ Not enough formatted activities");
+      return null;
+    }
 
-      if (!firstCoords || !lastCoords) {
-        return null;
-      }
+    if (!firstCoords || !lastCoords) {
+      console.log("❌ Missing first or last coords");
+      return null;
+    }
 
-      const originString = `${firstCoords[0]},${firstCoords[1]}`;
-      const destinationString = `${lastCoords[0]},${lastCoords[1]}`;
+    const originString = `${firstCoords[0]},${firstCoords[1]}`;
+    const destinationString = `${lastCoords[0]},${lastCoords[1]}`;
 
-      return {
-        activities: formattedActivities,
-        origin: originString,
-        destination: destinationString,
-      };
-    },
-    [getCoordinates]
-  );
+    const result = {
+      activities: formattedActivities,
+      origin: originString,
+      destination: destinationString,
+    };
+
+    console.log("✅ Optimization data prepared:", result);
+    return result;
+  }, []);
 
   const calculateOriginalRouteDistance = useCallback(
-    (activities: Activity[]): number => {
-      let totalDistance = 0;
+    (activities: Activity[], dayId: string) => {
       const activitiesWithValidLocations = activities.filter(
         (a) =>
           isMeaningfulLocation(a.location) &&
@@ -276,84 +240,82 @@ export function RouteOptimizationPanel({
           typeof a.locationData.lng === "number"
       );
 
-      for (let i = 0; i < activitiesWithValidLocations.length - 1; i++) {
-        const coord1 = getCoordinates(
-          activitiesWithValidLocations[i].locationData ??
-            activitiesWithValidLocations[i].location
-        );
-        const coord2 = getCoordinates(
-          activitiesWithValidLocations[i + 1].locationData ??
-            activitiesWithValidLocations[i + 1].location
-        );
-
-        if (coord1 && coord2) {
-          totalDistance += calculateDistance(coord1, coord2);
-        }
+      if (activitiesWithValidLocations.length < 2) {
+        console.log("⚠️ Not enough activities for route calculation");
+        return;
       }
 
-      return totalDistance;
-    },
-    [getCoordinates, calculateDistance]
-  );
-
-  const optimizeRouteLocally = useCallback(
-    (activities: Activity[]): Activity[] => {
-      if (activities.length <= 2) return activities;
-
-      const activitiesWithLocations = activities.filter(
-        (a) =>
-          isMeaningfulLocation(a.location) &&
-          a.locationData &&
-          typeof a.locationData.lat === "number" &&
-          typeof a.locationData.lng === "number"
+      const formattedActivities = activitiesWithValidLocations.map(
+        (activity, i) => ({
+          id: activity.id || `activity-${Date.now()}-${i}`,
+          lat: activity.locationData!.lat,
+          lng: activity.locationData!.lng,
+          name: activity.title || "Untitled Activity",
+          location: activity.location,
+          time: activity.time || "",
+        })
       );
-      if (activitiesWithLocations.length <= 2) return activities;
 
-      const firstActivity = activitiesWithLocations[0];
+      const firstActivity = activitiesWithValidLocations[0];
       const lastActivity =
-        activitiesWithLocations[activitiesWithLocations.length - 1];
-      const middleActivities = activitiesWithLocations.slice(1, -1);
+        activitiesWithValidLocations[activitiesWithValidLocations.length - 1];
 
-      if (middleActivities.length === 0) return activitiesWithLocations;
+      const origin = `${firstActivity.locationData!.lat},${
+        firstActivity.locationData!.lng
+      }`;
+      const destination = `${lastActivity.locationData!.lat},${
+        lastActivity.locationData!.lng
+      }`;
 
-      const optimized: Activity[] = [firstActivity];
-      const remaining = [...middleActivities];
+      console.log("📍 Calculating original route distance:", {
+        activities: formattedActivities,
+        origin,
+        destination,
+      });
 
-      let current = firstActivity;
+      calculateRoute(
+        {
+          activities: formattedActivities,
+          origin,
+          destination,
+          mode: "drive",
+        },
+        {
+          onSuccess: (response) => {
+            console.log("✅ Original route calculated:", response);
 
-      while (remaining.length > 0) {
-        let nearestIndex = 0;
-        let shortestDistance = Infinity;
+            // Backend returns distance in meters, convert to km
+            const distance = response.data?.totalDistance
+              ? response.data.totalDistance / 1000
+              : 0;
+            // Backend returns duration in seconds, convert to minutes
+            const duration = response.data?.totalTime
+              ? Math.round(response.data.totalTime / 60)
+              : 0;
 
-        for (let i = 0; i < remaining.length; i++) {
-          const coord1 = getCoordinates(
-            current.locationData ?? current.location
-          );
-          const coord2 = getCoordinates(
-            remaining[i].locationData ?? remaining[i].location
-          );
-
-          if (coord1 && coord2) {
-            const distance = calculateDistance(coord1, coord2);
-            if (distance < shortestDistance) {
-              shortestDistance = distance;
-              nearestIndex = i;
-            }
-          }
+            setDayAnalyses((prev) => {
+              const updated = new Map(prev);
+              const current = updated.get(dayId);
+              if (current) {
+                updated.set(dayId, {
+                  ...current,
+                  routeAnalysis: {
+                    ...current.routeAnalysis,
+                    originalDistance: distance,
+                    totalTime: duration,
+                  },
+                });
+              }
+              return updated;
+            });
+          },
+          onError: (error) => {
+            console.error("❌ Failed to calculate original route:", error);
+          },
         }
-
-        current = remaining.splice(nearestIndex, 1)[0];
-        optimized.push(current);
-      }
-
-      optimized.push(lastActivity);
-
-      return optimized.map((activity, index) => ({
-        ...activity,
-        order: index,
-      }));
+      );
     },
-    [getCoordinates, calculateDistance]
+    [calculateRoute]
   );
 
   const processOptimizationResponse = useCallback(
@@ -361,6 +323,8 @@ export function RouteOptimizationPanel({
       response: any,
       originalActivities: Activity[]
     ): { optimizedActivities: Activity[]; routeData?: any } => {
+      console.log("📦 Processing optimization response:", response);
+
       if (
         response?.data?.activities &&
         Array.isArray(response.data.activities)
@@ -408,22 +372,27 @@ export function RouteOptimizationPanel({
         };
       }
 
+      // Fallback: return original order
       return {
-        optimizedActivities: optimizeRouteLocally(originalActivities),
+        optimizedActivities: originalActivities,
         routeData: undefined,
       };
     },
-    [optimizeRouteLocally]
+    []
   );
 
   const sendOptimizationRequest = useCallback(
     (day: Day, dayId: string) => {
+      console.log("🎯 sendOptimizationRequest called for:", dayId);
+
       if (pendingOptimizationsRef.current.has(dayId)) {
+        console.log("⏸️ Already pending, skipping:", dayId);
         return;
       }
 
       const existing = optimizationTimerRef.current.get(dayId);
       if (existing) {
+        console.log("🔄 Clearing existing timer for:", dayId);
         clearTimeout(existing);
       }
 
@@ -436,6 +405,7 @@ export function RouteOptimizationPanel({
         ).length >= 2;
 
       if (!hasValidLocations) {
+        console.log("❌ No valid locations, exiting");
         const stale = optimizationTimerRef.current.get(dayId);
         if (stale) {
           clearTimeout(stale);
@@ -445,6 +415,7 @@ export function RouteOptimizationPanel({
       }
 
       const timer = setTimeout(() => {
+        console.log("⏰ Timer fired for:", dayId);
         optimizationTimerRef.current.delete(dayId);
 
         const originalActivities = day.activities.filter(
@@ -455,15 +426,25 @@ export function RouteOptimizationPanel({
             typeof a.locationData.lng === "number"
         );
 
-        const originalDistance =
-          calculateOriginalRouteDistance(originalActivities);
+        console.log("🔍 DEBUG:", {
+          dayId,
+          totalActivities: day.activities.length,
+          validActivities: originalActivities.length,
+          activities: originalActivities.map((a) => ({
+            title: a.title,
+            location: a.location,
+            hasLocationData: !!a.locationData,
+            coords: a.locationData
+              ? [a.locationData.lat, a.locationData.lng]
+              : null,
+          })),
+        });
+
+        // Calculate original route distance using backend
+        calculateOriginalRouteDistance(originalActivities, dayId);
 
         if (originalActivities.length < 4) {
-          const optimized = optimizeRouteLocally(originalActivities);
-          const optimizedDistance = calculateOriginalRouteDistance(optimized);
-          const timeSaved =
-            calculateTravelTime(originalDistance) -
-            calculateTravelTime(optimizedDistance);
+          console.log("⚠️ Less than 4 activities, skipping optimization");
 
           setDayAnalyses((prev) => {
             const updated = new Map(prev);
@@ -471,11 +452,11 @@ export function RouteOptimizationPanel({
             if (current) {
               updated.set(dayId, {
                 ...current,
-                optimizedActivities: optimized,
+                optimizedActivities: originalActivities,
                 routeAnalysis: {
-                  originalDistance,
-                  optimizedDistance,
-                  timeSaved,
+                  ...current.routeAnalysis,
+                  optimizedDistance: current.routeAnalysis.originalDistance,
+                  timeSaved: 0,
                 },
                 isLoading: false,
               });
@@ -488,20 +469,20 @@ export function RouteOptimizationPanel({
         }
 
         if (originalActivities.length < 2) {
+          console.log("⚠️ Less than 2 activities, exiting");
           return;
         }
 
+        console.log("➕ Adding to pending optimizations:", dayId);
         pendingOptimizationsRef.current.add(dayId);
 
         const optimizationData =
           prepareRouteOptimizationData(originalActivities);
 
-        if (!optimizationData || !validateOptimizationData(optimizationData)) {
-          const optimized = optimizeRouteLocally(originalActivities);
-          const optimizedDistance = calculateOriginalRouteDistance(optimized);
-          const timeSaved =
-            calculateTravelTime(originalDistance) -
-            calculateTravelTime(optimizedDistance);
+        console.log("📦 Optimization data prepared:", optimizationData);
+
+        if (!optimizationData) {
+          console.log("❌ prepareRouteOptimizationData returned null");
 
           setDayAnalyses((prev) => {
             const updated = new Map(prev);
@@ -509,11 +490,11 @@ export function RouteOptimizationPanel({
             if (current) {
               updated.set(dayId, {
                 ...current,
-                optimizedActivities: optimized,
+                optimizedActivities: originalActivities,
                 routeAnalysis: {
-                  originalDistance,
-                  optimizedDistance,
-                  timeSaved,
+                  ...current.routeAnalysis,
+                  optimizedDistance: current.routeAnalysis.originalDistance,
+                  timeSaved: 0,
                 },
                 isLoading: false,
               });
@@ -524,6 +505,39 @@ export function RouteOptimizationPanel({
           pendingOptimizationsRef.current.delete(dayId);
           return;
         }
+
+        const isValid = validateOptimizationData(optimizationData);
+        console.log("🔍 Validation result:", isValid);
+
+        if (!isValid) {
+          console.log(
+            "❌ Validation failed! Data:",
+            JSON.stringify(optimizationData, null, 2)
+          );
+
+          setDayAnalyses((prev) => {
+            const updated = new Map(prev);
+            const current = updated.get(dayId);
+            if (current) {
+              updated.set(dayId, {
+                ...current,
+                optimizedActivities: originalActivities,
+                routeAnalysis: {
+                  ...current.routeAnalysis,
+                  optimizedDistance: current.routeAnalysis.originalDistance,
+                  timeSaved: 0,
+                },
+                isLoading: false,
+              });
+            }
+            return updated;
+          });
+
+          pendingOptimizationsRef.current.delete(dayId);
+          return;
+        }
+
+        console.log("✅ Validation passed! Setting loading state...");
 
         setDayAnalyses((prev) => {
           const updated = new Map(prev);
@@ -537,26 +551,30 @@ export function RouteOptimizationPanel({
           return updated;
         });
 
+        console.log(
+          "🚀 Calling API with payload:",
+          JSON.stringify(optimizationData, null, 2)
+        );
+
         optimizeRoute(optimizationData, {
           onSuccess: (response) => {
+            console.log("✅ API Success! Response:", response);
+
             const { optimizedActivities, routeData } =
               processOptimizationResponse(response, originalActivities);
 
-            const optimizedDistance = routeData?.totalDistance
-              ? routeData.totalDistance
-              : calculateOriginalRouteDistance(optimizedActivities);
-
+            const optimizedDistance = routeData?.totalDistance || 0;
             const optimizedTime = routeData?.totalTime
               ? Math.round(routeData.totalTime / 60)
-              : calculateTravelTime(optimizedDistance);
-
-            const timeSaved =
-              calculateTravelTime(originalDistance) - optimizedTime;
+              : 0;
 
             setDayAnalyses((prev) => {
               const updated = new Map(prev);
               const current = updated.get(dayId);
               if (current) {
+                const originalTime = current.routeAnalysis.totalTime || 0;
+                const timeSaved = originalTime - optimizedTime;
+
                 updated.set(dayId, {
                   ...current,
                   optimizedActivities,
@@ -576,20 +594,20 @@ export function RouteOptimizationPanel({
             pendingOptimizationsRef.current.delete(dayId);
           },
           onError: (error: any) => {
+            console.error("❌ API Error:", {
+              message: error.message,
+              response: error.response?.data,
+              status: error.response?.status,
+            });
+
             const errorMessage =
               error.response?.data?.message ||
               error.message ||
               "Could not optimize route";
 
             toast.error("Optimization Failed", {
-              description: `${errorMessage}. Using local optimization.`,
+              description: `${errorMessage}`,
             });
-
-            const optimized = optimizeRouteLocally(originalActivities);
-            const optimizedDistance = calculateOriginalRouteDistance(optimized);
-            const timeSaved =
-              calculateTravelTime(originalDistance) -
-              calculateTravelTime(optimizedDistance);
 
             setDayAnalyses((prev) => {
               const updated = new Map(prev);
@@ -597,11 +615,11 @@ export function RouteOptimizationPanel({
               if (current) {
                 updated.set(dayId, {
                   ...current,
-                  optimizedActivities: optimized,
+                  optimizedActivities: originalActivities,
                   routeAnalysis: {
-                    originalDistance,
-                    optimizedDistance,
-                    timeSaved,
+                    ...current.routeAnalysis,
+                    optimizedDistance: current.routeAnalysis.originalDistance,
+                    timeSaved: 0,
                   },
                   isLoading: false,
                 });
@@ -614,6 +632,7 @@ export function RouteOptimizationPanel({
         });
       }, 1500);
 
+      console.log("⏲️ Timer set for:", dayId, "(will fire in 1.5s)");
       optimizationTimerRef.current.set(dayId, timer);
     },
     [
@@ -621,9 +640,7 @@ export function RouteOptimizationPanel({
       calculateOriginalRouteDistance,
       prepareRouteOptimizationData,
       validateOptimizationData,
-      optimizeRouteLocally,
       processOptimizationResponse,
-      calculateTravelTime,
     ]
   );
 
@@ -869,23 +886,13 @@ export function RouteOptimizationPanel({
         );
         if (originalActivities.length < 2) continue;
 
-        const originalDistance =
-          calculateOriginalRouteDistance(originalActivities);
-
-        const locallyOptimized = optimizeRouteLocally(originalActivities);
-        const localOptimizedDistance =
-          calculateOriginalRouteDistance(locallyOptimized);
-        const localTimeSaved =
-          calculateTravelTime(originalDistance) -
-          calculateTravelTime(localOptimizedDistance);
-
         newAnalyses.set(day.id, {
           day,
-          optimizedActivities: locallyOptimized,
+          optimizedActivities: originalActivities,
           routeAnalysis: {
-            originalDistance,
-            optimizedDistance: localOptimizedDistance,
-            timeSaved: localTimeSaved,
+            originalDistance: 0,
+            optimizedDistance: 0,
+            timeSaved: 0,
           },
           isLoading: false,
         });
@@ -917,14 +924,7 @@ export function RouteOptimizationPanel({
       optimizationTimerRef.current.clear();
       pendingOptimizationsRef.current.clear();
     };
-  }, [
-    daysWithValidLocations,
-    selectedDayId,
-    calculateOriginalRouteDistance,
-    optimizeRouteLocally,
-    calculateTravelTime,
-    sendOptimizationRequest,
-  ]);
+  }, [daysWithValidLocations, selectedDayId, sendOptimizationRequest]);
 
   useEffect(() => {
     if (mapView === "map") {
@@ -997,15 +997,13 @@ export function RouteOptimizationPanel({
           </div>
           <h3 className="text-[#1A2B4F] mb-2">Route Optimization Ready</h3>
           <p className="text-sm text-[#64748B] mb-4">
-            Add at least 4 activities with valid Philippine locations from the
-            location suggestions to any day for AI-powered optimization. For 2-3
-            activities, basic local optimization will be used.
+            Add at least 4 activities with valid locations for AI-powered
+            optimization.
           </p>
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F8FAFB] border border-[#E5E7EB]">
             <Info className="w-4 h-4 text-[#14B8A6]" />
             <span className="text-xs text-[#64748B]">
-              AI optimization (4+ activities) • Local optimization (2-3
-              activities)
+              Powered by backend route calculation
             </span>
           </div>
         </div>
@@ -1019,7 +1017,6 @@ export function RouteOptimizationPanel({
       animate={{ opacity: 1, y: 0 }}
       className="rounded-2xl border-2 border-[#E5E7EB] bg-white shadow-lg overflow-hidden"
     >
-      {/* Header */}
       <div className="p-5 bg-linear-to-r from-[#0A7AFF] to-[#14B8A6]">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
@@ -1037,7 +1034,6 @@ export function RouteOptimizationPanel({
         </div>
       </div>
 
-      {/* Multi-day Tabs */}
       {daysWithValidLocations.length > 1 && (
         <div className="px-5 pt-5 pb-3 border-b border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-transparent">
           <Tabs
@@ -1075,7 +1071,6 @@ export function RouteOptimizationPanel({
         </div>
       )}
 
-      {/* Tab Content */}
       <div className="p-5">
         {daysWithValidLocations.map((day) => {
           const analysis = dayAnalyses.get(day.id);
@@ -1090,7 +1085,6 @@ export function RouteOptimizationPanel({
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Day Title */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm text-[#64748B]">
@@ -1103,7 +1097,6 @@ export function RouteOptimizationPanel({
                 </h4>
               </div>
 
-              {/* Metrics Cards */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <motion.div
                   whileHover={{ y: -2 }}
@@ -1116,7 +1109,11 @@ export function RouteOptimizationPanel({
                     <span className="text-xs text-[#0369A1]">Original</span>
                   </div>
                   <p className="text-xl text-[#0A7AFF]">
-                    {analysis.routeAnalysis.originalDistance.toFixed(1)} km
+                    {analysis.routeAnalysis.originalDistance > 0
+                      ? `${analysis.routeAnalysis.originalDistance.toFixed(
+                          1
+                        )} km`
+                      : "Calculating..."}
                   </p>
                 </motion.div>
 
@@ -1131,7 +1128,11 @@ export function RouteOptimizationPanel({
                     <span className="text-xs text-[#065F46]">Optimized</span>
                   </div>
                   <p className="text-xl text-[#10B981]">
-                    {analysis.routeAnalysis.optimizedDistance.toFixed(1)} km
+                    {analysis.routeAnalysis.optimizedDistance > 0
+                      ? `${analysis.routeAnalysis.optimizedDistance.toFixed(
+                          1
+                        )} km`
+                      : "Pending..."}
                   </p>
                 </motion.div>
 
@@ -1162,12 +1163,11 @@ export function RouteOptimizationPanel({
                   >
                     {analysis.routeAnalysis.timeSaved > 0
                       ? `~${analysis.routeAnalysis.timeSaved} min`
-                      : "Minimal"}
+                      : "Calculating..."}
                   </p>
                 </motion.div>
               </div>
 
-              {/* View Toggle */}
               <div className="mb-6 flex items-center gap-2 p-1 rounded-xl bg-[#F8FAFB] border border-[#E5E7EB] w-fit">
                 <button
                   onClick={() => setMapView("list")}
@@ -1193,7 +1193,6 @@ export function RouteOptimizationPanel({
                 </button>
               </div>
 
-              {/* Route Visualization */}
               <div className="mb-6 p-5 rounded-xl bg-linear-to-br from-[#F8FAFB] to-white border border-[#E5E7EB]">
                 <div className="flex items-center justify-between mb-4">
                   <h5 className="text-sm text-[#1A2B4F]">
@@ -1244,7 +1243,6 @@ export function RouteOptimizationPanel({
                   </div>
                 </div>
 
-                {/* List View */}
                 {mapView === "list" && (
                   <div className="space-y-4">
                     <div className="p-4 rounded-xl border-2 border-[#0A7AFF]/20 bg-linear-to-br from-[rgba(10,122,255,0.05)] to-transparent">
@@ -1260,8 +1258,11 @@ export function RouteOptimizationPanel({
                           </span>
                         </div>
                         <span className="text-xs text-[#64748B]">
-                          {analysis.routeAnalysis.originalDistance.toFixed(1)}{" "}
-                          km
+                          {analysis.routeAnalysis.originalDistance > 0
+                            ? `${analysis.routeAnalysis.originalDistance.toFixed(
+                                1
+                              )} km`
+                            : "Calculating..."}
                         </span>
                       </div>
                       <div className="space-y-2">
@@ -1275,7 +1276,7 @@ export function RouteOptimizationPanel({
                                 </span>
                                 <div className="flex-1">
                                   <p className="text-[#1A2B4F] font-medium">
-                                    {activity.title}
+                                    {activity.title || "Untitled"}
                                   </p>
                                   <p className="text-xs text-[#64748B]">
                                     {activity.location}
@@ -1286,25 +1287,7 @@ export function RouteOptimizationPanel({
                                 <div className="flex items-center gap-2 py-1 px-8">
                                   <ArrowRight className="w-4 h-4 text-[#94A3B8]" />
                                   <span className="text-xs text-[#94A3B8]">
-                                    {(() => {
-                                      const coord1 = getCoordinates(
-                                        activity.locationData ??
-                                          activity.location
-                                      );
-                                      const coord2 = getCoordinates(
-                                        arr[idx + 1].locationData ??
-                                          arr[idx + 1].location
-                                      );
-                                      if (coord1 && coord2) {
-                                        return (
-                                          calculateDistance(
-                                            coord1,
-                                            coord2
-                                          ).toFixed(1) + " km"
-                                        );
-                                      }
-                                      return "-- km";
-                                    })()}
+                                    Next stop
                                   </span>
                                 </div>
                               )}
@@ -1344,7 +1327,7 @@ export function RouteOptimizationPanel({
                                   </span>
                                   <div className="flex-1">
                                     <p className="text-[#1A2B4F] font-medium">
-                                      {activity.title}
+                                      {activity.title || "Untitled"}
                                     </p>
                                     <p className="text-xs text-[#64748B]">
                                       {activity.location}
@@ -1355,25 +1338,7 @@ export function RouteOptimizationPanel({
                                   <div className="flex items-center gap-2 py-1 px-8">
                                     <ArrowRight className="w-4 h-4 text-[#94A3B8]" />
                                     <span className="text-xs text-[#94A3B8]">
-                                      {(() => {
-                                        const coord1 = getCoordinates(
-                                          activity.locationData ??
-                                            activity.location
-                                        );
-                                        const coord2 = getCoordinates(
-                                          arr[idx + 1].locationData ??
-                                            arr[idx + 1].location
-                                        );
-                                        if (coord1 && coord2) {
-                                          return (
-                                            calculateDistance(
-                                              coord1,
-                                              coord2
-                                            ).toFixed(1) + " km"
-                                          );
-                                        }
-                                        return "-- km";
-                                      })()}
+                                      Next stop
                                     </span>
                                   </div>
                                 )}
@@ -1384,21 +1349,21 @@ export function RouteOptimizationPanel({
                       </div>
                     )}
 
-                    {analysis.routeAnalysis.timeSaved <= 0 && (
-                      <div className="p-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] text-center">
-                        <CheckCircle2 className="w-8 h-8 text-[#10B981] mx-auto mb-2" />
-                        <p className="text-sm text-[#1A2B4F] font-medium mb-1">
-                          Route Already Optimized!
-                        </p>
-                        <p className="text-xs text-[#64748B]">
-                          Your current route is the most efficient path.
-                        </p>
-                      </div>
-                    )}
+                    {analysis.routeAnalysis.timeSaved <= 0 &&
+                      analysis.routeAnalysis.originalDistance > 0 && (
+                        <div className="p-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] text-center">
+                          <CheckCircle2 className="w-8 h-8 text-[#10B981] mx-auto mb-2" />
+                          <p className="text-sm text-[#1A2B4F] font-medium mb-1">
+                            Route Already Optimized!
+                          </p>
+                          <p className="text-xs text-[#64748B]">
+                            Your current route is the most efficient path.
+                          </p>
+                        </div>
+                      )}
                   </div>
                 )}
 
-                {/* Map View */}
                 {mapView === "map" && (
                   <div className="relative">
                     <div
@@ -1419,7 +1384,6 @@ export function RouteOptimizationPanel({
                       </div>
                     )}
 
-                    {/* Map Legend */}
                     {mapRef.current?.map &&
                       analysis.routeAnalysis.timeSaved > 0 && (
                         <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-[#E5E7EB] z-1000">
@@ -1456,7 +1420,6 @@ export function RouteOptimizationPanel({
                 )}
               </div>
 
-              {/* Apply Button */}
               {analysis.routeAnalysis.timeSaved > 0 && (
                 <button
                   onClick={() => handleAcceptOptimization(day.id)}
