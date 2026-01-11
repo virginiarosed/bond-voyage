@@ -395,3 +395,21 @@ export interface Place {
   lat: number;
   lng: number;
 }
+
+export interface RouteCalculationRequest {
+  origin: string;
+  destination: string;
+  mode?: "drive" | "walk" | "bike" | "transit";
+}
+
+export interface RouteCalculationResponse {
+  success: boolean;
+  message: string;
+  data: {
+    route: {
+      distance: number;
+      duration: number;
+      polyline?: string;
+    };
+  };
+}

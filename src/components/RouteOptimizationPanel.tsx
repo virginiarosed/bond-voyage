@@ -627,7 +627,6 @@ export function RouteOptimizationPanel({
     ]
   );
 
-  // Initialize Leaflet map
   const initializeMap = async () => {
     if (!mapContainerRef.current || mapRef.current) return;
 
@@ -669,7 +668,6 @@ export function RouteOptimizationPanel({
     }
   };
 
-  // Update map with routes
   const updateMapRoutes = () => {
     if (!mapRef.current || !activeTab || !mapRef.current.map) {
       return;
@@ -682,7 +680,6 @@ export function RouteOptimizationPanel({
       return;
     }
 
-    // Clear existing layers
     mapRef.current.originalMarkers?.forEach((marker: any) => marker.remove());
     mapRef.current.optimizedMarkers?.forEach((marker: any) => marker.remove());
 
@@ -708,7 +705,6 @@ export function RouteOptimizationPanel({
 
     const allCoords: [number, number][] = [];
 
-    // Draw original route
     if (showOriginalRoute) {
       const originalCoords: [number, number][] = [];
       const newOriginalMarkers: any[] = [];
@@ -764,13 +760,10 @@ export function RouteOptimizationPanel({
       mapRef.current.originalMarkers = newOriginalMarkers;
     }
 
-    // Draw optimized route
     if (showOptimizedRoute && analysis.routeAnalysis.timeSaved > 0) {
-      // Check if we have route geometry from API
       if (analysis.routeAnalysis.routeGeometry?.coordinates) {
         const coords = analysis.routeAnalysis.routeGeometry.coordinates;
 
-        // Handle MultiLineString format
         if (Array.isArray(coords) && coords.length > 0) {
           const lineStrings = coords.map((lineString: number[][]) =>
             lineString.map(
@@ -791,7 +784,6 @@ export function RouteOptimizationPanel({
           });
         }
       } else {
-        // Fallback to simple line between points
         const optimizedCoords: [number, number][] = [];
         optimizedActivities.forEach((activity) => {
           const coord = getCoordinates(
@@ -811,7 +803,6 @@ export function RouteOptimizationPanel({
         }
       }
 
-      // Add markers for optimized route
       const newOptimizedMarkers: any[] = [];
       optimizedActivities.forEach((activity, index) => {
         const coord = getCoordinates(
@@ -935,18 +926,37 @@ export function RouteOptimizationPanel({
     sendOptimizationRequest,
   ]);
 
-  // Initialize map when switching to map view
   useEffect(() => {
     if (mapView === "map") {
       if (!mapRef.current) {
         initializeMap();
       } else if (mapRef.current.map) {
-        setTimeout(() => {
-          if (mapRef.current?.map) {
-            mapRef.current.map.invalidateSize();
-            updateMapRoutes();
+        try {
+          const container = mapRef.current.map.getContainer();
+          if (!container || !document.body.contains(container)) {
+            if (mapRef.current.map) {
+              mapRef.current.map.remove();
+            }
+            mapRef.current = null;
+            initializeMap();
+          } else {
+            setTimeout(() => {
+              if (mapRef.current?.map) {
+                mapRef.current.map.invalidateSize();
+                updateMapRoutes();
+              }
+            }, 50);
           }
-        }, 50);
+        } catch (error) {
+          console.warn("Map container error, reinitializing:", error);
+          if (mapRef.current?.map) {
+            try {
+              mapRef.current.map.remove();
+            } catch (e) {}
+          }
+          mapRef.current = null;
+          initializeMap();
+        }
       }
     }
   }, [mapView, activeTab, dayAnalyses, showOriginalRoute, showOptimizedRoute]);
