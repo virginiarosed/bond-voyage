@@ -172,43 +172,6 @@ const ICON_OPTIONS = [
 ];
 
 // Philippine cities/destinations for autocomplete suggestions
-const PHILIPPINE_LOCATIONS = [
-  "Boracay, Aklan",
-  "Caticlan Airport, Malay, Aklan",
-  "White Beach, Boracay",
-  "D'Mall, Boracay",
-  "Manila, Metro Manila",
-  "Makati, Metro Manila",
-  "BGC, Taguig City",
-  "Intramuros, Manila",
-  "Rizal Park, Manila",
-  "Palawan",
-  "El Nido, Palawan",
-  "Coron, Palawan",
-  "Puerto Princesa, Palawan",
-  "Underground River, Palawan",
-  "Cebu City, Cebu",
-  "Mactan Island, Cebu",
-  "Oslob, Cebu",
-  "Moalboal, Cebu",
-  "Kawasan Falls, Cebu",
-  "Baguio City, Benguet",
-  "Banaue Rice Terraces, Ifugao",
-  "Sagada, Mountain Province",
-  "Vigan, Ilocos Sur",
-  "Pagudpud, Ilocos Norte",
-  "Siargao Island",
-  "Cloud 9, Siargao",
-  "Bohol",
-  "Chocolate Hills, Bohol",
-  "Panglao Island, Bohol",
-  "Tagbilaran, Bohol",
-  "Davao City",
-  "Camiguin Island",
-  "Batanes",
-  "Hundred Islands, Pangasinan",
-];
-
 const getIconComponent = (iconName: string) => {
   const iconOption = ICON_OPTIONS.find((opt) => opt.value === iconName);
   return iconOption ? iconOption.icon : Clock;
@@ -369,13 +332,8 @@ export function CreateNewTravel() {
     activityId: string
   ) => {
     if (searchTerm.length >= 2) {
-      const filtered = PHILIPPINE_LOCATIONS.filter((location) =>
-        location.toLowerCase().includes(searchTerm.toLowerCase())
-      );
       updateActivity(dayId, activityId, "location", searchTerm);
       setLocationSearchQuery(searchTerm);
-      // show quick local suggestions while places API resolves
-      setLocationSuggestions(filtered.slice(0, 5));
       setActiveLocationInput({ dayId, activityId });
     } else {
       setLocationSuggestions([]);
