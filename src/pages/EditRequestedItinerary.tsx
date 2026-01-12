@@ -2412,16 +2412,20 @@ export function EditRequestedItinerary() {
                 day.id === dayId
                   ? {
                       ...day,
-                      activities: optimizedActivities.map((activity, index) => ({
-                        ...activity,
-                        order: index,
-                      })),
+                      activities: optimizedActivities.map(
+                        (activity, index) => ({
+                          ...activity,
+                          order: index,
+                        })
+                      ),
                     }
                   : day
               )
             );
             toast.success("Route Optimized", {
-              description: `Activities for Day ${dayId.split("-")[1]} have been reordered for optimal routing.`,
+              description: `Activities for Day ${
+                dayId.split("-")[1]
+              } have been reordered for optimal routing.`,
             });
             setHasUnsavedChanges(true);
           }}
@@ -2634,7 +2638,10 @@ export function EditRequestedItinerary() {
                                   <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-40 overflow-auto">
                                     {placesSuggestions.length > 0
                                       ? placesSuggestions.map(
-                                          (place: any, suggestionIndex: number) => (
+                                          (
+                                            place: any,
+                                            suggestionIndex: number
+                                          ) => (
                                             <button
                                               key={`${day.id}-${activity.id}-${suggestionIndex}-${place.name}`}
                                               type="button"
@@ -2648,7 +2655,9 @@ export function EditRequestedItinerary() {
                                               className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
                                             >
                                               <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
-                                              <span className="truncate">{place.name}</span>
+                                              <span className="truncate">
+                                                {place.name}
+                                              </span>
                                             </button>
                                           )
                                         )
