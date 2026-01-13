@@ -473,6 +473,7 @@ export function Bookings({
       setSelectedBookingId(bookingToCancel.id);
       await updateBookingStatus.mutateAsync({
         status: "CANCELLED",
+        rejectionReason: cancellationReason,
       });
 
       onMoveToHistory(bookingToCancel, "cancelled", cancellationReason);
@@ -740,6 +741,89 @@ export function Bookings({
         }}
         actionButtons={
           <div className="space-y-3">
+            {/* Cancel Booking Modal */}
+            <ConfirmationModal
+              open={cancelDialogOpen}
+              onOpenChange={setCancelDialogOpen}
+              title="Cancel Booking"
+              description="Confirm that you want to cancel this booking."
+              icon={<X className="w-5 h-5 text-white" />}
+              iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
+              iconShadow="shadow-[#FF6B6B]/20"
+              contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)]"
+              contentBorder="border-[rgba(255,107,107,0.2)]"
+              content={
+                bookingToCancel && (
+                  <>
+                    <p className="text-sm text-[#334155] mb-4">
+                      Are you sure you want to cancel the booking for{" "}
+                      <span className="font-semibold text-[#FF6B6B]">
+                        {bookingToCancel.customer}
+                      </span>
+                      ?
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)]">
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Booking ID
+                        </p>
+                        <p className="text-sm font-semibold text-[#0A7AFF]">
+                          {bookingToCancel.bookingCode}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Destination
+                        </p>
+                        <p className="text-sm font-medium text-[#334155]">
+                          {bookingToCancel.destination}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Travel Date
+                        </p>
+                        <p className="text-sm font-medium text-[#334155]">
+                          {formatDateRange(
+                            bookingToCancel.startDate,
+                            bookingToCancel.endDate
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Total Amount
+                        </p>
+                        <p className="text-sm font-semibold text-[#1A2B4F]">
+                          ₱{bookingToCancel.totalAmount.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)] mt-2">
+                      <Label htmlFor="cancellation-reason">
+                        Reason for Cancellation
+                      </Label>
+                      <Textarea
+                        id="cancellation-reason"
+                        placeholder="Enter reason..."
+                        value={cancellationReason}
+                        onChange={(e) => setCancellationReason(e.target.value)}
+                        rows={3}
+                      />
+                    </div>
+                  </>
+                )
+              }
+              onConfirm={handleConfirmCancel}
+              onCancel={() => {
+                setCancelDialogOpen(false);
+                setCancellationReason("");
+              }}
+              confirmText="Cancel Booking"
+              cancelText="Go Back"
+              confirmVariant="destructive"
+            />
+
             {/* Move to Approvals Modal */}
             <ConfirmationModal
               open={moveToApprovalsDialogOpen}
@@ -1570,52 +1654,6 @@ export function Bookings({
           )}
         </div>
       </ContentCard>
-
-      {/* Cancel Booking Modal */}
-      <ConfirmationModal
-        open={cancelDialogOpen}
-        onOpenChange={setCancelDialogOpen}
-        title="Cancel Booking"
-        description="Confirm that you want to cancel this booking."
-        icon={<X className="w-5 h-5 text-white" />}
-        iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
-        iconShadow="shadow-[#FF6B6B]/20"
-        contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)]"
-        contentBorder="border-[rgba(255,107,107,0.2)]"
-        content={
-          bookingToCancel && (
-            <>
-              <p className="text-sm text-[#334155] mb-4">
-                Are you sure you want to cancel the booking for{" "}
-                <span className="font-semibold text-[#FF6B6B]">
-                  {bookingToCancel.customer}
-                </span>
-                ?
-              </p>
-              <div>
-                <Label htmlFor="cancellation-reason">
-                  Reason for Cancellation
-                </Label>
-                <Textarea
-                  id="cancellation-reason"
-                  placeholder="Enter reason..."
-                  value={cancellationReason}
-                  onChange={(e) => setCancellationReason(e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </>
-          )
-        }
-        onConfirm={handleConfirmCancel}
-        onCancel={() => {
-          setCancelDialogOpen(false);
-          setCancellationReason("");
-        }}
-        confirmText="Cancel Booking"
-        cancelText="Go Back"
-        confirmVariant="destructive"
-      />
 
       {/* Complete Booking Modal */}
       <ConfirmationModal
