@@ -71,7 +71,6 @@ import {
 import { useUpdatePaymentStatus } from "../hooks/usePayments";
 import { queryKeys } from "../utils/lib/queryKeys";
 import { capitalize } from "../utils/helpers/capitalize";
-import { PaymentSection } from "../components/PaymentSection";
 import { BookingDetailView } from "../components/BookingDetailView";
 
 interface BookingsProps {
@@ -174,6 +173,9 @@ export function Bookings({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [bookingToEdit, setBookingToEdit] = useState<any>(null);
   const [editFormData, setEditFormData] = useState({
+    customerName: "",
+    email: "",
+    mobile: "",
     destination: "",
     startDate: "",
     endDate: "",
@@ -379,11 +381,21 @@ export function Bookings({
 
   const handleEditBooking = (booking: any) => {
     setBookingToEdit(booking);
+
+    const formatDateForInput = (dateStr: string | null) => {
+      if (!dateStr) return "";
+      const date = new Date(dateStr);
+      return date.toISOString().split("T")[0];
+    };
+
     setEditFormData({
-      destination: booking.destination,
-      startDate: booking.startDate,
-      endDate: booking.endDate,
-      travelers: booking.travelers.toString(),
+      customerName: booking.customer || booking.customerName || "",
+      email: booking.email || booking.customerEmail || "",
+      mobile: booking.mobile || booking.customerMobile || "",
+      destination: booking.destination || "",
+      startDate: formatDateForInput(booking.startDate),
+      endDate: formatDateForInput(booking.endDate),
+      travelers: (booking.travelers || 1).toString(),
     });
     setEditModalOpen(true);
   };
@@ -393,6 +405,9 @@ export function Bookings({
 
     try {
       await updateBooking.mutateAsync({
+        customerName: editFormData.customerName,
+        customerEmail: editFormData.email,
+        customerMobile: editFormData.mobile,
         destination: editFormData.destination,
         startDate: editFormData.startDate,
         endDate: editFormData.endDate,
@@ -402,6 +417,15 @@ export function Bookings({
       toast.success("Booking updated successfully!");
       setEditModalOpen(false);
       setBookingToEdit(null);
+      setEditFormData({
+        customerName: "",
+        email: "",
+        mobile: "",
+        destination: "",
+        startDate: "",
+        endDate: "",
+        travelers: "1",
+      });
       refetch();
     } catch (error) {
       toast.error("Failed to update booking");
@@ -705,6 +729,170 @@ export function Bookings({
         }}
         actionButtons={
           <div className="space-y-3">
+            {/* Edit Booking Modal */}
+            {/* Edit Booking Modal */}
+            <ConfirmationModal
+              open={editModalOpen}
+              onOpenChange={setEditModalOpen}
+              title="Edit Booking"
+              description="Update the booking details for this standard itinerary."
+              icon={<Edit className="w-5 h-5 text-white" />}
+              iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
+              iconShadow="shadow-[#0A7AFF]/20"
+              contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.05)] to-[rgba(20,184,166,0.05)]"
+              contentBorder="border-[rgba(10,122,255,0.2)]"
+              content={
+                <div className="space-y-4">
+                  <div>
+                    <Label
+                      htmlFor="edit-customerName"
+                      className="text-[#1A2B4F] mb-2 block"
+                    >
+                      Customer Name <span className="text-[#FF6B6B]">*</span>
+                    </Label>
+                    <Input
+                      id="edit-customerName"
+                      value={editFormData.customerName}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          customerName: e.target.value,
+                        })
+                      }
+                      placeholder="Enter customer name"
+                      className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                    />
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="edit-email"
+                      className="text-[#1A2B4F] mb-2 block"
+                    >
+                      Email Address <span className="text-[#FF6B6B]">*</span>
+                    </Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={editFormData.email}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          email: e.target.value,
+                        })
+                      }
+                      placeholder="customer@email.com"
+                      className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                    />
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="edit-mobile"
+                      className="text-[#1A2B4F] mb-2 block"
+                    >
+                      Mobile Number <span className="text-[#FF6B6B]">*</span>
+                    </Label>
+                    <Input
+                      id="edit-mobile"
+                      type="tel"
+                      value={editFormData.mobile}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          mobile: e.target.value,
+                        })
+                      }
+                      placeholder="+63 9XX XXX XXXX"
+                      className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="edit-startDate"
+                        className="text-[#1A2B4F] mb-2 block"
+                      >
+                        Travel Start Date{" "}
+                        <span className="text-[#FF6B6B]">*</span>
+                      </Label>
+                      <Input
+                        id="edit-startDate"
+                        type="date"
+                        value={editFormData.startDate}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            startDate: e.target.value,
+                          })
+                        }
+                        className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="edit-endDate"
+                        className="text-[#1A2B4F] mb-2 block"
+                      >
+                        Travel End Date{" "}
+                        <span className="text-[#FF6B6B]">*</span>
+                      </Label>
+                      <Input
+                        id="edit-endDate"
+                        type="date"
+                        value={editFormData.endDate}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            endDate: e.target.value,
+                          })
+                        }
+                        className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="edit-travelers"
+                      className="text-[#1A2B4F] mb-2 block"
+                    >
+                      Number of Travelers{" "}
+                      <span className="text-[#FF6B6B]">*</span>
+                    </Label>
+                    <Input
+                      id="edit-travelers"
+                      type="number"
+                      min="1"
+                      value={editFormData.travelers}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          travelers: e.target.value,
+                        })
+                      }
+                      className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                    />
+                  </div>
+                </div>
+              }
+              onConfirm={handleSaveEdit}
+              onCancel={() => {
+                setEditModalOpen(false);
+                setBookingToEdit(null);
+                setEditFormData({
+                  customerName: "",
+                  email: "",
+                  mobile: "",
+                  destination: "",
+                  startDate: "",
+                  endDate: "",
+                  travelers: "1",
+                });
+              }}
+              confirmText="Save Changes"
+              cancelText="Cancel"
+              confirmVariant="default"
+            />
+
             {/* Export Buttons */}
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -1206,96 +1394,6 @@ export function Bookings({
           )}
         </div>
       </ContentCard>
-
-      {/* Edit Booking Modal */}
-      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Edit className="w-5 h-5 text-[#0A7AFF]" />
-              Edit Booking
-            </DialogTitle>
-            <DialogDescription>
-              Update the booking details for this standard itinerary.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="destination">Destination</Label>
-              <Input
-                id="destination"
-                value={editFormData.destination}
-                onChange={(e) =>
-                  setEditFormData({
-                    ...editFormData,
-                    destination: e.target.value,
-                  })
-                }
-                placeholder="Enter destination"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={editFormData.startDate}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      startDate: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={editFormData.endDate}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      endDate: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="travelers">Number of Travelers</Label>
-              <Input
-                id="travelers"
-                type="number"
-                min="1"
-                value={editFormData.travelers}
-                onChange={(e) =>
-                  setEditFormData({
-                    ...editFormData,
-                    travelers: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <ShadcnButton
-              variant="outline"
-              onClick={() => {
-                setEditModalOpen(false);
-                setBookingToEdit(null);
-              }}
-            >
-              Cancel
-            </ShadcnButton>
-            <ShadcnButton onClick={handleSaveEdit}>Save Changes</ShadcnButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Cancel Booking Modal */}
       <ConfirmationModal
