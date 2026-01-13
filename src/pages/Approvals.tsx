@@ -596,10 +596,8 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
   }
 
   if (viewMode === "detail") {
-    // Show loading state if data is being fetched OR if we don't have matching data yet
-    const isLoadingBooking = isLoadingDetail || !selectedBooking;
-
-    if (isLoadingBooking) {
+    // Show loading state while fetching or when data doesn't match selected ID yet
+    if (isLoadingDetail || (selectedBookingId && !selectedBooking)) {
       return (
         <div className="space-y-6">
           {/* Back button skeleton */}
@@ -670,6 +668,29 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
               </div>
             </div>
           </div>
+        </div>
+      );
+    }
+
+    // If we're not loading but still don't have a booking, show error
+    if (!selectedBooking) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-100 text-center p-6">
+          <div className="w-20 h-20 rounded-full bg-[rgba(255,184,77,0.1)] flex items-center justify-center mb-4">
+            <AlertCircleIcon className="w-10 h-10 text-[#FFB84D]" />
+          </div>
+          <h3 className="text-lg font-semibold text-[#1A2B4F] mb-2">
+            Booking not found
+          </h3>
+          <p className="text-sm text-[#64748B] mb-6">
+            The approval you're looking for doesn't exist or has been removed.
+          </p>
+          <button
+            onClick={handleBackToList}
+            className="px-4 py-2 bg-[#0A7AFF] text-white rounded-lg hover:bg-[#0865CC] transition-colors"
+          >
+            Back to List
+          </button>
         </div>
       );
     }
