@@ -95,6 +95,7 @@ export function Bookings({
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
+    status: "PENDING",
   });
 
   const {
@@ -255,21 +256,28 @@ export function Bookings({
 
   useEffect(() => {
     const params: any = {
+      ...queryParams, //
       page: 1,
-      limit: 10,
     };
 
     if (searchQuery) {
       params.q = searchQuery;
+    } else {
+      delete params.q;
     }
 
     if (selectedTypeFilter) {
       params.type = selectedTypeFilter;
+    } else {
+      delete params.type;
     }
 
     if (dateFrom && dateTo) {
       params.dateFrom = dateFrom;
       params.dateTo = dateTo;
+    } else {
+      delete params.dateFrom;
+      delete params.dateTo;
     }
 
     // Sort
@@ -277,6 +285,8 @@ export function Bookings({
       params.sort = "createdAt:desc";
     } else if (sortOrder === "oldest") {
       params.sort = "createdAt:asc";
+    } else {
+      delete params.sort;
     }
 
     setQueryParams(params);
@@ -729,7 +739,7 @@ export function Bookings({
           rejectionResolution: selectedBooking.rejectionResolution || "",
           resolutionStatus: selectedBooking.resolutionStatus || "unresolved",
         }}
-        itinerary={bookingDetailData?.data?.itinerary}
+        itinerary={bookingDetailData?.data?.itinerary!}
         onBack={handleBackToList}
         onSendToClient={() => {
           toast.info("This booking is already confirmed");
