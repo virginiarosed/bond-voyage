@@ -44,9 +44,40 @@ import { formatDateRange } from "../App";
 import { capitalize } from "../utils/helpers/capitalize";
 import { toast } from "sonner";
 import { useBreadcrumbs } from "../components/BreadcrumbContext";
+import { Itinerary, Booking } from "../types/types";
 
 interface HistoryProps {
   onHistoryCountChange?: (count: number) => void;
+}
+
+interface ProcessedBooking {
+  id: string;
+  bookingCode: string;
+  customer: string;
+  email: string;
+  mobile: string;
+  destination: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  travelers: number;
+  totalAmount: number;
+  bookedDate: string;
+  bookedDateObj: Date;
+  status: string;
+  bookingType?: string;
+  itineraryDetails?: {
+    day: number;
+    title: string;
+    activities: {
+      time: string;
+      icon: React.ComponentType<{ className?: string }>;
+      title: string;
+      description: string;
+      location: string;
+    }[];
+  }[];
+  itinerary?: Itinerary;
+  updatedAtDisplay?: string;
 }
 
 export function History({ onHistoryCountChange }: HistoryProps) {
@@ -93,8 +124,6 @@ export function History({ onHistoryCountChange }: HistoryProps) {
 
   // Filter states
   const [filterOpen, setFilterOpen] = useState(false);
-
-  // Applied filters (used for querying)
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [completedDateFrom, setCompletedDateFrom] = useState("");
@@ -102,7 +131,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
 
-  // Pending filters (used inside the filter UI until 'Apply' is pressed)
+  // Pending filters
   const [pendingDateFrom, setPendingDateFrom] = useState("");
   const [pendingDateTo, setPendingDateTo] = useState("");
   const [pendingCompletedDateFrom, setPendingCompletedDateFrom] = useState("");
@@ -110,7 +139,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
   const [pendingMinAmount, setPendingMinAmount] = useState("");
   const [pendingMaxAmount, setPendingMaxAmount] = useState("");
 
-  // When opening the filter panel, initialize pending values from applied ones
+  // Filter helper
   const handleFilterOpenChange = (open: boolean) => {
     if (open) {
       setPendingDateFrom(dateFrom);
@@ -123,91 +152,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
     setFilterOpen(open);
   };
 
-  const transformBooking = (apiBooking: any) => {
-    const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
-
-    const startDate = apiBooking.startDate || apiBooking.itinerary?.startDate;
-    const endDate = apiBooking.endDate || apiBooking.itinerary?.endDate;
-
-    const customerName = apiBooking.customerName || "Unknown Customer";
-    const customerEmail = apiBooking.customerEmail || "";
-    const customerMobile = apiBooking.customerMobile || "N/A";
-
-    return {
-      id: apiBooking.id,
-      bookingCode: apiBooking.bookingCode,
-      customer: customerName,
-      email: customerEmail,
-      mobile: customerMobile,
-      destination: apiBooking.destination || apiBooking.itinerary?.destination,
-      itinerary: apiBooking.destination || apiBooking.itinerary?.destination,
-      startDate: startDate,
-      endDate: endDate,
-      travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
-      totalAmount: totalAmount,
-      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
-      bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
-      status: apiBooking.status,
-      bookingType: apiBooking.type,
-      completedDate: apiBooking.completedAt
-        ? new Date(apiBooking.completedAt).toISOString().split("T")[0]
-        : null,
-      cancelledDate: apiBooking.cancelledAt
-        ? new Date(apiBooking.cancelledAt).toISOString().split("T")[0]
-        : null,
-      cancellationReason: apiBooking.cancellationReason,
-    };
-  };
-
-  const transformDetailedBooking = (apiBooking: any) => {
-    const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
-
-    const customerName =
-      apiBooking.customerName ||
-      `${apiBooking.user?.firstName || ""} ${
-        apiBooking.user?.lastName || ""
-      }`.trim() ||
-      "Unknown Customer";
-
-    return {
-      id: apiBooking.id,
-      bookingCode: apiBooking.bookingCode,
-      customer: customerName,
-      email: apiBooking.customerEmail || apiBooking.user?.email || "",
-      mobile: apiBooking.customerMobile || "N/A",
-      destination: apiBooking.destination || apiBooking.itinerary?.destination,
-      itinerary: apiBooking.destination || apiBooking.itinerary?.destination,
-      startDate: apiBooking.startDate || apiBooking.itinerary?.startDate,
-      endDate: apiBooking.endDate || apiBooking.itinerary?.endDate,
-      travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
-      totalAmount: totalAmount,
-      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
-      bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
-      status: apiBooking.status,
-      bookingType: apiBooking.type,
-      completedDate: apiBooking.completedAt
-        ? new Date(apiBooking.completedAt).toISOString().split("T")[0]
-        : null,
-      cancelledDate: apiBooking.cancelledAt
-        ? new Date(apiBooking.cancelledAt).toISOString().split("T")[0]
-        : null,
-      cancellationReason: apiBooking.cancellationReason,
-      itineraryDetails:
-        apiBooking.itinerary?.days?.map((day: any) => ({
-          day: day.dayNumber,
-          title: `Day ${day.dayNumber}`,
-          activities:
-            day.activities?.map((act: any) => ({
-              time: act.time,
-              icon: getActivityIcon(act.title),
-              title: act.title,
-              description: act.description || "",
-              location: act.location || "",
-            })) || [],
-        })) || [],
-    };
-  };
-
+  // Get activity icon based on title
   const getActivityIcon = (title: string) => {
     const lowerTitle = title.toLowerCase();
     if (lowerTitle.includes("flight") || lowerTitle.includes("arrival"))
@@ -227,12 +172,71 @@ export function History({ onHistoryCountChange }: HistoryProps) {
     return MapPin;
   };
 
+  // Transform booking data for list view
+  const transformBooking = (apiBooking: any): ProcessedBooking => {
+    return {
+      id: apiBooking.id,
+      bookingCode: apiBooking.bookingCode,
+      customer: apiBooking.customerName || "Unknown Customer",
+      email: apiBooking.customerEmail || "",
+      mobile: apiBooking.customerMobile || "N/A",
+      destination: apiBooking.destination || apiBooking.itinerary?.destination,
+      startDate: apiBooking.startDate || apiBooking.itinerary?.startDate,
+      endDate: apiBooking.endDate || apiBooking.itinerary?.endDate,
+      travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
+      totalAmount: parseFloat(apiBooking.totalPrice) || 0,
+      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
+      bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
+      status: apiBooking.status,
+      bookingType: apiBooking.type,
+    };
+  };
+
+  // Transform detailed booking data for detail view
+  const transformDetailedBooking = (apiBooking: Booking): ProcessedBooking => {
+    const processed: ProcessedBooking = {
+      id: apiBooking.id,
+      bookingCode: apiBooking.bookingCode,
+      customer: apiBooking.customerName || "Unknown Customer",
+      email: apiBooking.customerEmail || "",
+      mobile: apiBooking.customerMobile || "N/A",
+      destination: apiBooking.destination || apiBooking.itinerary?.destination,
+      startDate: apiBooking.startDate || apiBooking.itinerary?.startDate,
+      endDate: apiBooking.endDate || apiBooking.itinerary?.endDate,
+      travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
+      totalAmount: parseFloat(apiBooking.totalPrice.toString()) || 0,
+      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
+      bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
+      status: apiBooking.status,
+      bookingType: apiBooking.type,
+      itinerary: apiBooking.itinerary,
+      updatedAtDisplay: apiBooking.updatedAtDisplay,
+    };
+
+    // Process itinerary details if available
+    if (apiBooking.itinerary?.days) {
+      processed.itineraryDetails = apiBooking.itinerary.days.map((day) => ({
+        day: day.dayNumber,
+        title: day.title || `Day ${day.dayNumber}`,
+        activities: day.activities.map((activity) => ({
+          time: activity.time,
+          icon: getActivityIcon(activity.title),
+          title: activity.title,
+          description: activity.description || "",
+          location: activity.location || "",
+        })),
+      }));
+    }
+
+    return processed;
+  };
+
   const bookings = bookingsData?.data?.map(transformBooking) || [];
   const selectedBooking = useMemo(() => {
     return bookingDetailData?.data
       ? transformDetailedBooking(bookingDetailData.data)
       : null;
-  }, [bookingDetailData?.data?.id]);
+  }, [bookingDetailData?.data]);
 
   // Update breadcrumbs
   useEffect(() => {
@@ -253,6 +257,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
     viewMode,
     selectedBooking?.id,
     selectedBooking?.status,
+    selectedBooking?.bookingCode,
     setBreadcrumbs,
     resetBreadcrumbs,
   ]);
@@ -298,15 +303,15 @@ export function History({ onHistoryCountChange }: HistoryProps) {
     setQueryParams(params);
   }, [searchQuery, selectedTypeFilter, dateFrom, dateTo, sortOrder, activeTab]);
 
-  // Client-side filtering for completed/cancelled dates and amounts
+  // Client-side filtering
   const getFilteredBookings = () => {
     let filtered = bookings;
 
-    // Completed/cancelled date filter (client-side for now)
+    // Completed/cancelled date filter
     if (completedDateFrom || completedDateTo) {
       filtered = filtered.filter((b) => {
         const statusDate =
-          activeTab === "completed" ? b.completedDate : b.cancelledDate;
+          b.status === "COMPLETED" ? completedDateFrom : completedDateTo;
         if (!statusDate) return false;
         const date = new Date(statusDate);
         if (completedDateFrom && completedDateTo) {
@@ -323,7 +328,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
       });
     }
 
-    // Amount filter (client-side for now)
+    // Amount filter
     if (minAmount || maxAmount) {
       filtered = filtered.filter((b) => {
         if (minAmount && maxAmount) {
@@ -345,18 +350,13 @@ export function History({ onHistoryCountChange }: HistoryProps) {
 
   const filteredBookings = getFilteredBookings();
 
-  // Use API pagination
+  // Pagination data
   const totalItems = bookingsData?.meta?.total || 0;
   const totalPages = bookingsData?.meta?.totalPages || 1;
   const currentPage = bookingsData?.meta?.page || 1;
   const itemsPerPage = bookingsData?.meta?.limit || 10;
-
-  // Calculate display indices
   const indexOfFirstBooking = (currentPage - 1) * itemsPerPage + 1;
   const indexOfLastBooking = Math.min(currentPage * itemsPerPage, totalItems);
-
-  // Use filtered bookings for display
-  const currentBookings = filteredBookings;
 
   // Statistics
   const customizedCount = filteredBookings.filter(
@@ -389,7 +389,6 @@ export function History({ onHistoryCountChange }: HistoryProps) {
     setSelectedTypeFilter(selectedTypeFilter === type ? null : type);
   };
 
-  // Apply pending filters to the actual applied filter state
   const handleApplyFilters = () => {
     setDateFrom(pendingDateFrom);
     setDateTo(pendingDateTo);
@@ -400,7 +399,6 @@ export function History({ onHistoryCountChange }: HistoryProps) {
     setFilterOpen(false);
   };
 
-  // Reset pending filters inside the modal
   const handleResetFilters = () => {
     setPendingDateFrom("");
     setPendingDateTo("");
@@ -548,8 +546,8 @@ export function History({ onHistoryCountChange }: HistoryProps) {
               <p className="text-white/80 text-xs mb-1">Travel Dates</p>
               <p className="font-medium">
                 {formatDateRange(
-                  selectedBooking.startDate,
-                  selectedBooking.endDate
+                  selectedBooking.startDate!,
+                  selectedBooking.endDate!
                 )}
               </p>
             </div>
@@ -571,7 +569,13 @@ export function History({ onHistoryCountChange }: HistoryProps) {
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
               <Clock className="w-5 h-5 mb-2 text-white/80" />
               <p className="text-white/80 text-xs mb-1">Booked On</p>
-              <p className="font-medium">{selectedBooking.bookedDate}</p>
+              <p className="font-medium">
+                {selectedBooking.bookedDateObj.toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
             </div>
           </div>
         </div>
@@ -657,20 +661,28 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-[#64748B]">
-                      {isCompleted ? "Completed On" : "Cancelled On"}
+                      {isCompleted ? "Last Updated" : "Cancelled On"}
                     </span>
                     <span className="text-xs font-medium text-[#334155]">
-                      {isCompleted && selectedBooking?.updatedAtDisplay}
+                      {selectedBooking.updatedAtDisplay ||
+                        selectedBooking.bookedDateObj.toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          }
+                        )}
                     </span>
                   </div>
                 </div>
-                {!isCompleted && (
+                {!isCompleted && selectedBooking.itinerary?.rejectionReason && (
                   <div className="p-4 rounded-xl border border-[rgba(255,107,107,0.2)] bg-[rgba(255,107,107,0.05)]">
                     <p className="text-xs text-[#64748B] mb-2">
                       Cancellation Reason
                     </p>
                     <p className="text-sm text-[#334155] leading-relaxed">
-                      {selectedBooking?.itinerary?.rejectionReason || "None"}
+                      {selectedBooking.itinerary.rejectionReason}
                     </p>
                   </div>
                 )}
@@ -689,17 +701,18 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                       mobile: selectedBooking.mobile,
                       destination: selectedBooking.destination,
                       dates: formatDateRange(
-                        selectedBooking.startDate,
-                        selectedBooking.endDate
+                        selectedBooking.startDate!,
+                        selectedBooking.endDate!
                       ),
                       travelers: selectedBooking.travelers,
                       total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
-                      bookedDate: selectedBooking.bookedDate,
+                      bookedDate:
+                        selectedBooking.bookedDateObj.toLocaleDateString(),
                       status: selectedBooking.status,
                     };
                     exportBookingDetailToPDF(
                       bookingData,
-                      selectedBooking.itineraryDetails
+                      selectedBooking.itineraryDetails || []
                     );
                     toast.success("Exporting booking as PDF...");
                   }}
@@ -717,17 +730,18 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                       mobile: selectedBooking.mobile,
                       destination: selectedBooking.destination,
                       dates: formatDateRange(
-                        selectedBooking.startDate,
-                        selectedBooking.endDate
+                        selectedBooking.startDate!,
+                        selectedBooking.endDate!
                       ),
                       travelers: selectedBooking.travelers,
                       total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
-                      bookedDate: selectedBooking.bookedDate,
+                      bookedDate:
+                        selectedBooking.bookedDateObj.toLocaleDateString(),
                       status: selectedBooking.status,
                     };
                     exportBookingDetailToExcel(
                       bookingData,
-                      selectedBooking.itineraryDetails
+                      selectedBooking.itineraryDetails || []
                     );
                     toast.success("Exporting booking as Excel...");
                   }}
@@ -746,6 +760,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
               </button>
             </div>
           </div>
+
           {/* Right Column - Itinerary */}
           <div className="col-span-2">
             {selectedBooking.itineraryDetails &&
@@ -769,6 +784,8 @@ export function History({ onHistoryCountChange }: HistoryProps) {
       </div>
     );
   }
+
+  // List view
   return (
     <div>
       <div className="flex items-center gap-1 mb-6 border-b-2 border-[#E5E7EB]">
@@ -793,6 +810,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
           Cancelled
         </button>
       </div>
+
       {/* Booking Type Stats */}
       <div className="grid grid-cols-4 gap-6 mb-6">
         <div
@@ -908,14 +926,18 @@ export function History({ onHistoryCountChange }: HistoryProps) {
               email: booking.email,
               mobile: booking.mobile,
               destination: booking.destination,
-              startdate: new Date(booking.startDate).toLocaleDateString(),
-              enddate: new Date(booking.endDate).toLocaleDateString(),
+              startdate: booking.startDate
+                ? new Date(booking.startDate).toLocaleDateString()
+                : "N/A",
+              enddate: booking.endDate
+                ? new Date(booking.endDate).toLocaleDateString()
+                : "N/A",
               travelers: `${booking.travelers} pax`,
               totalamount: `₱${booking.totalAmount.toLocaleString()}`,
               bookingtype: booking.bookingType || "N/A",
               status: booking.status,
               completeddate:
-                booking.completedDate || booking.cancelledDate || "N/A",
+                booking.status === "COMPLETED" ? "Completed" : "Cancelled",
             }));
             const titleSuffix =
               activeTab === "completed"
@@ -944,14 +966,18 @@ export function History({ onHistoryCountChange }: HistoryProps) {
               email: booking.email,
               mobile: booking.mobile,
               destination: booking.destination,
-              startdate: new Date(booking.startDate).toLocaleDateString(),
-              enddate: new Date(booking.endDate).toLocaleDateString(),
+              startdate: booking.startDate
+                ? new Date(booking.startDate).toLocaleDateString()
+                : "N/A",
+              enddate: booking.endDate
+                ? new Date(booking.endDate).toLocaleDateString()
+                : "N/A",
               travelers: `${booking.travelers} pax`,
               totalamount: `₱${booking.totalAmount.toLocaleString()}`,
               bookingtype: booking.bookingType || "N/A",
               status: booking.status,
               completeddate:
-                booking.completedDate || booking.cancelledDate || "N/A",
+                booking.status === "COMPLETED" ? "Completed" : "Cancelled",
             }));
             const titleSuffix =
               activeTab === "completed"
@@ -984,7 +1010,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
               </p>
             </div>
           ) : (
-            currentBookings.map((booking) => (
+            filteredBookings.map((booking) => (
               <div
                 key={booking.id}
                 id={`booking-${booking.id}`}
@@ -1081,7 +1107,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                     <div>
                       <p className="text-xs text-[#64748B]">Travel Dates</p>
                       <p className="text-sm text-[#334155] font-medium">
-                        {formatDateRange(booking.startDate, booking.endDate)}
+                        {formatDateRange(booking.startDate!, booking.endDate!)}
                       </p>
                     </div>
                   </div>
@@ -1107,15 +1133,13 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-[#64748B]" />
                     <div>
-                      <p className="text-xs text-[#64748B]">
-                        {booking.status === "COMPLETED"
-                          ? "Completed On"
-                          : "Cancelled On"}
-                      </p>
+                      <p className="text-xs text-[#64748B]">Booked On</p>
                       <p className="text-sm text-[#334155] font-medium">
-                        {booking.status === "COMPLETED"
-                          ? booking.completedDate
-                          : booking.cancelledDate}
+                        {booking.bookedDateObj.toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </p>
                     </div>
                   </div>
