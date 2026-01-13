@@ -5,7 +5,7 @@ import {
   Sparkles,
   Users,
   Calendar,
-  CheckCircle,
+  Eye,
   Plane,
   Hotel,
   Camera,
@@ -25,6 +25,8 @@ import {
   AlertTriangle,
   Clock,
   ChevronLeft,
+  Mail,
+  Phone,
   // Import all icon options from your CreateNewTravel component
   Waves,
   Mountain,
@@ -70,10 +72,10 @@ import {
   Fish,
   Salad,
   Tent,
+  Loader2,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ContentCard } from "../../components/ContentCard";
-import { BookingListCard } from "../../components/BookingListCard";
 import { BookingDetailView } from "../../components/BookingDetailView";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { capitalize } from "../../utils/helpers/capitalize";
@@ -108,6 +110,7 @@ import { useProfile } from "../../hooks/useAuth";
 import { useAddCollaborator } from "../../hooks/useCollaborators";
 import { getIconForActivity } from "../../utils/helpers/getIconForActivity";
 import { QueryClient } from "@tanstack/react-query";
+import { useMediaQuery } from "react-responsive";
 
 interface TransformedBooking {
   id: string;
@@ -191,6 +194,7 @@ export function UserTravels() {
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
   const bookingRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const queryClient = new QueryClient();
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [selectedTab, setSelectedTab] = useState<
     "draft" | "pending" | "rejected"
@@ -288,13 +292,11 @@ export function UserTravels() {
       status: selectedTab.toUpperCase(),
     });
 
-  const { data: selectedBookingData } = useBookingDetail(
-    selectedBookingId || "",
-    {
+  const { data: selectedBookingData, isLoading: isLoadingDetail } =
+    useBookingDetail(selectedBookingId || "", {
       enabled: !!selectedBookingId && viewMode === "detail",
       queryKey: [queryKeys.bookings.detail],
-    }
-  );
+    });
 
   const submitBookingMutation = useSubmitBooking(selectedBookingId || "", {
     onSuccess: () => {
@@ -345,7 +347,7 @@ export function UserTravels() {
   const bookings: TransformedBooking[] = useMemo(() => {
     if (!myBookingsResponse?.data) return [];
 
-    return myBookingsResponse.data.map((booking) => {
+    return myBookingsResponse.data.map((booking: any) => {
       // Use the ownership from the API response if available, otherwise calculate it
       let ownership: "owned" | "collaborated" | "requested" = "owned";
 
@@ -390,7 +392,7 @@ export function UserTravels() {
         : "";
 
       const budget = booking.totalPrice
-        ? `₱${booking.totalPrice.toLocaleString()}`
+        ? `₱${parseFloat(booking.totalPrice).toLocaleString()}`
         : "₱0";
 
       let resolutionStatus: "solved" | "unsolved" | undefined;
@@ -820,8 +822,16 @@ export function UserTravels() {
     resetBreadcrumbs,
   ]);
 
+  // Loading state for detail view
+  if (viewMode === "detail" && isLoadingDetail) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A7AFF]" />
+      </div>
+    );
+  }
+
   // Detail view
-  // Detail view - Complete section
   if (viewMode === "detail" && selectedBookingId && selectedBookingData?.data) {
     const tabLabel =
       selectedTab === "draft"
@@ -1282,14 +1292,14 @@ export function UserTravels() {
         }
       >
         <div className="space-y-4">
-          {/* Filter Buttons */}
+          {/* Filter Buttons - Responsive */}
           <div className="flex gap-2 overflow-x-auto pb-2">
             <button
               onClick={() => {
                 setSelectedFilter("all");
                 setRequestedSubTab("all");
               }}
-              className={`px-5 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
+              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
                 selectedFilter === "all"
                   ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
                   : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
@@ -1302,7 +1312,7 @@ export function UserTravels() {
                 setSelectedFilter("owned");
                 setRequestedSubTab("all");
               }}
-              className={`px-5 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
+              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
                 selectedFilter === "owned"
                   ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
                   : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
@@ -1315,23 +1325,23 @@ export function UserTravels() {
                 setSelectedFilter("collaborated");
                 setRequestedSubTab("all");
               }}
-              className={`px-5 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
+              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
                 selectedFilter === "collaborated"
                   ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
                   : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
               }`}
             >
-              Collaborated
+              {isMobile ? "Collab" : "Collaborated"}
             </button>
             <button
               onClick={() => setSelectedFilter("requested")}
-              className={`px-5 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
+              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
                 selectedFilter === "requested"
                   ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
                   : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
               }`}
             >
-              Requested
+              {isMobile ? "Req" : "Requested"}
             </button>
           </div>
 
@@ -1344,7 +1354,7 @@ export function UserTravels() {
                   setRequestedSubTab(value)
                 }
               >
-                <SelectTrigger className="w-45 h-10 border-2 border-border bg-card text-card-foreground">
+                <SelectTrigger className="w-full md:w-45 h-10 border-2 border-border bg-card text-card-foreground">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1396,71 +1406,246 @@ export function UserTravels() {
                 <div
                   key={travel.id}
                   ref={(el) => (bookingRefs.current[travel.id] = el)}
+                  onClick={() => handleViewDetails(travel.id)}
+                  className="p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)] cursor-pointer"
                 >
-                  <BookingListCard
-                    booking={{
-                      id: travel.id,
-                      customerName: travel.owner,
-                      customerEmail: travel.email,
-                      customerMobile: travel.mobile,
-                      destination: travel.destination,
-                      startDate: travel.startDate,
-                      endDate: travel.endDate,
-                      travelers: travel.travelers,
-                      totalPrice: travel.budget,
-                      bookedDate: travel.bookedDate,
-                      resolutionStatus: travel.resolutionStatus as any,
-                      bookingCode: travel.bookingCode,
-                    }}
-                    onViewDetails={handleViewDetails}
-                    onShare={
-                      selectedTab === "draft" ? handleShareBooking : undefined
-                    }
-                    variant={
-                      travel.status === "rejected" ? "rejected" : "default"
-                    }
-                    userSide={true}
-                    additionalBadges={
-                      <>
-                        {/* Booking Type Badge */}
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                          {capitalize(travel.bookingType)}
-                        </span>
-                        {/* Tour Type Badge */}
-                        {travel.tourType && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
-                            {capitalize(travel.tourType)}
-                          </span>
-                        )}
-                        {/* Ownership Badge */}
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                            travel.ownership === "owned"
-                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
-                              : travel.ownership === "collaborated"
-                              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
-                              : "bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20"
-                          }`}
-                        >
-                          {travel.ownership === "owned"
-                            ? "Owned"
-                            : travel.ownership === "collaborated"
-                            ? "Collaborated"
-                            : "Requested"}
-                        </span>
-                      </>
-                    }
-                    pendingStatusMessage={
-                      travel.status === "pending" && (
-                        <div className="w-full p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center">
-                          <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                            Waiting for admin review. You'll be notified once
-                            reviewed.
-                          </p>
+                  {/* Header - Responsive */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                        <span className="text-white text-lg">🎫</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+                          <h3 className="text-lg text-[#1A2B4F] font-semibold truncate">
+                            Booking {travel.bookingCode}
+                          </h3>
+                          <div className="flex flex-wrap gap-1 mt-1 md:mt-0">
+                            {/* Status Badge */}
+                            <span className={`inline-flex items-center justify-center min-w-[60px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                              travel.status === "draft"
+                                ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[#0A7AFF]/20"
+                                : travel.status === "pending"
+                                ? "bg-[rgba(255,184,77,0.1)] text-[#FFB84D] border-[#FFB84D]/20"
+                                : "bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[#FF6B6B]/20"
+                            }`}>
+                              {travel.status === "draft" ? "Draft" : 
+                               travel.status === "pending" ? "Pending" : "Rejected"}
+                            </span>
+                            
+                            {/* Booking Type Badge */}
+                            <span className={`inline-flex items-center justify-center min-w-[70px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                              travel.bookingType === "CUSTOMIZED"
+                                ? "bg-[rgba(255,127,110,0.1)] text-[#FF7F6E] border-[rgba(255,127,110,0.2)]"
+                                : travel.bookingType === "STANDARD"
+                                ? "bg-[rgba(139,125,107,0.1)] text-[#8B7D6B] border-[rgba(139,125,107,0.2)]"
+                                : "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]"
+                            }`}>
+                              {capitalize(travel.bookingType)}
+                            </span>
+                            
+                            {/* Tour Type Badge */}
+                            {travel.tourType && (
+                              <span className={`inline-flex items-center justify-center min-w-[50px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                                travel.tourType === "JOINER"
+                                  ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
+                                  : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]"
+                              }`}>
+                                {capitalize(travel.tourType)}
+                              </span>
+                            )}
+                            
+                            {/* Ownership Badge */}
+                            <span className={`inline-flex items-center justify-center min-w-[60px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                              travel.ownership === "owned"
+                                ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[rgba(10,122,255,0.2)]"
+                                : travel.ownership === "collaborated"
+                                ? "bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border-[rgba(139,92,246,0.2)]"
+                                : "bg-[rgba(20,184,166,0.1)] text-[#14B8A6] border-[rgba(20,184,166,0.2)]"
+                            }`}>
+                              {travel.ownership === "owned" ? "Owned" : 
+                               travel.ownership === "collaborated" ? "Collab" : "Requested"}
+                            </span>
+                          </div>
                         </div>
-                      )
-                    }
-                  />
+                      </div>
+                    </div>
+                    {/* Hide button on mobile screens */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetails(travel.id);
+                      }}
+                      className="hidden md:flex h-9 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] items-center gap-2 text-sm font-medium transition-all"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>View Details</span>
+                    </button>
+                  </div>
+
+                  {/* Customer Info - Responsive layout */}
+                  <div className="mb-4 pb-4 border-b border-[#E5E7EB]">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Users className="w-4 h-4 text-[#0A7AFF]" />
+                      <span className="text-sm text-[#334155] font-medium truncate">
+                        {travel.owner}
+                      </span>
+                      <span className="hidden md:inline text-sm text-[#64748B]">•</span>
+                      <span className="hidden md:inline text-sm text-[#64748B] truncate">
+                        {travel.email}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-[#64748B] md:hidden">
+                      <Mail className="w-3 h-3" />
+                      <span className="truncate">{travel.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-[#64748B] md:hidden mt-1">
+                      <Phone className="w-3 h-3" />
+                      <span>{travel.mobile}</span>
+                    </div>
+                  </div>
+
+                  {/* Trip Details - Responsive grid layout */}
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5">
+                    {/* Desktop layout - hidden on mobile */}
+                    <div className="hidden md:flex md:items-center md:gap-2">
+                      <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                      <div>
+                        <p className="text-xs text-[#64748B]">Destination</p>
+                        <p className="text-sm text-[#334155] font-medium">
+                          {travel.destination}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="hidden md:flex md:items-center md:gap-2">
+                      <Calendar className="w-4 h-4 text-[#14B8A6]" />
+                      <div>
+                        <p className="text-xs text-[#64748B]">Travel Dates</p>
+                        <p className="text-sm text-[#334155] font-medium leading-tight">
+                          {travel.dates}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="hidden md:flex md:items-center md:gap-2">
+                      <Users className="w-4 h-4 text-[#64748B]" />
+                      <div>
+                        <p className="text-xs text-[#64748B]">Travelers</p>
+                        <p className="text-sm text-[#334155] font-medium">
+                          {travel.travelers}{" "}
+                          {travel.travelers > 1 ? "People" : "Person"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="hidden md:flex md:items-center md:gap-2">
+                      <span className="text-[#10B981] text-lg">₱</span>
+                      <div>
+                        <p className="text-xs text-[#64748B]">Budget</p>
+                        <p className="text-sm text-[#334155] font-medium">
+                          {travel.budget}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="hidden md:flex md:items-center md:gap-2">
+                      <Clock className="w-4 h-4 text-[#64748B]" />
+                      <div>
+                        <p className="text-xs text-[#64748B]">Created On</p>
+                        <p className="text-sm text-[#334155] font-medium">
+                          {travel.bookedDate}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Mobile layout - shown only on mobile */}
+                    <div className="md:hidden">
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Row 1 */}
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 text-[#0A7AFF] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-[#64748B]">Destination</p>
+                            <p className="text-sm text-[#334155] font-medium line-clamp-1">
+                              {travel.destination}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Users className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-[#64748B]">Travelers</p>
+                            <p className="text-sm text-[#334155] font-medium">
+                              {travel.travelers}{" "}
+                              {travel.travelers > 1 ? "Pax" : "Pax"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Row 2 - Dates on two lines */}
+                        <div className="flex items-start gap-2 col-span-2">
+                          <Calendar className="w-4 h-4 text-[#14B8A6] flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-xs text-[#64748B]">Travel Dates</p>
+                            <p className="text-sm text-[#334155] font-medium leading-tight">
+                              {travel.dates}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Row 3 - Budget and Created date */}
+                        <div className="flex items-start gap-2">
+                          <span className="text-[#10B981] text-lg">₱</span>
+                          <div>
+                            <p className="text-xs text-[#64748B]">Budget</p>
+                            <p className="text-sm text-[#334155] font-medium">
+                              {travel.budget}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Clock className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-[#64748B]">Created</p>
+                            <p className="text-sm text-[#334155] font-medium truncate">
+                              {new Date(travel.bookedDate).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                }
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons - Mobile only */}
+                  <div className="md:hidden">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetails(travel.id);
+                        }}
+                        className="flex-1 h-11 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#3B9EFF] text-white font-medium flex items-center justify-center gap-2"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View Details
+                      </button>
+                      {selectedTab === "draft" && travel.ownership === "owned" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareBooking(travel.id);
+                          }}
+                          className="px-4 h-11 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] flex items-center justify-center gap-2 font-medium"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1615,8 +1800,6 @@ export function UserTravels() {
                 />
               </div>
             )}
-
-            {/* ... rest of the content remains the same ... */}
           </div>
         }
         onConfirm={handleConfirmJoinTravel}
