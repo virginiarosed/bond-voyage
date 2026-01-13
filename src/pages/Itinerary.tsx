@@ -698,7 +698,7 @@ export function Itinerary({
     {
       enabled: !!userSearchParams.q && userSearchParams.q?.length >= 2,
       staleTime: 30000,
-      queryKey: [queryKeys.users.list],
+      queryKey: queryKeys.users.list(userSearchParams),
     }
   );
 
