@@ -520,8 +520,8 @@ export function History({ onHistoryCountChange }: HistoryProps) {
         <div
           className={`rounded-2xl p-8 text-white shadow-lg ${
             isCompleted
-              ? "bg-gradient-to-br from-[#10B981] to-[#14B8A6]"
-              : "bg-gradient-to-br from-[#FF6B6B] to-[#FF8C8C]"
+              ? "bg-linear-to-br from-[#10B981] to-[#14B8A6]"
+              : "bg-linear-to-br from-[#FF6B6B] to-[#FF8C8C]"
           }`}
         >
           <div className="flex items-start justify-between mb-6">
@@ -581,9 +581,9 @@ export function History({ onHistoryCountChange }: HistoryProps) {
           <div className="space-y-6">
             {/* Customer Information */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+              <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg">
                     <User className="w-5 h-5 text-white" />
                   </div>
                   <h3 className="font-semibold text-[#1A2B4F]">
@@ -617,13 +617,13 @@ export function History({ onHistoryCountChange }: HistoryProps) {
 
             {/* Status Information */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+              <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
                       isCompleted
-                        ? "bg-gradient-to-br from-[#10B981] to-[#14B8A6]"
-                        : "bg-gradient-to-br from-[#FF6B6B] to-[#FF8C8C]"
+                        ? "bg-linear-to-br from-[#10B981] to-[#14B8A6]"
+                        : "bg-linear-to-br from-[#FF6B6B] to-[#FF8C8C]"
                     }`}
                   >
                     <span className="text-white text-lg">
@@ -660,19 +660,17 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                       {isCompleted ? "Completed On" : "Cancelled On"}
                     </span>
                     <span className="text-xs font-medium text-[#334155]">
-                      {isCompleted
-                        ? selectedBooking.completedDate
-                        : selectedBooking.cancelledDate}
+                      {isCompleted && selectedBooking?.updatedAtDisplay}
                     </span>
                   </div>
                 </div>
-                {!isCompleted && selectedBooking.cancellationReason && (
+                {!isCompleted && (
                   <div className="p-4 rounded-xl border border-[rgba(255,107,107,0.2)] bg-[rgba(255,107,107,0.05)]">
                     <p className="text-xs text-[#64748B] mb-2">
                       Cancellation Reason
                     </p>
                     <p className="text-sm text-[#334155] leading-relaxed">
-                      {selectedBooking.cancellationReason}
+                      {selectedBooking?.itinerary?.rejectionReason || "None"}
                     </p>
                   </div>
                 )}
@@ -778,7 +776,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
           onClick={() => handleTabChange("completed")}
           className={`px-5 h-11 text-sm transition-colors ${
             activeTab === "completed"
-              ? "font-semibold text-[#10B981] border-b-[3px] border-[#10B981] -mb-[2px]"
+              ? "font-semibold text-[#10B981] border-b-[3px] border-[#10B981] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#10B981] hover:bg-[rgba(16,185,129,0.05)]"
           }`}
         >
@@ -788,7 +786,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
           onClick={() => handleTabChange("cancelled")}
           className={`px-5 h-11 text-sm transition-colors ${
             activeTab === "cancelled"
-              ? "font-semibold text-[#FF6B6B] border-b-[3px] border-[#FF6B6B] -mb-[2px]"
+              ? "font-semibold text-[#FF6B6B] border-b-[3px] border-[#FF6B6B] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)]"
           }`}
         >
@@ -999,8 +997,8 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                     <div
                       className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                         booking.status === "COMPLETED"
-                          ? "bg-gradient-to-br from-[#10B981] to-[#14B8A6]"
-                          : "bg-gradient-to-br from-[#FF6B6B] to-[#FF8C8C]"
+                          ? "bg-linear-to-br from-[#10B981] to-[#14B8A6]"
+                          : "bg-linear-to-br from-[#FF6B6B] to-[#FF8C8C]"
                       }`}
                     >
                       <span className="text-white text-lg">

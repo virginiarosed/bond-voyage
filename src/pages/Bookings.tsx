@@ -473,6 +473,7 @@ export function Bookings({
       setSelectedBookingId(bookingToCancel.id);
       await updateBookingStatus.mutateAsync({
         status: "CANCELLED",
+        rejectionReason: cancellationReason,
       });
 
       onMoveToHistory(bookingToCancel, "cancelled", cancellationReason);
@@ -500,8 +501,9 @@ export function Bookings({
 
     try {
       setSelectedBookingId(bookingToMoveToApprovals.id);
-      await updateBookingStatus.mutateAsync({
-        status: "PENDING",
+      await updateBooking.mutateAsync({
+        type: "CUSTOMIZED", // Move to approvals means it becomes CUSTOMIZED
+        status: "PENDING", // Set status to PENDING for approval
       });
 
       onMoveToApprovals(bookingToMoveToApprovals);
@@ -526,14 +528,24 @@ export function Bookings({
   const handleConfirmMoveToRequested = async () => {
     if (!bookingToMoveToRequested) return;
 
-    onMoveToRequested(bookingToMoveToRequested);
-    toast.success("Booking moved to requested!");
-    setMoveToRequestedDialogOpen(false);
-    setBookingToMoveToRequested(null);
-    refetch();
+    try {
+      setSelectedBookingId(bookingToMoveToRequested.id);
+      await updateBooking.mutateAsync({
+        type: "REQUESTED", // Keep as REQUESTED type
+        status: "DRAFT", // Set status to DRAFT for requested itineraries
+      });
 
-    if (viewMode === "detail") {
-      handleBackToList();
+      onMoveToRequested(bookingToMoveToRequested);
+      toast.success("Booking moved to requested!");
+      setMoveToRequestedDialogOpen(false);
+      setBookingToMoveToRequested(null);
+      refetch();
+
+      if (viewMode === "detail") {
+        handleBackToList();
+      }
+    } catch (error) {
+      toast.error("Failed to move booking");
     }
   };
 
@@ -729,8 +741,256 @@ export function Bookings({
         }}
         actionButtons={
           <div className="space-y-3">
+            {/* Cancel Booking Modal */}
+            <ConfirmationModal
+              open={cancelDialogOpen}
+              onOpenChange={setCancelDialogOpen}
+              title="Cancel Booking"
+              description="Confirm that you want to cancel this booking."
+              icon={<X className="w-5 h-5 text-white" />}
+              iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
+              iconShadow="shadow-[#FF6B6B]/20"
+              contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)]"
+              contentBorder="border-[rgba(255,107,107,0.2)]"
+              content={
+                bookingToCancel && (
+                  <>
+                    <p className="text-sm text-[#334155] mb-4">
+                      Are you sure you want to cancel the booking for{" "}
+                      <span className="font-semibold text-[#FF6B6B]">
+                        {bookingToCancel.customer}
+                      </span>
+                      ?
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)]">
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Booking ID
+                        </p>
+                        <p className="text-sm font-semibold text-[#0A7AFF]">
+                          {bookingToCancel.bookingCode}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Destination
+                        </p>
+                        <p className="text-sm font-medium text-[#334155]">
+                          {bookingToCancel.destination}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Travel Date
+                        </p>
+                        <p className="text-sm font-medium text-[#334155]">
+                          {formatDateRange(
+                            bookingToCancel.startDate,
+                            bookingToCancel.endDate
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Total Amount
+                        </p>
+                        <p className="text-sm font-semibold text-[#1A2B4F]">
+                          ₱{bookingToCancel.totalAmount.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)] mt-2">
+                      <Label htmlFor="cancellation-reason">
+                        Reason for Cancellation
+                      </Label>
+                      <Textarea
+                        id="cancellation-reason"
+                        placeholder="Enter reason..."
+                        value={cancellationReason}
+                        onChange={(e) => setCancellationReason(e.target.value)}
+                        rows={3}
+                      />
+                    </div>
+                  </>
+                )
+              }
+              onConfirm={handleConfirmCancel}
+              onCancel={() => {
+                setCancelDialogOpen(false);
+                setCancellationReason("");
+              }}
+              confirmText="Cancel Booking"
+              cancelText="Go Back"
+              confirmVariant="destructive"
+            />
+
+            {/* Move to Approvals Modal */}
+            <ConfirmationModal
+              open={moveToApprovalsDialogOpen}
+              onOpenChange={setMoveToApprovalsDialogOpen}
+              title="Move to Approvals"
+              description="This booking will be moved to the Approvals page for review."
+              icon={<RotateCcw className="w-5 h-5 text-white" />}
+              iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
+              iconShadow="shadow-[#0A7AFF]/20"
+              contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)]"
+              contentBorder="border-[rgba(10,122,255,0.2)]"
+              content={
+                bookingToMoveToApprovals && (
+                  <div className="">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#0A7AFF]/10 rounded-full blur-3xl"></div>
+                    <div className="relative">
+                      <p className="text-sm text-[#334155] leading-relaxed mb-4">
+                        Move booking for{" "}
+                        <span className="font-semibold text-[#0A7AFF]">
+                          {bookingToMoveToApprovals.customer}
+                        </span>{" "}
+                        to Requested Itinerary tab?
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)]">
+                        <div>
+                          <p className="text-xs text-[#64748B] mb-1">
+                            Booking ID
+                          </p>
+                          <p className="text-sm font-semibold text-[#0A7AFF]">
+                            {bookingToMoveToApprovals.bookingCode}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#64748B] mb-1">
+                            Destination
+                          </p>
+                          <p className="text-sm font-medium text-[#334155]">
+                            {bookingToMoveToApprovals.destination}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#64748B] mb-1">
+                            Travel Date
+                          </p>
+                          <p className="text-sm font-medium text-[#334155]">
+                            {formatDateRange(
+                              bookingToMoveToApprovals.startDate,
+                              bookingToMoveToApprovals.endDate
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#64748B] mb-1">
+                            Total Amount
+                          </p>
+                          <p className="text-sm font-semibold text-[#1A2B4F]">
+                            ₱
+                            {bookingToMoveToApprovals.totalAmount.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+              onConfirm={handleConfirmMoveToApprovals}
+              onCancel={() => setMoveToApprovalsDialogOpen(false)}
+              confirmText="Move to Approvals"
+              cancelText="Cancel"
+              confirmVariant="default"
+            />
+
+            {/* Move to Requested Modal */}
+            <Dialog
+              open={moveToRequestedDialogOpen}
+              onOpenChange={setMoveToRequestedDialogOpen}
+            >
+              <DialogContent className="sm:max-w-125">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                      <Package className="w-5 h-5 text-white" />
+                    </div>
+                    Move to Requested #{bookingToMoveToRequested?.bookingCode}
+                  </DialogTitle>
+                  <DialogDescription>
+                    This booking will be moved to the Requested tab in Itinerary
+                    page.
+                  </DialogDescription>
+                </DialogHeader>
+
+                {bookingToMoveToRequested && (
+                  <div className="px-8 py-6">
+                    <div className="bg-linear-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)] border border-[rgba(10,122,255,0.2)] rounded-2xl p-5 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-[#0A7AFF]/10 rounded-full blur-3xl"></div>
+                      <div className="relative">
+                        <p className="text-sm text-[#334155] leading-relaxed mb-4">
+                          Move booking for{" "}
+                          <span className="font-semibold text-[#0A7AFF]">
+                            {bookingToMoveToRequested.customer}
+                          </span>{" "}
+                          to Requested Itinerary tab?
+                        </p>
+                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)]">
+                          <div>
+                            <p className="text-xs text-[#64748B] mb-1">
+                              Booking ID
+                            </p>
+                            <p className="text-sm font-semibold text-[#0A7AFF]">
+                              {bookingToMoveToRequested.bookingCode}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#64748B] mb-1">
+                              Destination
+                            </p>
+                            <p className="text-sm font-medium text-[#334155]">
+                              {bookingToMoveToRequested.destination}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#64748B] mb-1">
+                              Travel Date
+                            </p>
+                            <p className="text-sm font-medium text-[#334155]">
+                              {formatDateRange(
+                                bookingToMoveToRequested.startDate,
+                                bookingToMoveToRequested.endDate
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#64748B] mb-1">
+                              Total Amount
+                            </p>
+                            <p className="text-sm font-semibold text-[#1A2B4F]">
+                              ₱
+                              {bookingToMoveToRequested.totalAmount.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <DialogFooter>
+                  <ShadcnButton
+                    variant="outline"
+                    onClick={() => setMoveToRequestedDialogOpen(false)}
+                    className="h-11 px-6 rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFB]"
+                  >
+                    Cancel
+                  </ShadcnButton>
+                  <ShadcnButton
+                    onClick={handleConfirmMoveToRequested}
+                    className="h-11 px-6 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] hover:from-[#0865CC] hover:to-[#0F9B8E] shadow-lg shadow-[#0A7AFF]/25 text-white"
+                  >
+                    <Package className="w-4 h-4 mr-2" />
+                    Move to Requested
+                  </ShadcnButton>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             {/* Edit Booking Modal */}
-            {/* Edit Booking Modal */}
+
             <ConfirmationModal
               open={editModalOpen}
               onOpenChange={setEditModalOpen}
@@ -1395,52 +1655,6 @@ export function Bookings({
         </div>
       </ContentCard>
 
-      {/* Cancel Booking Modal */}
-      <ConfirmationModal
-        open={cancelDialogOpen}
-        onOpenChange={setCancelDialogOpen}
-        title="Cancel Booking"
-        description="Confirm that you want to cancel this booking."
-        icon={<X className="w-5 h-5 text-white" />}
-        iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
-        iconShadow="shadow-[#FF6B6B]/20"
-        contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)]"
-        contentBorder="border-[rgba(255,107,107,0.2)]"
-        content={
-          bookingToCancel && (
-            <>
-              <p className="text-sm text-[#334155] mb-4">
-                Are you sure you want to cancel the booking for{" "}
-                <span className="font-semibold text-[#FF6B6B]">
-                  {bookingToCancel.customer}
-                </span>
-                ?
-              </p>
-              <div>
-                <Label htmlFor="cancellation-reason">
-                  Reason for Cancellation
-                </Label>
-                <Textarea
-                  id="cancellation-reason"
-                  placeholder="Enter reason..."
-                  value={cancellationReason}
-                  onChange={(e) => setCancellationReason(e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </>
-          )
-        }
-        onConfirm={handleConfirmCancel}
-        onCancel={() => {
-          setCancelDialogOpen(false);
-          setCancellationReason("");
-        }}
-        confirmText="Cancel Booking"
-        cancelText="Go Back"
-        confirmVariant="destructive"
-      />
-
       {/* Complete Booking Modal */}
       <ConfirmationModal
         open={completeDialogOpen}
@@ -1469,80 +1683,6 @@ export function Bookings({
         cancelText="Cancel"
         confirmVariant="success"
       />
-
-      {/* Move to Approvals Modal */}
-      <ConfirmationModal
-        open={moveToApprovalsDialogOpen}
-        onOpenChange={setMoveToApprovalsDialogOpen}
-        title="Move to Approvals"
-        description="This booking will be moved to the Approvals page for review."
-        icon={<RotateCcw className="w-5 h-5 text-white" />}
-        iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
-        iconShadow="shadow-[#0A7AFF]/20"
-        contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)]"
-        contentBorder="border-[rgba(10,122,255,0.2)]"
-        content={
-          bookingToMoveToApprovals && (
-            <p className="text-sm text-[#334155]">
-              Move booking for{" "}
-              <span className="font-semibold text-[#0A7AFF]">
-                {bookingToMoveToApprovals.customer}
-              </span>{" "}
-              to Approvals for re-review?
-            </p>
-          )
-        }
-        onConfirm={handleConfirmMoveToApprovals}
-        onCancel={() => setMoveToApprovalsDialogOpen(false)}
-        confirmText="Move to Approvals"
-        cancelText="Cancel"
-        confirmVariant="default"
-      />
-
-      {/* Move to Requested Modal */}
-      <Dialog
-        open={moveToRequestedDialogOpen}
-        onOpenChange={setMoveToRequestedDialogOpen}
-      >
-        <DialogContent className="sm:max-w-125">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg">
-                <Package className="w-5 h-5 text-white" />
-              </div>
-              Move to Requested
-            </DialogTitle>
-            <DialogDescription>
-              This booking will be moved to the Requested tab.
-            </DialogDescription>
-          </DialogHeader>
-
-          {bookingToMoveToRequested && (
-            <div className="py-4">
-              <p className="text-sm text-[#334155]">
-                Move booking for{" "}
-                <span className="font-semibold text-[#0A7AFF]">
-                  {bookingToMoveToRequested.customer}
-                </span>{" "}
-                to Requested Itinerary tab?
-              </p>
-            </div>
-          )}
-
-          <DialogFooter>
-            <ShadcnButton
-              variant="outline"
-              onClick={() => setMoveToRequestedDialogOpen(false)}
-            >
-              Cancel
-            </ShadcnButton>
-            <ShadcnButton onClick={handleConfirmMoveToRequested}>
-              <Package className="w-4 h-4 mr-2" />
-              Move to Requested
-            </ShadcnButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Payment Detail Modal */}
       <Dialog
