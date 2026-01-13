@@ -1020,21 +1020,21 @@ export function EditProfile() {
         </div>
         <ul className="space-y-2 text-muted-foreground text-sm">
           <li className="flex items-start gap-2">
-            <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+            <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
             <span>
               Use a unique password that you don't use for other accounts
             </span>
           </li>
           <li className="flex items-start gap-2">
-            <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+            <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
             <span>Avoid using personal information in your password</span>
           </li>
           <li className="flex items-start gap-2">
-            <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+            <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
             <span>Consider using a password manager for better security</span>
           </li>
           <li className="flex items-start gap-2">
-            <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+            <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
             <span>
               Change your password regularly and never share it with anyone
             </span>

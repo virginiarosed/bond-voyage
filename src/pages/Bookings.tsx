@@ -7,9 +7,6 @@ import {
   Edit,
   RotateCcw,
   X,
-  ChevronLeft,
-  Phone,
-  Mail,
   CreditCard,
   CheckCircle2,
   Package,
@@ -17,11 +14,6 @@ import {
   Download,
   AlertCircle,
   Loader2,
-  Wallet,
-  Plane,
-  Hotel,
-  Camera,
-  UtensilsCrossed,
   Car,
   Briefcase,
   FileCheck,
@@ -29,7 +21,6 @@ import {
   BookOpen,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -95,13 +86,14 @@ export function Bookings({
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
+    status: "PENDING",
   });
 
   const {
     data: bookingsData,
-    isLoading,
-    isError,
-    refetch,
+    isLoading: isLoadingBookings,
+    isError: isBookingsError,
+    refetch: refetchBookings,
   } = useAdminBookings(queryParams);
 
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -112,11 +104,27 @@ export function Bookings({
     null
   );
 
-  const { data: bookingDetailData, isLoading: isLoadingDetail } =
-    useBookingDetail(selectedBookingId || "", {
-      enabled: !!selectedBookingId && viewMode === "detail",
-      queryKey: [queryKeys.bookings.detail],
-    });
+  const {
+    data: bookingDetailData,
+    isLoading: isLoadingDetail,
+    isError: isDetailError,
+    refetch: refetchDetail,
+  } = useBookingDetail(selectedBookingId || "", {
+    enabled: !!selectedBookingId && viewMode === "detail",
+    queryKey: queryKeys.bookings.detail(selectedBookingId!),
+  });
+
+  // Track loading states for specific actions
+  const [isCompletingBooking, setIsCompletingBooking] = useState(false);
+  const [isCancellingBooking, setIsCancellingBooking] = useState(false);
+  const [isMovingToApprovals, setIsMovingToApprovals] = useState(false);
+  const [isMovingToRequested, setIsMovingToRequested] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [isRejectingPayment, setIsRejectingPayment] = useState(false);
+
+  // Add error states
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -137,6 +145,8 @@ export function Bookings({
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string | null>(
     null
   );
+
+  // Mutation loading states
 
   const handleFilterOpenChange = (open: boolean) => {
     if (open) {
@@ -187,6 +197,30 @@ export function Bookings({
   const cancelBooking = useCancelBooking(selectedBookingId || "");
   const updatePaymentStatus = useUpdatePaymentStatus(selectedPayment?.id || "");
 
+  // Helper function to reset all loading states
+  const resetLoadingStates = () => {
+    setIsCompletingBooking(false);
+    setIsCancellingBooking(false);
+    setIsMovingToApprovals(false);
+    setIsMovingToRequested(false);
+    setIsSavingEdit(false);
+    setIsVerifyingPayment(false);
+    setIsRejectingPayment(false);
+    setActionError(null);
+  };
+
+  // Handle network errors globally
+  useEffect(() => {
+    const handleNetworkError = () => {
+      if (!navigator.onLine) {
+        toast.error("No internet connection. Please check your network.");
+      }
+    };
+
+    window.addEventListener("offline", handleNetworkError);
+    return () => window.removeEventListener("offline", handleNetworkError);
+  }, []);
+
   const transformBooking = (apiBooking: any) => {
     const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
 
@@ -209,9 +243,9 @@ export function Bookings({
       endDate: endDate,
       travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
       totalAmount: totalAmount,
-      paid: 0, // This will be calculated from actual payments
-      totalPaid: 0, // This will be calculated from actual payments
-      paymentStatus: apiBooking.paymentStatus || "PENDING", // ✅ Use actual status from API
+      paid: 0,
+      totalPaid: 0,
+      paymentStatus: apiBooking.paymentStatus || "PENDING",
       bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
       bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
       status: apiBooking.status,
@@ -234,7 +268,6 @@ export function Bookings({
       : null;
   }, [bookingDetailData?.data]);
 
-  // Update breadcrumbs
   useEffect(() => {
     if (viewMode === "detail" && selectedBooking) {
       setBreadcrumbs([
@@ -255,28 +288,36 @@ export function Bookings({
 
   useEffect(() => {
     const params: any = {
+      ...queryParams,
       page: 1,
-      limit: 10,
     };
 
     if (searchQuery) {
       params.q = searchQuery;
+    } else {
+      delete params.q;
     }
 
     if (selectedTypeFilter) {
       params.type = selectedTypeFilter;
+    } else {
+      delete params.type;
     }
 
     if (dateFrom && dateTo) {
       params.dateFrom = dateFrom;
       params.dateTo = dateTo;
+    } else {
+      delete params.dateFrom;
+      delete params.dateTo;
     }
 
-    // Sort
     if (sortOrder === "newest") {
       params.sort = "createdAt:desc";
     } else if (sortOrder === "oldest") {
       params.sort = "createdAt:asc";
+    } else {
+      delete params.sort;
     }
 
     setQueryParams(params);
@@ -372,11 +413,13 @@ export function Bookings({
   const handleViewDetails = (bookingId: string) => {
     setSelectedBookingId(bookingId);
     setViewMode("detail");
+    resetLoadingStates();
   };
 
   const handleBackToList = () => {
     setViewMode("list");
     setSelectedBookingId(null);
+    resetLoadingStates();
   };
 
   const handleEditBooking = (booking: any) => {
@@ -403,6 +446,9 @@ export function Bookings({
   const handleSaveEdit = async () => {
     if (!bookingToEdit) return;
 
+    setIsSavingEdit(true);
+    setActionError(null);
+
     try {
       await updateBooking.mutateAsync({
         customerName: editFormData.customerName,
@@ -426,9 +472,17 @@ export function Bookings({
         endDate: "",
         travelers: "1",
       });
-      refetch();
-    } catch (error) {
-      toast.error("Failed to update booking");
+      await refetchBookings();
+      if (selectedBookingId) {
+        await refetchDetail();
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to update booking";
+      toast.error(errorMessage);
+      setActionError(errorMessage);
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -440,6 +494,9 @@ export function Bookings({
   const handleConfirmComplete = async () => {
     if (!bookingToComplete) return;
 
+    setIsCompletingBooking(true);
+    setActionError(null);
+
     try {
       setSelectedBookingId(bookingToComplete.id);
       await updateBookingStatus.mutateAsync({
@@ -450,13 +507,18 @@ export function Bookings({
       toast.success("Booking marked as completed!");
       setCompleteDialogOpen(false);
       setBookingToComplete(null);
-      refetch();
 
+      await refetchBookings();
       if (viewMode === "detail") {
         handleBackToList();
       }
-    } catch (error) {
-      toast.error("Failed to complete booking");
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to complete booking";
+      toast.error(errorMessage);
+      setActionError(errorMessage);
+    } finally {
+      setIsCompletingBooking(false);
     }
   };
 
@@ -469,10 +531,14 @@ export function Bookings({
   const handleConfirmCancel = async () => {
     if (!bookingToCancel) return;
 
+    setIsCancellingBooking(true);
+    setActionError(null);
+
     try {
       setSelectedBookingId(bookingToCancel.id);
       await updateBookingStatus.mutateAsync({
         status: "CANCELLED",
+        rejectionReason: cancellationReason,
       });
 
       onMoveToHistory(bookingToCancel, "cancelled", cancellationReason);
@@ -480,13 +546,18 @@ export function Bookings({
       setCancelDialogOpen(false);
       setBookingToCancel(null);
       setCancellationReason("");
-      refetch();
 
+      await refetchBookings();
       if (viewMode === "detail") {
         handleBackToList();
       }
-    } catch (error) {
-      toast.error("Failed to cancel booking");
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to cancel booking";
+      toast.error(errorMessage);
+      setActionError(errorMessage);
+    } finally {
+      setIsCancellingBooking(false);
     }
   };
 
@@ -498,9 +569,13 @@ export function Bookings({
   const handleConfirmMoveToApprovals = async () => {
     if (!bookingToMoveToApprovals) return;
 
+    setIsMovingToApprovals(true);
+    setActionError(null);
+
     try {
       setSelectedBookingId(bookingToMoveToApprovals.id);
-      await updateBookingStatus.mutateAsync({
+      await updateBooking.mutateAsync({
+        type: "CUSTOMIZED",
         status: "PENDING",
       });
 
@@ -508,13 +583,18 @@ export function Bookings({
       toast.success("Booking moved to approvals!");
       setMoveToApprovalsDialogOpen(false);
       setBookingToMoveToApprovals(null);
-      refetch();
 
+      await refetchBookings();
       if (viewMode === "detail") {
         handleBackToList();
       }
-    } catch (error) {
-      toast.error("Failed to move booking");
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to move booking";
+      toast.error(errorMessage);
+      setActionError(errorMessage);
+    } finally {
+      setIsMovingToApprovals(false);
     }
   };
 
@@ -526,24 +606,44 @@ export function Bookings({
   const handleConfirmMoveToRequested = async () => {
     if (!bookingToMoveToRequested) return;
 
-    onMoveToRequested(bookingToMoveToRequested);
-    toast.success("Booking moved to requested!");
-    setMoveToRequestedDialogOpen(false);
-    setBookingToMoveToRequested(null);
-    refetch();
+    setIsMovingToRequested(true);
+    setActionError(null);
 
-    if (viewMode === "detail") {
-      handleBackToList();
+    try {
+      setSelectedBookingId(bookingToMoveToRequested.id);
+      await updateBooking.mutateAsync({
+        type: "REQUESTED",
+        status: "DRAFT",
+      });
+
+      onMoveToRequested(bookingToMoveToRequested);
+      toast.success("Booking moved to requested!");
+      setMoveToRequestedDialogOpen(false);
+      setBookingToMoveToRequested(null);
+
+      await refetchBookings();
+      if (viewMode === "detail") {
+        handleBackToList();
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to move booking";
+      toast.error(errorMessage);
+      setActionError(errorMessage);
+    } finally {
+      setIsMovingToRequested(false);
     }
   };
 
-  // Payment handlers
   const handlePaymentItemClick = (payment: any) => {
     setSelectedPayment(payment);
     setPaymentDetailModalOpen(true);
   };
 
   const handleVerifyPayment = async (payment: any) => {
+    setIsVerifyingPayment(true);
+    setActionError(null);
+
     try {
       await updatePaymentStatus.mutateAsync({
         status: "VERIFIED",
@@ -551,9 +651,17 @@ export function Bookings({
 
       toast.success("Payment verified successfully!");
       setPaymentDetailModalOpen(false);
-      refetch();
-    } catch (error) {
-      toast.error("Failed to verify payment");
+      await refetchBookings();
+      if (selectedBookingId) {
+        await refetchDetail();
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to verify payment";
+      toast.error(errorMessage);
+      setActionError(errorMessage);
+    } finally {
+      setIsVerifyingPayment(false);
     }
   };
 
@@ -562,6 +670,9 @@ export function Bookings({
       toast.error("Please provide a reason for rejection");
       return;
     }
+
+    setIsRejectingPayment(true);
+    setActionError(null);
 
     try {
       await updatePaymentStatus.mutateAsync({
@@ -573,9 +684,18 @@ export function Bookings({
       setVerificationModalOpen(false);
       setPaymentDetailModalOpen(false);
       setRejectionReason("");
-      refetch();
-    } catch (error) {
-      toast.error("Failed to reject payment");
+
+      await refetchBookings();
+      if (selectedBookingId) {
+        await refetchDetail();
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to reject payment";
+      toast.error(errorMessage);
+      setActionError(errorMessage);
+    } finally {
+      setIsRejectingPayment(false);
     }
   };
 
@@ -584,12 +704,8 @@ export function Bookings({
     setVerificationModalOpen(true);
   };
 
-  const handleFilterChange = () => {
-    // Filters are now handled by the useEffect that updates queryParams
-    // This is kept for compatibility but doesn't need to do anything
-  };
+  const handleFilterChange = () => {};
 
-  // Apply pending filters to the actual applied filter state
   const handleApplyFilters = () => {
     setDateFrom(pendingDateFrom);
     setDateTo(pendingDateTo);
@@ -599,10 +715,8 @@ export function Bookings({
     setMaxAmount(pendingMaxAmount);
 
     setFilterOpen(false);
-    // The useEffect will automatically update the API query when applied filters change
   };
 
-  // Reset pending filters inside the modal (does not affect applied filters until Apply is pressed)
   const handleResetFilters = () => {
     setPendingDateFrom("");
     setPendingDateTo("");
@@ -637,54 +751,179 @@ export function Bookings({
     }
   };
 
-  // Loading state
-  if (isLoading) {
+  // Main loading states
+  if (isLoadingBookings) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-[#0A7AFF]" />
+      <div className="flex flex-col items-center justify-center min-h-100 space-y-4">
+        <Loader2 className="w-12 h-12 animate-spin text-[#0A7AFF]" />
+        <p className="text-[#64748B]">Loading bookings...</p>
+        <div className="w-64 h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
+          <div
+            className="h-full bg-[#0A7AFF] animate-pulse"
+            style={{ width: "60%" }}
+          ></div>
+        </div>
       </div>
     );
   }
 
-  // Error state
-  if (isError) {
+  if (isBookingsError) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center">
-        <AlertCircle className="w-12 h-12 text-[#FF6B6B] mb-4" />
+      <div className="flex flex-col items-center justify-center min-h-100 text-center p-6">
+        <div className="w-20 h-20 rounded-full bg-[rgba(255,107,107,0.1)] flex items-center justify-center mb-4">
+          <AlertCircle className="w-10 h-10 text-[#FF6B6B]" />
+        </div>
         <h3 className="text-lg font-semibold text-[#1A2B4F] mb-2">
           Failed to load bookings
         </h3>
-        <p className="text-sm text-[#64748B] mb-4">Please try again later</p>
-        <button
-          onClick={() => refetch()}
-          className="px-4 py-2 bg-[#0A7AFF] text-white rounded-lg hover:bg-[#0865CC]"
-        >
-          Retry
-        </button>
+        <p className="text-sm text-[#64748B] mb-6 max-w-md">
+          We couldn't load your bookings. This might be due to network issues or
+          server problems.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => refetchBookings()}
+            className="px-4 py-2 bg-[#0A7AFF] text-white rounded-lg hover:bg-[#0865CC] flex items-center gap-2 transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Retry
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 border border-[#E5E7EB] rounded-lg hover:bg-[#F8FAFB] transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
       </div>
     );
   }
 
-  // Detail view
   if (viewMode === "detail") {
     if (isLoadingDetail) {
       return (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-[#0A7AFF]" />
+        <div className="space-y-6">
+          {/* Back button skeleton */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-[#E5E7EB] animate-pulse"></div>
+            <div>
+              <div className="h-6 w-48 bg-[#E5E7EB] rounded animate-pulse mb-2"></div>
+              <div className="h-4 w-32 bg-[#E5E7EB] rounded animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Header skeleton */}
+          <div className="rounded-2xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] p-8">
+            <div className="flex items-start justify-between mb-6">
+              <div className="space-y-3">
+                <div className="h-8 w-64 bg-white/20 rounded animate-pulse"></div>
+                <div className="h-4 w-48 bg-white/20 rounded animate-pulse"></div>
+              </div>
+              <div className="h-8 w-32 bg-white/20 rounded animate-pulse"></div>
+            </div>
+            <div className="grid grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-4"
+                >
+                  <div className="h-5 w-5 bg-white/20 rounded-full animate-pulse mb-2"></div>
+                  <div className="h-3 w-16 bg-white/20 rounded animate-pulse mb-1"></div>
+                  <div className="h-4 w-24 bg-white/20 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Content skeleton */}
+          <div className="grid grid-cols-3 gap-6">
+            <div className="space-y-6">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl border border-[#E5E7EB] p-6"
+                >
+                  <div className="h-6 w-32 bg-[#E5E7EB] rounded animate-pulse mb-4"></div>
+                  <div className="space-y-3">
+                    {[...Array(3)].map((_, j) => (
+                      <div key={j} className="space-y-2">
+                        <div className="h-3 w-20 bg-[#E5E7EB] rounded animate-pulse"></div>
+                        <div className="h-4 w-40 bg-[#E5E7EB] rounded animate-pulse"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="col-span-2">
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6">
+                <div className="h-6 w-40 bg-[#E5E7EB] rounded animate-pulse mb-6"></div>
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="mb-4 last:mb-0">
+                    <div className="h-4 w-24 bg-[#E5E7EB] rounded animate-pulse mb-2"></div>
+                    <div className="space-y-2">
+                      {[...Array(2)].map((_, j) => (
+                        <div
+                          key={j}
+                          className="h-12 bg-[#E5E7EB] rounded-lg animate-pulse"
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (isDetailError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-100 text-center p-6">
+          <div className="w-20 h-20 rounded-full bg-[rgba(255,107,107,0.1)] flex items-center justify-center mb-4">
+            <AlertCircle className="w-10 h-10 text-[#FF6B6B]" />
+          </div>
+          <h3 className="text-lg font-semibold text-[#1A2B4F] mb-2">
+            Failed to load booking details
+          </h3>
+          <p className="text-sm text-[#64748B] mb-6">
+            We couldn't load the details for this booking.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => refetchDetail()}
+              className="px-4 py-2 bg-[#0A7AFF] text-white rounded-lg hover:bg-[#0865CC] flex items-center gap-2 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Try Again
+            </button>
+            <button
+              onClick={handleBackToList}
+              className="px-4 py-2 border border-[#E5E7EB] rounded-lg hover:bg-[#F8FAFB] transition-colors"
+            >
+              Back to List
+            </button>
+          </div>
         </div>
       );
     }
 
     if (!selectedBooking) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 text-center">
-          <AlertCircle className="w-12 h-12 text-[#FF6B6B] mb-4" />
+        <div className="flex flex-col items-center justify-center min-h-100 text-center p-6">
+          <div className="w-20 h-20 rounded-full bg-[rgba(255,184,77,0.1)] flex items-center justify-center mb-4">
+            <AlertCircle className="w-10 h-10 text-[#FFB84D]" />
+          </div>
           <h3 className="text-lg font-semibold text-[#1A2B4F] mb-2">
             Booking not found
           </h3>
+          <p className="text-sm text-[#64748B] mb-6">
+            The booking you're looking for doesn't exist or has been removed.
+          </p>
           <button
             onClick={handleBackToList}
-            className="px-4 py-2 bg-[#0A7AFF] text-white rounded-lg hover:bg-[#0865CC]"
+            className="px-4 py-2 bg-[#0A7AFF] text-white rounded-lg hover:bg-[#0865CC] transition-colors"
           >
             Back to List
           </button>
@@ -708,32 +947,319 @@ export function Bookings({
           ),
           travelers: selectedBooking.travelers,
           total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
-          totalAmount: selectedBooking.totalAmount, // ✅ ADD THIS LINE
-          paid: selectedBooking.paid || selectedBooking.totalPaid || 0, // ✅ ADD THIS LINE
-          paymentStatus: selectedBooking.paymentStatus, // ✅ This is already correct
+          totalAmount: selectedBooking.totalAmount,
+          paid: selectedBooking.paid || selectedBooking.totalPaid || 0,
+          paymentStatus: selectedBooking.paymentStatus,
           bookedDate: selectedBooking.bookedDate,
           tripStatus: selectedBooking.status,
           rejectionReason: selectedBooking.rejectionReason || "",
           rejectionResolution: selectedBooking.rejectionResolution || "",
           resolutionStatus: selectedBooking.resolutionStatus || "unresolved",
         }}
-        itinerary={bookingDetailData?.data?.itinerary}
+        itinerary={bookingDetailData?.data?.itinerary!}
         onBack={handleBackToList}
-        onSendToClient={() => {
-          toast.info("This booking is already confirmed");
-        }}
-        onCancelBooking={() => handleCancelClick(selectedBooking)}
-        onUpdateStatus={(status: any, reason: any, resolution: any) => {
-          // Handle status update if needed
-          toast.info("Status update functionality coming soon");
-        }}
         actionButtons={
           <div className="space-y-3">
-            {/* Edit Booking Modal */}
+            {/* Error Display */}
+            {actionError && (
+              <div className="p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[rgba(255,107,107,0.2)]">
+                <div className="flex items-center gap-2 text-[#FF6B6B] text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{actionError}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Cancel Booking Modal */}
+            <ConfirmationModal
+              open={cancelDialogOpen}
+              onOpenChange={(open) => {
+                setCancelDialogOpen(open);
+                if (!open) {
+                  setActionError(null);
+                }
+              }}
+              title="Cancel Booking"
+              description="Confirm that you want to cancel this booking."
+              icon={<X className="w-5 h-5 text-white" />}
+              iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
+              iconShadow="shadow-[#FF6B6B]/20"
+              contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)]"
+              contentBorder="border-[rgba(255,107,107,0.2)]"
+              isLoading={isCancellingBooking}
+              content={
+                bookingToCancel && (
+                  <>
+                    {actionError && (
+                      <div className="p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[rgba(255,107,107,0.2)] mb-4">
+                        <div className="flex items-center gap-2 text-[#FF6B6B] text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>{actionError}</span>
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-sm text-[#334155] mb-4">
+                      Are you sure you want to cancel the booking for{" "}
+                      <span className="font-semibold text-[#FF6B6B]">
+                        {bookingToCancel.customer}
+                      </span>
+                      ?
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)]">
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Booking ID
+                        </p>
+                        <p className="text-sm font-semibold text-[#0A7AFF]">
+                          {bookingToCancel.bookingCode}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Destination
+                        </p>
+                        <p className="text-sm font-medium text-[#334155]">
+                          {bookingToCancel.destination}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Travel Date
+                        </p>
+                        <p className="text-sm font-medium text-[#334155]">
+                          {formatDateRange(
+                            bookingToCancel.startDate,
+                            bookingToCancel.endDate
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#64748B] mb-1">
+                          Total Amount
+                        </p>
+                        <p className="text-sm font-semibold text-[#1A2B4F]">
+                          ₱{bookingToCancel.totalAmount.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)] mt-2">
+                      <Label htmlFor="cancellation-reason">
+                        Reason for Cancellation
+                      </Label>
+                      <Textarea
+                        id="cancellation-reason"
+                        placeholder="Enter reason..."
+                        value={cancellationReason}
+                        onChange={(e) => setCancellationReason(e.target.value)}
+                        rows={3}
+                        disabled={isCancellingBooking}
+                      />
+                    </div>
+                  </>
+                )
+              }
+              onConfirm={handleConfirmCancel}
+              onCancel={() => {
+                setCancelDialogOpen(false);
+                setCancellationReason("");
+                setActionError(null);
+              }}
+              confirmText={
+                isCancellingBooking ? "Cancelling..." : "Cancel Booking"
+              }
+              cancelText="Go Back"
+              confirmVariant="destructive"
+            />
+
+            {/* Move to Approvals Modal */}
+            <ConfirmationModal
+              open={moveToApprovalsDialogOpen}
+              onOpenChange={(open) => {
+                setMoveToApprovalsDialogOpen(open);
+                if (!open) setActionError(null);
+              }}
+              title="Move to Approvals"
+              description="This booking will be moved to the Approvals page for review."
+              icon={<RotateCcw className="w-5 h-5 text-white" />}
+              iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
+              iconShadow="shadow-[#0A7AFF]/20"
+              contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)]"
+              contentBorder="border-[rgba(10,122,255,0.2)]"
+              isLoading={isMovingToApprovals}
+              content={
+                bookingToMoveToApprovals && (
+                  <div className="">
+                    {actionError && (
+                      <div className="p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[rgba(255,107,107,0.2)] mb-4">
+                        <div className="flex items-center gap-2 text-[#FF6B6B] text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>{actionError}</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#0A7AFF]/10 rounded-full blur-3xl"></div>
+                    <div className="relative">
+                      <p className="text-sm text-[#334155] leading-relaxed mb-4">
+                        Move booking for{" "}
+                        <span className="font-semibold text-[#0A7AFF]">
+                          {bookingToMoveToApprovals.customer}
+                        </span>{" "}
+                        to Requested Itinerary tab?
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)]">
+                        <div>
+                          <p className="text-xs text-[#64748B] mb-1">
+                            Booking ID
+                          </p>
+                          <p className="text-sm font-semibold text-[#0A7AFF]">
+                            {bookingToMoveToApprovals.bookingCode}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#64748B] mb-1">
+                            Destination
+                          </p>
+                          <p className="text-sm font-medium text-[#334155]">
+                            {bookingToMoveToApprovals.destination}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#64748B] mb-1">
+                            Travel Date
+                          </p>
+                          <p className="text-sm font-medium text-[#334155]">
+                            {formatDateRange(
+                              bookingToMoveToApprovals.startDate,
+                              bookingToMoveToApprovals.endDate
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#64748B] mb-1">
+                            Total Amount
+                          </p>
+                          <p className="text-sm font-semibold text-[#1A2B4F]">
+                            ₱
+                            {bookingToMoveToApprovals.totalAmount.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+              onConfirm={handleConfirmMoveToApprovals}
+              onCancel={() => {
+                setMoveToApprovalsDialogOpen(false);
+                setActionError(null);
+              }}
+              confirmText={
+                isMovingToApprovals ? "Moving..." : "Move to Approvals"
+              }
+              cancelText="Cancel"
+              confirmVariant="default"
+            />
+
+            {/* Move to Requested Modal */}
+            <Dialog
+              open={moveToRequestedDialogOpen}
+              onOpenChange={setMoveToRequestedDialogOpen}
+            >
+              <DialogContent className="sm:max-w-125">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                      <Package className="w-5 h-5 text-white" />
+                    </div>
+                    Move to Requested #{bookingToMoveToRequested?.bookingCode}
+                  </DialogTitle>
+                  <DialogDescription>
+                    This booking will be moved to the Requested tab in Itinerary
+                    page.
+                  </DialogDescription>
+                </DialogHeader>
+
+                {bookingToMoveToRequested && (
+                  <div className="px-8 py-6">
+                    <div className="bg-linear-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)] border border-[rgba(10,122,255,0.2)] rounded-2xl p-5 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-[#0A7AFF]/10 rounded-full blur-3xl"></div>
+                      <div className="relative">
+                        <p className="text-sm text-[#334155] leading-relaxed mb-4">
+                          Move booking for{" "}
+                          <span className="font-semibold text-[#0A7AFF]">
+                            {bookingToMoveToRequested.customer}
+                          </span>{" "}
+                          to Requested Itinerary tab?
+                        </p>
+                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)]">
+                          <div>
+                            <p className="text-xs text-[#64748B] mb-1">
+                              Booking ID
+                            </p>
+                            <p className="text-sm font-semibold text-[#0A7AFF]">
+                              {bookingToMoveToRequested.bookingCode}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#64748B] mb-1">
+                              Destination
+                            </p>
+                            <p className="text-sm font-medium text-[#334155]">
+                              {bookingToMoveToRequested.destination}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#64748B] mb-1">
+                              Travel Date
+                            </p>
+                            <p className="text-sm font-medium text-[#334155]">
+                              {formatDateRange(
+                                bookingToMoveToRequested.startDate,
+                                bookingToMoveToRequested.endDate
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#64748B] mb-1">
+                              Total Amount
+                            </p>
+                            <p className="text-sm font-semibold text-[#1A2B4F]">
+                              ₱
+                              {bookingToMoveToRequested.totalAmount.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <DialogFooter>
+                  <ShadcnButton
+                    variant="outline"
+                    onClick={() => setMoveToRequestedDialogOpen(false)}
+                    className="h-11 px-6 rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFB]"
+                  >
+                    Cancel
+                  </ShadcnButton>
+                  <ShadcnButton
+                    onClick={handleConfirmMoveToRequested}
+                    className="h-11 px-6 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] hover:from-[#0865CC] hover:to-[#0F9B8E] shadow-lg shadow-[#0A7AFF]/25 text-white"
+                  >
+                    <Package className="w-4 h-4 mr-2" />
+                    Move to Requested
+                  </ShadcnButton>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             {/* Edit Booking Modal */}
             <ConfirmationModal
               open={editModalOpen}
-              onOpenChange={setEditModalOpen}
+              onOpenChange={(open) => {
+                setEditModalOpen(open);
+                if (!open) setActionError(null);
+              }}
               title="Edit Booking"
               description="Update the booking details for this standard itinerary."
               icon={<Edit className="w-5 h-5 text-white" />}
@@ -741,8 +1267,17 @@ export function Bookings({
               iconShadow="shadow-[#0A7AFF]/20"
               contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.05)] to-[rgba(20,184,166,0.05)]"
               contentBorder="border-[rgba(10,122,255,0.2)]"
+              isLoading={isSavingEdit}
               content={
                 <div className="space-y-4">
+                  {actionError && (
+                    <div className="p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[rgba(255,107,107,0.2)]">
+                      <div className="flex items-center gap-2 text-[#FF6B6B] text-sm">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>{actionError}</span>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <Label
                       htmlFor="edit-customerName"
@@ -761,6 +1296,7 @@ export function Bookings({
                       }
                       placeholder="Enter customer name"
                       className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                      disabled={isSavingEdit}
                     />
                   </div>
                   <div>
@@ -782,6 +1318,7 @@ export function Bookings({
                       }
                       placeholder="customer@email.com"
                       className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                      disabled={isSavingEdit}
                     />
                   </div>
                   <div>
@@ -803,6 +1340,7 @@ export function Bookings({
                       }
                       placeholder="+63 9XX XXX XXXX"
                       className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                      disabled={isSavingEdit}
                     />
                   </div>
 
@@ -826,6 +1364,7 @@ export function Bookings({
                           })
                         }
                         className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                        disabled={isSavingEdit}
                       />
                     </div>
                     <div>
@@ -847,6 +1386,7 @@ export function Bookings({
                           })
                         }
                         className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                        disabled={isSavingEdit}
                       />
                     </div>
                   </div>
@@ -870,6 +1410,7 @@ export function Bookings({
                         })
                       }
                       className="h-11 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
+                      disabled={isSavingEdit}
                     />
                   </div>
                 </div>
@@ -887,8 +1428,9 @@ export function Bookings({
                   endDate: "",
                   travelers: "1",
                 });
+                setActionError(null);
               }}
-              confirmText="Save Changes"
+              confirmText={isSavingEdit ? "Saving..." : "Save Changes"}
               cancelText="Cancel"
               confirmVariant="default"
             />
@@ -918,7 +1460,7 @@ export function Bookings({
                   );
                   toast.success("Exporting booking as PDF...");
                 }}
-                className="h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 text-sm text-[#334155] hover:text-[#FF6B6B] font-medium transition-all"
+                className="h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 text-sm text-[#334155] hover:text-[#FF6B6B] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
                 PDF
@@ -946,7 +1488,7 @@ export function Bookings({
                   );
                   toast.success("Exporting booking as Excel...");
                 }}
-                className="h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#10B981] hover:bg-[rgba(16,185,129,0.05)] flex items-center justify-center gap-2 text-sm text-[#334155] hover:text-[#10B981] font-medium transition-all"
+                className="h-9 px-3 rounded-lg border border-[#E5E7EB] hover:border-[#10B981] hover:bg-[rgba(16,185,129,0.05)] flex items-center justify-center gap-2 text-sm text-[#334155] hover:text-[#10B981] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
                 Excel
@@ -957,26 +1499,41 @@ export function Bookings({
             {selectedBooking.bookingType === "STANDARD" ? (
               <button
                 onClick={() => handleEditBooking(selectedBooking)}
-                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                disabled={isLoadingDetail}
               >
-                <Edit className="w-4 h-4" />
-                Edit Booking
+                {isSavingEdit ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Edit className="w-4 h-4" />
+                )}
+                {isSavingEdit ? "Saving..." : "Edit Booking"}
               </button>
             ) : selectedBooking.bookingType === "REQUESTED" ? (
               <button
                 onClick={() => handleMoveToRequestedClick(selectedBooking)}
-                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                disabled={isLoadingDetail || isMovingToRequested}
               >
-                <Package className="w-4 h-4" />
-                Move to Requested
+                {isMovingToRequested ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Package className="w-4 h-4" />
+                )}
+                {isMovingToRequested ? "Moving..." : "Move to Requested"}
               </button>
             ) : (
               <button
                 onClick={() => handleMoveToApprovalsClick(selectedBooking)}
-                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                disabled={isLoadingDetail || isMovingToApprovals}
               >
-                <RotateCcw className="w-4 h-4" />
-                Move to Approvals
+                {isMovingToApprovals ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4" />
+                )}
+                {isMovingToApprovals ? "Moving..." : "Move to Approvals"}
               </button>
             )}
 
@@ -985,20 +1542,30 @@ export function Bookings({
               selectedBooking.paymentStatus === "Paid" && (
                 <button
                   onClick={() => handleCompleteClick(selectedBooking)}
-                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  disabled={isLoadingDetail || isCompletingBooking}
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Mark as Complete
+                  {isCompletingBooking ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4" />
+                  )}
+                  {isCompletingBooking ? "Completing..." : "Mark as Complete"}
                 </button>
               )}
 
             {/* Cancel Button */}
             <button
               onClick={() => handleCancelClick(selectedBooking)}
-              className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white flex items-center justify-center gap-2 font-medium transition-all"
+              className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white flex items-center justify-center gap-2 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoadingDetail || isCancellingBooking}
             >
-              <X className="w-4 h-4" />
-              Cancel Booking
+              {isCancellingBooking ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <X className="w-4 h-4" />
+              )}
+              {isCancellingBooking ? "Cancelling..." : "Cancel Booking"}
             </button>
           </div>
         }
@@ -1013,129 +1580,117 @@ export function Bookings({
     <div>
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-6 border-b-2 border-[#E5E7EB]">
-        <button
-          onClick={() => {
-            setSelectedStatus("all");
-            handleFilterChange();
-          }}
-          className={`px-5 h-11 text-sm transition-colors ${
-            selectedStatus === "all"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
-              : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
-          }`}
-        >
-          All
-        </button>
-        <button
-          onClick={() => {
-            setSelectedStatus("paid");
-            handleFilterChange();
-          }}
-          className={`px-5 h-11 text-sm transition-colors ${
-            selectedStatus === "paid"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
-              : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
-          }`}
-        >
-          Paid
-        </button>
-        <button
-          onClick={() => {
-            setSelectedStatus("partial");
-            handleFilterChange();
-          }}
-          className={`px-5 h-11 text-sm transition-colors ${
-            selectedStatus === "partial"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
-              : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
-          }`}
-        >
-          Partial Payment
-        </button>
-        <button
-          onClick={() => {
-            setSelectedStatus("unpaid");
-            handleFilterChange();
-          }}
-          className={`px-5 h-11 text-sm transition-colors ${
-            selectedStatus === "unpaid"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
-              : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
-          }`}
-        >
-          Unpaid
-        </button>
+        {["all", "paid", "partial", "unpaid"].map((status) => (
+          <button
+            key={status}
+            onClick={() => {
+              setSelectedStatus(status);
+              handleFilterChange();
+            }}
+            disabled={isLoadingBookings}
+            className={`px-5 h-11 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              selectedStatus === status
+                ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
+                : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
+            }`}
+          >
+            {status === "all"
+              ? "All"
+              : status === "paid"
+              ? "Paid"
+              : status === "partial"
+              ? "Partial Payment"
+              : "Unpaid"}
+          </button>
+        ))}
       </div>
 
-      {/* Booking Type Stats */}
-      <div className="grid grid-cols-4 gap-6 mb-6">
-        <div
-          onClick={() =>
-            setSelectedTypeFilter(selectedTypeFilter === null ? null : null)
-          }
-          className="cursor-pointer"
-        >
-          <StatCard
-            icon={BookOpen}
-            label="Active Bookings"
-            value={filteredBookings.length}
-            gradientFrom="#8B5CF6"
-            gradientTo="#A78BFA"
-            selected={selectedTypeFilter === null}
-          />
+      {/* Booking Type Stats - Show skeleton while loading */}
+      {isLoadingBookings ? (
+        <div className="grid grid-cols-4 gap-6 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl border border-[#E5E7EB] p-6"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-[#E5E7EB] animate-pulse"></div>
+                <div className="h-4 w-24 bg-[#E5E7EB] rounded animate-pulse"></div>
+              </div>
+              <div className="h-8 w-16 bg-[#E5E7EB] rounded animate-pulse"></div>
+            </div>
+          ))}
         </div>
-        <div
-          onClick={() =>
-            setSelectedTypeFilter(
-              selectedTypeFilter === "CUSTOMIZED" ? null : "CUSTOMIZED"
-            )
-          }
-          className="cursor-pointer"
-        >
-          <StatCard
-            icon={Briefcase}
-            label="Customized"
-            value={customizedCount}
-            gradientFrom="#0A7AFF"
-            gradientTo="#3B9EFF"
-            selected={selectedTypeFilter === "CUSTOMIZED"}
-          />
+      ) : (
+        <div className="grid grid-cols-4 gap-6 mb-6">
+          <div
+            onClick={() =>
+              setSelectedTypeFilter(selectedTypeFilter === null ? null : null)
+            }
+            className="cursor-pointer"
+          >
+            <StatCard
+              icon={BookOpen}
+              label="Active Bookings"
+              value={filteredBookings.length}
+              gradientFrom="#8B5CF6"
+              gradientTo="#A78BFA"
+              selected={selectedTypeFilter === null}
+            />
+          </div>
+          <div
+            onClick={() =>
+              setSelectedTypeFilter(
+                selectedTypeFilter === "CUSTOMIZED" ? null : "CUSTOMIZED"
+              )
+            }
+            className="cursor-pointer"
+          >
+            <StatCard
+              icon={Briefcase}
+              label="Customized"
+              value={customizedCount}
+              gradientFrom="#0A7AFF"
+              gradientTo="#3B9EFF"
+              selected={selectedTypeFilter === "CUSTOMIZED"}
+            />
+          </div>
+          <div
+            onClick={() =>
+              setSelectedTypeFilter(
+                selectedTypeFilter === "STANDARD" ? null : "STANDARD"
+              )
+            }
+            className="cursor-pointer"
+          >
+            <StatCard
+              icon={FileCheck}
+              label="Standard"
+              value={standardCount}
+              gradientFrom="#10B981"
+              gradientTo="#14B8A6"
+              selected={selectedTypeFilter === "STANDARD"}
+            />
+          </div>
+          <div
+            onClick={() =>
+              setSelectedTypeFilter(
+                selectedTypeFilter === "REQUESTED" ? null : "REQUESTED"
+              )
+            }
+            className="cursor-pointer"
+          >
+            <StatCard
+              icon={ClipboardList}
+              label="Requested"
+              value={requestedCount}
+              gradientFrom="#FFB84D"
+              gradientTo="#FF9800"
+              selected={selectedTypeFilter === "REQUESTED"}
+            />
+          </div>
         </div>
-        <div
-          onClick={() =>
-            setSelectedTypeFilter(
-              selectedTypeFilter === "STANDARD" ? null : "STANDARD"
-            )
-          }
-          className="cursor-pointer"
-        >
-          <StatCard
-            icon={FileCheck}
-            label="Standard"
-            value={standardCount}
-            gradientFrom="#10B981"
-            gradientTo="#14B8A6"
-            selected={selectedTypeFilter === "STANDARD"}
-          />
-        </div>
-        <div
-          onClick={() =>
-            setSelectedTypeFilter(
-              selectedTypeFilter === "REQUESTED" ? null : "REQUESTED"
-            )
-          }
-          className="cursor-pointer"
-        >
-          <StatCard
-            icon={ClipboardList}
-            label="Requested"
-            value={requestedCount}
-            gradientFrom="#FFB84D"
-            gradientTo="#FF9800"
-            selected={selectedTypeFilter === "REQUESTED"}
-          />
-        </div>
-      </div>
+      )}
 
       <ContentCard
         title={`Confirmed Bookings (${totalItems})`}
@@ -1157,7 +1712,6 @@ export function Bookings({
           searchValue={searchQuery}
           onSearchChange={(value) => {
             setSearchQuery(value);
-            // The useEffect will trigger API call with search query
           }}
           sortOrder={sortOrder}
           onSortChange={(order) => {
@@ -1250,9 +1804,68 @@ export function Bookings({
 
         {/* Bookings List */}
         <div className="space-y-4">
-          {filteredBookings.length === 0 ? (
+          {isLoadingBookings ? (
+            // Skeleton loading for bookings list
+            [...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="p-6 rounded-2xl border-2 border-[#E5E7EB] animate-pulse"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-[#E5E7EB]"></div>
+                    <div className="space-y-2">
+                      <div className="h-6 w-48 bg-[#E5E7EB] rounded"></div>
+                      <div className="h-4 w-32 bg-[#E5E7EB] rounded"></div>
+                    </div>
+                  </div>
+                  <div className="h-9 w-28 bg-[#E5E7EB] rounded-xl"></div>
+                </div>
+                <div className="mb-4 pb-4 border-b border-[#E5E7EB]">
+                  <div className="h-4 w-64 bg-[#E5E7EB] rounded"></div>
+                </div>
+                <div className="grid grid-cols-5 gap-4">
+                  {[...Array(5)].map((_, j) => (
+                    <div key={j} className="space-y-2">
+                      <div className="h-3 w-16 bg-[#E5E7EB] rounded"></div>
+                      <div className="h-4 w-24 bg-[#E5E7EB] rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : filteredBookings.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-[#64748B]">No confirmed bookings to display</p>
+              <div className="w-16 h-16 rounded-full bg-[rgba(10,122,255,0.1)] flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="w-8 h-8 text-[#0A7AFF]" />
+              </div>
+              <h3 className="text-lg font-semibold text-[#1A2B4F] mb-2">
+                No confirmed bookings found
+              </h3>
+              <p className="text-sm text-[#64748B] mb-6">
+                {searchQuery || activeFiltersCount > 0
+                  ? "Try adjusting your search or filters"
+                  : "All confirmed bookings will appear here"}
+              </p>
+              {(searchQuery || activeFiltersCount > 0) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    handleResetFilters();
+                    setDateFrom("");
+                    setDateTo("");
+                    setTravelDateFrom("");
+                    setTravelDateTo("");
+                    setMinAmount("");
+                    setMaxAmount("");
+                    setSelectedStatus("all");
+                    setSelectedTypeFilter(null);
+                  }}
+                  className="px-4 py-2 border border-[#E5E7EB] rounded-lg hover:bg-[#F8FAFB] transition-colors"
+                >
+                  Clear all filters
+                </button>
+              )}
             </div>
           ) : (
             currentBookings.map((booking) => (
@@ -1395,56 +2008,13 @@ export function Bookings({
         </div>
       </ContentCard>
 
-      {/* Cancel Booking Modal */}
-      <ConfirmationModal
-        open={cancelDialogOpen}
-        onOpenChange={setCancelDialogOpen}
-        title="Cancel Booking"
-        description="Confirm that you want to cancel this booking."
-        icon={<X className="w-5 h-5 text-white" />}
-        iconGradient="bg-gradient-to-br from-[#FF6B6B] to-[#FF5252]"
-        iconShadow="shadow-[#FF6B6B]/20"
-        contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(255,107,107,0.12)]"
-        contentBorder="border-[rgba(255,107,107,0.2)]"
-        content={
-          bookingToCancel && (
-            <>
-              <p className="text-sm text-[#334155] mb-4">
-                Are you sure you want to cancel the booking for{" "}
-                <span className="font-semibold text-[#FF6B6B]">
-                  {bookingToCancel.customer}
-                </span>
-                ?
-              </p>
-              <div>
-                <Label htmlFor="cancellation-reason">
-                  Reason for Cancellation
-                </Label>
-                <Textarea
-                  id="cancellation-reason"
-                  placeholder="Enter reason..."
-                  value={cancellationReason}
-                  onChange={(e) => setCancellationReason(e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </>
-          )
-        }
-        onConfirm={handleConfirmCancel}
-        onCancel={() => {
-          setCancelDialogOpen(false);
-          setCancellationReason("");
-        }}
-        confirmText="Cancel Booking"
-        cancelText="Go Back"
-        confirmVariant="destructive"
-      />
-
       {/* Complete Booking Modal */}
       <ConfirmationModal
         open={completeDialogOpen}
-        onOpenChange={setCompleteDialogOpen}
+        onOpenChange={(open) => {
+          setCompleteDialogOpen(open);
+          if (!open) setActionError(null);
+        }}
         title="Mark Trip as Complete"
         description="Confirm that this trip has been successfully completed."
         icon={<CheckCircle2 className="w-5 h-5 text-white" />}
@@ -1452,102 +2022,45 @@ export function Bookings({
         iconShadow="shadow-[#10B981]/20"
         contentGradient="bg-gradient-to-br from-[rgba(16,185,129,0.08)] to-[rgba(16,185,129,0.12)]"
         contentBorder="border-[rgba(16,185,129,0.2)]"
+        isLoading={isCompletingBooking}
         content={
           bookingToComplete && (
-            <p className="text-sm text-[#334155]">
-              Are you sure you want to mark the trip for{" "}
-              <span className="font-semibold text-[#10B981]">
-                {bookingToComplete.customer}
-              </span>{" "}
-              as completed?
-            </p>
+            <div>
+              {actionError && (
+                <div className="p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[rgba(255,107,107,0.2)] mb-4">
+                  <div className="flex items-center gap-2 text-[#FF6B6B] text-sm">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{actionError}</span>
+                  </div>
+                </div>
+              )}
+              <p className="text-sm text-[#334155]">
+                Are you sure you want to mark the trip for{" "}
+                <span className="font-semibold text-[#10B981]">
+                  {bookingToComplete.customer}
+                </span>{" "}
+                as completed?
+              </p>
+            </div>
           )
         }
         onConfirm={handleConfirmComplete}
-        onCancel={() => setCompleteDialogOpen(false)}
-        confirmText="Mark as Complete"
+        onCancel={() => {
+          setCompleteDialogOpen(false);
+          setActionError(null);
+        }}
+        confirmText={isCompletingBooking ? "Completing..." : "Mark as Complete"}
         cancelText="Cancel"
         confirmVariant="success"
       />
 
-      {/* Move to Approvals Modal */}
-      <ConfirmationModal
-        open={moveToApprovalsDialogOpen}
-        onOpenChange={setMoveToApprovalsDialogOpen}
-        title="Move to Approvals"
-        description="This booking will be moved to the Approvals page for review."
-        icon={<RotateCcw className="w-5 h-5 text-white" />}
-        iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
-        iconShadow="shadow-[#0A7AFF]/20"
-        contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)]"
-        contentBorder="border-[rgba(10,122,255,0.2)]"
-        content={
-          bookingToMoveToApprovals && (
-            <p className="text-sm text-[#334155]">
-              Move booking for{" "}
-              <span className="font-semibold text-[#0A7AFF]">
-                {bookingToMoveToApprovals.customer}
-              </span>{" "}
-              to Approvals for re-review?
-            </p>
-          )
-        }
-        onConfirm={handleConfirmMoveToApprovals}
-        onCancel={() => setMoveToApprovalsDialogOpen(false)}
-        confirmText="Move to Approvals"
-        cancelText="Cancel"
-        confirmVariant="default"
-      />
-
-      {/* Move to Requested Modal */}
-      <Dialog
-        open={moveToRequestedDialogOpen}
-        onOpenChange={setMoveToRequestedDialogOpen}
-      >
-        <DialogContent className="sm:max-w-125">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg">
-                <Package className="w-5 h-5 text-white" />
-              </div>
-              Move to Requested
-            </DialogTitle>
-            <DialogDescription>
-              This booking will be moved to the Requested tab.
-            </DialogDescription>
-          </DialogHeader>
-
-          {bookingToMoveToRequested && (
-            <div className="py-4">
-              <p className="text-sm text-[#334155]">
-                Move booking for{" "}
-                <span className="font-semibold text-[#0A7AFF]">
-                  {bookingToMoveToRequested.customer}
-                </span>{" "}
-                to Requested Itinerary tab?
-              </p>
-            </div>
-          )}
-
-          <DialogFooter>
-            <ShadcnButton
-              variant="outline"
-              onClick={() => setMoveToRequestedDialogOpen(false)}
-            >
-              Cancel
-            </ShadcnButton>
-            <ShadcnButton onClick={handleConfirmMoveToRequested}>
-              <Package className="w-4 h-4 mr-2" />
-              Move to Requested
-            </ShadcnButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Payment Detail Modal */}
       <Dialog
         open={paymentDetailModalOpen}
-        onOpenChange={setPaymentDetailModalOpen}
+        onOpenChange={(open: any) => {
+          setPaymentDetailModalOpen(open);
+          if (!open) setActionError(null);
+        }}
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1559,6 +2072,14 @@ export function Bookings({
 
           {selectedPayment && (
             <div className="space-y-4">
+              {actionError && (
+                <div className="p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[rgba(255,107,107,0.2)]">
+                  <div className="flex items-center gap-2 text-[#FF6B6B] text-sm">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{actionError}</span>
+                  </div>
+                </div>
+              )}
               <div className="bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] rounded-xl p-4 text-white">
                 <div className="flex justify-between">
                   <div>
@@ -1596,14 +2117,20 @@ export function Bookings({
                   <ShadcnButton
                     onClick={() => handleVerifyPayment(selectedPayment)}
                     className="flex-1"
+                    disabled={isVerifyingPayment}
                   >
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Verify Payment
+                    {isVerifyingPayment ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                    )}
+                    {isVerifyingPayment ? "Verifying..." : "Verify Payment"}
                   </ShadcnButton>
                   <ShadcnButton
                     variant="destructive"
                     onClick={() => handleOpenVerificationModal(selectedPayment)}
                     className="flex-1"
+                    disabled={isRejectingPayment}
                   >
                     <X className="w-4 h-4 mr-2" />
                     Reject Payment
@@ -1618,7 +2145,13 @@ export function Bookings({
       {/* Payment Rejection Modal */}
       <Dialog
         open={verificationModalOpen}
-        onOpenChange={setVerificationModalOpen}
+        onOpenChange={(open: any) => {
+          setVerificationModalOpen(open);
+          if (!open) {
+            setRejectionReason("");
+            setActionError(null);
+          }
+        }}
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -1632,6 +2165,14 @@ export function Bookings({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {actionError && (
+              <div className="p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[rgba(255,107,107,0.2)]">
+                <div className="flex items-center gap-2 text-[#FF6B6B] text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{actionError}</span>
+                </div>
+              </div>
+            )}
             <div>
               <Label htmlFor="rejection-reason">Rejection Reason</Label>
               <Textarea
@@ -1640,6 +2181,7 @@ export function Bookings({
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 rows={4}
+                disabled={isRejectingPayment}
               />
             </div>
           </div>
@@ -1650,7 +2192,9 @@ export function Bookings({
               onClick={() => {
                 setVerificationModalOpen(false);
                 setRejectionReason("");
+                setActionError(null);
               }}
+              disabled={isRejectingPayment}
             >
               Cancel
             </ShadcnButton>
@@ -1659,10 +2203,14 @@ export function Bookings({
               onClick={() =>
                 selectedPayment && handleRejectPayment(selectedPayment)
               }
-              disabled={!rejectionReason.trim()}
+              disabled={!rejectionReason.trim() || isRejectingPayment}
             >
-              <X className="w-4 h-4 mr-2" />
-              Reject Payment
+              {isRejectingPayment ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <X className="w-4 h-4 mr-2" />
+              )}
+              {isRejectingPayment ? "Rejecting..." : "Reject Payment"}
             </ShadcnButton>
           </DialogFooter>
         </DialogContent>
