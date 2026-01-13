@@ -1,4 +1,3 @@
-// PaymentSection.tsx - Fixed version
 import {
   CreditCard,
   Wallet,
@@ -8,8 +7,10 @@ import {
   ChevronRight,
   Smartphone,
   Banknote,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { useUpdatePaymentStatus } from "../hooks/usePayments";
 import { PaymentDetailModal } from "./PaymentDetailModal";
@@ -54,6 +55,9 @@ export function PaymentSection({
   const [paymentDetailModalOpen, setPaymentDetailModalOpen] = useState(false);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Reset all state when booking changes
   useEffect(() => {
@@ -61,13 +65,15 @@ export function PaymentSection({
     setPaymentDetailModalOpen(false);
     setVerificationModalOpen(false);
     setRejectionReason("");
+    setIsVerifying(false);
+    setIsRejecting(false);
   }, [booking.id]);
 
   const {
     data: paymentsResponse,
     isLoading: isPaymentsLoading,
     isFetching: isPaymentsFetching,
-    refetch: refetchPayment,
+    refetch: refetchPayments,
   } = useBookingPayments(booking.id);
 
   const payments: PaymentSubmission[] = paymentsResponse?.data || [];
@@ -100,27 +106,32 @@ export function PaymentSection({
     setPaymentDetailModalOpen(true);
   };
 
-  const handleVerifyPayment = async () => {
+  const handleVerifyPayment = useCallback(async () => {
     if (!selectedPayment) return;
 
+    setIsVerifying(true);
     try {
       await updatePaymentStatus.mutateAsync({ status: "VERIFIED" });
       toast.success("Payment verified successfully!");
       setPaymentDetailModalOpen(false);
-      setSelectedPayment(null); // Clear selected payment after verification
+      setSelectedPayment(null);
       onPaymentUpdate?.();
-      refetchPayment();
-    } catch (error) {
-      toast.error("Failed to verify payment");
+      await refetchPayments();
+    } catch (error: any) {
+      console.error("Payment verification failed:", error);
+      toast.error(error.response?.data?.message || "Failed to verify payment");
+    } finally {
+      setIsVerifying(false);
     }
-  };
+  }, [selectedPayment, updatePaymentStatus, refetchPayments, onPaymentUpdate]);
 
-  const handleRejectPayment = async () => {
+  const handleRejectPayment = useCallback(async () => {
     if (!selectedPayment || !rejectionReason.trim()) {
       toast.error("Please provide a reason for rejection");
       return;
     }
 
+    setIsRejecting(true);
     try {
       await updatePaymentStatus.mutateAsync({
         status: "REJECTED",
@@ -129,18 +140,40 @@ export function PaymentSection({
       toast.success("Payment rejected successfully!");
       setVerificationModalOpen(false);
       setPaymentDetailModalOpen(false);
-      setSelectedPayment(null); // Clear selected payment after rejection
+      setSelectedPayment(null);
       setRejectionReason("");
       onPaymentUpdate?.();
-    } catch (error) {
-      toast.error("Failed to reject payment");
+      await refetchPayments();
+    } catch (error: any) {
+      console.error("Payment rejection failed:", error);
+      toast.error(error.response?.data?.message || "Failed to reject payment");
+    } finally {
+      setIsRejecting(false);
     }
-  };
+  }, [
+    selectedPayment,
+    rejectionReason,
+    updatePaymentStatus,
+    refetchPayments,
+    onPaymentUpdate,
+  ]);
 
   const handleOpenVerificationModal = (payment: PaymentSubmission) => {
     setSelectedPayment(payment);
     setVerificationModalOpen(true);
   };
+
+  const handleRefreshPayments = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetchPayments();
+      toast.success("Payments refreshed");
+    } catch (error) {
+      toast.error("Failed to refresh payments");
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetchPayments]);
 
   const formatPaymentMethod = (method: string) => {
     return method === "GCASH" ? "Gcash" : "Cash";
@@ -231,11 +264,25 @@ export function PaymentSection({
                 </p>
               </div>
             </div>
-            {pendingPaymentsCount > 0 && (
-              <div className="bg-[#FFB84D] text-white text-xs font-medium px-2 py-1 rounded-full">
-                {pendingPaymentsCount} Pending
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {pendingPaymentsCount > 0 && (
+                <div className="bg-[#FFB84D] text-white text-xs font-medium px-2 py-1 rounded-full">
+                  {pendingPaymentsCount} Pending
+                </div>
+              )}
+              <button
+                onClick={handleRefreshPayments}
+                disabled={isRefreshing}
+                className="p-2 rounded-lg hover:bg-[#F8FAFB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh payments"
+              >
+                {isRefreshing ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-[#64748B]" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 text-[#64748B]" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
