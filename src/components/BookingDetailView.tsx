@@ -145,12 +145,12 @@ export function BookingDetailView({
 
       {/* Booking Header Card */}
       <div
-        className={`rounded-2xl p-8 text-white shadow-lg ${getHeaderGradient()}`}
+        className={`rounded-2xl p-4 md:p-8 text-white shadow-lg ${getHeaderGradient()}`}
       >
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-semibold">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4 md:mb-6 gap-4">
+          <div className="order-2 md:order-1">
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <h1 className="text-xl md:text-3xl font-semibold">
                 {booking.itinerary || booking.destination}
               </h1>
               {booking.urgent && (
@@ -161,16 +161,19 @@ export function BookingDetailView({
             </div>
             <div className="flex items-center gap-2 text-white/90">
               <MapPin className="w-4 h-4" />
-              <span className="text-lg">{booking.destination}</span>
+              <span className="text-base md:text-lg">{booking.destination}</span>
             </div>
           </div>
-          <div className="text-right">
+          <div className="order-1 md:order-2 text-left md:text-right">
             <p className="text-white/80 text-sm mb-1">Booking ID</p>
-            <p className="text-2xl font-semibold">{booking.bookingCode}</p>
+            <p className="text-xl md:text-2xl font-semibold">
+              {booking.bookingCode}
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-6">
+        {/* Desktop Grid Layout */}
+        <div className="hidden md:grid md:grid-cols-4 gap-6">
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
             <Calendar className="w-5 h-5 mb-2 text-white/80" />
             <p className="text-white/80 text-xs mb-1">Travel Dates</p>
@@ -200,9 +203,53 @@ export function BookingDetailView({
             <p className="font-medium">{booking.bookedDate}</p>
           </div>
         </div>
+
+        {/* Mobile Grid Layout */}
+        <div className="md:hidden grid grid-cols-2 gap-3">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar className="w-4 h-4 text-white/80" />
+              <p className="text-white/80 text-xs">Travel Dates</p>
+            </div>
+            <p className="font-medium text-sm">{booking.dates}</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="w-4 h-4 text-white/80" />
+              <p className="text-white/80 text-xs">
+                {isRequestedItinerary ? "Created On" : "Booked On"}
+              </p>
+            </div>
+            <p className="font-medium text-sm">{booking.bookedDate}</p>
+          </div>
+          {/* Combined Travelers and Total Amount Row for Mobile */}
+          <div className="col-span-2 grid grid-cols-2 gap-3">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="flex items-center gap-2 mb-1">
+                <Users className="w-4 h-4 text-white/80" />
+                <p className="text-white/80 text-xs">Travelers</p>
+              </div>
+              <p className="font-medium text-sm">
+                {booking.travelers} {booking.travelers > 1 ? "People" : "Person"}
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="flex items-center gap-2 mb-1">
+                <CreditCard className="w-4 h-4 text-white/80" />
+                <p className="text-white/80 text-xs">Total Amount</p>
+              </div>
+              <p className="font-medium text-sm">
+                {booking.totalAmount
+                  ? `₱${booking.totalAmount.toLocaleString()}`
+                  : totalDisplay}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      {/* Desktop Layout (unchanged) */}
+      <div className="hidden md:grid md:grid-cols-3 gap-6">
         {/* Left Column - Customer & Payment Info */}
         <div className="space-y-6">
           {/* Customer Information */}
@@ -256,10 +303,67 @@ export function BookingDetailView({
         </div>
       </div>
 
-      {/* Rejection Info for Rejected Bookings */}
+      {/* Mobile Layout - Stacked vertically */}
+      <div className="md:hidden space-y-6">
+        {/* Customer Information - First on mobile */}
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
+          <div className="p-4 md:p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-semibold text-[#1A2B4F]">
+                Customer Information
+              </h3>
+            </div>
+          </div>
+          <div className="p-4 md:p-6 space-y-4">
+            <div>
+              <p className="text-xs text-[#64748B] mb-1">Full Name</p>
+              <p className="text-[#1A2B4F] font-medium">{booking.customer}</p>
+            </div>
+            <div>
+              <p className="text-xs text-[#64748B] mb-1">Email Address</p>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-[#0A7AFF]" />
+                <p className="text-[#334155]">{booking.email}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-[#64748B] mb-1">Mobile Number</p>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-[#14B8A6]" />
+                <p className="text-[#334155]">{booking.mobile}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Itinerary Details - Second on mobile */}
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
+          <div className="p-4 md:p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
+            <h3 className="font-semibold text-[#1A2B4F]">Trip Itinerary</h3>
+          </div>
+          <div className="p-4">
+            <ItineraryDetailDisplay itinerary={itinerary.days} />
+          </div>
+        </div>
+
+        {/* Payment Information - Third on mobile */}
+        <PaymentSection booking={booking} />
+
+        {/* Actions - Last on mobile */}
+        {actionButtons && (
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 space-y-3">
+            {actionButtons}
+          </div>
+        )}
+      </div>
+
+      {/* Rejection Info for Rejected Bookings - Visible on both mobile and desktop */}
       {booking.rejectionReason && booking.rejectionResolution && (
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
-          <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[rgba(255,107,107,0.05)] to-white">
+          <div className="p-4 md:p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[rgba(255,107,107,0.05)] to-white">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
                 <AlertTriangle className="w-5 h-5 text-white" />
@@ -269,7 +373,7 @@ export function BookingDetailView({
               </h3>
             </div>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-4 md:p-6 space-y-4">
             <div>
               <p className="text-xs font-semibold text-[#FF6B6B] mb-1">
                 Rejection Reason:
