@@ -523,105 +523,103 @@ export function CreateStandardItinerary() {
           </div>
         </ContentCard>
 
-        <ContentCard>
-          <div className="mb-6">
-            <h2 className="text-lg text-[#1A2B4F] font-semibold">
-              Itinerary Information
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <Label
-                htmlFor="destination"
-                className="text-[#1A2B4F] mb-2 block"
-              >
-                Destination <span className="text-[#FF6B6B]">*</span>
-              </Label>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B] pointer-events-none" />
-                <Input
-                  id="destination"
-                  placeholder="e.g., Baguio City"
-                  value={formData.destination}
-                  onChange={(e) =>
-                    handleFormChange("destination", e.target.value)
-                  }
-                  className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
-                />
-              </div>
-            </div>
+{/* Itinerary Information */}
+<ContentCard>
+  <div className="mb-6">
+    <h2 className="text-lg text-[#1A2B4F] font-semibold">
+      Itinerary Information
+    </h2>
+  </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+    {/* Destination - Full width on mobile */}
+    <div className="col-span-1 sm:col-span-2">
+      <Label htmlFor="destination" className="text-[#1A2B4F] mb-2 block">
+        Destination <span className="text-[#FF6B6B]">*</span>
+      </Label>
+      <div className="relative">
+        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B] pointer-events-none" />
+        <Input
+          id="destination"
+          placeholder="e.g., Baguio City"
+          value={formData.destination}
+          onChange={(e) =>
+            handleFormChange("destination", e.target.value)
+          }
+          className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
+        />
+      </div>
+    </div>
 
-            <div>
-              <Label htmlFor="days" className="text-[#1A2B4F] mb-2 block">
-                Number of Days <span className="text-[#FF6B6B]">*</span>
-              </Label>
-              <Input
-                id="days"
-                type="number"
-                min="1"
-                max="30"
-                placeholder="5"
-                value={formData.days}
-                onChange={(e) =>
-                  handleFormChange("days", parseInt(e.target.value) || 1)
-                }
-                className="h-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
-              />
-            </div>
+    {/* Number of Days and Price Per Pax - Side by side on mobile */}
+    <div className="grid grid-cols-2 gap-4 sm:gap-6 col-span-1 sm:col-span-2">
+      <div className="col-span-1">
+        <Label htmlFor="days" className="text-[#1A2B4F] mb-2 block">
+          Number of Days <span className="text-[#FF6B6B]">*</span>
+        </Label>
+        <Input
+          id="days"
+          type="number"
+          min="1"
+          max="30"
+          placeholder="5"
+          value={formData.days}
+          onChange={(e) =>
+            handleFormChange("days", parseInt(e.target.value) || 1)
+          }
+          className="h-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
+        />
+      </div>
 
-            <div className="col-span-2">
-              <Label
-                htmlFor="pricePerPax"
-                className="text-[#1A2B4F] mb-2 block"
-              >
-                Price Per Pax (₱) <span className="text-[#FF6B6B]">*</span>
-              </Label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B] font-medium">
-                  ₱
-                </span>
-                <Input
-                  id="pricePerPax"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Enter Price per Person"
-                  value={formData.pricePerPax}
-                  onChange={(e) =>
-                    handleFormChange("pricePerPax", e.target.value)
-                  }
-                  className="h-12 pl-10 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
-                />
-              </div>
-            </div>
+      <div className="col-span-1">
+        <Label htmlFor="pricePerPax" className="text-[#1A2B4F] mb-2 block">
+          Price Per Pax (₱) <span className="text-[#FF6B6B]">*</span>
+        </Label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B] font-medium">
+            ₱
+          </span>
+          <Input
+            id="pricePerPax"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Enter Price per Person"
+            value={formData.pricePerPax}
+            onChange={(e) =>
+              handleFormChange("pricePerPax", e.target.value)
+            }
+            className="h-12 pl-10 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
+          />
+        </div>
+      </div>
+    </div>
 
-            <div className="col-span-2">
-              <Label
-                htmlFor="description"
-                className="text-[#1A2B4F] mb-2 block"
-              >
-                Description
-              </Label>
-              <Textarea
-                id="description"
-                placeholder="Enter a brief description of the tour package..."
-                value={formData.description}
-                onChange={(e) =>
-                  handleFormChange("description", e.target.value)
-                }
-                className="rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all resize-none"
-                rows={3}
-              />
-            </div>
+    {/* Description - Full width on mobile and desktop */}
+    <div className="col-span-1 sm:col-span-2">
+      <Label htmlFor="description" className="text-[#1A2B4F] mb-2 block">
+        Description
+      </Label>
+      <Textarea
+        id="description"
+        placeholder="Enter a brief description of the tour package..."
+        value={formData.description}
+        onChange={(e) =>
+          handleFormChange("description", e.target.value)
+        }
+        className="rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all resize-none w-full"
+        rows={3}
+      />
+    </div>
 
-            <div className="col-span-2">
-              <ImageUploadField
-                value={formData.imageUrl}
-                onChange={(url) => handleFormChange("imageUrl", url)}
-              />
-            </div>
-          </div>
-        </ContentCard>
+    {/* Image Upload - Full width on mobile and desktop */}
+    <div className="col-span-1 sm:col-span-2">
+      <ImageUploadField
+        value={formData.imageUrl}
+        onChange={(url) => handleFormChange("imageUrl", url)}
+      />
+    </div>
+  </div>
+</ContentCard>
 
         {itineraryDays.some((day) => {
           const validLocations = day.activities.filter(
@@ -653,305 +651,311 @@ export function CreateStandardItinerary() {
         )}
 
         <ContentCard>
-          <div className="mb-6">
-            <h2 className="text-lg text-[#1A2B4F] font-semibold">
-              Day-by-Day Itinerary ({itineraryDays.length} Days)
-            </h2>
+  <div className="mb-6">
+    <h2 className="text-lg text-[#1A2B4F] font-semibold">
+      Day-by-Day Itinerary ({itineraryDays.length} Days)
+    </h2>
+  </div>
+  <div className="space-y-6">
+    {itineraryDays.map((day) => (
+      <div
+        key={day.id}
+        className="p-4 sm:p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
+      >
+        <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6 flex-col sm:flex-row">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 self-start">
+            <span className="text-white font-bold text-sm sm:text-base">
+              D{day.dayNumber}
+            </span>
           </div>
-          <div className="space-y-6">
-            {itineraryDays.map((day) => (
-              <div
-                key={day.id}
-                className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
-              >
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                    <span className="text-white font-bold">
-                      D{day.dayNumber}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <Label
-                      htmlFor={`day-${day.id}-title`}
-                      className="text-[#1A2B4F] mb-2 block text-sm font-medium"
-                    >
-                      Day {day.dayNumber} Title{" "}
-                      <span className="text-[#FF6B6B]">*</span>
-                    </Label>
-                    <Input
-                      id={`day-${day.id}-title`}
-                      placeholder="e.g., Arrival & Beach Sunset"
-                      value={day.title}
-                      onChange={(e) => updateDayTitle(day.id, e.target.value)}
-                      className="h-11 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] bg-white transition-all"
-                    />
-                  </div>
-                  <button
-                    onClick={() => addActivity(day.id)}
-                    className="h-11 px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Activity
-                  </button>
-                </div>
+          <div className="flex-1 w-full sm:w-auto">
+            <Label
+              htmlFor={`day-${day.id}-title`}
+              className="text-[#1A2B4F] mb-2 block text-sm font-medium"
+            >
+              Day {day.dayNumber} Title{" "}
+              <span className="text-[#FF6B6B]">*</span>
+            </Label>
+            <Input
+              id={`day-${day.id}-title`}
+              placeholder="e.g., Arrival & Beach Sunset"
+              value={day.title}
+              onChange={(e) => updateDayTitle(day.id, e.target.value)}
+              className="h-11 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] bg-white transition-all w-full"
+            />
+          </div>
+          <button
+            onClick={() => addActivity(day.id)}
+            className="h-11 px-4 sm:px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-1 sm:gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all self-stretch sm:self-auto justify-center min-w-[44px] sm:min-w-auto"
+            aria-label="Add Activity"
+          >
+            <Plus className="w-4 h-4 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Add Activity</span>
+            <span className="sm:hidden text-xs">Add</span>
+          </button>
+        </div>
 
-                <div className="space-y-4">
-                  {day.activities.length === 0 ? (
-                    <div className="py-10 text-center border-2 border-dashed border-[#E5E7EB] rounded-xl bg-white">
-                      <div className="w-14 h-14 rounded-xl bg-[#F8FAFB] flex items-center justify-center mx-auto mb-3">
-                        <Package className="w-7 h-7 text-[#CBD5E1]" />
-                      </div>
-                      <p className="text-sm text-[#64748B] mb-1">
-                        No activities yet for Day {day.dayNumber}
-                      </p>
-                      <p className="text-xs text-[#94A3B8]">
-                        Click "Add Activity" to start building this day
-                      </p>
+        <div className="space-y-4">
+          {day.activities.length === 0 ? (
+            <div className="py-8 sm:py-10 text-center border-2 border-dashed border-[#E5E7EB] rounded-xl bg-white">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#F8FAFB] flex items-center justify-center mx-auto mb-3">
+                <Package className="w-6 h-6 sm:w-7 sm:h-7 text-[#CBD5E1]" />
+              </div>
+              <p className="text-sm text-[#64748B] mb-1">
+                No activities yet for Day {day.dayNumber}
+              </p>
+              <p className="text-xs text-[#94A3B8] px-2">
+                Click "Add Activity" to start building this day
+              </p>
+            </div>
+          ) : (
+            day.activities.map((activity, activityIndex) => {
+              const IconComponent = getIconComponent(activity.icon);
+              return (
+                <div
+                  key={activity.id}
+                  className="relative p-3 sm:p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
+                >
+                  <div className="absolute -left-2 sm:-left-3 -top-2 sm:-top-3 w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
+                    {activityIndex + 1}
+                  </div>
+
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex flex-col gap-1 pt-1 sm:pt-2 shrink-0">
+                      <button
+                        onClick={() =>
+                          moveActivityUp(day.id, activityIndex)
+                        }
+                        disabled={activityIndex === 0}
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        title="Move Up"
+                        aria-label="Move Activity Up"
+                      >
+                        <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-[#CBD5E1] rotate-90" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          moveActivityDown(day.id, activityIndex)
+                        }
+                        disabled={
+                          activityIndex === day.activities.length - 1
+                        }
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        title="Move Down"
+                        aria-label="Move Activity Down"
+                      >
+                        <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-[#CBD5E1] -rotate-90" />
+                      </button>
                     </div>
-                  ) : (
-                    day.activities.map((activity, activityIndex) => {
-                      const IconComponent = getIconComponent(activity.icon);
-                      return (
-                        <div
-                          key={activity.id}
-                          className="relative p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
+
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4">
+                      <div className="col-span-1 sm:col-span-2">
+                        <Label className="text-xs text-[#64748B] mb-1 block">
+                          Time
+                        </Label>
+                        <Input
+                          type="time"
+                          value={activity.time}
+                          onChange={(e) =>
+                            updateActivity(
+                              day.id,
+                              activity.id,
+                              "time",
+                              e.target.value
+                            )
+                          }
+                          className="h-9 rounded-lg border-[#E5E7EB] text-sm w-full"
+                        />
+                      </div>
+
+                      <div className="col-span-1 sm:col-span-2">
+                        <Label className="text-xs text-[#64748B] mb-1 block">
+                          Icon
+                        </Label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openIconPicker(day.id, activity.id)
+                          }
+                          className="w-full h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white flex items-center justify-center transition-all"
+                          aria-label="Select Icon"
                         >
-                          <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
-                            {activityIndex + 1}
-                          </div>
+                          <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
+                        </button>
+                      </div>
 
-                          <div className="flex items-start gap-4">
-                            <div className="flex flex-col gap-1 pt-2">
-                              <button
-                                onClick={() =>
-                                  moveActivityUp(day.id, activityIndex)
-                                }
-                                disabled={activityIndex === 0}
-                                className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                title="Move Up"
-                              >
-                                <GripVertical className="w-4 h-4 text-[#CBD5E1] rotate-90" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  moveActivityDown(day.id, activityIndex)
-                                }
-                                disabled={
-                                  activityIndex === day.activities.length - 1
-                                }
-                                className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                title="Move Down"
-                              >
-                                <GripVertical className="w-4 h-4 text-[#CBD5E1] -rotate-90" />
-                              </button>
-                            </div>
+                      <div className="col-span-1 sm:col-span-8">
+                        <Label className="text-xs text-[#64748B] mb-1 block">
+                          Activity Title *
+                        </Label>
+                        <Input
+                          placeholder="e.g., Arrival at the Hotel"
+                          value={activity.title}
+                          onChange={(e) =>
+                            updateActivity(
+                              day.id,
+                              activity.id,
+                              "title",
+                              e.target.value
+                            )
+                          }
+                          className="h-9 rounded-lg border-[#E5E7EB] text-sm w-full"
+                        />
+                      </div>
 
-                            <div className="flex-1 grid grid-cols-12 gap-4">
-                              <div className="col-span-2">
-                                <Label className="text-xs text-[#64748B] mb-1 block">
-                                  Time
-                                </Label>
-                                <Input
-                                  type="time"
-                                  value={activity.time}
-                                  onChange={(e) =>
-                                    updateActivity(
-                                      day.id,
-                                      activity.id,
-                                      "time",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="h-9 rounded-lg border-[#E5E7EB] text-sm"
-                                />
-                              </div>
-
-                              <div className="col-span-2">
-                                <Label className="text-xs text-[#64748B] mb-1 block">
-                                  Icon
-                                </Label>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openIconPicker(day.id, activity.id)
-                                  }
-                                  className="w-full h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white flex items-center justify-center transition-all"
-                                >
-                                  <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
-                                </button>
-                              </div>
-
-                              <div className="col-span-8">
-                                <Label className="text-xs text-[#64748B] mb-1 block">
-                                  Activity Title *
-                                </Label>
-                                <Input
-                                  placeholder="e.g., Arrival at the Hotel"
-                                  value={activity.title}
-                                  onChange={(e) =>
-                                    updateActivity(
-                                      day.id,
-                                      activity.id,
-                                      "title",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="h-9 rounded-lg border-[#E5E7EB] text-sm"
-                                />
-                              </div>
-
-                              <div className="col-span-12 relative">
-                                <Label className="text-xs text-[#64748B] mb-1 block">
-                                  Location
-                                </Label>
-                                <div className="relative">
-                                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none z-10" />
-                                  {isLoadingPlaces &&
-                                    activeLocationInput?.dayId === day.id &&
-                                    activeLocationInput?.activityId ===
-                                      activity.id && (
-                                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
-                                    )}
-                                  <Input
-                                    placeholder="Search location..."
-                                    value={activity.location}
-                                    onChange={(e) =>
-                                      handleLocationInputChange(
-                                        e.target.value,
-                                        day.id,
-                                        activity.id
-                                      )
-                                    }
-                                    onFocus={() => {
-                                      if (activity.location.length >= 2) {
-                                        setLocationSearchQuery(
-                                          activity.location
-                                        );
-                                        setActiveLocationInput({
-                                          dayId: day.id,
-                                          activityId: activity.id,
-                                        });
-                                      }
-                                    }}
-                                    onBlur={() => {
-                                      setTimeout(() => {
-                                        setLocationSearchQuery("");
-                                        setActiveLocationInput(null);
-                                      }, 200);
-                                    }}
-                                    className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm"
-                                  />
-                                </div>
-
-                                {activeLocationInput?.dayId === day.id &&
-                                  activeLocationInput?.activityId ===
-                                    activity.id &&
-                                  locationSuggestions.length > 0 && (
-                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
-                                      {locationSuggestions.map((place, idx) => (
-                                        <button
-                                          key={idx}
-                                          type="button"
-                                          onClick={() =>
-                                            selectLocationSuggestion(
-                                              place,
-                                              day.id,
-                                              activity.id
-                                            )
-                                          }
-                                          className="w-full px-4 py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
-                                        >
-                                          <div className="flex items-start gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
-                                              <MapPin className="w-4 h-4 text-[#0A7AFF]" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
-                                                {place.name}
-                                              </p>
-                                              <p className="text-xs text-[#64748B] mt-0.5 truncate">
-                                                {place.address}
-                                              </p>
-                                              <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-xs px-2 py-0.5 rounded bg-[#F1F5F9] text-[#64748B]">
-                                                  {place.source}
-                                                </span>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-
-                                {activeLocationInput?.dayId === day.id &&
-                                  activeLocationInput?.activityId ===
-                                    activity.id &&
-                                  !isLoadingPlaces &&
-                                  locationSearchQuery.length >= 2 &&
-                                  locationSuggestions.length === 0 && (
-                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg p-4">
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-[#F8FAFB] flex items-center justify-center shrink-0">
-                                          <Search className="w-5 h-5 text-[#CBD5E1]" />
-                                        </div>
-                                        <div>
-                                          <p className="text-sm text-[#64748B]">
-                                            No locations found
-                                          </p>
-                                          <p className="text-xs text-[#94A3B8] mt-0.5">
-                                            Try a different search term
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                              </div>
-
-                              <div className="col-span-12">
-                                <Label className="text-xs text-[#64748B] mb-1 block">
-                                  Description
-                                </Label>
-                                <Textarea
-                                  placeholder="Add activity details..."
-                                  value={activity.description}
-                                  onChange={(e) =>
-                                    updateActivity(
-                                      day.id,
-                                      activity.id,
-                                      "description",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="rounded-lg border-[#E5E7EB] text-sm resize-none"
-                                  rows={2}
-                                />
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setDeleteActivityConfirm({
+                      <div className="col-span-1 sm:col-span-12 relative">
+                        <Label className="text-xs text-[#64748B] mb-1 block">
+                          Location
+                        </Label>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none z-10" />
+                          {isLoadingPlaces &&
+                            activeLocationInput?.dayId === day.id &&
+                            activeLocationInput?.activityId ===
+                              activity.id && (
+                              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
+                            )}
+                          <Input
+                            placeholder="Search location..."
+                            value={activity.location}
+                            onChange={(e) =>
+                              handleLocationInputChange(
+                                e.target.value,
+                                day.id,
+                                activity.id
+                              )
+                            }
+                            onFocus={() => {
+                              if (activity.location.length >= 2) {
+                                setLocationSearchQuery(
+                                  activity.location
+                                );
+                                setActiveLocationInput({
                                   dayId: day.id,
                                   activityId: activity.id,
-                                })
+                                });
                               }
-                              className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 shrink-0"
-                              title="Delete Activity"
-                            >
-                              <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B] transition-colors" />
-                            </button>
-                          </div>
+                            }}
+                            onBlur={() => {
+                              setTimeout(() => {
+                                setLocationSearchQuery("");
+                                setActiveLocationInput(null);
+                              }, 200);
+                            }}
+                            className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm w-full"
+                          />
                         </div>
-                      );
-                    })
-                  )}
+
+                        {activeLocationInput?.dayId === day.id &&
+                          activeLocationInput?.activityId ===
+                            activity.id &&
+                          locationSuggestions.length > 0 && (
+                            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                              {locationSuggestions.map((place, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() =>
+                                    selectLocationSuggestion(
+                                      place,
+                                      day.id,
+                                      activity.id
+                                    )
+                                  }
+                                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
+                                >
+                                  <div className="flex items-start gap-2 sm:gap-3">
+                                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
+                                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#0A7AFF]" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
+                                        {place.name}
+                                      </p>
+                                      <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                                        {place.address}
+                                      </p>
+                                      <div className="flex items-center gap-1 sm:gap-2 mt-1">
+                                        <span className="text-xs px-2 py-0.5 rounded bg-[#F1F5F9] text-[#64748B] truncate max-w-[80px] sm:max-w-none">
+                                          {place.source}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                        {activeLocationInput?.dayId === day.id &&
+                          activeLocationInput?.activityId ===
+                            activity.id &&
+                          !isLoadingPlaces &&
+                          locationSearchQuery.length >= 2 &&
+                          locationSuggestions.length === 0 && (
+                            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg p-3 sm:p-4">
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#F8FAFB] flex items-center justify-center shrink-0">
+                                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#CBD5E1]" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-[#64748B]">
+                                    No locations found
+                                  </p>
+                                  <p className="text-xs text-[#94A3B8] mt-0.5">
+                                    Try a different search term
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                      </div>
+
+                      <div className="col-span-1 sm:col-span-12">
+                        <Label className="text-xs text-[#64748B] mb-1 block">
+                          Description
+                        </Label>
+                        <Textarea
+                          placeholder="Add activity details..."
+                          value={activity.description}
+                          onChange={(e) =>
+                            updateActivity(
+                              day.id,
+                              activity.id,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          className="rounded-lg border-[#E5E7EB] text-sm resize-none w-full"
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDeleteActivityConfirm({
+                          dayId: day.id,
+                          activityId: activity.id,
+                        })
+                      }
+                      className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 shrink-0"
+                      title="Delete Activity"
+                      aria-label="Delete Activity"
+                    >
+                      <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B] transition-colors" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </ContentCard>
+              );
+            })
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+</ContentCard>
       </div>
 
       <div className="fixed bottom-0 left-20 right-0 bg-white border-t-2 border-[#E5E7EB] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50">
