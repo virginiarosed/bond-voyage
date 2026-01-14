@@ -13,11 +13,13 @@ import {
   Loader2,
   Check,
   AlertTriangle,
+  Compass,
+  Building2,
+  CheckCircle2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ContentCard } from "../../components/ContentCard";
 import { toast } from "sonner";
-import { useBookings } from "../../components/BookingContext";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { FAQAssistant } from "../../components/FAQAssistant";
 import { useSmartTrip } from "../../hooks/useSmartTrip";
@@ -25,13 +27,28 @@ import { X } from "lucide-react";
 import { usePlacesSearch } from "../../hooks/useLocations";
 import { Place } from "../../types/types";
 import { queryKeys } from "../../utils/lib/queryKeys";
+import { useCreateBooking } from "../../hooks/useBookings";
+import { useProfile } from "../../hooks/useAuth";
+import { convertTimeStringToPhilippineTime } from "../../utils/helpers/convertTime";
+
+// Icon mapping for activity types
+const iconMap: Record<string, any> = {
+  sightseeing: Compass,
+  museum: Building2,
+  food: Utensils,
+  culture: Camera,
+  nature: Mountain,
+  shopping: Building2,
+  default: Camera,
+};
 
 export function SmartTrip() {
   const navigate = useNavigate();
-  const { addUserTravel } = useBookings();
+  const { data: userProfileResponse } = useProfile();
   const [step, setStep] = useState(1);
   const [generatedTrip, setGeneratedTrip] = useState<any>(null);
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
+  const [showSaveConfirmModal, setShowSaveConfirmModal] = useState(false);
 
   const [destinationQuery, setDestinationQuery] = useState("");
   const [showDestinationSuggestions, setShowDestinationSuggestions] =
@@ -51,11 +68,7 @@ export function SmartTrip() {
     travelPace: "moderate",
   });
 
-  const {
-    data: placesData,
-    isLoading: isSearching,
-    error: searchError,
-  } = usePlacesSearch(
+  const { data: placesData, isLoading: isSearching } = usePlacesSearch(
     { text: destinationQuery, limit: 5 },
     {
       enabled: destinationQuery.length >= 2,
@@ -127,34 +140,44 @@ export function SmartTrip() {
 
   const { mutate: generateSmartTrip, isPending: isGenerating } = useSmartTrip({
     onSuccess: (response) => {
-      const apiTrip = response.data;
-      const startDate = new Date(formData.startDate);
-      const endDate = new Date(formData.endDate);
-      const days =
-        Math.ceil(
-          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-        ) + 1;
-      const nights = days - 1;
-
-      const transformedTrip = {
-        title: `${formData.destination} Trip`,
-        duration: `${days} ${days > 1 ? "Days" : "Day"}, ${nights} ${
-          nights > 1 ? "Nights" : "Night"
-        }`,
-        totalCost: formData.budget
-          ? `₱${parseInt(formData.budget).toLocaleString()}`
-          : "₱0",
-        itinerary: apiTrip.itinerary || [],
-        inclusions: apiTrip.inclusions || [],
-      };
-
-      setGeneratedTrip(transformedTrip);
-      setStep(2);
-      toast.success("Trip generated successfully!");
+      // Extract data from ApiResponse structure
+      if (response.data) {
+        setGeneratedTrip(response.data);
+        setStep(2);
+        toast.success("Trip generated successfully!");
+      }
     },
-    onError: (error) => {
+    onError: () => {
       toast.error("Failed to generate trip", {
         description: "Please try again later",
+      });
+    },
+  });
+
+  // API mutation for creating booking
+  const createBookingMutation = useCreateBooking({
+    onSuccess: (response) => {
+      const bookingId = response.data?.id;
+
+      toast.success("Travel Plan Saved!", {
+        description: `Your travel plan to ${formData.destination} has been successfully saved.`,
+      });
+
+      setShowSaveConfirmModal(false);
+
+      // Navigate to UserTravels after a short delay
+      setTimeout(() => {
+        navigate("/user/travels", {
+          state: {
+            scrollToId: bookingId,
+            tab: "in-progress",
+          },
+        });
+      }, 800);
+    },
+    onError: (error: any) => {
+      toast.error("Failed to save travel plan", {
+        description: error.response?.data?.message || "Please try again later",
       });
     },
   });
@@ -176,11 +199,10 @@ export function SmartTrip() {
 
     const payload = {
       destination: formData.destination,
-      ...(selectedDestination && {}),
       startDate: formData.startDate,
       endDate: formData.endDate,
-      travelers: formData.travelers,
-      budget: formData.budget,
+      travelers: parseInt(formData.travelers),
+      budget: parseInt(formData.budget) || 0,
       preference: formData.preferences,
       accomodationType: formData.accommodationType,
       travelPace: formData.travelPace as "drive" | "walk",
@@ -189,53 +211,77 @@ export function SmartTrip() {
     generateSmartTrip(payload);
   };
 
+  const calculateDuration = () => {
+    if (!formData.startDate || !formData.endDate) return { days: 0, nights: 0 };
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    const days =
+      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const nights = days - 1;
+    return { days, nights };
+  };
+
   const handleSaveToTravels = () => {
-    if (!generatedTrip) return;
+    if (!generatedTrip || !userProfileResponse?.data?.user) {
+      toast.error("Unable to save", {
+        description: "Please wait while we load your profile information.",
+      });
+      return;
+    }
 
-    const newTripId = `TP-${Date.now().toString().slice(-6)}`;
+    setShowSaveConfirmModal(true);
+  };
 
-    const destinationDetails = selectedDestination
-      ? {
-          destination: formData.destination,
-          destinationLat: selectedDestination.lat,
-          destinationLng: selectedDestination.lng,
-          destinationAddress: selectedDestination.address,
-          destinationSource: selectedDestination.source,
-        }
-      : {
-          destination: formData.destination,
-        };
+  const confirmSaveToTravels = () => {
+    if (!generatedTrip || !userProfileResponse?.data?.user) return;
 
-    const newTravel = {
-      id: newTripId,
-      ...destinationDetails,
+    const userProfile = userProfileResponse.data.user;
+
+    // Transform generated trip itinerary to API format
+    const apiDays = generatedTrip.itinerary.map((day: any, index: number) => ({
+      dayNumber: day.day,
+      date: day.date,
+      activities: day.activities.map(
+        (activity: any, activityIndex: number) => ({
+          time: activity.time || "00:00",
+          title: activity.title,
+          description: activity.description || null,
+          location: activity.locationName || null,
+          icon: activity.iconKey || null,
+          order: activity.order || activityIndex + 1,
+        })
+      ),
+    }));
+
+    const itineraryTitle = `AI Generated Trip to ${formData.destination}`;
+
+    const bookingData = {
+      destination: formData.destination,
       startDate: formData.startDate,
       endDate: formData.endDate,
       travelers: parseInt(formData.travelers),
-      budget: formData.budget
-        ? `₱${parseInt(formData.budget).toLocaleString()}`
-        : generatedTrip?.totalCost || "₱0",
-      status: "in-progress" as const,
-      bookingType: "Customized" as const,
-      bookingSource: "Generated" as const,
-      ownership: "owned" as const,
-      owner: "Maria Santos",
-      collaborators: [],
-      createdOn: new Date().toISOString().split("T")[0],
-      itinerary: generatedTrip.itinerary,
+      totalPrice: parseFloat(formData.budget) || 0,
+      type: "CUSTOMIZED",
+      tourType: "PRIVATE",
+      customerName: `${userProfile.firstName || ""} ${
+        userProfile.lastName || ""
+      }`.trim(),
+      customerEmail: userProfile.email || "",
+      customerMobile: userProfile.mobile || "",
+      itinerary: {
+        title: itineraryTitle,
+        destination: formData.destination,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        travelers: parseInt(formData.travelers),
+        estimatedCost: parseFloat(formData.budget) || 0,
+        type: "CUSTOMIZED",
+        tourType: "PRIVATE",
+        days: apiDays,
+      },
     };
 
-    addUserTravel(newTravel);
-
-    toast.success("Trip saved to your travels!", {
-      description: "Redirecting to In Progress tab...",
-    });
-
-    setTimeout(() => {
-      navigate("/user/travels", {
-        state: { scrollToId: newTripId, tab: "in-progress" },
-      });
-    }, 800);
+    createBookingMutation.mutate(bookingData);
   };
 
   const handleRegenerateTrip = () => {
@@ -256,6 +302,13 @@ export function SmartTrip() {
       travelPace: "moderate",
     });
   };
+
+  const getActivityIcon = (iconKey: string) => {
+    const IconComponent = iconMap[iconKey] || iconMap.default;
+    return <IconComponent className="w-5 h-5" strokeWidth={2} />;
+  };
+
+  const { days, nights } = calculateDuration();
 
   return (
     <div className="space-y-6">
@@ -372,7 +425,6 @@ export function SmartTrip() {
                 )}
               </div>
 
-              {/* Rest of your form fields remain the same */}
               {/* Budget */}
               <div>
                 <label className="block text-sm mb-2 text-card-foreground">
@@ -604,16 +656,31 @@ export function SmartTrip() {
                   <Sparkles className="w-6 h-6" />
                   <span className="text-sm opacity-90">AI Generated</span>
                 </div>
-                <h2 className="text-2xl mb-2">{generatedTrip.title}</h2>
-                <p className="text-white/90">{generatedTrip.duration}</p>
-                <p className="text-xs text-white/70 mt-3 italic">
-                  💡 You can edit this generated trip once you add this to
-                  Travels
+                <h2 className="text-2xl mb-2">
+                  {generatedTrip.metadata?.destination} Trip
+                </h2>
+                <p className="text-white/90">
+                  {days} {days > 1 ? "Days" : "Day"}, {nights}{" "}
+                  {nights > 1 ? "Nights" : "Night"}
                 </p>
+                <div className="mt-3 space-y-1 text-xs text-white/70">
+                  <p>📍 {generatedTrip.metadata?.destination}</p>
+                  <p>
+                    👥 {generatedTrip.metadata?.travelers} Traveler
+                    {generatedTrip.metadata?.travelers > 1 ? "s" : ""}
+                  </p>
+                  <p>⚡ {generatedTrip.metadata?.travelPace} Pace</p>
+                </div>
               </div>
               <div className="text-right">
                 <p className="text-sm text-white/80 mb-1">Total Cost</p>
-                <p className="text-3xl">{generatedTrip.totalCost}</p>
+                <p className="text-3xl">
+                  ₱{generatedTrip.metadata?.budget?.toLocaleString() || "0"}
+                </p>
+                <p className="text-xs text-white/70 mt-1 italic">
+                  💡 You can edit this generated trip once you add this to
+                  Travels
+                </p>
               </div>
             </div>
           </div>
@@ -621,76 +688,114 @@ export function SmartTrip() {
           {/* Itinerary */}
           <ContentCard title="Your Itinerary" icon={Calendar}>
             <div className="space-y-4">
-              {generatedTrip.itinerary.map((day: any, index: number) => (
+              {generatedTrip.itinerary?.map((day: any, index: number) => (
                 <div
                   key={index}
                   className="border border-border rounded-xl p-5 hover:border-primary/50 hover:shadow-md transition-all"
                 >
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-linear-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-md">
-                      <span className="text-lg">{day.day}</span>
+                      <span className="text-lg">D{day.day}</span>
                     </div>
-                    <h3 className="text-base text-card-foreground flex-1">
-                      {day.title}
-                    </h3>
+                    <div className="flex-1">
+                      <h3 className="text-base text-card-foreground">
+                        {day.title}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {day.date}
+                      </p>
+                    </div>
                   </div>
                   <div className="space-y-3">
-                    {day.activities.map((activity: any, i: number) => {
-                      const ActivityIcon = activity.icon || Camera;
-                      return (
-                        <div
-                          key={i}
-                          className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
-                        >
-                          <div className="w-10 h-10 rounded-lg bg-linear-to-br from-primary to-primary/80 flex items-center justify-center text-white shrink-0 shadow-sm">
-                            <ActivityIcon className="w-5 h-5" strokeWidth={2} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs text-primary">
-                                {activity.time}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                •
-                              </span>
-                              <span className="text-xs text-muted-foreground truncate">
-                                {activity.location}
-                              </span>
-                            </div>
-                            <h4 className="text-sm text-card-foreground mb-1">
-                              {activity.title}
-                            </h4>
-                            <p className="text-xs text-muted-foreground">
-                              {activity.description}
-                            </p>
-                          </div>
+                    {day.activities?.map((activity: any, i: number) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-linear-to-br from-primary to-primary/80 flex items-center justify-center text-white shrink-0 shadow-sm">
+                          {getActivityIcon(activity.iconKey)}
                         </div>
-                      );
-                    })}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-primary">
+                              {convertTimeStringToPhilippineTime(activity.time)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              •
+                            </span>
+                            <span className="text-xs text-muted-foreground truncate">
+                              {activity.locationName}
+                            </span>
+                          </div>
+                          <h4 className="text-sm text-card-foreground font-medium mb-1">
+                            {activity.title}
+                          </h4>
+                          <p className="text-xs text-muted-foreground">
+                            {activity.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
           </ContentCard>
 
-          {/* Inclusions */}
-          {generatedTrip.inclusions.length > 0 && (
-            <ContentCard title="Package Inclusions" icon={Check}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {generatedTrip.inclusions.map((item: string, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
-                  >
-                    <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
-                      <Check
-                        className="w-4 h-4 text-green-500"
-                        strokeWidth={2.5}
-                      />
-                    </div>
-                    <span className="text-sm text-card-foreground">{item}</span>
-                  </div>
-                ))}
+          {/* Trip Metadata */}
+          {generatedTrip.metadata && (
+            <ContentCard title="Trip Details" icon={Check}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Destination
+                  </p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    {generatedTrip.metadata.destination}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Travel Dates
+                  </p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    {generatedTrip.metadata.startDate} to{" "}
+                    {generatedTrip.metadata.endDate}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Travelers
+                  </p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    {generatedTrip.metadata.travelers} Traveler
+                    {generatedTrip.metadata.travelers > 1 ? "s" : ""}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">Budget</p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    ₱{generatedTrip.metadata.budget?.toLocaleString() || "0"}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Travel Pace
+                  </p>
+                  <p className="text-sm text-card-foreground font-medium capitalize">
+                    {generatedTrip.metadata.travelPace}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Preferences
+                  </p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    {generatedTrip.metadata.preferences?.length > 0
+                      ? generatedTrip.metadata.preferences.join(", ")
+                      : "None specified"}
+                  </p>
+                </div>
               </div>
             </ContentCard>
           )}
@@ -699,20 +804,27 @@ export function SmartTrip() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               onClick={() => setShowRegenerateModal(true)}
-              className="px-6 py-3 border-2 border-border rounded-xl hover:bg-accent hover:border-primary/50 transition-all text-center flex items-center justify-center"
+              className="px-6 py-3 border-2 border-border rounded-xl hover:bg-accent hover:border-primary/50 transition-all text-center flex items-center justify-center gap-2"
             >
+              <Sparkles className="w-4 h-4" />
               Generate Another Trip
             </button>
 
             <button
               onClick={handleSaveToTravels}
-              className="px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center"
+              disabled={createBookingMutation.isPending || !userProfileResponse}
+              className="px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: "linear-gradient(135deg, #0A7AFF, #14B8A6)",
+                background: createBookingMutation.isPending
+                  ? "#9CA3AF"
+                  : "linear-gradient(135deg, #0A7AFF, #14B8A6)",
                 color: "white",
               }}
             >
-              Save to My Travels
+              <Check className="w-4 h-4" />
+              {createBookingMutation.isPending
+                ? "Saving..."
+                : "Save to My Travels"}
             </button>
           </div>
         </>
@@ -738,15 +850,22 @@ export function SmartTrip() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Current Trip:</span>
-                <span className="font-medium">{generatedTrip?.title}</span>
+                <span className="font-medium">
+                  {generatedTrip?.metadata?.destination} Trip
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Duration:</span>
-                <span className="font-medium">{generatedTrip?.duration}</span>
+                <span className="font-medium">
+                  {days} {days > 1 ? "Days" : "Day"}, {nights}{" "}
+                  {nights > 1 ? "Nights" : "Night"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Cost:</span>
-                <span className="font-medium">{generatedTrip?.totalCost}</span>
+                <span className="font-medium">
+                  ₱{generatedTrip?.metadata?.budget?.toLocaleString() || "0"}
+                </span>
               </div>
             </div>
             <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -761,6 +880,59 @@ export function SmartTrip() {
         onCancel={() => setShowRegenerateModal(false)}
         confirmText="Yes, Generate New Trip"
         cancelText="Keep This Trip"
+        confirmVariant="default"
+      />
+
+      {/* Save Confirmation Modal */}
+      <ConfirmationModal
+        open={showSaveConfirmModal}
+        onOpenChange={setShowSaveConfirmModal}
+        title="Save Travel Plan"
+        description="Are you ready to save this AI-generated travel plan? It will be added to your In Progress travels."
+        icon={<CheckCircle2 className="w-5 h-5 text-white" />}
+        iconGradient="bg-gradient-to-br from-[#10B981] to-[#14B8A6]"
+        iconShadow="shadow-[#10B981]/20"
+        contentGradient="bg-gradient-to-br from-[rgba(16,185,129,0.05)] to-[rgba(20,184,166,0.05)]"
+        contentBorder="border-[rgba(16,185,129,0.2)]"
+        content={
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                Destination:
+              </span>
+              <span className="text-sm text-card-foreground font-medium">
+                {formData.destination || "N/A"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Days:</span>
+              <span className="text-sm text-card-foreground font-medium">
+                {generatedTrip?.itinerary?.length || 0}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Travelers:</span>
+              <span className="text-sm text-card-foreground font-medium">
+                {formData.travelers}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Budget:</span>
+              <span className="text-sm text-primary font-bold">
+                ₱
+                {formData.budget
+                  ? parseFloat(formData.budget).toLocaleString()
+                  : "0"}
+              </span>
+            </div>
+          </div>
+        }
+        onConfirm={confirmSaveToTravels}
+        onCancel={() => setShowSaveConfirmModal(false)}
+        confirmText={
+          createBookingMutation.isPending ? "Saving..." : "Save Travel Plan"
+        }
+        cancelText="Review Again"
         confirmVariant="default"
       />
 
