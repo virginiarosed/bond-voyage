@@ -5,6 +5,13 @@ import {
   Filter,
   X,
   CheckCircle,
+  Calendar,
+  MapPin,
+  Users,
+  Eye,
+  Mail,
+  Phone,
+  Clock,
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { StatCard } from "../../components/StatCard";
@@ -33,7 +40,7 @@ import {
   useSubmitFeedback,
 } from "../../hooks/useFeedbackList";
 import { useMyBookings } from "../../hooks/useBookings";
-import type { Feedback } from "../../types/types";
+import { useMediaQuery } from "react-responsive";
 
 interface FeedbackItem {
   id: string;
@@ -61,6 +68,7 @@ export function UserFeedback() {
   const [selectedTab, setSelectedTab] = useState<"all" | "unread">("all");
   const [starFilters, setStarFilters] = useState<number[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const { profileData } = useProfile();
 
@@ -161,7 +169,6 @@ export function UserFeedback() {
     }
 
     submitFeedbackMutation.mutate({
-      // bookingId: newFeedback.bookingId,
       rating: newFeedback.rating,
       comment: newFeedback.comment,
     });
@@ -255,29 +262,65 @@ export function UserFeedback() {
 
   return (
     <div>
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <StatCard
-          icon={MessageCircle}
-          label="Total Feedback"
-          value={stats.totalFeedback.toString()}
-          gradientFrom="#0A7AFF"
-          gradientTo="#3B9EFF"
-        />
-        <StatCard
-          icon={Star}
-          label="Avg Rating"
-          value={`${stats.avgRating}/5.0`}
-          gradientFrom="#FFB84D"
-          gradientTo="#FF9A3D"
-        />
-        <StatCard
-          icon={CheckCircle}
-          label="Replied by Admin"
-          value={stats.respondedCount.toString()}
-          gradientFrom="#10B981"
-          gradientTo="#14B8A6"
-        />
+      {/* Stats Row - Responsive with mobile-specific layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+        {/* Mobile: First row - Total Feedback and Replied by Admin side by side */}
+        <div className="sm:hidden grid grid-cols-2 gap-4">
+          <StatCard
+            icon={MessageCircle}
+            label="Total"
+            value={stats.totalFeedback.toString()}
+            gradientFrom="#0A7AFF"
+            gradientTo="#3B9EFF"
+          />
+          <StatCard
+            icon={CheckCircle}
+            label="Replied"
+            value={stats.respondedCount.toString()}
+            gradientFrom="#10B981"
+            gradientTo="#14B8A6"
+          />
+        </div>
+        
+        {/* Mobile: Second row - Avg Rating full width */}
+        <div className="sm:hidden">
+          <StatCard
+            icon={Star}
+            label="Avg Rating"
+            value={`${stats.avgRating}/5.0`}
+            gradientFrom="#FFB84D"
+            gradientTo="#FF9A3D"
+          />
+        </div>
+        
+        {/* Desktop: All three cards in one row */}
+        <div className="hidden sm:block">
+          <StatCard
+            icon={MessageCircle}
+            label="Total Feedback"
+            value={stats.totalFeedback.toString()}
+            gradientFrom="#0A7AFF"
+            gradientTo="#3B9EFF"
+          />
+        </div>
+        <div className="hidden sm:block">
+          <StatCard
+            icon={Star}
+            label="Avg Rating"
+            value={`${stats.avgRating}/5.0`}
+            gradientFrom="#FFB84D"
+            gradientTo="#FF9A3D"
+          />
+        </div>
+        <div className="hidden sm:block">
+          <StatCard
+            icon={CheckCircle}
+            label="Replied by Admin"
+            value={stats.respondedCount.toString()}
+            gradientFrom="#10B981"
+            gradientTo="#14B8A6"
+          />
+        </div>
       </div>
 
       <ContentCard
@@ -285,12 +328,12 @@ export function UserFeedback() {
           filteredFeedback.length
         })`}
       >
-        {/* Filter Tabs and Buttons */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-1 border-b-2 border-[#E5E7EB]">
+        {/* Filter Tabs and Buttons - Responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-1 border-b-2 border-[#E5E7EB] self-start">
             <button
               onClick={() => setSelectedTab("all")}
-              className={`px-5 h-11 text-sm transition-colors ${
+              className={`px-4 sm:px-5 h-10 sm:h-11 text-sm transition-colors whitespace-nowrap ${
                 selectedTab === "all"
                   ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
@@ -300,7 +343,7 @@ export function UserFeedback() {
             </button>
             <button
               onClick={() => setSelectedTab("unread")}
-              className={`px-5 h-11 text-sm transition-colors ${
+              className={`px-4 sm:px-5 h-10 sm:h-11 text-sm transition-colors whitespace-nowrap ${
                 selectedTab === "unread"
                   ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
@@ -310,13 +353,15 @@ export function UserFeedback() {
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {/* Star Filter */}
             <Popover open={filterOpen} onOpenChange={setFilterOpen}>
               <PopoverTrigger asChild>
                 <button className="h-10 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center gap-2 text-sm font-medium text-[#334155] transition-all relative">
                   <Filter className="w-4 h-4" />
-                  Filter by Rating
+                  <span className={isMobile ? "hidden sm:inline" : "inline"}>
+                    Filter by Rating
+                  </span>
                   {starFilters.length > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#0A7AFF] text-white text-xs flex items-center justify-center">
                       {starFilters.length}
@@ -367,13 +412,13 @@ export function UserFeedback() {
             <button
               onClick={handleOpenNewFeedbackModal}
               disabled={availableTrips.length === 0}
-              className="h-10 px-4 rounded-xl text-white text-sm font-medium shadow-[0_2px_8px_rgba(10,122,255,0.25)] hover:-translate-y-0.5 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-              style={{
-                background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))`,
-              }}
+              className="h-10 px-4 rounded-xl text-white text-sm font-medium shadow-[0_2px_8px_rgba(10,122,255,0.25)] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6]"
             >
               <Plus className="w-4 h-4" strokeWidth={2} />
-              Leave Feedback
+              <span className={isMobile ? "hidden sm:inline" : "inline"}>
+                Leave Feedback
+              </span>
+              <span className="sm:hidden">Feedback</span>
             </button>
           </div>
         </div>
@@ -410,18 +455,19 @@ export function UserFeedback() {
               <div
                 key={item.id}
                 className={`
-                  p-6 rounded-2xl border-2 transition-all duration-200 cursor-pointer
+                  p-4 sm:p-6 rounded-2xl border-2 transition-all duration-200 cursor-pointer
                   ${
                     item.unread
                       ? "border-[#0A7AFF] bg-[rgba(10,122,255,0.02)] hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)]"
                       : "border-[#E5E7EB] hover:border-[#0A7AFF] hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)]"
                   }
                 `}
+                onClick={() => item.responded && handleViewReply(item)}
               >
-                {/* Header */}
+                {/* Header - Responsive */}
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center flex-shrink-0">
                       <span className="text-white text-sm font-medium">
                         {item.customer
                           .split(" ")
@@ -429,38 +475,47 @@ export function UserFeedback() {
                           .join("")}
                       </span>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm text-[#1A2B4F] font-semibold">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                        <span className="text-sm text-[#1A2B4F] font-semibold truncate">
                           {item.customer}
                         </span>
-                        <span className="text-sm text-[#64748B]">•</span>
-                        <span className="text-sm text-[#64748B]">
+                        <span className="hidden sm:inline text-sm text-[#64748B]">•</span>
+                        <span className="text-sm text-[#64748B] truncate">
                           Booking #{item.bookingId}
                         </span>
-                        {renderStars(item.rating)}
                       </div>
-                      <p className="text-sm text-[#64748B]">{item.trip}</p>
+                      <div className="flex items-center gap-2 mb-1 sm:mb-0">
+                        {renderStars(item.rating)}
+                        <span className="sm:hidden text-xs text-[#64748B]">
+                          • Booking #{item.bookingId}
+                        </span>
+                      </div>
+                      <p className="text-sm text-[#64748B] line-clamp-1">
+                        {item.trip}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-end gap-1 ml-2">
                     {item.unread && (
                       <span className="w-2 h-2 bg-[#0A7AFF] rounded-full animate-pulse" />
                     )}
-                    <span className="text-xs text-[#64748B]">{item.date}</span>
+                    <span className="text-xs text-[#64748B] whitespace-nowrap">
+                      {item.date}
+                    </span>
                   </div>
                 </div>
 
-                {/* Feedback Text */}
+                {/* Feedback Text - Responsive */}
                 <div className="mb-4">
-                  <p className="text-sm text-[#334155] leading-relaxed">
+                  <p className="text-sm text-[#334155] leading-relaxed line-clamp-2">
                     "{item.text}"
                   </p>
                 </div>
 
-                {/* Status & Actions */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                {/* Status & Actions - Responsive */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {item.responded && (
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)]">
                         <CheckCircle className="w-3 h-3" />
@@ -481,10 +536,15 @@ export function UserFeedback() {
                   <div className="flex items-center gap-2">
                     {item.responded && (
                       <button
-                        onClick={() => handleViewReply(item)}
-                        className="h-9 px-4 rounded-lg border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] text-sm text-[#334155] font-medium transition-all"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewReply(item);
+                        }}
+                        className="w-full sm:w-auto h-9 px-4 rounded-lg border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] text-sm text-[#334155] font-medium transition-all flex items-center justify-center gap-2"
                       >
-                        View Reply
+                        <Eye className="w-4 h-4" />
+                        <span className="hidden sm:inline">View Reply</span>
+                        <span className="sm:hidden">View</span>
                       </button>
                     )}
                   </div>
@@ -550,15 +610,15 @@ export function UserFeedback() {
               <Label className="text-[#1A2B4F] mb-3 block">
                 Rating <span className="text-[#FF6B6B]">*</span>
               </Label>
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3 justify-center sm:justify-start">
                 {[1, 2, 3, 4, 5].map((rating) => (
                   <button
                     key={rating}
                     onClick={() => setNewFeedback({ ...newFeedback, rating })}
-                    className="group p-2 hover:scale-110 transition-transform"
+                    className="group p-1 sm:p-2 hover:scale-110 transition-transform"
                   >
                     <Star
-                      className={`w-10 h-10 transition-colors ${
+                      className={`w-8 h-8 sm:w-10 sm:h-10 transition-colors ${
                         rating <= newFeedback.rating
                           ? "fill-yellow-400 text-yellow-400"
                           : "text-gray-300 dark:text-gray-600 group-hover:text-yellow-400"
@@ -568,7 +628,7 @@ export function UserFeedback() {
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-[#64748B] mt-2">
+              <p className="text-xs text-[#64748B] mt-2 text-center sm:text-left">
                 {newFeedback.rating === 5
                   ? "Excellent!"
                   : newFeedback.rating === 4
@@ -594,7 +654,7 @@ export function UserFeedback() {
                   setNewFeedback({ ...newFeedback, comment: e.target.value })
                 }
                 placeholder="Share your experience with this trip..."
-                className="min-h-[150px] border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10 resize-none"
+                className="min-h-[120px] sm:min-h-[150px] border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10 resize-none"
                 maxLength={500}
               />
               <p className="text-xs text-[#64748B] mt-2">
@@ -602,7 +662,7 @@ export function UserFeedback() {
                 experience
               </p>
             </div>
-            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+            <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/20">
               <p className="text-xs text-[#64748B]">
                 <strong className="text-primary">Note:</strong> Your feedback
                 helps us improve our services and assists other travelers in
@@ -642,16 +702,16 @@ export function UserFeedback() {
                   Your Feedback
                 </h4>
                 <div className="bg-[rgba(10,122,255,0.08)] border border-[rgba(10,122,255,0.2)] rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-[#1A2B4F]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                    <span className="text-sm font-semibold text-[#1A2B4F] truncate">
                       {selectedFeedbackForView.customer}
                     </span>
                     {renderStars(selectedFeedbackForView.rating)}
                   </div>
-                  <p className="text-sm text-[#64748B] mb-1">
+                  <p className="text-sm text-[#64748B] mb-1 line-clamp-1">
                     {selectedFeedbackForView.trip}
                   </p>
-                  <p className="text-sm text-[#334155] italic">
+                  <p className="text-sm text-[#334155] italic line-clamp-3">
                     "{selectedFeedbackForView.text}"
                   </p>
                   <p className="text-xs text-[#64748B] mt-2">
@@ -665,7 +725,7 @@ export function UserFeedback() {
                   {profileData.companyName || "BondVoyage"}'s Reply
                 </h4>
                 <div className="bg-[rgba(16,185,129,0.08)] border border-[rgba(16,185,129,0.2)] rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium">
                       <CheckCircle className="w-3 h-3" />
                       Responded
