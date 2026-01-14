@@ -196,7 +196,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
       paid: 0,
       totalPaid: 0,
       paymentStatus: apiBooking.paymentStatus || "PENDING",
-      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
+      bookedDate: apiBooking.bookedDateDisplay,
       bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
       status: apiBooking.status,
       bookingType: apiBooking.type,
@@ -1276,47 +1276,67 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
       <style dangerouslySetInnerHTML={{ __html: highlightAnimation }} />
       <div>
         {/* Tabs - Responsive Design */}
-        <div className={`flex items-center gap-1 mb-6 border-b-2 border-[#E5E7EB] ${isMobile ? 'flex-col md:flex-row' : ''}`}>
-          <div className={`flex ${isMobile ? 'w-full justify-between' : 'items-center gap-1'}`}>
+        <div
+          className={`flex items-center gap-1 mb-6 border-b-2 border-[#E5E7EB] ${
+            isMobile ? "flex-col md:flex-row" : ""
+          }`}
+        >
+          <div
+            className={`flex ${
+              isMobile ? "w-full justify-between" : "items-center gap-1"
+            }`}
+          >
             <button
               onClick={() => handleTabChange("all")}
               disabled={isLoading}
-              className={`${isMobile ? 'flex-1 px-3' : 'px-5'} h-11 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`${
+                isMobile ? "flex-1 px-3" : "px-5"
+              } h-11 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                 activeTab === "all"
                   ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
-              {isMobile ? 'All' : 'All'}
+              {isMobile ? "All" : "All"}
             </button>
             <button
               onClick={() => handleTabChange("byDate")}
               disabled={isLoading}
-              className={`${isMobile ? 'flex-1 px-3' : 'px-5'} h-11 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`${
+                isMobile ? "flex-1 px-3" : "px-5"
+              } h-11 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                 activeTab === "byDate"
                   ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
-              {isMobile ? 'By Date' : 'By Date'}
+              {isMobile ? "By Date" : "By Date"}
             </button>
             <button
               onClick={() => handleTabChange("rejected")}
               disabled={isLoading}
-              className={`${isMobile ? 'flex-1 px-3' : 'px-5'} h-11 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`${
+                isMobile ? "flex-1 px-3" : "px-5"
+              } h-11 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                 activeTab === "rejected"
                   ? "font-semibold text-[#FF6B6B] border-b-[3px] border-[#FF6B6B] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)]"
               }`}
             >
-              {isMobile ? 'Rejected' : 'Rejected Bookings'}
+              {isMobile ? "Rejected" : "Rejected Bookings"}
             </button>
           </div>
-          <div className={`ml-auto ${isMobile ? 'mt-2 w-full flex justify-end' : ''}`}>
+          <div
+            className={`ml-auto ${
+              isMobile ? "mt-2 w-full flex justify-end" : ""
+            }`}
+          >
             <button
               onClick={handleManualRefresh}
               disabled={isRefreshing || isLoading}
-              className={`${isMobile ? 'px-4 py-2' : 'px-3 py-2'} rounded-lg hover:bg-[#F8FAFB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+              className={`${
+                isMobile ? "px-4 py-2" : "px-3 py-2"
+              } rounded-lg hover:bg-[#F8FAFB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
               title="Refresh approvals"
             >
               {isRefreshing ? (
@@ -1324,7 +1344,9 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
               ) : (
                 <RefreshCw className="w-4 h-4 text-[#64748B]" />
               )}
-              {isMobile && <span className="text-sm text-[#64748B]">Refresh</span>}
+              {isMobile && (
+                <span className="text-sm text-[#64748B]">Refresh</span>
+              )}
             </button>
           </div>
         </div>
@@ -1339,7 +1361,8 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
               </span>
               {isMobile && totalItems > 0 && (
                 <span className="text-xs text-[#64748B] mt-1 md:hidden">
-                  Showing {indexOfFirstBooking}-{indexOfLastBooking} of {totalItems}
+                  Showing {indexOfFirstBooking}-{indexOfLastBooking} of{" "}
+                  {totalItems}
                 </span>
               )}
             </div>
@@ -1428,50 +1451,63 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                           <h3 className="text-lg text-[#1A2B4F] font-semibold truncate">
                             Booking {booking.bookingCode}
                           </h3>
-                                                    <div className="flex flex-wrap gap-1 mt-1 md:mt-0">
+                          <div className="flex flex-wrap gap-1 mt-1 md:mt-0">
                             {/* Status Badge - Like UserTravels reference */}
-                            <span className={`inline-flex items-center justify-center min-w-[60px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
-                              activeTab === "rejected"
-                                ? "bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[#FF6B6B]/20"
-                                : "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[#0A7AFF]/20"
-                            }`}>
-                              {activeTab === "rejected" ? "Rejected" : "Pending"}
+                            <span
+                              className={`inline-flex items-center justify-center min-w-15 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                                activeTab === "rejected"
+                                  ? "bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[#FF6B6B]/20"
+                                  : "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[#0A7AFF]/20"
+                              }`}
+                            >
+                              {activeTab === "rejected"
+                                ? "Rejected"
+                                : "Pending"}
                             </span>
-                            
+
                             {/* Booking Type Badge */}
                             {booking.bookingType && (
-                              <span className={`inline-flex items-center justify-center min-w-[70px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
-                                booking.bookingType === "CUSTOMIZED"
-                                  ? "bg-[rgba(255,127,110,0.1)] text-[#FF7F6E] border-[rgba(255,127,110,0.2)]"
-                                  : booking.bookingType === "STANDARD"
-                                  ? "bg-[rgba(139,125,107,0.1)] text-[#8B7D6B] border-[rgba(139,125,107,0.2)]"
-                                  : "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]"
-                              }`}>
+                              <span
+                                className={`inline-flex items-center justify-center min-w-17.5 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                                  booking.bookingType === "CUSTOMIZED"
+                                    ? "bg-[rgba(255,127,110,0.1)] text-[#FF7F6E] border-[rgba(255,127,110,0.2)]"
+                                    : booking.bookingType === "STANDARD"
+                                    ? "bg-[rgba(139,125,107,0.1)] text-[#8B7D6B] border-[rgba(139,125,107,0.2)]"
+                                    : "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]"
+                                }`}
+                              >
                                 {capitalize(booking.bookingType)}
                               </span>
                             )}
-                            
+
                             {/* Tour Type Badge */}
                             {booking.tourType && (
-                              <span className={`inline-flex items-center justify-center min-w-[50px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
-                                booking.tourType === "JOINER"
-                                  ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
-                                  : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]"
-                              }`}>
+                              <span
+                                className={`inline-flex items-center justify-center min-w-12.5 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                                  booking.tourType === "JOINER"
+                                    ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
+                                    : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]"
+                                }`}
+                              >
                                 {capitalize(booking.tourType)}
                               </span>
                             )}
-                            
+
                             {/* Resolution Status Badge - Only for rejected tab */}
-                            {activeTab === "rejected" && booking.resolutionStatus && (
-                              <span className={`inline-flex items-center justify-center min-w-[60px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
-                                booking.resolutionStatus === "resolved"
-                                  ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]"
-                                  : "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
-                              }`}>
-                                {booking.resolutionStatus === "resolved" ? "Resolved" : "Unresolved"}
-                              </span>
-                            )}
+                            {activeTab === "rejected" &&
+                              booking.resolutionStatus && (
+                                <span
+                                  className={`inline-flex items-center justify-center min-w-15 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                                    booking.resolutionStatus === "resolved"
+                                      ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]"
+                                      : "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
+                                  }`}
+                                >
+                                  {booking.resolutionStatus === "resolved"
+                                    ? "Resolved"
+                                    : "Unresolved"}
+                                </span>
+                              )}
                           </div>
                         </div>
                         {/* Desktop Customer Info */}
@@ -1480,7 +1516,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                           <span>•</span>
                           <span className="truncate">{booking.email}</span>
                         </div>
-                        
+
                         {/* Mobile Customer Info - Same as UserTravels reference */}
                         <div className="md:hidden">
                           <div className="flex items-center gap-2 mb-1">
@@ -1558,7 +1594,8 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                       <div>
                         <p className="text-xs text-[#64748B]">Booked On</p>
                         <p className="text-sm text-[#334155] font-medium">
-                          {booking.bookedDate}
+                          {booking.bookedDate.split(",")[0]},
+                          {booking.bookedDate.split(",")[1]}
                         </p>
                       </div>
                     </div>
@@ -1568,16 +1605,18 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                       <div className="grid grid-cols-2 gap-4">
                         {/* Row 1 */}
                         <div className="flex items-start gap-2">
-                          <MapPin className="w-4 h-4 text-[#0A7AFF] flex-shrink-0 mt-0.5" />
+                          <MapPin className="w-4 h-4 text-[#0A7AFF] shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-xs text-[#64748B]">Destination</p>
+                            <p className="text-xs text-[#64748B]">
+                              Destination
+                            </p>
                             <p className="text-sm text-[#334155] font-medium line-clamp-1">
                               {booking.destination}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
-                          <Users className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                          <Users className="w-4 h-4 text-[#64748B] shrink-0 mt-0.5" />
                           <div>
                             <p className="text-xs text-[#64748B]">Travelers</p>
                             <p className="text-sm text-[#334155] font-medium">
@@ -1589,27 +1628,34 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
 
                         {/* Row 2 - Dates on two lines */}
                         <div className="flex items-start gap-2 col-span-2">
-                          <Calendar className="w-4 h-4 text-[#14B8A6] flex-shrink-0 mt-0.5" />
+                          <Calendar className="w-4 h-4 text-[#14B8A6] shrink-0 mt-0.5" />
                           <div className="flex-1">
-                            <p className="text-xs text-[#64748B]">Travel Dates</p>
+                            <p className="text-xs text-[#64748B]">
+                              Travel Dates
+                            </p>
                             <p className="text-sm text-[#334155] font-medium leading-tight">
-                              {formatDateRange(booking.startDate, booking.endDate)}
+                              {formatDateRange(
+                                booking.startDate,
+                                booking.endDate
+                              )}
                             </p>
                           </div>
                         </div>
 
                         {/* Row 3 - Amount and Booked date */}
                         <div className="flex items-start gap-2">
-                          <CreditCard className="w-4 h-4 text-[#10B981] flex-shrink-0 mt-0.5" />
+                          <CreditCard className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-xs text-[#64748B]">Total Amount</p>
+                            <p className="text-xs text-[#64748B]">
+                              Total Amount
+                            </p>
                             <p className="text-sm text-[#334155] font-medium">
                               {booking.totalAmount}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
-                          <Clock className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                          <Clock className="w-4 h-4 text-[#64748B] shrink-0 mt-0.5" />
                           <div>
                             <p className="text-xs text-[#64748B]">Booked</p>
                             <p className="text-sm text-[#334155] font-medium truncate">
@@ -1636,7 +1682,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                           e.stopPropagation();
                           handleViewDetails(booking.id);
                         }}
-                        className="flex-1 h-11 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#3B9EFF] text-white font-medium flex items-center justify-center gap-2"
+                        className="flex-1 h-11 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] text-white font-medium flex items-center justify-center gap-2"
                       >
                         <Eye className="w-4 h-4" />
                         View Details

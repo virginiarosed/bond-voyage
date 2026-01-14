@@ -1355,9 +1355,6 @@ export function CreateRequestedItinerary({
                           <span className="text-sm font-medium text-[#1A2B4F]">
                             Existing Customer Selected
                           </span>
-                          <span className="text-xs px-2 py-0.5 bg-[#10B981]/10 text-[#10B981] rounded-full font-medium">
-                            ID: {formData.customerId.substring(0, 8)}...
-                          </span>
                         </div>
                         <p className="text-xs text-[#64748B] mt-0.5">
                           Email and mobile have been auto-filled from customer
@@ -1385,15 +1382,6 @@ export function CreateRequestedItinerary({
                       >
                         Change Customer
                       </button>
-                      <a
-                        href={`/users/${formData.customerId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1 text-xs rounded-lg bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] text-white hover:shadow-lg transition-shadow flex items-center gap-1"
-                      >
-                        <User className="w-3 h-3" />
-                        View Profile
-                      </a>
                     </div>
                   </div>
                 </div>
@@ -1466,7 +1454,10 @@ export function CreateRequestedItinerary({
 
             {/* Destination - Full width on mobile */}
             <div className="col-span-1 sm:col-span-2">
-              <Label htmlFor="destination" className="text-[#1A2B4F] mb-2 block">
+              <Label
+                htmlFor="destination"
+                className="text-[#1A2B4F] mb-2 block"
+              >
                 Destination <span className="text-[#FF6B6B]">*</span>
               </Label>
               <div className="relative">
@@ -1475,7 +1466,9 @@ export function CreateRequestedItinerary({
                   id="destination"
                   placeholder="e.g., Baguio City"
                   value={formData.destination}
-                  onChange={(e) => handleFormChange("destination", e.target.value)}
+                  onChange={(e) =>
+                    handleFormChange("destination", e.target.value)
+                  }
                   className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
                 />
               </div>
@@ -1484,7 +1477,10 @@ export function CreateRequestedItinerary({
             {/* Travel Dates - Two columns on desktop, side-by-side on mobile */}
             <div className="grid grid-cols-2 gap-4 sm:gap-6 col-span-1 sm:col-span-2">
               <div className="col-span-1">
-                <Label htmlFor="travelDateFrom" className="text-[#1A2B4F] mb-2 block">
+                <Label
+                  htmlFor="travelDateFrom"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
                   Travel Start Date <span className="text-[#FF6B6B]">*</span>
                 </Label>
                 <div className="relative">
@@ -1493,14 +1489,19 @@ export function CreateRequestedItinerary({
                     id="travelDateFrom"
                     type="date"
                     value={formData.travelDateFrom}
-                    onChange={(e) => handleFormChange("travelDateFrom", e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("travelDateFrom", e.target.value)
+                    }
                     className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
                   />
                 </div>
               </div>
 
               <div className="col-span-1">
-                <Label htmlFor="travelDateTo" className="text-[#1A2B4F] mb-2 block">
+                <Label
+                  htmlFor="travelDateTo"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
                   Travel End Date <span className="text-[#FF6B6B]">*</span>
                 </Label>
                 <div className="relative">
@@ -1509,7 +1510,9 @@ export function CreateRequestedItinerary({
                     id="travelDateTo"
                     type="date"
                     value={formData.travelDateTo}
-                    onChange={(e) => handleFormChange("travelDateTo", e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("travelDateTo", e.target.value)
+                    }
                     className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
                   />
                 </div>
@@ -1519,7 +1522,10 @@ export function CreateRequestedItinerary({
             {/* Travelers and Total Amount - Two columns on desktop, side-by-side on mobile */}
             <div className="grid grid-cols-2 gap-4 sm:gap-6 col-span-1 sm:col-span-2">
               <div className="col-span-1">
-                <Label htmlFor="travelers" className="text-[#1A2B4F] mb-2 block">
+                <Label
+                  htmlFor="travelers"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
                   Number of Travelers <span className="text-[#FF6B6B]">*</span>
                 </Label>
                 <div className="relative">
@@ -1530,14 +1536,19 @@ export function CreateRequestedItinerary({
                     min="1"
                     placeholder="2"
                     value={formData.travelers}
-                    onChange={(e) => handleFormChange("travelers", e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("travelers", e.target.value)
+                    }
                     className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
                   />
                 </div>
               </div>
 
               <div className="col-span-1">
-                <Label htmlFor="totalAmount" className="text-[#1A2B4F] mb-2 block">
+                <Label
+                  htmlFor="totalAmount"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
                   Total Amount (₱) <span className="text-[#FF6B6B]">*</span>
                 </Label>
                 <div className="relative">
@@ -1551,7 +1562,9 @@ export function CreateRequestedItinerary({
                     step="0.01"
                     placeholder="Enter Total Amount"
                     value={formData.totalAmount}
-                    onChange={(e) => handleFormChange("totalAmount", e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("totalAmount", e.target.value)
+                    }
                     className="h-12 pl-10 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
                   />
                 </div>
@@ -1641,14 +1654,17 @@ export function CreateRequestedItinerary({
                 {/* Day Header */}
                 <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6 flex-col sm:flex-row">
                   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 self-start">
-                    <span className="text-white font-bold text-sm sm:text-base">D{day.day}</span>
+                    <span className="text-white font-bold text-sm sm:text-base">
+                      D{day.day}
+                    </span>
                   </div>
                   <div className="flex-1 w-full sm:w-auto">
                     <Label
                       htmlFor={`day-${day.id}-title`}
                       className="text-[#1A2B4F] mb-2 block text-sm font-medium"
                     >
-                      Day {day.day} Title <span className="text-[#FF6B6B]">*</span>
+                      Day {day.day} Title{" "}
+                      <span className="text-[#FF6B6B]">*</span>
                     </Label>
                     <Input
                       id={`day-${day.id}-title`}
@@ -1700,7 +1716,9 @@ export function CreateRequestedItinerary({
                             {/* Drag Handle */}
                             <div className="flex flex-col gap-1 pt-1 sm:pt-2 shrink-0">
                               <button
-                                onClick={() => moveActivityUp(day.id, activityIndex)}
+                                onClick={() =>
+                                  moveActivityUp(day.id, activityIndex)
+                                }
                                 disabled={activityIndex === 0}
                                 className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                 title="Move Up"
@@ -1709,8 +1727,12 @@ export function CreateRequestedItinerary({
                                 <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-[#CBD5E1] rotate-90" />
                               </button>
                               <button
-                                onClick={() => moveActivityDown(day.id, activityIndex)}
-                                disabled={activityIndex === day.activities.length - 1}
+                                onClick={() =>
+                                  moveActivityDown(day.id, activityIndex)
+                                }
+                                disabled={
+                                  activityIndex === day.activities.length - 1
+                                }
                                 className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                 title="Move Down"
                                 aria-label="Move Activity Down"
@@ -1748,7 +1770,9 @@ export function CreateRequestedItinerary({
                                 </Label>
                                 <button
                                   type="button"
-                                  onClick={() => openIconPicker(day.id, activity.id)}
+                                  onClick={() =>
+                                    openIconPicker(day.id, activity.id)
+                                  }
                                   className="w-full h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white flex items-center justify-center transition-all"
                                   aria-label="Select Icon"
                                 >
@@ -1785,7 +1809,8 @@ export function CreateRequestedItinerary({
                                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none z-10" />
                                   {isLoadingPlaces &&
                                     activeLocationInput?.dayId === day.id &&
-                                    activeLocationInput?.activityId === activity.id && (
+                                    activeLocationInput?.activityId ===
+                                      activity.id && (
                                       <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
                                     )}
                                   <Input
@@ -1800,7 +1825,9 @@ export function CreateRequestedItinerary({
                                     }
                                     onFocus={() => {
                                       if (activity.location.length >= 2) {
-                                        setLocationSearchQuery(activity.location);
+                                        setLocationSearchQuery(
+                                          activity.location
+                                        );
                                         setActiveLocationInput({
                                           dayId: day.id,
                                           activityId: activity.id,
@@ -1819,7 +1846,8 @@ export function CreateRequestedItinerary({
 
                                 {/* Location Suggestions Dropdown */}
                                 {activeLocationInput?.dayId === day.id &&
-                                  activeLocationInput?.activityId === activity.id &&
+                                  activeLocationInput?.activityId ===
+                                    activity.id &&
                                   locationSuggestions.length > 0 && (
                                     <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
                                       {locationSuggestions.map((place, idx) => (
@@ -1859,7 +1887,8 @@ export function CreateRequestedItinerary({
                                   )}
 
                                 {activeLocationInput?.dayId === day.id &&
-                                  activeLocationInput?.activityId === activity.id &&
+                                  activeLocationInput?.activityId ===
+                                    activity.id &&
                                   !isLoadingPlaces &&
                                   locationSearchQuery.length >= 2 &&
                                   locationSuggestions.length === 0 && (

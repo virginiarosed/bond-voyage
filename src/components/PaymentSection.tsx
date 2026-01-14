@@ -16,6 +16,7 @@ import { useUpdatePaymentStatus } from "../hooks/usePayments";
 import { PaymentDetailModal } from "./PaymentDetailModal";
 import { PaymentVerificationModal } from "./PaymentVerificationModal";
 import { useBookingPayments } from "../hooks/useBookings";
+import { useLocation } from "react-router-dom";
 
 interface PaymentSubmission {
   id: string;
@@ -58,6 +59,7 @@ export function PaymentSection({
   const [isVerifying, setIsVerifying] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { pathname } = useLocation();
 
   // Reset all state when booking changes
   useEffect(() => {
@@ -186,6 +188,8 @@ export function PaymentSection({
   const getPaymentAmount = (amount: string) => {
     return parseFloat(amount) || 0;
   };
+
+  if (!pathname.includes("/booking")) return null;
 
   // Show loading state when data is loading OR fetching new data
   if (isPaymentsLoading || isPaymentsFetching) {

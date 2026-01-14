@@ -2045,14 +2045,6 @@ export function Itinerary({
                         </p>
                       </div>
                     )}
-
-                  {/* Back to List Button */}
-                  <button
-                    onClick={() => setRequestedViewMode("list")}
-                    className="w-full h-11 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-[#334155] font-medium transition-all"
-                  >
-                    Back to List
-                  </button>
                 </div>
               }
             />

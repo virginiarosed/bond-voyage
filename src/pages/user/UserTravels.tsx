@@ -1412,7 +1412,7 @@ export function UserTravels() {
                   {/* Header - Responsive */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                         <span className="text-white text-lg">🎫</span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1422,49 +1422,63 @@ export function UserTravels() {
                           </h3>
                           <div className="flex flex-wrap gap-1 mt-1 md:mt-0">
                             {/* Status Badge */}
-                            <span className={`inline-flex items-center justify-center min-w-[60px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
-                              travel.status === "draft"
-                                ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[#0A7AFF]/20"
+                            <span
+                              className={`inline-flex items-center justify-center min-w-15 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                                travel.status === "draft"
+                                  ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[#0A7AFF]/20"
+                                  : travel.status === "pending"
+                                  ? "bg-[rgba(255,184,77,0.1)] text-[#FFB84D] border-[#FFB84D]/20"
+                                  : "bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[#FF6B6B]/20"
+                              }`}
+                            >
+                              {travel.status === "draft"
+                                ? "Draft"
                                 : travel.status === "pending"
-                                ? "bg-[rgba(255,184,77,0.1)] text-[#FFB84D] border-[#FFB84D]/20"
-                                : "bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[#FF6B6B]/20"
-                            }`}>
-                              {travel.status === "draft" ? "Draft" : 
-                               travel.status === "pending" ? "Pending" : "Rejected"}
+                                ? "Pending"
+                                : "Rejected"}
                             </span>
-                            
+
                             {/* Booking Type Badge */}
-                            <span className={`inline-flex items-center justify-center min-w-[70px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
-                              travel.bookingType === "CUSTOMIZED"
-                                ? "bg-[rgba(255,127,110,0.1)] text-[#FF7F6E] border-[rgba(255,127,110,0.2)]"
-                                : travel.bookingType === "STANDARD"
-                                ? "bg-[rgba(139,125,107,0.1)] text-[#8B7D6B] border-[rgba(139,125,107,0.2)]"
-                                : "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]"
-                            }`}>
+                            <span
+                              className={`inline-flex items-center justify-center min-w-17.5 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                                travel.bookingType === "CUSTOMIZED"
+                                  ? "bg-[rgba(255,127,110,0.1)] text-[#FF7F6E] border-[rgba(255,127,110,0.2)]"
+                                  : travel.bookingType === "STANDARD"
+                                  ? "bg-[rgba(139,125,107,0.1)] text-[#8B7D6B] border-[rgba(139,125,107,0.2)]"
+                                  : "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]"
+                              }`}
+                            >
                               {capitalize(travel.bookingType)}
                             </span>
-                            
+
                             {/* Tour Type Badge */}
                             {travel.tourType && (
-                              <span className={`inline-flex items-center justify-center min-w-[50px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
-                                travel.tourType === "JOINER"
-                                  ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
-                                  : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]"
-                              }`}>
+                              <span
+                                className={`inline-flex items-center justify-center min-w-12.5 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                                  travel.tourType === "JOINER"
+                                    ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
+                                    : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]"
+                                }`}
+                              >
                                 {capitalize(travel.tourType)}
                               </span>
                             )}
-                            
+
                             {/* Ownership Badge */}
-                            <span className={`inline-flex items-center justify-center min-w-[60px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
-                              travel.ownership === "owned"
-                                ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[rgba(10,122,255,0.2)]"
+                            <span
+                              className={`inline-flex items-center justify-center min-w-15 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                                travel.ownership === "owned"
+                                  ? "bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[rgba(10,122,255,0.2)]"
+                                  : travel.ownership === "collaborated"
+                                  ? "bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border-[rgba(139,92,246,0.2)]"
+                                  : "bg-[rgba(20,184,166,0.1)] text-[#14B8A6] border-[rgba(20,184,166,0.2)]"
+                              }`}
+                            >
+                              {travel.ownership === "owned"
+                                ? "Owned"
                                 : travel.ownership === "collaborated"
-                                ? "bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border-[rgba(139,92,246,0.2)]"
-                                : "bg-[rgba(20,184,166,0.1)] text-[#14B8A6] border-[rgba(20,184,166,0.2)]"
-                            }`}>
-                              {travel.ownership === "owned" ? "Owned" : 
-                               travel.ownership === "collaborated" ? "Collab" : "Requested"}
+                                ? "Collab"
+                                : "Requested"}
                             </span>
                           </div>
                         </div>
@@ -1490,7 +1504,9 @@ export function UserTravels() {
                       <span className="text-sm text-[#334155] font-medium truncate">
                         {travel.owner}
                       </span>
-                      <span className="hidden md:inline text-sm text-[#64748B]">•</span>
+                      <span className="hidden md:inline text-sm text-[#64748B]">
+                        •
+                      </span>
                       <span className="hidden md:inline text-sm text-[#64748B] truncate">
                         {travel.email}
                       </span>
@@ -1560,16 +1576,18 @@ export function UserTravels() {
                       <div className="grid grid-cols-2 gap-4">
                         {/* Row 1 */}
                         <div className="flex items-start gap-2">
-                          <MapPin className="w-4 h-4 text-[#0A7AFF] flex-shrink-0 mt-0.5" />
+                          <MapPin className="w-4 h-4 text-[#0A7AFF] shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-xs text-[#64748B]">Destination</p>
+                            <p className="text-xs text-[#64748B]">
+                              Destination
+                            </p>
                             <p className="text-sm text-[#334155] font-medium line-clamp-1">
                               {travel.destination}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
-                          <Users className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                          <Users className="w-4 h-4 text-[#64748B] shrink-0 mt-0.5" />
                           <div>
                             <p className="text-xs text-[#64748B]">Travelers</p>
                             <p className="text-sm text-[#334155] font-medium">
@@ -1581,9 +1599,11 @@ export function UserTravels() {
 
                         {/* Row 2 - Dates on two lines */}
                         <div className="flex items-start gap-2 col-span-2">
-                          <Calendar className="w-4 h-4 text-[#14B8A6] flex-shrink-0 mt-0.5" />
+                          <Calendar className="w-4 h-4 text-[#14B8A6] shrink-0 mt-0.5" />
                           <div className="flex-1">
-                            <p className="text-xs text-[#64748B]">Travel Dates</p>
+                            <p className="text-xs text-[#64748B]">
+                              Travel Dates
+                            </p>
                             <p className="text-sm text-[#334155] font-medium leading-tight">
                               {travel.dates}
                             </p>
@@ -1601,7 +1621,7 @@ export function UserTravels() {
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
-                          <Clock className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                          <Clock className="w-4 h-4 text-[#64748B] shrink-0 mt-0.5" />
                           <div>
                             <p className="text-xs text-[#64748B]">Created</p>
                             <p className="text-sm text-[#334155] font-medium truncate">
@@ -1628,22 +1648,23 @@ export function UserTravels() {
                           e.stopPropagation();
                           handleViewDetails(travel.id);
                         }}
-                        className="flex-1 h-11 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#3B9EFF] text-white font-medium flex items-center justify-center gap-2"
+                        className="flex-1 h-11 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] text-white font-medium flex items-center justify-center gap-2"
                       >
                         <Eye className="w-4 h-4" />
                         View Details
                       </button>
-                      {selectedTab === "draft" && travel.ownership === "owned" && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShareBooking(travel.id);
-                          }}
-                          className="px-4 h-11 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] flex items-center justify-center gap-2 font-medium"
-                        >
-                          <Share2 className="w-4 h-4" />
-                        </button>
-                      )}
+                      {selectedTab === "draft" &&
+                        travel.ownership === "owned" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShareBooking(travel.id);
+                            }}
+                            className="px-4 h-11 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] flex items-center justify-center gap-2 font-medium"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
+                        )}
                     </div>
                   </div>
                 </div>
