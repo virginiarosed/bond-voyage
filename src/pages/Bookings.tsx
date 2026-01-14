@@ -243,10 +243,10 @@ export function Bookings({
       endDate: endDate,
       travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
       totalAmount: totalAmount,
-      paid: 0,
-      totalPaid: 0,
+      paid: parseInt(apiBooking.userBudget) || 0,
+      totalPaid: parseInt(apiBooking.totalPrice),
       paymentStatus: apiBooking.paymentStatus || "PENDING",
-      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
+      bookedDate: apiBooking.bookedDateDisplay,
       bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
       status: apiBooking.status,
       bookingType: apiBooking.type,
@@ -1997,7 +1997,8 @@ export function Bookings({
                     <div>
                       <p className="text-xs text-[#64748B]">Booked On</p>
                       <p className="text-sm text-[#334155] font-medium">
-                        {booking.bookedDate}
+                        {booking.bookedDate.split(",")[0]},
+                        {booking.bookedDate.split(",")[1]}
                       </p>
                     </div>
                   </div>
