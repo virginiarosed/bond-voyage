@@ -423,6 +423,16 @@ export interface RouteGeometry {
   coordinates: number[][][];
 }
 
+export interface RouteSelectionMeta {
+  selectedRank?: 1 | 2;
+  alternativesCount?: number;
+  fallbackUsed?: boolean;
+  candidateTypes?: string[];
+  optimizationFallbackUsed?: boolean;
+  alreadyOptimized?: boolean;
+  legsAlreadyOptimizedCount?: number;
+}
+
 export interface ActivityResponse {
   id: string;
   lat: number;
@@ -435,21 +445,49 @@ export interface ActivityResponse {
 export interface RouteCalculationResponse {
   success: boolean;
   message: string;
+  meta?: RouteSelectionMeta;
   data: {
-    activities: ActivityResponse[];
+    optimizedActivities: ActivityResponse[];
     routeGeometry: RouteGeometry;
     totalDistance: number;
     totalTime: number;
+    activities?: ActivityResponse[];
   };
 }
 
 export interface RouteOptimizationResponse {
   success: boolean;
   message: string;
+  meta?: RouteSelectionMeta;
   data: {
-    activities: ActivityResponse[];
+    optimizedActivities: ActivityResponse[];
     routeGeometry: RouteGeometry;
     totalDistance: number;
     totalTime: number;
+    comparison?: {
+      original: {
+        activities: ActivityResponse[];
+        geometry: RouteGeometry;
+        distance: number;
+        time: number;
+      };
+      optimized: {
+        activities: ActivityResponse[];
+        geometry: RouteGeometry;
+        distance: number;
+        time: number;
+      };
+      savings: {
+        distance: number;
+        time: number;
+        distancePercent: number;
+        timePercent: number;
+      };
+    };
+    matrixSummary?: {
+      totalDistance: number;
+      totalTime: number;
+    };
+    activities?: ActivityResponse[];
   };
 }
