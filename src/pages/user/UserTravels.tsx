@@ -522,7 +522,7 @@ export function UserTravels() {
 
   const handleConfirmBooking = () => {
     if (selectedBookingId) {
-      submitBookingMutation.mutate();
+      updateBookingMutation.mutate({ status: "CONFIRMED" });
     }
   };
 
@@ -1071,30 +1071,7 @@ export function UserTravels() {
                     className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
                   >
                     <BookOpen className="w-4 h-4" />
-                    Book This Trip
-                  </button>
-                )}
-
-                {selectedTab === "draft" && (
-                  <button
-                    onClick={handleEditBooking}
-                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Edit Booking
-                  </button>
-                )}
-
-                {isOwner && (
-                  <button
-                    onClick={handleDeleteBooking}
-                    className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
-                    disabled={deleteBookingMutation.isPending}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    {deleteBookingMutation.isPending
-                      ? "Deleting..."
-                      : "Delete Booking"}
+                    Confirm Booking
                   </button>
                 )}
               </>
