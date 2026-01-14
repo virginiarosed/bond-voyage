@@ -390,18 +390,6 @@ const getStatusBadge = (
   return statusMap[status] || "pending";
 };
 
-const getSentStatus = (booking: any): "sent" | "unsent" => {
-  const sentAt = booking.itinerary?.sentAt || booking.sentAt;
-  const sentStatus = booking.itinerary?.sentStatus || booking.sentStatus;
-  const status = booking.status || booking.itinerary?.status;
-
-  if (sentAt || sentStatus === "sent" || status === "CONFIRMED") {
-    return "sent";
-  }
-
-  return "unsent";
-};
-
 const getConfirmStatus = (status: string): "confirmed" | "unconfirmed" => {
   return status === "CONFIRMED" ? "confirmed" : "unconfirmed";
 };
@@ -1031,7 +1019,7 @@ export function Itinerary({
             : "₱0",
           bookedDate: booking.bookedDate,
           status: "pending",
-          sentStatus: getSentStatus(booking),
+          sentStatus: booking.itinerary.sentStatus,
           confirmStatus: getConfirmStatus(booking.status),
         })
       );
@@ -1902,7 +1890,7 @@ export function Itinerary({
               actionButtons={
                 <div className="space-y-3">
                   {/* Send to Client Button */}
-                  {bookingDetailData.data.status !== "CONFIRMED" && (
+                  {bookingDetailData.data.itinerary.sentStatus !== "Sent" && (
                     <button
                       onClick={() =>
                         handleSendToClient(bookingDetailData.data.id)
