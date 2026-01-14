@@ -67,7 +67,6 @@ const getIconComponent = (iconName: string) => {
   return iconOption ? iconOption.icon : Clock;
 };
 
-// Time conversion helpers
 const convertTo24Hour = (time12h: string): string => {
   if (!time12h) return "";
   if (
@@ -107,7 +106,6 @@ export function EditCustomizedBooking() {
   const { id } = useParams<{ id: string }>();
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
 
-  // Hooks
   const { data: bookingDetailResponse, isLoading: isBookingLoading } =
     useBookingDetail(id!, {
       enabled: !!id,
@@ -150,7 +148,6 @@ export function EditCustomizedBooking() {
     return profileData?.email || "User";
   }, [profileData]);
 
-  // State
   const [bookingData, setBookingData] = useState<BookingFormData>({
     destination: "",
     travelDateFrom: "",
@@ -239,7 +236,7 @@ export function EditCustomizedBooking() {
     isFetching: isEnrichmentFetching,
   } = usePlacesSearch(
     currentEnrichment
-      ? { text: currentEnrichment.location, limit: 1 }
+      ? { text: currentEnrichment.location.split(",")[0].trim(), limit: 1 }
       : undefined,
     {
       enabled: !!currentEnrichment && isEnrichingLocations,
@@ -284,7 +281,7 @@ export function EditCustomizedBooking() {
     if (currentEnrichmentIndex < enrichmentQueue.length - 1) {
       setTimeout(() => {
         setCurrentEnrichmentIndex((prev) => prev + 1);
-      }, 300); // Small delay to avoid rate limiting
+      }, 300);
     } else {
       setIsEnrichingLocations(false);
       enrichmentCompleted.current = true;
@@ -375,7 +372,6 @@ export function EditCustomizedBooking() {
     }
   }, [daysEligibleForOptimization.length, selectedDayForRoute]);
 
-  // Handle route optimization acceptance
   const handleAcceptOptimization = (
     dayId: string,
     optimizedActivities: IActivity[]
@@ -401,7 +397,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Handle location input change
   const handleLocationInputChange = (
     searchTerm: string,
     dayId: string,
@@ -417,7 +412,6 @@ export function EditCustomizedBooking() {
     }
   };
 
-  // Select location suggestion
   const selectLocationSuggestion = (
     place: Place,
     dayId: string,
@@ -429,7 +423,6 @@ export function EditCustomizedBooking() {
     setActiveLocationInput(null);
   };
 
-  // Load versions from localStorage
   useEffect(() => {
     if (id) {
       const savedVersions = localStorage.getItem(`booking-versions-${id}`);
@@ -447,7 +440,6 @@ export function EditCustomizedBooking() {
     }
   }, [id]);
 
-  // Save version to localStorage
   const saveVersionToStorage = (newVersions: Version[]) => {
     if (id) {
       localStorage.setItem(
@@ -457,7 +449,6 @@ export function EditCustomizedBooking() {
     }
   };
 
-  // Create a new version snapshot
   const createVersionSnapshot = (label?: string) => {
     const newVersion: Version = {
       id: generateId(),
@@ -475,7 +466,6 @@ export function EditCustomizedBooking() {
     return newVersion;
   };
 
-  // Restore a version
   const handleRestoreVersion = (version: Version) => {
     setVersionToRestore(version);
     setRestoreConfirmOpen(true);
@@ -500,7 +490,6 @@ export function EditCustomizedBooking() {
     setVersionHistoryOpen(false);
   };
 
-  // Load booking data from API
   useEffect(() => {
     if (!id || !bookingDetailResponse?.data) {
       return;
@@ -578,7 +567,6 @@ export function EditCustomizedBooking() {
     }
   }, [bookingDetailResponse?.data, id]);
 
-  // Create initial version snapshot when data is first loaded
   useEffect(() => {
     if (
       initialBookingData &&
@@ -602,7 +590,6 @@ export function EditCustomizedBooking() {
     }
   }, [initialBookingData, initialItineraryDays, id, currentUser]);
 
-  // Update breadcrumbs
   useEffect(() => {
     if (id && bookingStatus) {
       const tabLabel =
@@ -628,7 +615,6 @@ export function EditCustomizedBooking() {
     };
   }, [id, bookingStatus, setBreadcrumbs, resetBreadcrumbs]);
 
-  // Track changes
   useEffect(() => {
     if (!initialBookingData || !initialItineraryDays) {
       setHasUnsavedChanges(false);
@@ -648,7 +634,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(bookingChanged || itineraryChanged);
   }, [bookingData, itineraryDays, initialBookingData, initialItineraryDays]);
 
-  // Recalculate days when dates change
   useEffect(() => {
     if (
       bookingData.travelDateFrom &&
@@ -692,7 +677,6 @@ export function EditCustomizedBooking() {
     itineraryDays,
   ]);
 
-  // Handle booking data changes
   const handleBookingChange = (field: keyof BookingFormData, value: string) => {
     if (field === "travelDateFrom" || field === "travelDateTo") {
       const tempData = { ...bookingData, [field]: value };
@@ -726,7 +710,6 @@ export function EditCustomizedBooking() {
     setBookingData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Confirm reduce days
   const handleConfirmReduceDays = () => {
     if (reduceDaysConfirm && pendingDateChange) {
       setBookingData((prev) => ({
@@ -747,13 +730,11 @@ export function EditCustomizedBooking() {
     setPendingDateChange(null);
   };
 
-  // Cancel reduce days
   const handleCancelReduceDays = () => {
     setReduceDaysConfirm(null);
     setPendingDateChange(null);
   };
 
-  // Update day title
   const updateDayTitle = (dayId: string, title: string) => {
     setItineraryDays((prev) =>
       prev.map((day) => (day.id === dayId ? { ...day, title } : day))
@@ -761,7 +742,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Add activity to a day
   const addActivity = (dayId: string) => {
     const day = itineraryDays.find((d) => d.id === dayId);
     const newActivity: IActivity = {
@@ -788,7 +768,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Remove activity from a day
   const confirmDeleteActivity = (dayId: string, activityId: string) => {
     setDeleteActivityConfirm({ dayId, activityId });
   };
@@ -817,7 +796,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Update activity
   const updateActivity = (
     dayId: string,
     activityId: string,
@@ -870,7 +848,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Move activity up
   const moveActivityUp = (dayId: string, activityIndex: number) => {
     if (activityIndex === 0) return;
 
@@ -893,7 +870,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Move activity down
   const moveActivityDown = (dayId: string, activityIndex: number) => {
     setItineraryDays((prev) =>
       prev.map((day) => {
@@ -914,14 +890,12 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Open icon picker
   const openIconPicker = (dayId: string, activityId: string) => {
     setCurrentActivityForIcon({ dayId, activityId });
     setIconPickerOpen(true);
     setIconSearchQuery("");
   };
 
-  // Select icon
   const selectIcon = (iconValue: string) => {
     if (currentActivityForIcon) {
       updateActivity(
@@ -1010,7 +984,6 @@ export function EditCustomizedBooking() {
     });
   };
 
-  // Handle back
   const handleBackClick = () => {
     if (hasUnsavedChanges) {
       setBackConfirmOpen(true);
