@@ -416,13 +416,13 @@ export function UserStandardItinerary() {
           <>
             {/* Hero Image and Overview */}
             <div className="rounded-2xl border-2 border-[#E5E7EB] dark:border-[#2A3441] overflow-hidden bg-white dark:bg-[#1A1F2E] shadow-sm">
-              <div className="h-[300px] relative overflow-hidden">
+              <div className="h-75 relative overflow-hidden">
                 <ImageWithFallback
                   src={selectedTemplate.image}
                   alt={selectedTemplate.destination}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-8">
                   <div className="flex items-end justify-between">
                     <div>
@@ -469,7 +469,7 @@ export function UserStandardItinerary() {
             {/* Day-by-Day Itinerary */}
             <div className="rounded-2xl border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-white dark:bg-[#1A1F2E] p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 dark:shadow-[#2596be]/30">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 dark:shadow-[#2596be]/30">
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -490,7 +490,7 @@ export function UserStandardItinerary() {
                       className="border-l-4 border-[#0A7AFF] dark:border-[#2596be] pl-6 relative"
                     >
                       {/* Day Header */}
-                      <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/30">
+                      <div className="absolute -left-4.25 top-0 w-8 h-8 rounded-full bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/30">
                         <span className="text-white text-sm font-semibold">
                           {day.day}
                         </span>
@@ -511,8 +511,8 @@ export function UserStandardItinerary() {
                               key={idx}
                               className="flex gap-4 p-4 rounded-xl bg-[#F8FAFB] dark:bg-[#0F1419] hover:bg-white dark:hover:bg-[#1A1F2E] hover:shadow-sm border border-transparent hover:border-[#E5E7EB] dark:hover:border-[#2A3441] transition-all"
                             >
-                              <div className="flex-shrink-0">
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0A7AFF]/10 to-[#14B8A6]/10 dark:from-[#2596be]/20 dark:to-[#14B8A6]/20 flex items-center justify-center">
+                              <div className="shrink-0">
+                                <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#0A7AFF]/10 to-[#14B8A6]/10 dark:from-[#2596be]/20 dark:to-[#14B8A6]/20 flex items-center justify-center">
                                   <IconComponent className="w-5 h-5 text-[#0A7AFF] dark:text-[#2596be]" />
                                 </div>
                               </div>
@@ -521,7 +521,7 @@ export function UserStandardItinerary() {
                                   <h5 className="font-medium text-[#1A2B4F] dark:text-white">
                                     {activity.title}
                                   </h5>
-                                  <span className="flex-shrink-0 text-sm text-[#0A7AFF] dark:text-[#2596be] font-medium">
+                                  <span className="shrink-0 text-sm text-[#0A7AFF] dark:text-[#2596be] font-medium">
                                     {activity.time}
                                   </span>
                                 </div>
@@ -561,7 +561,7 @@ export function UserStandardItinerary() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="rounded-2xl border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-white dark:bg-[#1A1F2E] p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
+                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
                     <Package className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -599,7 +599,7 @@ export function UserStandardItinerary() {
 
               <div className="rounded-2xl border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-white dark:bg-[#1A1F2E] p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FFB84D] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF6B6B] to-[#FFB84D] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
                     <Users className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -783,7 +783,7 @@ export function UserStandardItinerary() {
                 </div>
 
                 {/* Price Summary */}
-                <div className="p-4 bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.08)] dark:from-[rgba(37,150,190,0.15)] dark:to-[rgba(20,184,166,0.15)] rounded-xl border-2 border-[rgba(10,122,255,0.2)] dark:border-[rgba(37,150,190,0.3)]">
+                <div className="p-4 bg-linear-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.08)] dark:from-[rgba(37,150,190,0.15)] dark:to-[rgba(20,184,166,0.15)] rounded-xl border-2 border-[rgba(10,122,255,0.2)] dark:border-[rgba(37,150,190,0.3)]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-[#64748B] dark:text-[#94A3B8]">
                       Price per pax:
@@ -953,7 +953,7 @@ export function UserStandardItinerary() {
                   alt={template.destination}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-3 left-3">
                   <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/20 backdrop-blur-sm text-white border border-white/30">
                     {template.days} Days
@@ -990,7 +990,7 @@ export function UserStandardItinerary() {
                         e.stopPropagation();
                         handleViewDetails(template.id);
                       }}
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] dark:from-[#2596be] dark:to-[#25bce0] text-white text-sm font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
+                      className="px-4 py-2 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] dark:from-[#2596be] dark:to-[#25bce0] text-white text-sm font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
                     >
                       <Eye className="w-4 h-4" />
                       View Details
@@ -1014,17 +1014,17 @@ export function UserStandardItinerary() {
           </div>
         )}
       </ContentCard>
-            {/* Notice Section: Custom Itinerary Request */}
+      {/* Notice Section: Custom Itinerary Request */}
       <div className="mt-8">
-        <div className="relative rounded-2xl overflow-hidden border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-gradient-to-br from-[#0A7AFF]/10 via-[#14B8A6]/8 to-[#0A7AFF]/15 dark:from-[#2596be]/15 dark:via-[#25bce0]/12 dark:to-[#2596be]/20 shadow-xl hover:shadow-2xl transition-all duration-300 backdrop-blur-sm">
+        <div className="relative rounded-2xl overflow-hidden border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-linear-to-br from-[#0A7AFF]/10 via-[#14B8A6]/8 to-[#0A7AFF]/15 dark:from-[#2596be]/15 dark:via-[#25bce0]/12 dark:to-[#2596be]/20 shadow-xl hover:shadow-2xl transition-all duration-300 backdrop-blur-sm">
           {/* Enhanced Decorative Background Elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#0A7AFF]/20 to-[#14B8A6]/15 dark:from-[#2596be]/25 dark:to-[#25bce0]/20 rounded-full blur-3xl -translate-y-32 translate-x-32" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#14B8A6]/15 to-[#0A7AFF]/20 dark:from-[#25bce0]/20 dark:to-[#2596be]/25 rounded-full blur-3xl translate-y-24 -translate-x-24" />
-          <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-gray-900/30 mix-blend-overlay" />
-          
+          <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-br from-[#0A7AFF]/20 to-[#14B8A6]/15 dark:from-[#2596be]/25 dark:to-[#25bce0]/20 rounded-full blur-3xl -translate-y-32 translate-x-32" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-linear-to-tr from-[#14B8A6]/15 to-[#0A7AFF]/20 dark:from-[#25bce0]/20 dark:to-[#2596be]/25 rounded-full blur-3xl translate-y-24 -translate-x-24" />
+          <div className="absolute inset-0 bg-linear-to-br from-white/40 to-transparent dark:from-gray-900/30 mix-blend-overlay" />
+
           <div className="relative p-8">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/40 ring-2 ring-white/20 dark:ring-white/10">
+              <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/40 ring-2 ring-white/20 dark:ring-white/10">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -1036,55 +1036,72 @@ export function UserStandardItinerary() {
                 </p>
               </div>
             </div>
-            
+
             <div className="space-y-6">
               <p className="text-[#334155] dark:text-[#E5E7EB]">
-                If you want a <span className="font-semibold text-[#0A7AFF] dark:text-[#2596be]">customized itinerary</span> but don't want to do it yourself, 4B's Travel and Tours offers personalized "Requested Itinerary" services.
+                If you want a{" "}
+                <span className="font-semibold text-[#0A7AFF] dark:text-[#2596be]">
+                  customized itinerary
+                </span>{" "}
+                but don't want to do it yourself, 4B's Travel and Tours offers
+                personalized "Requested Itinerary" services.
               </p>
-              
+
               {/* How It Works Section */}
               <div className="pt-4">
-                <h4 className="font-semibold text-[#1A2B4F] dark:text-white mb-4">How It Works</h4>
+                <h4 className="font-semibold text-[#1A2B4F] dark:text-white mb-4">
+                  How It Works
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Step 1 */}
-                  <div className="flex flex-col items-center text-center p-4 rounded-xl bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-800/60 dark:to-gray-900/60 border border-white/30 dark:border-gray-700/50 backdrop-blur-sm shadow-lg">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center text-white font-bold mb-3 shadow-lg">
+                  <div className="flex flex-col items-center text-center p-4 rounded-xl bg-linear-to-br from-white/80 to-white/60 dark:from-gray-800/60 dark:to-gray-900/60 border border-white/30 dark:border-gray-700/50 backdrop-blur-sm shadow-lg">
+                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center text-white font-bold mb-3 shadow-lg">
                       1
                     </div>
-                    <h5 className="font-medium text-[#1A2B4F] dark:text-white mb-2">Contact us</h5>
+                    <h5 className="font-medium text-[#1A2B4F] dark:text-white mb-2">
+                      Contact us
+                    </h5>
                   </div>
-                  
+
                   {/* Step 2 */}
-                  <div className="flex flex-col items-center text-center p-4 rounded-xl bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-800/60 dark:to-gray-900/60 border border-white/30 dark:border-gray-700/50 backdrop-blur-sm shadow-lg">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center text-white font-bold mb-3 shadow-lg">
+                  <div className="flex flex-col items-center text-center p-4 rounded-xl bg-linear-to-br from-white/80 to-white/60 dark:from-gray-800/60 dark:to-gray-900/60 border border-white/30 dark:border-gray-700/50 backdrop-blur-sm shadow-lg">
+                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center text-white font-bold mb-3 shadow-lg">
                       2
                     </div>
-                    <h5 className="font-medium text-[#1A2B4F] dark:text-white mb-2">Share your preferences and requirements</h5>
+                    <h5 className="font-medium text-[#1A2B4F] dark:text-white mb-2">
+                      Share your preferences and requirements
+                    </h5>
                   </div>
-                  
+
                   {/* Step 3 */}
-                  <div className="flex flex-col items-center text-center p-4 rounded-xl bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-800/60 dark:to-gray-900/60 border border-white/30 dark:border-gray-700/50 backdrop-blur-sm shadow-lg">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center text-white font-bold mb-3 shadow-lg">
+                  <div className="flex flex-col items-center text-center p-4 rounded-xl bg-linear-to-br from-white/80 to-white/60 dark:from-gray-800/60 dark:to-gray-900/60 border border-white/30 dark:border-gray-700/50 backdrop-blur-sm shadow-lg">
+                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center text-white font-bold mb-3 shadow-lg">
                       3
                     </div>
-                    <h5 className="font-medium text-[#1A2B4F] dark:text-white mb-2">Receive your requested travel plan</h5>
+                    <h5 className="font-medium text-[#1A2B4F] dark:text-white mb-2">
+                      Receive your requested travel plan
+                    </h5>
                   </div>
                 </div>
               </div>
-              
+
               {/* Contact Button Below How It Works */}
               <div className="flex justify-center pt-6">
                 <button
-                  onClick={() => navigate('/user/home', { state: { scrollToContact: true } })}
+                  onClick={() =>
+                    navigate("/user/home", { state: { scrollToContact: true } })
+                  }
                   className="group relative px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl overflow-hidden shadow-lg"
                   style={{
-                    background: 'linear-gradient(135deg, var(--gradient-from), var(--gradient-to))',
-                    boxShadow: '0 10px 30px rgba(10, 122, 255, 0.3), 0 4px 10px rgba(10, 122, 255, 0.2)'
+                    background:
+                      "linear-gradient(135deg, var(--gradient-from), var(--gradient-to))",
+                    boxShadow:
+                      "0 10px 30px rgba(10, 122, 255, 0.3), 0 4px 10px rgba(10, 122, 255, 0.2)",
                   }}
                 >
                   {/* Hover effect background */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                  
+                  <div className="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+
                   <div className="relative flex items-center gap-3">
                     <Send className="w-5 h-5 text-white" />
                     <div className="text-left">
@@ -1095,7 +1112,7 @@ export function UserStandardItinerary() {
                   </div>
                 </button>
               </div>
-              
+
               <p className="text-xs text-[#64748B] dark:text-[#94A3B8] text-center mt-2">
                 You'll be redirected to the Contact section on the homepage
               </p>

@@ -1092,8 +1092,7 @@ export function UserTravels() {
           content={
             <div className="text-card-foreground">
               <p className="mb-3">
-                Are you sure you want to submit this travel plan as a booking
-                request?
+                Are you sure you want to confirm this travel plan
               </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -1138,7 +1137,9 @@ export function UserTravels() {
           onConfirm={handleConfirmBooking}
           onCancel={() => setShowBookConfirmModal(false)}
           confirmText={
-            submitBookingMutation.isPending ? "Submitting..." : "Submit Booking"
+            submitBookingMutation.isPending
+              ? "Confirming..."
+              : "Confirm Booking"
           }
           confirmVariant="success"
         />

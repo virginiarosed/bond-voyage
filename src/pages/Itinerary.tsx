@@ -515,13 +515,12 @@ const transformBookingForListCard = (apiBooking: any) => {
     rejectionReason: transformed.rejectionReason,
     rejectionResolution: transformed.rejectionResolution,
     resolutionStatus: transformed.resolutionStatus,
-    // For BookingListCard props
     customerName: transformed.customer,
     customerEmail: transformed.email,
     customerMobile: transformed.mobile,
     totalAmountNum: transformed.totalAmount,
-    // Keep raw booking for reference
     rawBooking: apiBooking,
+    sentStatus: apiBooking.itinerary.sentStatus,
   };
 };
 

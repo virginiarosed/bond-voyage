@@ -63,6 +63,33 @@ import { useUpdatePaymentStatus } from "../hooks/usePayments";
 import { queryKeys } from "../utils/lib/queryKeys";
 import { capitalize } from "../utils/helpers/capitalize";
 import { BookingDetailView } from "../components/BookingDetailView";
+import { BookingListCard } from "../components/BookingListCard";
+
+const transformBookingForCard = (booking: any): Booking => {
+  return {
+    id: booking.id,
+    bookingCode: booking.bookingCode,
+    customer: booking.customer,
+    email: booking.email,
+    mobile: booking.mobile,
+    destination: booking.destination,
+    startDate: booking.startDate,
+    endDate: booking.endDate,
+    travelers: booking.travelers,
+    total: `₱${booking.totalAmount.toLocaleString()}`,
+    totalAmount: booking.totalAmount,
+    paid: booking.paid,
+    paymentStatus: booking.paymentStatus,
+    bookedDate: booking.bookedDate,
+    status: booking.status,
+    bookingType: booking.bookingType,
+    tourType: booking.tourType,
+    rejectionReason: booking.rejectionReason,
+    rejectionResolution: booking.rejectionResolution,
+    resolutionStatus: booking.resolutionStatus,
+    sentStatus: booking.sentStatus,
+  };
+};
 
 interface BookingsProps {
   onMoveToApprovals: (booking: any) => void;
@@ -255,6 +282,7 @@ export function Bookings({
       rejectionReason: apiBooking.rejectionReason,
       rejectionResolution: apiBooking.rejectionResolution,
       resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
+      sentStatus: apiBooking.itinerary?.sentStatus || "unsent", // Add this line
       paymentHistory: [],
       bookingSource: apiBooking.type,
       itineraryDetails: [],
@@ -1869,140 +1897,14 @@ export function Bookings({
             </div>
           ) : (
             currentBookings.map((booking) => (
-              <div
-                key={booking.id}
-                id={`booking-${booking.id}`}
-                onClick={() => handleViewDetails(booking.id)}
-                className="p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)] cursor-pointer"
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
-                      <span className="text-white text-lg">🎫</span>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg text-[#1A2B4F] font-semibold">
-                          {booking.bookingCode}
-                        </h3>
-                        {booking.paymentStatus && (
-                          <span
-                            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getPaymentStatusColor(
-                              booking.paymentStatus
-                            )}`}
-                          >
-                            {booking.paymentStatus}
-                          </span>
-                        )}
-                        {booking.bookingType && (
-                          <span
-                            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${
-                              booking.bookingType === "CUSTOMIZED"
-                                ? "bg-[rgba(255,127,110,0.1)] text-[#FF7F6E] border-[rgba(255,127,110,0.2)]"
-                                : booking.bookingType === "STANDARD"
-                                ? "bg-[rgba(139,125,107,0.1)] text-[#8B7D6B] border-[rgba(139,125,107,0.2)]"
-                                : "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]"
-                            }`}
-                          >
-                            {capitalize(booking.bookingType)}
-                          </span>
-                        )}
-                        {booking.tourType && (
-                          <span
-                            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${
-                              booking.tourType === "JOINER"
-                                ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
-                                : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]"
-                            }`}
-                          >
-                            {capitalize(booking.tourType)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewDetails(booking.id);
-                    }}
-                    className="h-9 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] flex items-center gap-2 text-sm font-medium transition-all"
-                  >
-                    <Eye className="w-4 h-4" />
-                    View Details
-                  </button>
-                </div>
-
-                {/* Customer Info */}
-                <div className="mb-4 pb-4 border-b border-[#E5E7EB]">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Users className="w-4 h-4 text-[#64748B]" />
-                    <span className="text-sm text-[#334155] font-medium">
-                      {booking.customer}
-                    </span>
-                    <span className="text-sm text-[#64748B]">•</span>
-                    <span className="text-sm text-[#64748B]">
-                      {booking.email}
-                    </span>
-                    <span className="text-sm text-[#64748B]">•</span>
-                    <span className="text-sm text-[#64748B]">
-                      {booking.mobile}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Trip Details */}
-                <div className="grid grid-cols-5 gap-4 mb-5">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#0A7AFF]" />
-                    <div>
-                      <p className="text-xs text-[#64748B]">Destination</p>
-                      <p className="text-sm text-[#334155] font-medium">
-                        {booking.destination}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#14B8A6]" />
-                    <div>
-                      <p className="text-xs text-[#64748B]">Travel Dates</p>
-                      <p className="text-sm text-[#334155] font-medium">
-                        {formatDateRange(booking.startDate, booking.endDate)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#64748B]" />
-                    <div>
-                      <p className="text-xs text-[#64748B]">Travelers</p>
-                      <p className="text-sm text-[#334155] font-medium">
-                        {booking.travelers}{" "}
-                        {booking.travelers > 1 ? "People" : "Person"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#10B981] text-lg">₱</span>
-                    <div>
-                      <p className="text-xs text-[#64748B]">Paid / Total</p>
-                      <p className="text-sm text-[#334155] font-medium">
-                        ₱{booking.paid.toLocaleString()} / ₱
-                        {booking.totalAmount.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-[#64748B]" />
-                    <div>
-                      <p className="text-xs text-[#64748B]">Booked On</p>
-                      <p className="text-sm text-[#334155] font-medium">
-                        {booking.bookedDate.split(",")[0]},
-                        {booking.bookedDate.split(",")[1]}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <div key={booking.id} id={`booking-${booking.id}`}>
+                <BookingListCard
+                  booking={transformBookingForCard(booking)}
+                  onViewDetails={handleViewDetails}
+                  context="active"
+                  showViewDetailsButton={true}
+                  highlightOnClick={true}
+                />
               </div>
             ))
           )}
