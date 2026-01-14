@@ -287,65 +287,65 @@ export function UserNotifications() {
   return (
     <div>
       {/* Stats Row - Responsive with mobile-specific layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-        {/* Mobile: First row - Unread and Today side by side */}
-        <div className="sm:hidden grid grid-cols-2 gap-4">
-          <StatCard
-            icon={Clock}
-            label="Unread"
-            value={unreadCount.toString()}
-            gradientFrom="#FF6B6B"
-            gradientTo="#FB7185"
-          />
-          <StatCard
-            icon={CheckCircle}
-            label="Today"
-            value={todayCount.toString()}
-            gradientFrom="#10B981"
-            gradientTo="#14B8A6"
-          />
-        </div>
-        
-        {/* Mobile: Second row - Total Notifications full width */}
-        <div className="sm:hidden">
-          <StatCard
-            icon={Bell}
-            label="Total Notifications"
-            value={notifications.length.toString()}
-            gradientFrom="#0A7AFF"
-            gradientTo="#3B9EFF"
-          />
-        </div>
-        
-        {/* Desktop: All three cards in one row */}
-        <div className="hidden sm:block">
-          <StatCard
-            icon={Bell}
-            label="Total Notifications"
-            value={notifications.length.toString()}
-            gradientFrom="#0A7AFF"
-            gradientTo="#3B9EFF"
-          />
-        </div>
-        <div className="hidden sm:block">
-          <StatCard
-            icon={Clock}
-            label="Unread"
-            value={unreadCount.toString()}
-            gradientFrom="#FF6B6B"
-            gradientTo="#FB7185"
-          />
-        </div>
-        <div className="hidden sm:block">
-          <StatCard
-            icon={CheckCircle}
-            label="Today"
-            value={todayCount.toString()}
-            gradientFrom="#10B981"
-            gradientTo="#14B8A6"
-          />
-        </div>
-      </div>
+<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+  {/* Mobile: First row - Total Notifications full width */}
+  <div className="sm:hidden">
+    <StatCard
+      icon={Bell}
+      label="Total Notifications"
+      value={notifications.length.toString()}
+      gradientFrom="#0A7AFF"
+      gradientTo="#3B9EFF"
+    />
+  </div>
+  
+  {/* Mobile: Second row - Unread and Today side by side */}
+  <div className="sm:hidden grid grid-cols-2 gap-4">
+    <StatCard
+      icon={Clock}
+      label="Unread"
+      value={unreadCount.toString()}
+      gradientFrom="#FF6B6B"
+      gradientTo="#FB7185"
+    />
+    <StatCard
+      icon={CheckCircle}
+      label="Today"
+      value={todayCount.toString()}
+      gradientFrom="#10B981"
+      gradientTo="#14B8A6"
+    />
+  </div>
+  
+  {/* Desktop: All three cards in one row (original layout) */}
+  <div className="hidden sm:block">
+    <StatCard
+      icon={Bell}
+      label="Total Notifications"
+      value={notifications.length.toString()}
+      gradientFrom="#0A7AFF"
+      gradientTo="#3B9EFF"
+    />
+  </div>
+  <div className="hidden sm:block">
+    <StatCard
+      icon={Clock}
+      label="Unread"
+      value={unreadCount.toString()}
+      gradientFrom="#FF6B6B"
+      gradientTo="#FB7185"
+    />
+  </div>
+  <div className="hidden sm:block">
+    <StatCard
+      icon={CheckCircle}
+      label="Today"
+      value={todayCount.toString()}
+      gradientFrom="#10B981"
+      gradientTo="#14B8A6"
+    />
+  </div>
+</div>
 
       <ContentCard
   title={`${selectedTab === "all" ? "All" : "Unread"} Notifications (${
