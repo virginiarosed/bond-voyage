@@ -7,29 +7,14 @@ import {
   Calendar,
   Clock,
 } from "lucide-react";
-
-interface Activity {
-  id: string;
-  time: string;
-  icon: string;
-  title: string;
-  description: string;
-  location: string;
-}
-
-interface Day {
-  id: string;
-  day: number;
-  title: string;
-  activities: Activity[];
-}
+import { Day, IActivity } from "../types/types";
 
 interface BookingFormData {
   destination: string;
   travelDateFrom: string;
   travelDateTo: string;
   travelers: string;
-  totalAmount: string;
+  totalPrice: string;
 }
 
 interface Version {
@@ -358,9 +343,9 @@ export function VersionHistoryModal({
                           Budget
                         </span>
                         <p className="text-base text-card-foreground font-semibold">
-                          {displayData.bookingData.totalAmount
+                          {displayData.bookingData.totalPrice
                             ? `₱${parseFloat(
-                                displayData.bookingData.totalAmount
+                                displayData.bookingData.totalPrice
                               ).toLocaleString()}`
                             : "N/A"}
                         </p>
@@ -391,12 +376,12 @@ export function VersionHistoryModal({
                           <div className="flex items-center gap-4 mb-5 pb-5 border-b border-border">
                             <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-primary/20">
                               <span className="text-white font-bold">
-                                D{day.day}
+                                D{day.dayNumber}
                               </span>
                             </div>
                             <div className="flex-1">
                               <h5 className="text-sm font-medium text-muted-foreground">
-                                Day {day.day}
+                                Day {day.dayNumber}
                               </h5>
                               <p className="text-base font-semibold text-card-foreground mt-0.5">
                                 {day.title || "Untitled Day"}
