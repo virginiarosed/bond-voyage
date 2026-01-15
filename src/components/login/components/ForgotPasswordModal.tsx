@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { DialogTitle, DialogDescription } from "./ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog@1.1.6";
+import { useSendOTP, useVerifyOTP, useResetPassword } from "../../../hooks/useAuth";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -37,13 +38,19 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   
-  const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [showToast, setShowToast] = useState<{
     type: "error" | "success" | "info";
     title: string;
     message: string;
   } | null>(null);
+
+  // API Hooks
+  const sendOTPMutation = useSendOTP();
+  const verifyOTPMutation = useVerifyOTP();
+  const resetPasswordMutation = useResetPassword();
+
+  const isLoading = sendOTPMutation.isPending || verifyOTPMutation.isPending || resetPasswordMutation.isPending;
 
   const validateEmail = (value: string) => {
     if (!value) return "Please enter your email address";
@@ -74,7 +81,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
     }
   }, [resendTimer]);
 
-  const handleSendOTP = (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const emailErr = validateEmail(email);
@@ -83,11 +90,11 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Extract first part of email as firstName (fallback since we don't have user's name)
+      const firstName = email.split("@")[0];
+      await sendOTPMutation.mutateAsync({ email, firstName });
+      
       setStep("otp");
       setResendTimer(60);
       setShowToast({
@@ -96,7 +103,15 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
         message: `We've sent a 6-digit code to ${email}`,
       });
       setTimeout(() => setShowToast(null), 4000);
-    }, 1500);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Failed to send OTP. Please try again.";
+      setShowToast({
+        type: "error",
+        title: "Failed to Send OTP",
+        message: errorMessage,
+      });
+      setTimeout(() => setShowToast(null), 4000);
+    }
   };
 
   const handleOTPChange = (index: number, value: string) => {
@@ -122,7 +137,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
     }
   };
 
-  const handleVerifyOTP = (e: React.FormEvent) => {
+  const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const otpCode = otp.join("");
@@ -131,11 +146,9 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await verifyOTPMutation.mutateAsync({ email, otp: otpCode });
+      
       setStep("reset");
       setShowToast({
         type: "success",
@@ -143,10 +156,19 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
         message: "Now create your new password",
       });
       setTimeout(() => setShowToast(null), 3000);
-    }, 1500);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Invalid or expired OTP. Please try again.";
+      setOtpError(errorMessage);
+      setShowToast({
+        type: "error",
+        title: "Verification Failed",
+        message: errorMessage,
+      });
+      setTimeout(() => setShowToast(null), 4000);
+    }
   };
 
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
     let hasError = false;
@@ -167,11 +189,9 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
 
     if (hasError) return;
 
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await resetPasswordMutation.mutateAsync({ email, newPassword });
+      
       setShowToast({
         type: "success",
         title: "Password Reset Successful!",
@@ -183,14 +203,23 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
         onClose();
         onBackToLogin();
       }, 2000);
-    }, 1500);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Failed to reset password. Please try again.";
+      setPasswordError(errorMessage);
+      setShowToast({
+        type: "error",
+        title: "Reset Failed",
+        message: errorMessage,
+      });
+      setTimeout(() => setShowToast(null), 4000);
+    }
   };
 
-  const handleResendOTP = () => {
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      setIsLoading(false);
+  const handleResendOTP = async () => {
+    try {
+      const firstName = email.split("@")[0];
+      await sendOTPMutation.mutateAsync({ email, firstName });
+      
       setResendTimer(60);
       setOtp(["", "", "", "", "", ""]);
       setShowToast({
@@ -199,7 +228,15 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
         message: `A new verification code has been sent to ${email}`,
       });
       setTimeout(() => setShowToast(null), 4000);
-    }, 1000);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Failed to resend OTP. Please try again.";
+      setShowToast({
+        type: "error",
+        title: "Failed to Resend",
+        message: errorMessage,
+      });
+      setTimeout(() => setShowToast(null), 4000);
+    }
   };
 
   const resetForm = () => {
