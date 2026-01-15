@@ -271,19 +271,6 @@ export interface WeatherResponse {
   name?: string;
 }
 
-export interface RouteOptimizationRequest {
-  activities: Array<{
-    id: string;
-    lat: number;
-    lng: number;
-    name: string;
-    location: string;
-    time: string | null;
-  }>;
-  origin: string;
-  destination: string;
-}
-
 export interface ChatbotRequest {
   question: string;
 }
@@ -300,18 +287,30 @@ export interface FAQSource {
   systemCategory?: string;
 }
 
+export interface FAQAction {
+  label: string;
+  action: string;
+  type: "QUERY" | "NAVIGATION";
+}
+
 export interface ChatbotResponse {
   answer: string;
   confidence: string;
   sources: FAQSource[];
+  actions: FAQAction[];
 }
 
 export interface DashboardStats {
   cards: {
     activeBookings: number;
     completedTrips: number;
-    pendingApprovals: number;
-    totalUsers: number;
+    // Admin dashboard fields
+    pendingApprovals?: number;
+    totalUsers?: number;
+    faqsCard?: number;
+    // User dashboard fields
+    travelPlans?: number;
+    pending?: number;
   };
 
   distributions: {
@@ -394,4 +393,68 @@ export interface Place {
   address: string;
   lat: number;
   lng: number;
+}
+
+export interface RouteOptimizationRequest {
+  activities: Array<{
+    id: string;
+    lat: number;
+    lng: number;
+    name: string;
+    location: string;
+    time: string;
+  }>;
+  origin: string;
+  destination: string;
+  mode?: "drive" | "walk" | "bike" | "transit";
+}
+
+export interface RouteCalculationRequest {
+  activities: Array<{
+    id: string;
+    lat: number;
+    lng: number;
+    name: string;
+    location: string;
+    time: string;
+  }>;
+  origin: string;
+  destination: string;
+  mode?: "drive" | "walk" | "bike" | "transit";
+}
+
+export interface RouteGeometry {
+  type: "MultiLineString";
+  coordinates: number[][][];
+}
+
+export interface ActivityResponse {
+  id: string;
+  lat: number;
+  lng: number;
+  name: string;
+  location: string;
+  time: string;
+}
+
+export interface RouteCalculationResponse {
+  success: boolean;
+  message: string;
+  data: {
+    activities: ActivityResponse[];
+    routeGeometry: RouteGeometry;
+    totalDistance: number;
+    totalTime: number;
+  };
+}
+
+export interface RouteOptimizationResponse {
+  success: boolean;
+  message: string;
+  data: {
+    activities: ActivityResponse[];
+    routeGeometry: RouteGeometry;
+    totalDistance: number;
+    totalTime: number;
+  };
 }

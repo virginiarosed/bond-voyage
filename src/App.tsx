@@ -499,15 +499,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         { label: "Weather" },
       ],
     },
-    "/user/translation": {
-      title: "Translation Tool",
-      subtitle: "Translate between English and local dialects.",
-      breadcrumbs: [
-        { label: "Home", path: "/user/home" },
-        { label: "More" },
-        { label: "Translation" },
-      ],
-    },
     "/user/spin-wheel": {
       title: "Spin the Wheel",
       subtitle: "Can't decide? Let the wheel choose for you!",

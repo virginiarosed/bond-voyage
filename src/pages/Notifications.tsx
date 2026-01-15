@@ -25,6 +25,10 @@ import { toast } from "sonner";
 import {
   useNotifications,
   useMarkNotificationRead,
+  useMarkNotificationUnread,
+  useDeleteNotification,
+  useMarkAllNotificationsRead,
+  useClearAllReadNotifications,
 } from "../hooks/useNotifications";
 import { INotification } from "../types/types";
 
@@ -44,26 +48,73 @@ export function Notifications() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [notificationToDelete, setNotificationToDelete] =
     useState<INotification | null>(null);
-
+  
   // Fetch notifications from API
   const { data: notificationsResponse, isLoading, error } = useNotifications();
   const notifications = notificationsResponse?.data?.items || [];
 
+  // Initialize mutation hooks at component level (React hooks rules)
+  const markReadMutation = useMarkNotificationRead({
+    onSuccess: () => {
+      toast.success("Notification marked as read!");
+    },
+    onError: () => {
+      toast.error("Failed to mark notification as read");
+    },
+  });
+
+  const markUnreadMutation = useMarkNotificationUnread({
+    onSuccess: () => {
+      toast.success("Notification marked as unread!");
+    },
+    onError: () => {
+      toast.error("Failed to mark notification as unread");
+    },
+  });
+
+  const deleteMutation = useDeleteNotification({
+    onSuccess: () => {
+      toast.success("Notification deleted!");
+      setDeleteConfirmOpen(false);
+      setNotificationToDelete(null);
+    },
+    onError: () => {
+      toast.error("Failed to delete notification");
+    },
+  });
+
+  const markAllReadMutation = useMarkAllNotificationsRead({
+    onSuccess: () => {
+      toast.success("All notifications marked as read!");
+      setMarkAllReadModalOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to mark all notifications as read");
+    },
+  });
+
+  const clearAllReadMutation = useClearAllReadNotifications({
+    onSuccess: () => {
+      toast.success("All read notifications cleared!");
+      setClearAllModalOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to clear read notifications");
+    },
+  });
+
+  // Check if any mutation is in progress
+  const isProcessingAction =
+    markReadMutation.isPending ||
+    markUnreadMutation.isPending ||
+    deleteMutation.isPending;
+
   const handleMarkAsRead = (notificationId: string) => {
-    const markReadMutation = useMarkNotificationRead(notificationId, {
-      onSuccess: () => {
-        toast.success("Notification marked as read!");
-      },
-      onError: () => {
-        toast.error("Failed to mark notification as read");
-      },
-    });
-    markReadMutation.mutate();
+    markReadMutation.mutate(notificationId);
   };
 
-  const handleMarkAsUnread = (id: string) => {
-    // TODO: Implement unmark as read API endpoint and mutation
-    toast.info("Mark as unread functionality to be implemented");
+  const handleMarkAsUnread = (notificationId: string) => {
+    markUnreadMutation.mutate(notificationId);
   };
 
   const handleDeleteClick = (notification: INotification) => {
@@ -73,23 +124,16 @@ export function Notifications() {
 
   const handleConfirmDelete = () => {
     if (notificationToDelete) {
-      // TODO: Implement delete notification API endpoint and mutation
-      toast.info("Delete functionality to be implemented");
+      deleteMutation.mutate(notificationToDelete.id);
     }
-    setDeleteConfirmOpen(false);
-    setNotificationToDelete(null);
   };
 
   const handleMarkAllRead = () => {
-    // TODO: Implement mark all as read API endpoint
-    toast.info("Mark all as read functionality to be implemented");
-    setMarkAllReadModalOpen(false);
+    markAllReadMutation.mutate();
   };
 
   const handleClearAll = () => {
-    // TODO: Implement clear all read notifications API endpoint
-    toast.info("Clear all functionality to be implemented");
-    setClearAllModalOpen(false);
+    clearAllReadMutation.mutate();
   };
 
   const toggleTypeFilter = (type: NotificationType) => {
@@ -131,11 +175,6 @@ export function Notifications() {
           bg: "from-[#10B981] to-[#14B8A6]",
           shadow: "shadow-[#10B981]/20",
         };
-      case "INQUIRY":
-        return {
-          bg: "from-[#0A7AFF] to-[#14B8A6]",
-          shadow: "shadow-[#0A7AFF]/20",
-        };
       case "FEEDBACK":
         return {
           bg: "from-[#FFB84D] to-[#FB7185]",
@@ -160,8 +199,6 @@ export function Notifications() {
         return "high";
       case "PAYMENT":
         return "urgent";
-      case "INQUIRY":
-        return "medium";
       case "FEEDBACK":
         return "low";
       case "SYSTEM":
@@ -244,7 +281,6 @@ export function Notifications() {
   }[] = [
     { type: "BOOKING", label: "Booking", icon: Calendar },
     { type: "PAYMENT", label: "Payment", icon: CreditCard },
-    { type: "INQUIRY", label: "Inquiry", icon: HelpCircle },
     { type: "FEEDBACK", label: "Feedback", icon: Star },
     { type: "SYSTEM", label: "System", icon: AlertCircle },
   ];
@@ -313,18 +349,37 @@ export function Notifications() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMarkAllReadModalOpen(true)}
-              disabled={unreadCount === 0}
+              disabled={unreadCount === 0 || markAllReadMutation.isPending}
               className="h-10 px-5 rounded-[20px] bg-white dark:bg-transparent border-2 border-[#0A7AFF] dark:border-[#0A7AFF] text-[#0A7AFF] dark:text-[#0A7AFF] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(10,122,255,0.05)] dark:hover:bg-[rgba(10,122,255,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <CheckCheck className="w-4 h-4" />
-              Mark All Read
+              {markAllReadMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-[#0A7AFF] border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCheck className="w-4 h-4" />
+                  Mark All Read
+                </>
+              )}
             </button>
             <button
               onClick={() => setClearAllModalOpen(true)}
-              className="h-10 px-5 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)]"
+              disabled={clearAllReadMutation.isPending || notifications.filter((n) => n.isRead).length === 0}
+              className="h-10 px-5 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Trash2 className="w-4 h-4" />
-              Clear Read
+              {clearAllReadMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Clear Read
+                </>
+              )}
             </button>
           </div>
         }
@@ -357,51 +412,128 @@ export function Notifications() {
           {/* Type Filter */}
           <Popover open={filterOpen} onOpenChange={setFilterOpen}>
             <PopoverTrigger asChild>
-              <button className="h-10 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center gap-2 text-sm font-medium text-[#334155] transition-all relative">
-                <Filter className="w-4 h-4" />
+              <button className="h-10 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center gap-2 text-sm font-medium text-[#334155] transition-all relative group shadow-[0_1px_3px_rgba(0,0,0,0.12)] hover:shadow-[0_4px_6px_rgba(10,122,255,0.15)]">
+                <Filter className="w-4 h-4 transition-transform group-hover:scale-110" />
                 Filter by Type
                 {typeFilters.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#0A7AFF] text-white text-xs flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30">
                     {typeFilters.length}
                   </span>
                 )}
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-80" align="end">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-[#1A2B4F]">
-                    Filter by Type
-                  </h4>
-                  {typeFilters.length > 0 && (
-                    <button
-                      onClick={clearFilters}
-                      className="text-xs text-[#0A7AFF] hover:underline"
-                    >
-                      Clear all
-                    </button>
-                  )}
+            <PopoverContent 
+              className="w-80 p-0 border-0 shadow-[0_20px_25px_rgba(0,0,0,0.12),0_10px_10px_rgba(0,0,0,0.04)]" 
+              align="end"
+              sideOffset={8}
+            >
+              {/* Glassmorphism backdrop with brand styling */}
+              <div className="rounded-2xl overflow-hidden backdrop-blur-xl bg-white/95 border border-white/20 shadow-2xl">
+                {/* Header with gradient */}
+                <div className="p-5 border-b border-[#E5E7EB]/50 bg-gradient-to-r from-[#F8FAFB] to-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-[#1A2B4F] text-[15px]">Filter by Type</h4>
+                      <p className="text-xs text-[#64748B] mt-0.5">
+                        Select notification types to filter
+                      </p>
+                    </div>
+                    {typeFilters.length > 0 && (
+                      <button
+                        onClick={clearFilters}
+                        className="text-xs font-medium text-[#0A7AFF] hover:text-[#3B9EFF] transition-colors px-3 py-1.5 rounded-lg hover:bg-[rgba(10,122,255,0.05)]"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-2 max-h-100 overflow-y-auto">
-                  {notificationTypes.map(({ type, label, icon: Icon }) => (
-                    <label
-                      key={type}
-                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F8FAFB] cursor-pointer transition-colors"
-                    >
-                      <Checkbox
-                        checked={typeFilters.includes(type)}
-                        onCheckedChange={() => toggleTypeFilter(type)}
-                      />
-                      <Icon className="w-4 h-4 text-[#64748B]" />
-                      <span className="text-sm text-[#334155] flex-1">
-                        {label}
-                      </span>
-                      <span className="text-xs text-[#94A3B8]">
-                        {notifications.filter((n) => n.type === type).length}
-                      </span>
-                    </label>
-                  ))}
+
+                {/* Filter options list */}
+                <div className="p-2 max-h-[320px] overflow-y-auto">
+                  {notificationTypes.map(({ type, label, icon: Icon }) => {
+                    const colors = getNotificationColor(type);
+                    const count = notifications.filter((n) => n.type === type).length;
+                    const isSelected = typeFilters.includes(type);
+                    
+                    return (
+                      <div
+                        key={type}
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F8FAFB]/80 cursor-pointer transition-all duration-200 group hover:shadow-[0_2px_4px_rgba(0,0,0,0.05)] mb-1 last:mb-0"
+                        onClick={() => toggleTypeFilter(type)}
+                      >
+                        {/* Hidden Checkbox for accessibility */}
+                        <Checkbox
+                          id={`filter-${type}`}
+                          checked={isSelected}
+                          onCheckedChange={() => toggleTypeFilter(type)}
+                          className="sr-only"
+                        />
+                        
+                        {/* Custom styled checkbox */}
+                        <div className="relative">
+                          <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
+                            isSelected 
+                              ? 'border-[#0A7AFF] bg-[#0A7AFF] text-white shadow-[0_2px_4px_rgba(10,122,255,0.3)]' 
+                              : 'border-[#E5E7EB] bg-white group-hover:border-[#0A7AFF]/30'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Type icon with gradient background */}
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow} transition-transform group-hover:scale-105 ${
+                          isSelected ? 'ring-2 ring-[#0A7AFF] ring-offset-1' : ''
+                        }`}>
+                          <Icon className="w-5 h-5 text-white" />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <span className={`text-sm font-medium block transition-colors ${
+                            isSelected ? 'text-[#0A7AFF]' : 'text-[#334155]'
+                          }`}>
+                            {label}
+                          </span>
+                          <span className="text-xs text-[#94A3B8] mt-0.5 block">
+                            {count === 1 ? "1 notification" : `${count} notifications`}
+                          </span>
+                        </div>
+                        
+                        {/* Count badge */}
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-colors ${
+                          isSelected 
+                            ? 'bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white shadow-[#0A7AFF]/20' 
+                            : 'bg-[#F8FAFB] text-[#64748B]'
+                        }`}>
+                          {count}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
+
+                {/* Footer with selected count */}
+                {typeFilters.length > 0 && (
+                  <div className="p-4 border-t border-[#E5E7EB]/50 bg-gradient-to-r from-[#F8FAFB] to-white">
+                    <div className="flex items-center justify-center">
+                      <div className="text-sm text-[#64748B]">
+                        <span className="font-medium text-[#1A2B4F]">
+                          {typeFilters.length} {typeFilters.length === 1 ? "type" : "types"}
+                        </span>{" "}
+                        selected • <button 
+                          onClick={clearFilters}
+                          className="text-[#0A7AFF] hover:text-[#3B9EFF] font-medium hover:underline transition-colors"
+                        >
+                          Clear filters
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </PopoverContent>
           </Popover>
@@ -499,7 +631,8 @@ export function Notifications() {
                               e.stopPropagation();
                               handleMarkAsRead(notification.id);
                             }}
-                            className="h-8 px-3 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center gap-1.5 hover:opacity-90 transition-all"
+                            disabled={isProcessingAction}
+                            className="h-8 px-3 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center gap-1.5 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <CheckCircle className="w-3.5 h-3.5" />
                             Mark as Read
@@ -510,7 +643,8 @@ export function Notifications() {
                               e.stopPropagation();
                               handleMarkAsUnread(notification.id);
                             }}
-                            className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#64748B] text-xs font-medium flex items-center gap-1.5 hover:border-[#0A7AFF] hover:text-[#0A7AFF] transition-colors"
+                            disabled={isProcessingAction}
+                            className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#64748B] text-xs font-medium flex items-center gap-1.5 hover:border-[#0A7AFF] hover:text-[#0A7AFF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Bell className="w-3.5 h-3.5" />
                             Mark as Unread
@@ -521,7 +655,8 @@ export function Notifications() {
                             e.stopPropagation();
                             handleDeleteClick(notification);
                           }}
-                          className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#FF6B6B] text-xs font-medium flex items-center gap-1.5 hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] transition-colors"
+                          disabled={isProcessingAction}
+                          className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#FF6B6B] text-xs font-medium flex items-center gap-1.5 hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           Delete
@@ -536,7 +671,7 @@ export function Notifications() {
         </div>
       </ContentCard>
 
-      {/* Modals remain the same as your original code */}
+      {/* Modals */}
       <ConfirmationModal
         open={markAllReadModalOpen}
         onOpenChange={setMarkAllReadModalOpen}
@@ -548,19 +683,28 @@ export function Notifications() {
         contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)]"
         contentBorder="border-[rgba(10,122,255,0.2)]"
         content={
-          <p className="text-sm text-[#334155] leading-relaxed">
-            Are you sure you want to mark all{" "}
-            <span className="font-semibold text-[#0A7AFF]">
-              {unreadCount} unread notifications
-            </span>{" "}
-            as read?
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-[#334155] leading-relaxed">
+              Are you sure you want to mark all{" "}
+              <span className="font-semibold text-[#0A7AFF]">
+                {unreadCount} unread notifications
+              </span>{" "}
+              as read?
+            </p>
+            {markAllReadMutation.isPending && (
+              <div className="flex items-center justify-center py-2">
+                <div className="w-6 h-6 border-2 border-[#0A7AFF] border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-sm text-[#64748B]">Processing...</span>
+              </div>
+            )}
+          </div>
         }
         onConfirm={handleMarkAllRead}
         onCancel={() => setMarkAllReadModalOpen(false)}
-        confirmText="Mark All Read"
+        confirmText={markAllReadMutation.isPending ? "Processing..." : "Mark All Read"}
         cancelText="Cancel"
         confirmVariant="default"
+        disabled={markAllReadMutation.isPending}
       />
 
       <ConfirmationModal
@@ -574,19 +718,28 @@ export function Notifications() {
         contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(239,68,68,0.12)]"
         contentBorder="border-[rgba(255,107,107,0.2)]"
         content={
-          <p className="text-sm text-[#334155] leading-relaxed">
-            Are you sure you want to delete all{" "}
-            <span className="font-semibold text-[#FF6B6B]">
-              {notifications.filter((n) => n.isRead).length} read notifications
-            </span>
-            ? This action cannot be undone.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-[#334155] leading-relaxed">
+              Are you sure you want to delete all{" "}
+              <span className="font-semibold text-[#FF6B6B]">
+                {notifications.filter((n) => n.isRead).length} read notifications
+              </span>
+              ? This action cannot be undone.
+            </p>
+            {clearAllReadMutation.isPending && (
+              <div className="flex items-center justify-center py-2">
+                <div className="w-6 h-6 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-sm text-[#64748B]">Processing...</span>
+              </div>
+            )}
+          </div>
         }
         onConfirm={handleClearAll}
         onCancel={() => setClearAllModalOpen(false)}
-        confirmText="Clear All"
+        confirmText={clearAllReadMutation.isPending ? "Processing..." : "Clear All"}
         cancelText="Cancel"
         confirmVariant="destructive"
+        disabled={clearAllReadMutation.isPending}
       />
 
       <ConfirmationModal
@@ -614,6 +767,12 @@ export function Notifications() {
                   {notificationToDelete.message}
                 </p>
               </div>
+              {deleteMutation.isPending && (
+                <div className="flex items-center justify-center py-2">
+                  <div className="w-6 h-6 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin mr-2"></div>
+                  <span className="text-sm text-[#64748B]">Deleting...</span>
+                </div>
+              )}
             </div>
           ) : null
         }
@@ -622,9 +781,10 @@ export function Notifications() {
           setDeleteConfirmOpen(false);
           setNotificationToDelete(null);
         }}
-        confirmText="Delete Notification"
+        confirmText={deleteMutation.isPending ? "Deleting..." : "Delete Notification"}
         cancelText="Cancel"
         confirmVariant="destructive"
+        disabled={deleteMutation.isPending}
       />
     </div>
   );

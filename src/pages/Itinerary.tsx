@@ -105,6 +105,7 @@ import {
   useCancelBooking,
   useUpdateBookingStatus,
   useBookingPayments,
+  useDeleteBooking,
 } from "../hooks/useBookings";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUsers } from "../hooks/useUsers";
@@ -164,7 +165,6 @@ interface ItineraryProps {
   onDeleteDraft?: (draftId: string) => void;
 }
 
-// Helper function to transform standard itinerary details for payload
 const transformStandardItineraryDetailsForPayload = (
   days: ItineraryDay[],
   startDate?: string
@@ -194,7 +194,6 @@ const transformStandardItineraryDetailsForPayload = (
   });
 };
 
-// Helper function to transform API days for payload
 const transformApiDaysToItineraryDetailsForPayload = (days: any[]): any[] => {
   if (!days || days.length === 0) return [];
 
@@ -214,7 +213,6 @@ const transformApiDaysToItineraryDetailsForPayload = (days: any[]): any[] => {
   }));
 };
 
-// Helper function to transform requested itinerary for payload
 const transformRequestedItineraryForPayload = (days: any[]): any[] => {
   if (!days || days.length === 0) return [];
 
@@ -234,7 +232,6 @@ const transformRequestedItineraryForPayload = (days: any[]): any[] => {
   }));
 };
 
-// Icon mapping helper
 const ICON_MAP: Record<string, any> = {
   Plane,
   Hotel,
@@ -316,7 +313,6 @@ const serializeItineraryData = (data: any) => {
   return serialized;
 };
 
-// Helper functions for status transformation
 const formatDateRange = (
   startDate: string | Date | null,
   endDate: string | Date | null
@@ -429,7 +425,6 @@ const getActivityIcon = (title: string) => {
   return "MapPin";
 };
 
-// Main transformation function
 const transformApiBooking = (apiBooking: any) => {
   // Get dates
   const start =
@@ -468,7 +463,6 @@ const transformApiBooking = (apiBooking: any) => {
     apiBooking.customerEmail || apiBooking.itinerary?.user?.email || "";
   const customerMobile = apiBooking.customerMobile || "N/A";
 
-  // Transform itinerary details
   const itineraryDetails =
     apiBooking.itinerary?.days?.map((day: any) => ({
       day: day.dayNumber,
@@ -483,7 +477,7 @@ const transformApiBooking = (apiBooking: any) => {
         })) || [],
     })) || [];
 
-  return {
+  const data = {
     id: apiBooking.id,
     bookingCode: apiBooking.bookingCode,
     customer: customerName,
@@ -506,6 +500,8 @@ const transformApiBooking = (apiBooking: any) => {
     resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
     itineraryDetails: itineraryDetails,
   };
+
+  return data;
 };
 
 // Simplified transformation for BookingListCard
@@ -657,6 +653,31 @@ export function Itinerary({
       },
     });
 
+  const { mutate: deleteBooking, isPending: isDeletingBooking } =
+    useDeleteBooking(selectedRequestedId || "", {
+      onSuccess: () => {
+        toast.success("Booking Deleted", {
+          description: "The booking has been deleted successfully.",
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.detail(selectedRequestedId!),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+        refetchBookings();
+        setDeleteConfirmOpen(false);
+        setItemToDelete(null);
+        setRequestedViewMode("list");
+        setSelectedRequestedId(null);
+      },
+      onError: (error: any) => {
+        toast.error("Failed to delete booking", {
+          description: error.response?.data?.message || "Please try again.",
+        });
+      },
+    });
+
   // Payment hooks
   const { data: paymentsData } = useBookingPayments(selectedRequestedId!);
 
@@ -728,7 +749,7 @@ export function Itinerary({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{
     id: string;
-    type: "api" | "local";
+    type: "api" | "local" | "booking";
     title?: string;
     destination?: string;
   } | null>(null);
@@ -1183,8 +1204,13 @@ export function Itinerary({
     if (!itemToDelete) return;
 
     if (itemToDelete.type === "api") {
+      // For standard tour packages
       handleDeleteTourPackage(itemToDelete.id);
+    } else if (itemToDelete.type === "booking") {
+      // For requested bookings - use the delete booking hook
+      deleteBooking();
     } else {
+      // For local drafts
       if (onDeleteDraft) {
         onDeleteDraft(itemToDelete.id);
         toast.success("Draft deleted successfully!");
@@ -1819,68 +1845,69 @@ export function Itinerary({
             </div>
           ) : bookingDetailData?.data ? (
             <BookingDetailView
+              // Core booking data
               booking={{
                 id: bookingDetailData.data.id,
                 bookingCode: bookingDetailData.data.bookingCode,
-                customer: bookingDetailData.data.customerName,
-                email: bookingDetailData.data.customerEmail,
-                mobile: bookingDetailData.data.customerMobile,
+                customer: bookingDetailData.data.customerName!,
+                email: bookingDetailData.data.customerEmail!,
+                mobile: bookingDetailData.data.customerMobile!,
                 destination: bookingDetailData.data.destination,
                 itinerary:
                   bookingDetailData.data.itinerary?.title || "Custom Itinerary",
-                dates: formatDateRange(
-                  bookingDetailData.data.startDate,
+                dates:
+                  bookingDetailData.data.startDate &&
                   bookingDetailData.data.endDate
-                ),
+                    ? formatDateRange(
+                        bookingDetailData.data.startDate,
+                        bookingDetailData.data.endDate
+                      )
+                    : "Dates TBD",
                 travelers: bookingDetailData.data.travelers,
                 total: `₱${parseFloat(
                   bookingDetailData.data.totalPrice.toString()
                 ).toLocaleString()}`,
-                bookedDate: formatDate(
-                  bookingDetailData.data.bookedDate ||
-                    bookingDetailData.data.createdAt
+                totalAmount: parseFloat(
+                  bookingDetailData.data.totalPrice.toString()
                 ),
-                status: bookingDetailData.data.status,
-                paymentStatus: bookingDetailData.data.paymentStatus,
-                type: bookingDetailData.data.type,
-                tourType: bookingDetailData.data.tourType,
-                startDate: bookingDetailData.data.startDate,
-                endDate: bookingDetailData.data.endDate,
-                paymentReceiptUrl: bookingDetailData.data.paymentReceiptUrl,
-                rejectionReason: bookingDetailData.data.rejectionReason,
-                rejectionResolution: bookingDetailData.data.rejectionResolution,
-                isResolved: bookingDetailData.data.isResolved,
-                ownership: bookingDetailData.data.ownership,
-                payments: paymentsData?.data || [],
-                bookingType: bookingDetailData.data.type,
+                paid: 0, // Will be calculated from payment submissions
+                paymentStatus:
+                  bookingDetailData.data.paymentStatus || "PENDING",
+                bookedDate:
+                  bookingDetailData.data.bookedDateDisplay ||
+                  formatDate(bookingDetailData.data.bookedDate),
+                tripStatus: bookingDetailData.data.status,
+                rejectionReason:
+                  bookingDetailData.data.rejectionReason ||
+                  bookingDetailData.data.itinerary?.rejectionReason ||
+                  "",
+                rejectionResolution:
+                  bookingDetailData.data.rejectionResolution ||
+                  bookingDetailData.data.itinerary?.rejectionResolution ||
+                  "",
                 resolutionStatus: bookingDetailData.data.isResolved
                   ? "resolved"
                   : "unresolved",
               }}
-              itinerary={bookingDetailData.data.itinerary?.days || []}
+              itinerary={bookingDetailData.data.itinerary}
               onBack={() => setRequestedViewMode("list")}
-              onSendToClient={() =>
-                handleSendToClient(bookingDetailData.data.id)
-              }
-              onCancelBooking={() =>
-                handleCancelBooking(bookingDetailData.data.id)
-              }
-              onUpdateStatus={(status, reason, resolution) => {
-                setStatusUpdateData({
-                  status,
-                  rejectionReason: reason,
-                  rejectionResolution: resolution,
-                });
-                setStatusUpdateModalOpen(true);
-              }}
+              onSendToClient={() => {}}
+              onCancelBooking={() => {}}
+              onUpdateStatus={() => {}}
+              headerVariant="default"
+              breadcrumbPage="Requested Itineraries"
+              isRequestedItinerary={true}
+              useBackButtonHeader={true}
+              backButtonSubtitle="Requested Itinerary Details"
               actionButtons={
                 <div className="space-y-3">
+                  {/* Send to Client Button */}
                   {bookingDetailData.data.status !== "CONFIRMED" && (
                     <button
                       onClick={() =>
                         handleSendToClient(bookingDetailData.data.id)
                       }
-                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20"
+                      className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? (
@@ -1897,55 +1924,58 @@ export function Itinerary({
                     </button>
                   )}
 
+                  {/* Book This Trip Button */}
                   {bookingDetailData.data.status === "CONFIRMED" && (
                     <button
                       onClick={() => {
                         setSelectedRequestedForBooking(
-                          bookingDetailData.data.id
+                          bookingDetailData.data?.id!
                         );
                         setRequestedBookingModalOpen(true);
                       }}
-                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
+                      className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
                     >
                       <BookOpen className="w-5 h-5" />
                       Book This Trip
                     </button>
                   )}
 
+                  {/* Edit Booking Button */}
                   {(bookingDetailData.data.status === "DRAFT" ||
                     bookingDetailData.data.status === "PENDING" ||
-                    bookingDetailData.data.status === "APPROVED") && (
+                    bookingDetailData.data.status === "CONFIRMED") && (
                     <button
                       onClick={() => {
                         const itineraryData = {
-                          id: bookingDetailData.data.id,
-                          bookingCode: bookingDetailData.data.bookingCode,
+                          id: bookingDetailData.data?.id,
+                          bookingCode: bookingDetailData.data?.bookingCode,
                           title:
-                            bookingDetailData.data.itinerary?.title ||
-                            bookingDetailData.data.destination,
-                          destination: bookingDetailData.data.destination,
+                            bookingDetailData.data?.itinerary?.title ||
+                            bookingDetailData.data?.destination,
+                          destination: bookingDetailData.data?.destination,
                           itineraryDetails:
-                            bookingDetailData.data.itinerary?.days || [],
+                            bookingDetailData.data?.itinerary?.days || [],
                           itineraryDays:
-                            bookingDetailData.data.itinerary?.days || [],
-                          days: (bookingDetailData.data.itinerary?.days || [])
+                            bookingDetailData.data?.itinerary?.days || [],
+                          days: (bookingDetailData.data?.itinerary?.days || [])
                             .length,
                           category: "Custom",
-                          pricePerPax: bookingDetailData.data.totalPrice,
+                          pricePerPax: bookingDetailData.data?.totalPrice,
                           image: "",
-                          customerName: bookingDetailData.data.customerName,
-                          customerEmail: bookingDetailData.data.customerEmail,
-                          customerMobile: bookingDetailData.data.customerMobile,
-                          travelers: bookingDetailData.data.travelers,
-                          startDate: bookingDetailData.data.startDate,
-                          endDate: bookingDetailData.data.endDate,
-                          tourType: bookingDetailData.data.tourType,
-                          status: bookingDetailData.data.status,
-                          type: bookingDetailData.data.type,
+                          customerName: bookingDetailData.data?.customerName,
+                          customerEmail: bookingDetailData.data?.customerEmail,
+                          customerMobile:
+                            bookingDetailData.data?.customerMobile,
+                          travelers: bookingDetailData.data?.travelers,
+                          startDate: bookingDetailData.data?.startDate,
+                          endDate: bookingDetailData.data?.endDate,
+                          tourType: bookingDetailData.data?.tourType,
+                          status: bookingDetailData.data?.status,
+                          type: bookingDetailData.data?.type,
                         };
 
                         navigate(
-                          `/itinerary/edit-requested/${bookingDetailData.data.id}`,
+                          `/itinerary/edit-requested/${bookingDetailData.data?.id}`,
                           {
                             state: {
                               itineraryData:
@@ -1954,35 +1984,38 @@ export function Itinerary({
                           }
                         );
                       }}
-                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
+                      className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(10,122,255,0.35)] transition-all"
                     >
                       <Edit className="w-4 h-4" />
                       Edit Booking
                     </button>
                   )}
 
+                  {/* Delete Booking Button */}
                   {bookingDetailData.data.status === "DRAFT" && (
                     <button
                       onClick={() => {
                         confirmDelete({
-                          id: bookingDetailData.data.id,
-                          type: "local",
+                          id: bookingDetailData.data?.id!,
+                          type: "booking",
                           title:
-                            bookingDetailData.data.itinerary?.title ||
-                            bookingDetailData.data.destination,
-                          destination: bookingDetailData.data.destination,
+                            bookingDetailData.data?.itinerary?.title ||
+                            bookingDetailData.data?.destination,
+                          destination: bookingDetailData.data?.destination,
                         });
                       }}
                       className="w-full h-11 px-4 rounded-xl bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center gap-2 font-medium transition-all"
+                      disabled={isDeletingBooking}
                     >
                       <Trash2 className="w-4 h-4" />
-                      Delete Booking
+                      {isDeletingBooking ? "Deleting..." : "Delete Booking"}
                     </button>
                   )}
 
+                  {/* Status Info Messages */}
                   {bookingDetailData.data.status === "PENDING" && (
                     <div className="flex items-start gap-2 p-3 bg-[rgba(255,193,7,0.1)] border border-[rgba(255,193,7,0.2)] rounded-lg">
-                      <AlertCircle className="w-4 h-4 text-[#FFC107] mt-0.5 flex-shrink-0" />
+                      <AlertCircle className="w-4 h-4 text-[#FFC107] mt-0.5 shrink-0" />
                       <p className="text-xs text-[#8B6914]">
                         This booking is awaiting approval. You can edit or
                         delete it before confirmation.
@@ -1992,7 +2025,7 @@ export function Itinerary({
 
                   {bookingDetailData.data.status === "CONFIRMED" && (
                     <div className="flex items-start gap-2 p-3 bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] rounded-lg">
-                      <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0" />
                       <p className="text-xs text-[#065F46]">
                         This booking has been confirmed. You can now create a
                         trip booking from this itinerary.
@@ -2004,7 +2037,7 @@ export function Itinerary({
                     bookingDetailData.data.status === "CANCELLED") &&
                     bookingDetailData.data.isResolved && (
                       <div className="flex items-start gap-2 p-3 bg-[rgba(100,116,139,0.1)] border border-[rgba(100,116,139,0.2)] rounded-lg">
-                        <AlertCircle className="w-4 h-4 text-[#64748B] mt-0.5 flex-shrink-0" />
+                        <AlertCircle className="w-4 h-4 text-[#64748B] mt-0.5 shrink-0" />
                         <p className="text-xs text-[#475569]">
                           This booking is{" "}
                           {bookingDetailData.data.status.toLowerCase()} and
@@ -2012,10 +2045,16 @@ export function Itinerary({
                         </p>
                       </div>
                     )}
+
+                  {/* Back to List Button */}
+                  <button
+                    onClick={() => setRequestedViewMode("list")}
+                    className="w-full h-11 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-[#334155] font-medium transition-all"
+                  >
+                    Back to List
+                  </button>
                 </div>
               }
-              breadcrumbPage="Requested"
-              isRequestedItinerary={true}
             />
           ) : (
             <div className="text-center py-12">
@@ -2348,7 +2387,7 @@ export function Itinerary({
                       className="w-full px-3 py-2 text-left hover:bg-[rgba(20,184,166,0.05)] border-b border-[#F1F5F9] last:border-0"
                     >
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#14B8A6] to-[#10B981] flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#14B8A6] to-[#10B981] flex items-center justify-center">
                           <span className="text-white text-xs font-medium">
                             {user.firstName?.charAt(0)}
                             {user.lastName?.charAt(0)}
@@ -2658,7 +2697,7 @@ export function Itinerary({
                       className="w-full px-3 py-2 text-left hover:bg-[rgba(10,122,255,0.05)] border-b border-[#F1F5F9] last:border-0"
                     >
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                           <span className="text-white text-xs font-medium">
                             {user.firstName?.charAt(0)}
                             {user.lastName?.charAt(0)}
@@ -2978,11 +3017,15 @@ export function Itinerary({
         title={
           itemToDelete?.type === "api"
             ? "Delete Tour Package"
+            : itemToDelete?.type === "booking"
+            ? "Delete Booking"
             : "Delete Itinerary"
         }
         description={
           itemToDelete?.type === "api"
             ? "Are you sure you want to delete this tour package? This will remove it from the system."
+            : itemToDelete?.type === "booking"
+            ? "Are you sure you want to delete this booking? This action cannot be undone and will permanently remove the booking from the system."
             : "Are you sure you want to delete this itinerary? This action cannot be undone."
         }
         icon={<Trash2 className="w-5 h-5 text-white" />}
@@ -3012,6 +3055,8 @@ export function Itinerary({
               <p className="text-xs text-[#64748B] pt-2">
                 {itemToDelete.type === "api"
                   ? "This will remove the package from your tour packages list."
+                  : itemToDelete.type === "booking"
+                  ? "This will permanently remove the booking and all associated data."
                   : "This will permanently remove the itinerary from your list."}
               </p>
             </div>
@@ -3022,7 +3067,7 @@ export function Itinerary({
           setItemToDelete(null);
           setDeleteConfirmOpen(false);
         }}
-        confirmText={isPending ? "Deleting..." : "Delete"}
+        confirmText={isPending || isDeletingBooking ? "Deleting..." : "Delete"}
         cancelText="Cancel"
         confirmVariant="destructive"
       />

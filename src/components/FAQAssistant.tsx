@@ -37,7 +37,12 @@ interface Message {
   content: string;
   timestamp: Date;
   suggestions?: string[];
-  quickActions?: { label: string; icon: any; action: string }[];
+  quickActions?: {
+    label: string;
+    icon?: any;
+    action: string;
+    type?: "NAVIGATION" | "QUERY";
+  }[];
   sources?: FAQSource[];
   confidence?: string;
 }
@@ -78,7 +83,7 @@ export function FAQAssistant({
           confidence: response.data.confidence,
           sources: response.data.sources || [],
           suggestions: getSuggestionsForMessage(inputValue, location.pathname),
-          quickActions: getQuickActionsForRequest(inputValue),
+          quickActions: response.data.actions || [],
         };
 
         setMessages((prev) => {
@@ -377,14 +382,31 @@ How can I assist you today?`,
     setTimeout(() => handleSendMessage(), 100);
   };
 
-  const handleQuickAction = (action: string) => {
-    if (action.startsWith("/")) {
-      navigate(action);
-      setIsOpen(false);
-      toast.success(`Navigating to ${getPageName(action)}`);
-    } else {
-      setInputValue(action);
+  const handleQuickAction = (
+    actionLabel: string,
+    actionObj: { action: string; type?: "NAVIGATION" | "QUERY" }
+  ) => {
+    if (actionObj.type === "NAVIGATION") {
+      // Handle navigation actions - redirect to path
+      if (actionObj.action.startsWith("/")) {
+        navigate(actionObj.action);
+        setIsOpen(false);
+        toast.success(`Navigating to ${getPageName(actionObj.action)}`);
+      }
+    } else if (actionObj.type === "QUERY") {
+      // Handle query actions - set as input and send message
+      setInputValue(actionObj.action);
       setTimeout(() => handleSendMessage(), 100);
+    } else {
+      // Fallback: auto-detect based on path format
+      if (actionObj.action.startsWith("/")) {
+        navigate(actionObj.action);
+        setIsOpen(false);
+        toast.success(`Navigating to ${getPageName(actionObj.action)}`);
+      } else {
+        setInputValue(actionObj.action);
+        setTimeout(() => handleSendMessage(), 100);
+      }
     }
   };
 
@@ -447,7 +469,7 @@ How can I assist you today?`,
               className="absolute bottom-full mb-3 right-0 px-3 py-2 rounded-lg text-white text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg"
               style={{ backgroundColor: "#1A2B4F" }}
             >
-              ROAMEO - System Assistant
+              ROAMEO - AI-Powered FAQ and System Assistant
               <div
                 className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent"
                 style={{ borderTopColor: "#1A2B4F" }}
@@ -512,7 +534,9 @@ How can I assist you today?`,
                       </h3>
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
-                    <p className="text-xs text-white/90">System Assistant</p>
+                    <p className="text-xs text-white/90">
+                      AI-Powered FAQ and System Assistant
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -682,6 +706,7 @@ How can I assist you today?`,
                         </motion.div>
 
                         {/* Suggestions */}
+                        {/* Suggestions - Enhanced Design */}
                         {message.suggestions &&
                           message.suggestions.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-2">
@@ -704,7 +729,6 @@ How can I assist you today?`,
                               ))}
                             </div>
                           )}
-
                         {/* Quick Actions */}
                         {message.quickActions &&
                           message.quickActions.length > 0 && (
@@ -717,7 +741,7 @@ How can I assist you today?`,
                                     whileHover={{ scale: 1.05, y: -2 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() =>
-                                      handleQuickAction(action.action)
+                                      handleQuickAction(action.label, action)
                                     }
                                     className="px-3 py-1.5 rounded-lg bg-gradient-to-br from-white to-gray-50 border border-[#E5E7EB] flex items-center gap-1.5 text-xs text-[#1A2B4F] transition-all"
                                     style={{
@@ -726,7 +750,7 @@ How can I assist you today?`,
                                         "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
                                     }}
                                   >
-                                    <Icon className="w-3 h-3" />
+                                    {Icon && <Icon className="w-3 h-3" />}
                                     {action.label}
                                   </motion.button>
                                 );
@@ -817,7 +841,7 @@ How can I assist you today?`,
                 </motion.div>
               </div>
               <p className="text-[10px] text-gray-500 mt-2 text-center">
-                Powered by BondVoyage FAQ System
+                Powered by Gemini and BondVoyage FAQ System
               </p>
             </div>
           </motion.div>

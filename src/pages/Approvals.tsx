@@ -24,6 +24,7 @@ import {
   Loader2,
   AlertCircle as AlertCircleIcon,
 } from "lucide-react";
+import { BookingDetailView } from "../components/BookingDetailView";
 import { ContentCard } from "../components/ContentCard";
 import { ItineraryDetailDisplay } from "../components/ItineraryDetailDisplay";
 import { Pagination } from "../components/Pagination";
@@ -134,60 +135,32 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
   };
 
   const transformBooking = (apiBooking: any) => {
-    let startDate, endDate, formattedDates;
+    const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
 
-    const start = apiBooking.startDate || apiBooking.itinerary?.startDate;
-    const end = apiBooking.endDate || apiBooking.itinerary?.endDate;
+    const startDate = apiBooking.startDate || apiBooking.itinerary?.startDate;
+    const endDate = apiBooking.endDate || apiBooking.itinerary?.endDate;
 
-    if (start && end) {
-      startDate = new Date(start).toISOString().split("T")[0];
-      endDate = new Date(end).toISOString().split("T")[0];
-      formattedDates = `${new Date(start).toLocaleDateString()} - ${new Date(
-        end
-      ).toLocaleDateString()}`;
-    } else {
-      startDate = new Date().toISOString().split("T")[0];
-      endDate = new Date().toISOString().split("T")[0];
-      formattedDates = "Date not available";
-    }
-
-    // Parse booked date
-    let bookedDate;
-    if (apiBooking.bookedDate) {
-      bookedDate = new Date(apiBooking.bookedDate).toISOString().split("T")[0];
-    } else if (apiBooking.createdAt) {
-      bookedDate = new Date(apiBooking.createdAt).toISOString().split("T")[0];
-    } else {
-      bookedDate = new Date().toISOString().split("T")[0];
-    }
-
-    // Parse total amount
-    const totalAmount = parseFloat(apiBooking.totalPrice || 0);
-
-    // Get customer information
-    const customerName =
-      apiBooking.customerName ||
-      apiBooking.itinerary?.userId ||
-      "Unknown Customer";
-    const customerEmail =
-      apiBooking.customerEmail || apiBooking.itinerary?.user?.email || "";
+    const customerName = apiBooking.customerName || "Unknown Customer";
+    const customerEmail = apiBooking.customerEmail || "";
     const customerMobile = apiBooking.customerMobile || "N/A";
 
     return {
       id: apiBooking.id,
-
       bookingCode: apiBooking.bookingCode,
       customer: customerName,
       email: customerEmail,
       mobile: customerMobile,
       destination: apiBooking.destination || apiBooking.itinerary?.destination,
-      dates: formattedDates,
+      itinerary: apiBooking.destination || apiBooking.itinerary?.destination,
       startDate: startDate,
       endDate: endDate,
       travelers: apiBooking.travelers || apiBooking.itinerary?.travelers || 1,
-      total: `₱${totalAmount.toLocaleString()}`,
       totalAmount: totalAmount,
-      bookedDate: bookedDate,
+      paid: 0, // This will be calculated from actual payments
+      totalPaid: 0, // This will be calculated from actual payments
+      paymentStatus: apiBooking.paymentStatus || "PENDING", // ✅ Use actual status from API
+      bookedDate: apiBooking.bookedDate || apiBooking.createdAt,
+      bookedDateObj: new Date(apiBooking.bookedDate || apiBooking.createdAt),
       status: apiBooking.status,
       bookingType: apiBooking.type,
       tourType:
@@ -195,19 +168,9 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
       rejectionReason: apiBooking.rejectionReason,
       rejectionResolution: apiBooking.rejectionResolution,
       resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
-      itineraryDetails:
-        apiBooking.itinerary?.days?.map((day: any) => ({
-          day: day.dayNumber,
-          title: `Day ${day.dayNumber}`,
-          activities:
-            day.activities?.map((act: any) => ({
-              time: act.time,
-              icon: getActivityIcon(act.title),
-              title: act.title,
-              description: act.description || "",
-              location: act.location || "",
-            })) || [],
-        })) || [],
+      paymentHistory: [],
+      bookingSource: apiBooking.type,
+      itineraryDetails: [],
     };
   };
 
@@ -237,7 +200,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
       setBreadcrumbs([
         { label: "Home", path: "/" },
         { label: "Approvals", path: "/approvals" },
-        { label: `Booking ${selectedBooking.id.substring(0, 8)}` },
+        { label: `Booking ${selectedBooking.bookingCode}` },
       ]);
     } else {
       resetBreadcrumbs();
@@ -496,7 +459,6 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
     );
   }
 
-  // Detail view
   if (viewMode === "detail") {
     if (isLoadingDetail) {
       return (
@@ -526,74 +488,72 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
     return (
       <>
         <style dangerouslySetInnerHTML={{ __html: highlightAnimation }} />
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleBackToList}
-              className="w-10 h-10 rounded-xl bg-white border-2 border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)] flex items-center justify-center transition-all"
-            >
-              <ChevronLeft className="w-5 h-5 text-[#64748B]" />
-            </button>
-            <div>
-              <h2 className="text-[#1A2B4F] font-semibold">
-                {selectedBooking.destination}
-              </h2>
-            </div>
-          </div>
-
-          {/* Booking Header Card */}
-          <div className="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-semibold">
-                    {selectedBooking.destination}
-                  </h1>
-                </div>
-                <div className="flex items-center gap-2 text-white/90">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-lg">{selectedBooking.destination}</span>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-white/80 text-sm mb-1">Booking ID</p>
-                <p className="text-2xl font-semibold">
-                  {selectedBooking.bookingCode}...
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-6">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                <Calendar className="w-5 h-5 mb-2 text-white/80" />
-                <p className="text-white/80 text-xs mb-1">Travel Dates</p>
-                <p className="font-medium">
-                  {formatDateRange(
-                    selectedBooking.startDate,
-                    selectedBooking.endDate
+        <BookingDetailView
+          booking={{
+            id: selectedBooking.id,
+            bookingCode: selectedBooking.bookingCode,
+            customer: selectedBooking.customer,
+            email: selectedBooking.email,
+            mobile: selectedBooking.mobile,
+            destination: selectedBooking.destination,
+            itinerary: selectedBooking.itinerary || selectedBooking.destination,
+            dates: formatDateRange(
+              selectedBooking.startDate,
+              selectedBooking.endDate
+            ),
+            travelers: selectedBooking.travelers,
+            total: `₱${selectedBooking.totalAmount.toLocaleString()}`,
+            totalAmount: selectedBooking.totalAmount,
+            paid: selectedBooking.paid || selectedBooking.totalPaid || 0,
+            paymentStatus: selectedBooking.paymentStatus,
+            bookedDate: selectedBooking.bookedDate,
+            tripStatus: selectedBooking.status,
+            rejectionReason: selectedBooking.rejectionReason || "",
+            rejectionResolution: selectedBooking.rejectionResolution || "",
+            resolutionStatus: selectedBooking.resolutionStatus || "unresolved",
+          }}
+          // Itinerary data
+          itinerary={bookingDetailData?.data?.itinerary!}
+          // Navigation
+          onBack={handleBackToList}
+          // Styling & Display
+          headerVariant="approval"
+          breadcrumbPage="Approvals"
+          isRequestedItinerary={false}
+          useBackButtonHeader={true}
+          backButtonSubtitle="Approval Details"
+          useBreadcrumbs={false}
+          // Custom action buttons
+          actionButtons={
+            <div className="space-y-3">
+              {/* Total Amount Edit Section */}
+              <div className="bg-linear-to-br from-[#F8FAFB] to-white rounded-xl p-4 border border-[#E5E7EB]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-[#64748B]">
+                    Total Amount
+                  </span>
+                  {!editingTotalAmount && (
+                    <button
+                      onClick={() =>
+                        handleStartEditTotalAmount(
+                          selectedBooking.totalAmount.toString()
+                        )
+                      }
+                      className="p-1.5 rounded-lg hover:bg-white/60 transition-colors group"
+                      title="Edit Total Amount"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-[#64748B] group-hover:text-[#0A7AFF]" />
+                    </button>
                   )}
-                </p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                <Users className="w-5 h-5 mb-2 text-white/80" />
-                <p className="text-white/80 text-xs mb-1">Travelers</p>
-                <p className="font-medium">
-                  {selectedBooking.travelers}{" "}
-                  {selectedBooking.travelers > 1 ? "People" : "Person"}
-                </p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                <CreditCard className="w-5 h-5 mb-2 text-white/80" />
-                <p className="text-white/80 text-xs mb-1">Total Amount</p>
+                </div>
                 {editingTotalAmount ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-white/90 text-sm">₱</span>
+                    <span className="text-sm text-[#64748B]">₱</span>
                     <input
                       type="number"
                       value={editedTotalAmount}
                       onChange={(e) => setEditedTotalAmount(e.target.value)}
-                      className="w-24 h-8 px-2 rounded-lg bg-white/20 border border-white/30 text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
+                      className="flex-1 h-9 px-3 rounded-lg border border-[#E5E7EB] text-[#1A2B4F] font-medium text-sm focus:outline-none focus:ring-2 focus:ring-[#0A7AFF]/20 focus:border-[#0A7AFF]"
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -606,7 +566,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                     />
                     <button
                       onClick={handleSaveTotalAmount}
-                      className="w-7 h-7 rounded-lg bg-[#10B981] hover:bg-[#059669] flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded-lg bg-[#10B981] hover:bg-[#059669] flex items-center justify-center transition-colors"
                       title="Save"
                     >
                       <Check className="w-4 h-4 text-white" />
@@ -616,90 +576,31 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                         setEditingTotalAmount(false);
                         setEditedTotalAmount("");
                       }}
-                      className="w-7 h-7 rounded-lg bg-[#FF6B6B] hover:bg-[#EF4444] flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded-lg bg-[#FF6B6B] hover:bg-[#EF4444] flex items-center justify-center transition-colors"
                       title="Cancel"
                     >
                       <X className="w-4 h-4 text-white" />
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{selectedBooking.total}</p>
-                    <button
-                      onClick={() =>
-                        handleStartEditTotalAmount(selectedBooking.total)
-                      }
-                      className="w-6 h-6 rounded-lg hover:bg-white/20 flex items-center justify-center transition-colors group"
-                      title="Edit Total Amount"
-                    >
-                      <Pencil className="w-3.5 h-3.5 text-white/60 group-hover:text-white transition-colors" />
-                    </button>
-                  </div>
+                  <p className="text-lg font-bold text-[#1A2B4F]">
+                    ₱{selectedBooking.totalAmount.toLocaleString()}
+                  </p>
                 )}
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                <Clock className="w-5 h-5 mb-2 text-white/80" />
-                <p className="text-white/80 text-xs mb-1">Booked On</p>
-                <p className="font-medium">{selectedBooking.bookedDate}</p>
-              </div>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-6">
-            {/* Left Column */}
-            <div className="space-y-6">
-              {/* Customer Information */}
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg">
-                      <Users className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-[#1A2B4F]">
-                      Customer Information
-                    </h3>
-                  </div>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <p className="text-xs text-[#64748B] mb-1">Full Name</p>
-                    <p className="text-[#1A2B4F] font-medium">
-                      {selectedBooking.customer}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B] mb-1">Email Address</p>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-[#0A7AFF]" />
-                      <p className="text-[#334155]">{selectedBooking.email}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B] mb-1">Mobile Number</p>
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-[#14B8A6]" />
-                      <p className="text-[#334155]">{selectedBooking.mobile}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Rejection Info */}
+              {/* Rejection Info for Rejected Tab */}
               {activeTab === "rejected" &&
                 selectedBooking.rejectionReason &&
                 selectedBooking.rejectionResolution && (
-                  <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[rgba(255,107,107,0.05)] to-white">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg">
-                          <AlertTriangle className="w-5 h-5 text-white" />
-                        </div>
-                        <h3 className="font-semibold text-[#FF6B6B]">
-                          Rejection Details
-                        </h3>
-                      </div>
+                  <div className="bg-linear-to-br from-[rgba(255,107,107,0.05)] to-white rounded-xl p-4 border border-[rgba(255,107,107,0.2)]">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertTriangle className="w-4 h-4 text-[#FF6B6B]" />
+                      <h4 className="font-semibold text-[#FF6B6B] text-sm">
+                        Rejection Details
+                      </h4>
                     </div>
-                    <div className="p-6 space-y-4">
+                    <div className="space-y-3">
                       <div>
                         <p className="text-xs font-semibold text-[#FF6B6B] mb-1">
                           Rejection Reason:
@@ -716,7 +617,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                           {selectedBooking.rejectionResolution}
                         </p>
                       </div>
-                      <div className="flex items-center justify-between pt-3 border-t border-[#E5E7EB]">
+                      <div className="flex items-center justify-between pt-2 border-t border-[rgba(255,107,107,0.2)]">
                         <p className="text-xs font-semibold text-[#64748B]">
                           Client Action Status:
                         </p>
@@ -725,20 +626,20 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                             onClick={() =>
                               handleMarkAsUnresolvedClick(selectedBooking)
                             }
-                            className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)] hover:bg-[rgba(16,185,129,0.15)] transition-all"
+                            className="px-2.5 py-1 rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)] hover:bg-[rgba(16,185,129,0.15)] transition-all"
                           >
                             <CheckCircle className="w-3 h-3 inline mr-1" />
-                            Resolved - Click to mark Unresolved
+                            Resolved
                           </button>
                         ) : (
                           <button
                             onClick={() =>
                               handleMarkAsResolved(selectedBooking.id)
                             }
-                            className="px-3 py-1.5 rounded-lg bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)] hover:bg-[rgba(255,152,0,0.15)] transition-all"
+                            className="px-2.5 py-1 rounded-lg bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)] hover:bg-[rgba(255,152,0,0.15)] transition-all"
                           >
                             <AlertTriangle className="w-3 h-3 inline mr-1" />
-                            Unresolved - Click to mark Resolved
+                            Unresolved
                           </button>
                         )}
                       </div>
@@ -746,257 +647,268 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                   </div>
                 )}
 
-              {/* Actions */}
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-6 space-y-3">
-                {activeTab !== "rejected" && (
-                  <>
-                    <button
-                      onClick={() => handleApproveClick(selectedBooking)}
-                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Approve Booking
-                    </button>
-                    <button
-                      onClick={() => handleRejectClick(selectedBooking)}
-                      className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white flex items-center justify-center gap-2 font-medium transition-all"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Reject Booking
-                    </button>
-                  </>
-                )}
-                {activeTab === "rejected" &&
-                  selectedBooking.resolutionStatus === "resolved" && (
-                    <button
-                      onClick={() =>
-                        handleReviewForApprovalClick(selectedBooking)
-                      }
-                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      Review for Approval
-                    </button>
-                  )}
-                <button
-                  onClick={handleBackToList}
-                  className="w-full h-11 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-[#334155] font-medium transition-all"
-                >
-                  Back to List
-                </button>
-              </div>
-            </div>
-
-            {/* Right Column - Itinerary */}
-            <div className="col-span-2">
-              {selectedBooking.itineraryDetails &&
-              selectedBooking.itineraryDetails.length > 0 ? (
-                <ItineraryDetailDisplay
-                  itinerary={selectedBooking.itineraryDetails}
-                />
+              {/* Action Buttons Based on Tab */}
+              {activeTab !== "rejected" ? (
+                // Pending Approvals Actions
+                <>
+                  <button
+                    onClick={() => handleApproveClick(selectedBooking)}
+                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Approve Booking
+                  </button>
+                  <button
+                    onClick={() => handleRejectClick(selectedBooking)}
+                    className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white flex items-center justify-center gap-2 font-medium transition-all"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Reject Booking
+                  </button>
+                </>
               ) : (
-                <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 text-center">
-                  <MapPin className="w-12 h-12 text-[#64748B] mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-[#1A2B4F] mb-2">
-                    No Itinerary Available
-                  </h3>
-                  <p className="text-sm text-[#64748B]">
-                    The itinerary details for this booking are not yet
-                    available.
-                  </p>
-                </div>
+                // Rejected Bookings Actions
+                selectedBooking.resolutionStatus === "resolved" && (
+                  <button
+                    onClick={() =>
+                      handleReviewForApprovalClick(selectedBooking)
+                    }
+                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Review for Approval
+                  </button>
+                )
               )}
+
+              {/* Back to List Button */}
+              <button
+                onClick={handleBackToList}
+                className="w-full h-11 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-[#334155] font-medium transition-all"
+              >
+                Back to List
+              </button>
             </div>
-          </div>
+          }
+        />
 
-          {/* Dialogs for Detail View */}
-          <ConfirmationModal
-            open={isApproveDialogOpen}
-            onOpenChange={setIsApproveDialogOpen}
-            title="Approve Booking"
-            description="This booking will be moved to active bookings."
-            icon={<CheckCircle className="w-5 h-5 text-white" />}
-            iconGradient="bg-gradient-to-br from-[#10B981] to-[#34D399]"
-            iconShadow="shadow-[#10B981]/20"
-            contentGradient="bg-gradient-to-br from-[rgba(16,185,129,0.08)] to-[rgba(16,185,129,0.12)]"
-            contentBorder="border-[rgba(16,185,129,0.2)]"
-            content={
-              <p className="text-sm text-[#334155]">
-                Approve booking for{" "}
-                <span className="font-semibold text-[#10B981]">
-                  {selectedBooking.customer}
-                </span>
-                ?
-              </p>
-            }
-            onConfirm={handleApproveConfirm}
-            onCancel={() => setIsApproveDialogOpen(false)}
-            confirmText="Approve Booking"
-            cancelText="Cancel"
-            confirmVariant="success"
-          />
-
-          <Dialog
-            open={isRejectDialogOpen}
-            onOpenChange={setIsRejectDialogOpen}
-          >
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF8787] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
-                    <XCircle className="w-5 h-5 text-white" />
+        {/* Keep All Existing Modals */}
+        <ConfirmationModal
+          open={isApproveDialogOpen}
+          onOpenChange={setIsApproveDialogOpen}
+          title="Approve Booking"
+          description="This booking will be moved to active bookings."
+          icon={<CheckCircle className="w-5 h-5 text-white" />}
+          iconGradient="bg-gradient-to-br from-[#10B981] to-[#34D399]"
+          iconShadow="shadow-[#10B981]/20"
+          contentGradient="bg-gradient-to-br from-[rgba(16,185,129,0.08)] to-[rgba(16,185,129,0.12)]"
+          contentBorder="border-[rgba(16,185,129,0.2)]"
+          content={
+            selectedBooking && (
+              <>
+                <p className="text-sm text-[#334155] leading-relaxed mb-4">
+                  Are you sure you want to approve the booking for{" "}
+                  <span className="font-semibold text-[#10B981]">
+                    {selectedBooking.customer}
+                  </span>
+                  ?
+                </p>
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[rgba(16,185,129,0.2)]">
+                  <div>
+                    <p className="text-xs text-[#64748B] mb-1">Booking ID</p>
+                    <p className="text-sm font-semibold text-[#0A7AFF]">
+                      {selectedBooking.bookingCode}
+                    </p>
                   </div>
-                  Reject Booking
-                </DialogTitle>
-                <DialogDescription>
-                  Provide a reason for rejection and specify what the client
-                  must do to resolve this issue.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-5 px-8 py-6">
-                <div>
-                  <Label
-                    htmlFor="rejection-reason"
-                    className="text-[#1A2B4F] mb-2 block"
-                  >
-                    Rejection Reason *
-                  </Label>
-                  <Textarea
-                    id="rejection-reason"
-                    placeholder="e.g., Incomplete payment documentation, Invalid travel dates..."
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    className="min-h-[80px] border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="rejection-resolution"
-                    className="text-[#1A2B4F] mb-2 block"
-                  >
-                    Required Action / Resolution *
-                  </Label>
-                  <Textarea
-                    id="rejection-resolution"
-                    placeholder="e.g., Please submit proof of payment or valid payment method..."
-                    value={rejectionResolution}
-                    onChange={(e) => setRejectionResolution(e.target.value)}
-                    className="min-h-[80px] border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
-                  />
-                </div>
-              </div>
-              <DialogFooter className="gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsRejectDialogOpen(false);
-                    setRejectionReason("");
-                    setRejectionResolution("");
-                  }}
-                  className="border-[#E5E7EB]"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleRejectConfirm}
-                  disabled={
-                    !rejectionReason.trim() || !rejectionResolution.trim()
-                  }
-                  className="bg-gradient-to-r from-[#FF6B6B] to-[#FF5252] hover:from-[#FF5252] hover:to-[#FF3B3B]"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Reject Booking
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog
-            open={isUnresolveDialogOpen}
-            onOpenChange={setIsUnresolveDialogOpen}
-          >
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF9800] to-[#FFB84D] flex items-center justify-center shadow-lg shadow-[#FF9800]/20">
-                    <AlertTriangle className="w-5 h-5 text-white" />
+                  <div>
+                    <p className="text-xs text-[#64748B] mb-1">Destination</p>
+                    <p className="text-sm font-medium text-[#334155]">
+                      {selectedBooking.destination}
+                    </p>
                   </div>
-                  Mark as Unresolved
-                </DialogTitle>
-                <DialogDescription>
-                  Update the rejection information and mark this booking as
-                  unresolved.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-5 px-8 py-6">
-                <div>
-                  <Label
-                    htmlFor="unresolve-reason"
-                    className="text-[#1A2B4F] mb-2 block"
-                  >
-                    Rejection Reason *
-                  </Label>
-                  <Textarea
-                    id="unresolve-reason"
-                    placeholder="e.g., Incomplete payment documentation..."
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    className="min-h-[80px] border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
-                  />
+                  <div>
+                    <p className="text-xs text-[#64748B] mb-1">Travelers</p>
+                    <p className="text-sm font-medium text-[#334155]">
+                      {selectedBooking.travelers}{" "}
+                      {selectedBooking.travelers > 1 ? "People" : "Person"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B] mb-1">Total Amount</p>
+                    <p className="text-sm font-semibold text-[#1A2B4F]">
+                      ₱{selectedBooking.totalAmount.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <Label
-                    htmlFor="unresolve-resolution"
-                    className="text-[#1A2B4F] mb-2 block"
-                  >
-                    Required Action / Resolution *
-                  </Label>
-                  <Textarea
-                    id="unresolve-resolution"
-                    placeholder="e.g., Please submit proof of payment..."
-                    value={rejectionResolution}
-                    onChange={(e) => setRejectionResolution(e.target.value)}
-                    className="min-h-[80px] border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
-                  />
-                </div>
-              </div>
-              <DialogFooter className="gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsUnresolveDialogOpen(false);
-                    setRejectionReason("");
-                    setRejectionResolution("");
-                  }}
-                  className="border-[#E5E7EB]"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleUnresolveConfirm}
-                  disabled={
-                    !rejectionReason.trim() || !rejectionResolution.trim()
-                  }
-                  className="bg-gradient-to-r from-[#FF9800] to-[#FFB84D] hover:from-[#FF8C00] hover:to-[#FFA836]"
-                >
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  Mark Unresolved
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </>
+            )
+          }
+          onConfirm={handleApproveConfirm}
+          onCancel={() => setIsApproveDialogOpen(false)}
+          confirmText="Approve Booking"
+          cancelText="Cancel"
+          confirmVariant="success"
+        />
 
-          <ConfirmationModal
-            open={isReviewForApprovalDialogOpen}
-            onOpenChange={setIsReviewForApprovalDialogOpen}
-            title="Review for Approval"
-            description="Move this resolved rejected booking back to pending approvals for reconsideration."
-            icon={<RotateCcw className="w-5 h-5 text-white" />}
-            iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
-            iconShadow="shadow-[#0A7AFF]/20"
-            contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)]"
-            contentBorder="border-[rgba(10,122,255,0.2)]"
-            content={
+        <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+          <DialogContent className="sm:max-w-125">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF6B6B] to-[#FF8787] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+                  <XCircle className="w-5 h-5 text-white" />
+                </div>
+                Reject Booking
+              </DialogTitle>
+              <DialogDescription>
+                Provide a reason for rejection and specify what the client must
+                do to resolve this issue.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-5 px-8 py-6">
+              <div>
+                <Label
+                  htmlFor="rejection-reason"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Rejection Reason *
+                </Label>
+                <Textarea
+                  id="rejection-reason"
+                  placeholder="e.g., Incomplete payment documentation, Invalid travel dates..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="min-h-20 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                />
+              </div>
+              <div>
+                <Label
+                  htmlFor="rejection-resolution"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Required Action / Resolution *
+                </Label>
+                <Textarea
+                  id="rejection-resolution"
+                  placeholder="e.g., Please submit proof of payment or valid payment method..."
+                  value={rejectionResolution}
+                  onChange={(e) => setRejectionResolution(e.target.value)}
+                  className="min-h-20 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsRejectDialogOpen(false);
+                  setRejectionReason("");
+                  setRejectionResolution("");
+                }}
+                className="border-[#E5E7EB]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRejectConfirm}
+                disabled={
+                  !rejectionReason.trim() || !rejectionResolution.trim()
+                }
+                className="bg-linear-to-r from-[#FF6B6B] to-[#FF5252] hover:from-[#FF5252] hover:to-[#FF3B3B]"
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                Reject Booking
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={isUnresolveDialogOpen}
+          onOpenChange={setIsUnresolveDialogOpen}
+        >
+          <DialogContent className="sm:max-w-125">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF9800] to-[#FFB84D] flex items-center justify-center shadow-lg shadow-[#FF9800]/20">
+                  <AlertTriangle className="w-5 h-5 text-white" />
+                </div>
+                Mark as Unresolved
+              </DialogTitle>
+              <DialogDescription>
+                Update the rejection information and mark this booking as
+                unresolved.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-5 px-8 py-6">
+              <div>
+                <Label
+                  htmlFor="unresolve-reason"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Rejection Reason *
+                </Label>
+                <Textarea
+                  id="unresolve-reason"
+                  placeholder="e.g., Incomplete payment documentation..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="min-h-20 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                />
+              </div>
+              <div>
+                <Label
+                  htmlFor="unresolve-resolution"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Required Action / Resolution *
+                </Label>
+                <Textarea
+                  id="unresolve-resolution"
+                  placeholder="e.g., Please submit proof of payment..."
+                  value={rejectionResolution}
+                  onChange={(e) => setRejectionResolution(e.target.value)}
+                  className="min-h-20 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsUnresolveDialogOpen(false);
+                  setRejectionReason("");
+                  setRejectionResolution("");
+                }}
+                className="border-[#E5E7EB]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUnresolveConfirm}
+                disabled={
+                  !rejectionReason.trim() || !rejectionResolution.trim()
+                }
+                className="bg-linear-to-r from-[#FF9800] to-[#FFB84D] hover:from-[#FF8C00] hover:to-[#FFA836]"
+              >
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Mark Unresolved
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <ConfirmationModal
+          open={isReviewForApprovalDialogOpen}
+          onOpenChange={setIsReviewForApprovalDialogOpen}
+          title="Review for Approval"
+          description="Move this resolved rejected booking back to pending approvals for reconsideration."
+          icon={<RotateCcw className="w-5 h-5 text-white" />}
+          iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
+          iconShadow="shadow-[#0A7AFF]/20"
+          contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)]"
+          contentBorder="border-[rgba(10,122,255,0.2)]"
+          content={
+            selectedBooking && (
               <p className="text-sm text-[#334155]">
                 Move booking for{" "}
                 <span className="font-semibold text-[#0A7AFF]">
@@ -1004,14 +916,14 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                 </span>{" "}
                 back to pending approvals?
               </p>
-            }
-            onConfirm={handleReconsiderApproval}
-            onCancel={() => setIsReviewForApprovalDialogOpen(false)}
-            confirmText="Review for Approval"
-            cancelText="Cancel"
-            confirmVariant="default"
-          />
-        </div>
+            )
+          }
+          onConfirm={handleReconsiderApproval}
+          onCancel={() => setIsReviewForApprovalDialogOpen(false)}
+          confirmText="Review for Approval"
+          cancelText="Cancel"
+          confirmVariant="default"
+        />
       </>
     );
   }
@@ -1027,7 +939,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
             onClick={() => handleTabChange("all")}
             className={`px-5 h-11 text-sm transition-colors ${
               activeTab === "all"
-                ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                 : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
             }`}
           >
@@ -1037,7 +949,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
             onClick={() => handleTabChange("byDate")}
             className={`px-5 h-11 text-sm transition-colors ${
               activeTab === "byDate"
-                ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                 : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
             }`}
           >
@@ -1047,7 +959,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
             onClick={() => handleTabChange("rejected")}
             className={`px-5 h-11 text-sm transition-colors ${
               activeTab === "rejected"
-                ? "font-semibold text-[#FF6B6B] border-b-[3px] border-[#FF6B6B] -mb-[2px]"
+                ? "font-semibold text-[#FF6B6B] border-b-[3px] border-[#FF6B6B] -mb-0.5"
                 : "font-medium text-[#64748B] hover:text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)]"
             }`}
           >
@@ -1094,7 +1006,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                         <span className="text-white text-lg">🎫</span>
                       </div>
                       <div>
@@ -1200,7 +1112,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                       <div>
                         <p className="text-xs text-[#64748B]">Total Amount</p>
                         <p className="text-sm text-[#334155] font-medium">
-                          {booking.total}
+                          {booking.totalAmount}
                         </p>
                       </div>
                     </div>
@@ -1233,13 +1145,42 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
           contentBorder="border-[rgba(16,185,129,0.2)]"
           content={
             selectedBooking && (
-              <p className="text-sm text-[#334155]">
-                Approve booking for{" "}
-                <span className="font-semibold text-[#10B981]">
-                  {selectedBooking.customer}
-                </span>
-                ?
-              </p>
+              <>
+                <p className="text-sm text-[#334155] leading-relaxed mb-4">
+                  Are you sure you want to approve the booking for{" "}
+                  <span className="font-semibold text-[#10B981]">
+                    {selectedBooking.customer}
+                  </span>
+                  ?
+                </p>
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[rgba(16,185,129,0.2)]">
+                  <div>
+                    <p className="text-xs text-[#64748B] mb-1">Booking ID</p>
+                    <p className="text-sm font-semibold text-[#0A7AFF]">
+                      {selectedBooking.bookingCode}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B] mb-1">Destination</p>
+                    <p className="text-sm font-medium text-[#334155]">
+                      {selectedBooking.destination}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B] mb-1">Travelers</p>
+                    <p className="text-sm font-medium text-[#334155]">
+                      {selectedBooking.travelers}{" "}
+                      {selectedBooking.travelers > 1 ? "People" : "Person"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B] mb-1">Total Amount</p>
+                    <p className="text-sm font-semibold text-[#1A2B4F]">
+                      {selectedBooking.totalAmount}
+                    </p>
+                  </div>
+                </div>
+              </>
             )
           }
           onConfirm={handleApproveConfirm}

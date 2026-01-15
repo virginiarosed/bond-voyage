@@ -20,6 +20,7 @@ import { DialogTitle, DialogDescription } from "./ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { SideType, useSide } from "../../SideContext";
 import { useRegister, useSendOTP, useVerifyOTP } from "../../../hooks/useAuth";
+import bondVoyageLogo from "../assets/40755770f782ee2806bf45fc8b364947bbbe25e5.png";
 
 interface SignUpModalProps {
   isOpen: boolean;
@@ -522,7 +523,7 @@ export function SignUpModal({
               {/* Left Column: Visual Hero */}
               <div className="relative hidden lg:block lg:w-[48%] overflow-hidden shrink-0">
                 <img
-                  src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1080&q=80"
+                  src="https://www.businesstoday.com.my/wp-content/uploads/2023/05/2-el-nido-gallery-img3.jpg"
                   alt="Travel Adventure"
                   className="w-full h-full object-cover brightness-75"
                 />
@@ -537,14 +538,14 @@ export function SignUpModal({
 
                 <div className="absolute inset-0 flex items-center justify-center p-8">
                   <div className="max-w-87.5 text-white">
-                    <div
-                      className="mb-6 h-10 w-auto text-2xl font-bold"
+                    <img
+                      src={bondVoyageLogo}
+                      alt="BondVoyage"
+                      className="mb-6 h-10 w-auto"
                       style={{
                         filter: "drop-shadow(0 2px 16px rgba(0,0,0,0.3))",
                       }}
-                    >
-                      BondVoyage
-                    </div>
+                    />
 
                     <h2
                       className="mb-3 text-white"
@@ -555,22 +556,21 @@ export function SignUpModal({
                         textShadow: "0 2px 16px rgba(0,0,0,0.3)",
                       }}
                     >
-                      Start Your Journey
+                      Smart Trip Planning Starts Here
                     </h2>
 
                     <p
                       className="mb-6 text-white opacity-95"
                       style={{ fontSize: "16px" }}
                     >
-                      Join thousands of travelers planning their dream
-                      adventures.
+                      Everything you need to plan and manage your trips—one smart platform.
                     </p>
 
                     <div className="flex flex-col gap-3">
                       {[
-                        "AI-powered itinerary builder",
-                        "Organize all your travel plans",
-                        "Collaborate with travel companions",
+                        "AI-assisted itineraries and smart trip planning",
+                        "Manage bookings and plans in one place",
+                        "Plan together using collaborative itineraries",
                       ].map((feature, i) => (
                         <div key={i} className="flex items-center gap-2">
                           <CheckCircle className="w-5 h-5 text-[#10B981] shrink-0" />
@@ -1200,30 +1200,6 @@ export function SignUpModal({
                             >
                               ×
                             </button>
-                          </div>
-                        )}
-
-                        {/* OTP Information */}
-                        {showOTPEmail && (
-                          <div className="mb-6 p-4 bg-linear-to-br from-[#F0F9FF] to-[#F0FDFA] rounded-xl border border-[#0A7AFF]/20">
-                            <div className="flex items-start gap-3 mb-3">
-                              <Mail className="w-5 h-5 text-[#0A7AFF] shrink-0 mt-0.5" />
-                              <div>
-                                <p
-                                  className="text-[#1A2B4F]"
-                                  style={{ fontSize: "13px", fontWeight: 600 }}
-                                >
-                                  Check Your Email
-                                </p>
-                                <p
-                                  className="text-[#64748B] mt-1"
-                                  style={{ fontSize: "12px" }}
-                                >
-                                  Enter the 6-digit code sent to your email
-                                  address
-                                </p>
-                              </div>
-                            </div>
                           </div>
                         )}
 
