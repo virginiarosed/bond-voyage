@@ -1509,6 +1509,7 @@ export function UserTravels() {
                   ref={(el) => (bookingRefs.current[travel.id] = el)}
                 >
                   <BookingListCard
+                    showShare
                     booking={{
                       id: travel.id,
                       customerName: travel.owner,
@@ -1527,6 +1528,11 @@ export function UserTravels() {
                     variant={
                       travel.status === "rejected" ? "rejected" : "default"
                     }
+                    onShare={(bookingCode, bookingId) => {
+                      setShareToken(bookingCode);
+                      setSelectedBookingId(bookingId);
+                      setShowShareQRModal(true);
+                    }}
                     userSide={true}
                     additionalBadges={
                       <>
@@ -1770,7 +1776,7 @@ export function UserTravels() {
               </div>
               <div className="flex items-center gap-2 mt-4">
                 <p className="text-sm text-muted-foreground">
-                  Share Token:{" "}
+                  Booking ID:{" "}
                   <span className="font-semibold text-card-foreground">
                     {shareToken}
                   </span>

@@ -7,7 +7,7 @@ import { Booking } from "../types/types";
 interface BookingListCardProps {
   booking: Booking;
   onViewDetails: (bookingId: string) => void;
-  onShare?: () => void;
+  onShare?: (bookingCode: string, bookingId: string) => void;
   showShare?: boolean;
   context?: "approvals" | "rejected" | "active" | "cancelled";
   activeTab?: "all" | "byDate" | "rejected";
@@ -37,7 +37,7 @@ export function BookingListCard({
 
   const handleShareClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onShare?.();
+    onShare?.(booking.bookingCode, booking.id);
   };
 
   const getStatusBadge = () => {
