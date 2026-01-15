@@ -75,7 +75,9 @@ import {
   Loader2,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useMediaQuery } from "react-responsive";
 import { ContentCard } from "../../components/ContentCard";
+import { BookingListCard } from "../../components/BookingListCard";
 import { BookingDetailView } from "../../components/BookingDetailView";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { capitalize } from "../../utils/helpers/capitalize";
@@ -198,6 +200,7 @@ export function UserTravels() {
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
   const bookingRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const queryClient = new QueryClient();
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [selectedTab, setSelectedTab] = useState<
     "draft" | "pending" | "rejected"
@@ -310,12 +313,21 @@ export function UserTravels() {
       status: selectedTab.toUpperCase(),
     });
 
-  const { data: selectedBookingData } = useBookingDetail(
-    selectedBookingId || "",
-    {
+  const {
+    data: sharedBookingsResponse,
+    isLoading: isLoadingSharedBookings,
+  } = useSharedBookings({
+    status: selectedTab.toUpperCase(),
+  });
+
+  const { data: selectedBookingData, isLoading: isLoadingDetail } =
+    useBookingDetail(selectedBookingId || "", {
       enabled: !!selectedBookingId && viewMode === "detail",
       queryKey: [queryKeys.bookings.detail],
     });
+
+  const isLoadingBookings =
+    isLoadingMyBookings || isLoadingSharedBookings || profileDataIsLoading;
 
   const submitBookingMutation = useSubmitBooking(selectedBookingId || "", {
     onSuccess: () => {
@@ -362,6 +374,17 @@ export function UserTravels() {
       });
     },
   });
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const parsedDate = new Date(dateString);
+    if (Number.isNaN(parsedDate.getTime())) return "";
+    return parsedDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   const mapBooking = (booking: any): TransformedBooking => {
     // Use the ownership from the API response if available, otherwise calculate it
@@ -430,15 +453,16 @@ export function UserTravels() {
   };
 
   const bookings: TransformedBooking[] = useMemo(() => {
+    const ownedBookings = (myBookingsResponse?.data || []).map(mapBooking);
+    const sharedBookings = (sharedBookingsResponse?.data || []).map(mapBooking);
+
+    const uniqueBookings = new Map<string, TransformedBooking>();
+    [...ownedBookings, ...sharedBookings].forEach((booking) => {
+      uniqueBookings.set(booking.id, booking);
     });
 
-    return ownedBookings;
-  }, [
-    myBookingsResponse?.data,
-    sharedBookingsResponse?.data,
-    profileData.id,
-    selectedFilter,
-  ]);
+    return Array.from(uniqueBookings.values());
+  }, [myBookingsResponse?.data, sharedBookingsResponse?.data, profileData.id]);
 
   const filteredTravels = useMemo(() => {
     return bookings.filter((booking) => {
@@ -1096,7 +1120,7 @@ export function UserTravels() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Dates:</span>
-                Are you sure you want to confirm this travel plan?
+                  <span className="font-medium">
                     {bookingDetail.dateRangeDisplay ||
                       (bookingDetail.startDate && bookingDetail.endDate
                         ? `${new Date(
