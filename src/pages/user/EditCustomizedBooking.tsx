@@ -1194,8 +1194,6 @@ export function EditCustomizedBooking() {
         </div>
       </ContentCard>
 
-<<<<<<<<< Temporary merge branch 1
-      {/* NEW: Route Optimization Panel - Show when eligible */}
       {daysEligibleForOptimization.length > 0 &&
         enrichmentCompleted.current && (
           <RouteOptimizationPanel
@@ -1206,14 +1204,12 @@ export function EditCustomizedBooking() {
             onAcceptOptimization={handleAcceptOptimization}
           />
         )}
-=========
       {/* Route Optimization Panel */}
       <RouteOptimizationPanel
         itineraryDays={itineraryDays}
         selectedDayId={selectedDayForRoute}
         onAcceptOptimization={handleAcceptOptimization}
       />
->>>>>>>>> Temporary merge branch 2
 
       {/* Day-by-Day Itinerary */}
       <ContentCard>
