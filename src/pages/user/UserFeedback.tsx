@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { useProfile } from "../../components/ProfileContext";
 import { FAQAssistant } from "../../components/FAQAssistant";
 import {
-  useFeedbackList,
+  useMyFeedback,
   useSubmitFeedback,
 } from "../../hooks/useFeedbackList";
 import { useMyBookings } from "../../hooks/useBookings";
@@ -53,6 +53,7 @@ interface FeedbackItem {
 
 interface AvailableTrip {
   id: string;
+  bookingCode: string;
   destination: string;
   tripName: string;
 }
@@ -77,11 +78,13 @@ export function UserFeedback() {
   const [selectedFeedbackForView, setSelectedFeedbackForView] =
     useState<FeedbackItem | null>(null);
 
-  // Fetch feedback data
-  const { data: feedbackData, isLoading: feedbackLoading } = useFeedbackList();
+  // Fetch feedback data (user's own feedback only)
+  const { data: feedbackData, isLoading: feedbackLoading } = useMyFeedback();
 
   // Fetch completed bookings for the dropdown
-  const { data: bookingsData } = useMyBookings({ status: "COMPLETED" });
+  const { data: bookingsData, isLoading: bookingsLoading } = useMyBookings({
+    status: "COMPLETED",
+  });
 
   // Submit feedback mutation
   const submitFeedbackMutation = useSubmitFeedback({
@@ -144,6 +147,7 @@ export function UserFeedback() {
 
     return bookingsData.data.map((booking: any) => ({
       id: booking.id,
+      bookingCode: booking.bookingCode,
       destination: booking.destination,
       tripName: booking.destination, // Use destination as trip name if no specific name
     }));
@@ -245,7 +249,7 @@ export function UserFeedback() {
 
   const unreadCount = feedbackItems.filter((item) => item.unread).length;
 
-  if (feedbackLoading) {
+  if (feedbackLoading || bookingsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0A7AFF]"></div>
@@ -535,8 +539,7 @@ export function UserFeedback() {
                   ) : (
                     availableTrips.map((trip) => (
                       <SelectItem key={trip.id} value={trip.id}>
-                        Booking #{trip.id.slice(0, 8).toUpperCase()} -{" "}
-                        {trip.tripName}
+                        Booking #{trip.bookingCode} - {trip.tripName}
                       </SelectItem>
                     ))
                   )}

@@ -793,36 +793,15 @@ export function CreateNewTravel() {
           </div>
         </div>
       </ContentCard>
-      {itineraryDays.some((day) => {
-        const validLocations = day.activities.filter(
-          (a) =>
-            a.location &&
-            a.locationData &&
-            typeof a.locationData.lat === "number" &&
-            typeof a.locationData.lng === "number"
-        );
-        return validLocations.length >= 2;
-      }) && (
-        <RouteOptimizationPanel
-          itineraryDays={itineraryDays}
-          selectedDayId={
-            selectedDayForRoute ||
-            itineraryDays.find((d) => {
-              const validLocations = d.activities.filter(
-                (a) =>
-                  a.location &&
-                  a.locationData &&
-                  typeof a.locationData.lat === "number" &&
-                  typeof a.locationData.lng === "number"
-              );
-              return validLocations.length >= 2;
-            })?.id
-          }
-          onAcceptOptimization={handleAcceptOptimization}
-        />
-      )}
 
-      {/* Travel Information */}
+      {/* Route Optimization Panel */}
+      <RouteOptimizationPanel
+        itineraryDays={itineraryDays}
+        selectedDayId={selectedDayForRoute}
+        onAcceptOptimization={handleAcceptOptimization}
+      />
+
+      {/* Travel Information */}}
       <ContentCard>
         <div className="mb-6">
           <h2 className="text-lg text-[#1A2B4F] font-semibold">
