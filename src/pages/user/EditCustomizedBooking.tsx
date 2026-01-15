@@ -1194,7 +1194,6 @@ export function EditCustomizedBooking() {
         </div>
       </ContentCard>
 
-      {/* NEW: Route Optimization Panel - Show when eligible */}
       {daysEligibleForOptimization.length > 0 &&
         enrichmentCompleted.current && (
           <RouteOptimizationPanel
@@ -1205,6 +1204,12 @@ export function EditCustomizedBooking() {
             onAcceptOptimization={handleAcceptOptimization}
           />
         )}
+      {/* Route Optimization Panel */}
+      <RouteOptimizationPanel
+        itineraryDays={itineraryDays}
+        selectedDayId={selectedDayForRoute}
+        onAcceptOptimization={handleAcceptOptimization}
+      />
 
       {/* Day-by-Day Itinerary */}
       <ContentCard>

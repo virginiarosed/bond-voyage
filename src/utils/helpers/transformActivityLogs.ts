@@ -6,6 +6,44 @@ interface RecentActivity {
   icon: string;
 }
 
+// Helper to determine icon from action code
+const getIconFromAction = (action: string): string => {
+  const actionLower = action.toLowerCase();
+
+  // Authentication
+  if (actionLower.includes("login")) return "login";
+  if (actionLower.includes("logout")) return "logout";
+  if (actionLower.includes("password")) return "user";
+
+  // Booking
+  if (actionLower.includes("booking_created")) return "booking";
+  if (actionLower.includes("booking_updated")) return "edit";
+  if (actionLower.includes("booking_cancelled")) return "cancel";
+  if (actionLower.includes("booking_completed")) return "check";
+  if (actionLower.includes("booking_approved")) return "approve";
+  if (actionLower.includes("booking_rejected")) return "reject";
+  if (actionLower.includes("booking")) return "booking";
+
+  // Itinerary
+  if (actionLower.includes("itinerary")) return "itinerary";
+
+  // User
+  if (actionLower.includes("user_created")) return "user";
+  if (actionLower.includes("user_updated") || actionLower.includes("profile")) return "user-edit";
+  if (actionLower.includes("user")) return "user";
+
+  // Payment
+  if (actionLower.includes("payment")) return "payment";
+
+  // Inquiry
+  if (actionLower.includes("inquiry")) return "inquiry";
+
+  // FAQ
+  if (actionLower.includes("faq")) return "faq";
+
+  return "default";
+};
+
 export const transformActivityLogs = (
   logs: ActivityLog[]
 ): RecentActivity[] => {
@@ -16,62 +54,9 @@ export const transformActivityLogs = (
   const activities: RecentActivity[] = [];
 
   logs.forEach((log) => {
-    let icon = "default";
-    let text = "";
-
-    switch (log.action) {
-      case "SEED":
-        icon = "seed";
-        text = `System: ${log.details}`;
-        break;
-      case "LOGIN":
-        icon = "login";
-        text = `${log.user.firstName} ${log.user.lastName} logged in`;
-        break;
-      case "LOGOUT":
-        icon = "logout";
-        text = `${log.user.firstName} ${log.user.lastName} logged out`;
-        break;
-      case "CREATE_BOOKING":
-        icon = "booking";
-        text = `${log.user.firstName} created a new booking`;
-        break;
-      case "UPDATE_BOOKING":
-        icon = "edit";
-        text = `${log.user.firstName} updated booking ${log.details}`;
-        break;
-      case "CANCEL_BOOKING":
-        icon = "cancel";
-        text = `${log.user.firstName} cancelled booking ${log.details}`;
-        break;
-      case "COMPLETE_BOOKING":
-        icon = "check";
-        text = `${log.user.firstName} completed booking ${log.details}`;
-        break;
-      case "CREATE_USER":
-        icon = "user";
-        text = `${log.user.firstName} created a new user account`;
-        break;
-      case "UPDATE_USER":
-        icon = "user-edit";
-        text = `${log.user.firstName} updated user profile`;
-        break;
-      case "CREATE_ITINERARY":
-        icon = "itinerary";
-        text = `${log.user.firstName} created new itinerary`;
-        break;
-      case "APPROVE_BOOKING":
-        icon = "approve";
-        text = `${log.user.firstName} approved booking ${log.details}`;
-        break;
-      case "REJECT_BOOKING":
-        icon = "reject";
-        text = `${log.user.firstName} rejected booking ${log.details}`;
-        break;
-      default:
-        icon = "default";
-        text = `${log.user.firstName}: ${log.action} - ${log.details}`;
-    }
+    const icon = getIconFromAction(log.action);
+    // Use the human-readable message from details (set by backend)
+    const text = log.details || `${log.user.firstName} ${log.user.lastName}: ${log.action}`;
 
     activities.push({
       id: log.id,

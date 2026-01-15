@@ -32,6 +32,10 @@ import { FAQAssistant } from "../../components/FAQAssistant";
 import {
   useNotifications,
   useMarkNotificationRead,
+  useMarkNotificationUnread,
+  useDeleteNotification,
+  useMarkAllNotificationsRead,
+  useClearAllReadNotifications,
 } from "../../hooks/useNotifications";
 import { INotification } from "../../types/types";
 import { useMediaQuery } from "react-responsive";
@@ -58,21 +62,68 @@ export function UserNotifications() {
   const { data: notificationsResponse, isLoading, error } = useNotifications();
   const notifications = notificationsResponse?.data?.items || [];
 
+  // Initialize mutation hooks at component level (React hooks rules)
+  const markReadMutation = useMarkNotificationRead({
+    onSuccess: () => {
+      toast.success("Notification marked as read!");
+    },
+    onError: () => {
+      toast.error("Failed to mark notification as read");
+    },
+  });
+
+  const markUnreadMutation = useMarkNotificationUnread({
+    onSuccess: () => {
+      toast.success("Notification marked as unread!");
+    },
+    onError: () => {
+      toast.error("Failed to mark notification as unread");
+    },
+  });
+
+  const deleteMutation = useDeleteNotification({
+    onSuccess: () => {
+      toast.success("Notification deleted!");
+      setDeleteConfirmOpen(false);
+      setNotificationToDelete(null);
+    },
+    onError: () => {
+      toast.error("Failed to delete notification");
+    },
+  });
+
+  const markAllReadMutation = useMarkAllNotificationsRead({
+    onSuccess: () => {
+      toast.success("All notifications marked as read!");
+      setMarkAllReadModalOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to mark all notifications as read");
+    },
+  });
+
+  const clearAllReadMutation = useClearAllReadNotifications({
+    onSuccess: () => {
+      toast.success("All read notifications cleared!");
+      setClearAllModalOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to clear read notifications");
+    },
+  });
+
+  // Check if any mutation is in progress
+  const isProcessingAction =
+    markReadMutation.isPending ||
+    markUnreadMutation.isPending ||
+    deleteMutation.isPending;
+
   const handleMarkAsRead = (notificationId: string) => {
-    const markReadMutation = useMarkNotificationRead(notificationId, {
-      onSuccess: () => {
-        toast.success("Notification marked as read!");
-      },
-      onError: () => {
-        toast.error("Failed to mark notification as read");
-      },
-    });
-    markReadMutation.mutate();
+    markReadMutation.mutate(notificationId);
   };
 
-  const handleMarkAsUnread = (id: string) => {
-    // TODO: Implement unmark as read API endpoint and mutation
-    toast.info("Mark as unread functionality to be implemented");
+  const handleMarkAsUnread = (notificationId: string) => {
+    markUnreadMutation.mutate(notificationId);
   };
 
   const handleDeleteClick = (notification: INotification) => {
@@ -82,23 +133,16 @@ export function UserNotifications() {
 
   const handleConfirmDelete = () => {
     if (notificationToDelete) {
-      // TODO: Implement delete notification API endpoint and mutation
-      toast.info("Delete functionality to be implemented");
+      deleteMutation.mutate(notificationToDelete.id);
     }
-    setDeleteConfirmOpen(false);
-    setNotificationToDelete(null);
   };
 
   const handleMarkAllRead = () => {
-    // TODO: Implement mark all as read API endpoint
-    toast.info("Mark all as read functionality to be implemented");
-    setMarkAllReadModalOpen(false);
+    markAllReadMutation.mutate();
   };
 
   const handleClearAll = () => {
-    // TODO: Implement clear all read notifications API endpoint
-    toast.info("Clear all functionality to be implemented");
-    setClearAllModalOpen(false);
+    clearAllReadMutation.mutate();
   };
 
   const toggleTypeFilter = (type: NotificationType) => {
@@ -219,7 +263,10 @@ export function UserNotifications() {
         if (selectedTab === "unread" && notif.isRead) return false;
 
         // Type filter
-        if (typeFilters.length > 0 && !typeFilters.includes(notif.type))
+        if (
+          typeFilters.length > 0 &&
+          !typeFilters.includes(notif.type as NotificationType)
+        )
           return false;
 
         return true;
@@ -259,7 +306,7 @@ export function UserNotifications() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
             <Bell className="w-8 h-8 text-[#0A7AFF] animate-pulse" />
           </div>
           <p className="text-sm text-[#64748B]">Loading notifications...</p>
@@ -272,7 +319,7 @@ export function UserNotifications() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(255,107,107,0.1)] to-[rgba(239,68,68,0.1)] flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(255,107,107,0.1)] to-[rgba(239,68,68,0.1)] flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-[#FF6B6B]" />
           </div>
           <p className="text-sm text-[#FF6B6B] font-medium mb-2">
@@ -287,112 +334,138 @@ export function UserNotifications() {
   return (
     <div>
       {/* Stats Row - Responsive with mobile-specific layout */}
-<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-  {/* Mobile: First row - Total Notifications full width */}
-  <div className="sm:hidden">
-    <StatCard
-      icon={Bell}
-      label="Total Notifications"
-      value={notifications.length.toString()}
-      gradientFrom="#0A7AFF"
-      gradientTo="#3B9EFF"
-    />
-  </div>
-  
-  {/* Mobile: Second row - Unread and Today side by side */}
-  <div className="sm:hidden grid grid-cols-2 gap-4">
-    <StatCard
-      icon={Clock}
-      label="Unread"
-      value={unreadCount.toString()}
-      gradientFrom="#FF6B6B"
-      gradientTo="#FB7185"
-    />
-    <StatCard
-      icon={CheckCircle}
-      label="Today"
-      value={todayCount.toString()}
-      gradientFrom="#10B981"
-      gradientTo="#14B8A6"
-    />
-  </div>
-  
-  {/* Desktop: All three cards in one row (original layout) */}
-  <div className="hidden sm:block">
-    <StatCard
-      icon={Bell}
-      label="Total Notifications"
-      value={notifications.length.toString()}
-      gradientFrom="#0A7AFF"
-      gradientTo="#3B9EFF"
-    />
-  </div>
-  <div className="hidden sm:block">
-    <StatCard
-      icon={Clock}
-      label="Unread"
-      value={unreadCount.toString()}
-      gradientFrom="#FF6B6B"
-      gradientTo="#FB7185"
-    />
-  </div>
-  <div className="hidden sm:block">
-    <StatCard
-      icon={CheckCircle}
-      label="Today"
-      value={todayCount.toString()}
-      gradientFrom="#10B981"
-      gradientTo="#14B8A6"
-    />
-  </div>
-</div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+        {/* Mobile: First row - Total Notifications full width */}
+        <div className="sm:hidden">
+          <StatCard
+            icon={Bell}
+            label="Total Notifications"
+            value={notifications.length.toString()}
+            gradientFrom="#0A7AFF"
+            gradientTo="#3B9EFF"
+          />
+        </div>
+
+        {/* Mobile: Second row - Unread and Today side by side */}
+        <div className="sm:hidden grid grid-cols-2 gap-4">
+          <StatCard
+            icon={Clock}
+            label="Unread"
+            value={unreadCount.toString()}
+            gradientFrom="#FF6B6B"
+            gradientTo="#FB7185"
+          />
+          <StatCard
+            icon={CheckCircle}
+            label="Today"
+            value={todayCount.toString()}
+            gradientFrom="#10B981"
+            gradientTo="#14B8A6"
+          />
+        </div>
+
+        {/* Desktop: All three cards in one row (original layout) */}
+        <div className="hidden sm:block">
+          <StatCard
+            icon={Bell}
+            label="Total Notifications"
+            value={notifications.length.toString()}
+            gradientFrom="#0A7AFF"
+            gradientTo="#3B9EFF"
+          />
+        </div>
+        <div className="hidden sm:block">
+          <StatCard
+            icon={Clock}
+            label="Unread"
+            value={unreadCount.toString()}
+            gradientFrom="#FF6B6B"
+            gradientTo="#FB7185"
+          />
+        </div>
+        <div className="hidden sm:block">
+          <StatCard
+            icon={CheckCircle}
+            label="Today"
+            value={todayCount.toString()}
+            gradientFrom="#10B981"
+            gradientTo="#14B8A6"
+          />
+        </div>
+      </div>
 
       <ContentCard
-  title={`${selectedTab === "all" ? "All" : "Unread"} Notifications (${
-    filteredNotifications.length
-  })`}
-  action={
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full">
-      {/* Mobile: Full width buttons on same row */}
-      <div className="sm:hidden grid grid-cols-2 gap-2 w-full">
-        <button
-          onClick={() => setMarkAllReadModalOpen(true)}
-          disabled={unreadCount === 0}
-          className="h-10 rounded-[20px] bg-white dark:bg-transparent border-2 border-[#0A7AFF] dark:border-[#0A7AFF] text-[#0A7AFF] dark:text-[#0A7AFF] text-sm font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:bg-[rgba(10,122,255,0.05)] dark:hover:bg-[rgba(10,122,255,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <CheckCheck className="w-4 h-4" />
-          <span>Mark Read</span>
-        </button>
-        <button
-          onClick={() => setClearAllModalOpen(true)}
-          className="h-10 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)]"
-        >
-          <Trash2 className="w-4 h-4" />
-          <span>Clear</span>
-        </button>
-      </div>
-      
-      {/* Desktop: Original layout */}
-      <div className="hidden sm:flex items-center gap-3">
-        <button
-          onClick={() => setMarkAllReadModalOpen(true)}
-          disabled={unreadCount === 0}
-          className="h-10 px-5 rounded-[20px] bg-white dark:bg-transparent border-2 border-[#0A7AFF] dark:border-[#0A7AFF] text-[#0A7AFF] dark:text-[#0A7AFF] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(10,122,255,0.05)] dark:hover:bg-[rgba(10,122,255,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <CheckCheck className="w-4 h-4" />
-          Mark All Read
-        </button>
-        <button
-          onClick={() => setClearAllModalOpen(true)}
-          className="h-10 px-5 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)]"
-        >
-          <Trash2 className="w-4 h-4" />
-          Clear Read
-        </button>
-      </div>
-    </div>
-  }
->
+        title={`${selectedTab === "all" ? "All" : "Unread"} Notifications (${
+          filteredNotifications.length
+        })`}
+        action={
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full">
+            {/* Mobile: Full width buttons on same row */}
+            <div className="sm:hidden grid grid-cols-2 gap-2 w-full">
+              <button
+                onClick={() => setMarkAllReadModalOpen(true)}
+                disabled={unreadCount === 0}
+                className="h-10 rounded-[20px] bg-white dark:bg-transparent border-2 border-[#0A7AFF] dark:border-[#0A7AFF] text-[#0A7AFF] dark:text-[#0A7AFF] text-sm font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:bg-[rgba(10,122,255,0.05)] dark:hover:bg-[rgba(10,122,255,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <CheckCheck className="w-4 h-4" />
+                <span>Mark Read</span>
+              </button>
+              <button
+                onClick={() => setClearAllModalOpen(true)}
+                disabled={
+                  clearAllReadMutation.isPending ||
+                  notifications.filter((n) => n.isRead).length === 0
+                }
+                className="h-10 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Clear</span>
+              </button>
+            </div>
+
+            {/* Desktop: Original layout */}
+            <div className="hidden sm:flex items-center gap-3">
+              <button
+                onClick={() => setMarkAllReadModalOpen(true)}
+                disabled={unreadCount === 0 || markAllReadMutation.isPending}
+                className="h-10 px-5 rounded-[20px] bg-white dark:bg-transparent border-2 border-[#0A7AFF] dark:border-[#0A7AFF] text-[#0A7AFF] dark:text-[#0A7AFF] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(10,122,255,0.05)] dark:hover:bg-[rgba(10,122,255,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {markAllReadMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-[#0A7AFF] border-t-transparent rounded-full animate-spin"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCheck className="w-4 h-4" />
+                    Mark All Read
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setClearAllModalOpen(true)}
+                disabled={
+                  clearAllReadMutation.isPending ||
+                  notifications.filter((n) => n.isRead).length === 0
+                }
+                className="h-10 px-5 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {clearAllReadMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Clear Read
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        }
+      >
         {/* Tabs and Filter - Responsive */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-1 border-b-2 border-[#E5E7EB] self-start">
@@ -400,7 +473,7 @@ export function UserNotifications() {
               onClick={() => setSelectedTab("all")}
               className={`px-4 sm:px-5 h-10 sm:h-11 text-sm transition-colors whitespace-nowrap ${
                 selectedTab === "all"
-                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
@@ -410,7 +483,7 @@ export function UserNotifications() {
               onClick={() => setSelectedTab("unread")}
               className={`px-4 sm:px-5 h-10 sm:h-11 text-sm transition-colors whitespace-nowrap ${
                 selectedTab === "unread"
-                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
@@ -448,7 +521,7 @@ export function UserNotifications() {
                     </button>
                   )}
                 </div>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                <div className="space-y-2 max-h-100 overflow-y-auto">
                   {notificationTypes.map(({ type, label, icon: Icon }) => (
                     <label
                       key={type}
@@ -477,7 +550,7 @@ export function UserNotifications() {
         <div className="space-y-3">
           {filteredNotifications.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
                 <Bell className="w-8 h-8 text-[#0A7AFF]" />
               </div>
               <h3 className="font-semibold text-[#1A2B4F] mb-2">
@@ -491,9 +564,15 @@ export function UserNotifications() {
             </div>
           ) : (
             filteredNotifications.map((notification) => {
-              const Icon = getNotificationIcon(notification.type);
-              const colors = getNotificationColor(notification.type);
-              const priority = getPriorityFromType(notification.type);
+              const Icon = getNotificationIcon(
+                notification.type as NotificationType
+              );
+              const colors = getNotificationColor(
+                notification.type as NotificationType
+              );
+              const priority = getPriorityFromType(
+                notification.type as NotificationType
+              );
 
               return (
                 <div
@@ -506,7 +585,7 @@ export function UserNotifications() {
                 >
                   <div className="flex items-start gap-3 sm:gap-4">
                     <div
-                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow} flex-shrink-0`}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-linear-to-br ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow} shrink-0`}
                     >
                       <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
@@ -525,7 +604,7 @@ export function UserNotifications() {
                               {notification.title}
                             </h3>
                             {!notification.isRead && (
-                              <span className="w-2 h-2 rounded-full bg-[#0A7AFF] flex-shrink-0" />
+                              <span className="w-2 h-2 rounded-full bg-[#0A7AFF] shrink-0" />
                             )}
                           </div>
                           <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed mb-2 line-clamp-2">
@@ -559,10 +638,13 @@ export function UserNotifications() {
                               e.stopPropagation();
                               handleMarkAsRead(notification.id);
                             }}
-                            className="flex-1 sm:flex-none h-8 px-3 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-all"
+                            disabled={isProcessingAction}
+                            className="flex-1 sm:flex-none h-8 px-3 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <CheckCircle className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Mark as Read</span>
+                            <span className="hidden sm:inline">
+                              Mark as Read
+                            </span>
                             <span className="sm:hidden">Read</span>
                           </button>
                         ) : (
@@ -571,10 +653,13 @@ export function UserNotifications() {
                               e.stopPropagation();
                               handleMarkAsUnread(notification.id);
                             }}
-                            className="flex-1 sm:flex-none h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#64748B] text-xs font-medium flex items-center justify-center gap-1.5 hover:border-[#0A7AFF] hover:text-[#0A7AFF] transition-colors"
+                            disabled={isProcessingAction}
+                            className="flex-1 sm:flex-none h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#64748B] text-xs font-medium flex items-center justify-center gap-1.5 hover:border-[#0A7AFF] hover:text-[#0A7AFF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Bell className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Mark as Unread</span>
+                            <span className="hidden sm:inline">
+                              Mark as Unread
+                            </span>
                             <span className="sm:hidden">Unread</span>
                           </button>
                         )}
@@ -583,7 +668,8 @@ export function UserNotifications() {
                             e.stopPropagation();
                             handleDeleteClick(notification);
                           }}
-                          className="flex-1 sm:flex-none h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#FF6B6B] text-xs font-medium flex items-center justify-center gap-1.5 hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] transition-colors"
+                          disabled={isProcessingAction}
+                          className="flex-1 sm:flex-none h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#FF6B6B] text-xs font-medium flex items-center justify-center gap-1.5 hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">Delete</span>
@@ -611,17 +697,27 @@ export function UserNotifications() {
         contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)]"
         contentBorder="border-[rgba(10,122,255,0.2)]"
         content={
-          <p className="text-sm text-[#334155] leading-relaxed">
-            Are you sure you want to mark all{" "}
-            <span className="font-semibold text-[#0A7AFF]">
-              {unreadCount} unread notifications
-            </span>{" "}
-            as read?
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-[#334155] leading-relaxed">
+              Are you sure you want to mark all{" "}
+              <span className="font-semibold text-[#0A7AFF]">
+                {unreadCount} unread notifications
+              </span>{" "}
+              as read?
+            </p>
+            {markAllReadMutation.isPending && (
+              <div className="flex items-center justify-center py-2">
+                <div className="w-6 h-6 border-2 border-[#0A7AFF] border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-sm text-[#64748B]">Processing...</span>
+              </div>
+            )}
+          </div>
         }
         onConfirm={handleMarkAllRead}
         onCancel={() => setMarkAllReadModalOpen(false)}
-        confirmText="Mark All Read"
+        confirmText={
+          markAllReadMutation.isPending ? "Processing..." : "Mark All Read"
+        }
         cancelText="Cancel"
         confirmVariant="default"
       />
@@ -638,17 +734,28 @@ export function UserNotifications() {
         contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(239,68,68,0.12)]"
         contentBorder="border-[rgba(255,107,107,0.2)]"
         content={
-          <p className="text-sm text-[#334155] leading-relaxed">
-            Are you sure you want to delete all{" "}
-            <span className="font-semibold text-[#FF6B6B]">
-              {notifications.filter((n) => n.isRead).length} read notifications
-            </span>
-            ? This action cannot be undone.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-[#334155] leading-relaxed">
+              Are you sure you want to delete all{" "}
+              <span className="font-semibold text-[#FF6B6B]">
+                {notifications.filter((n) => n.isRead).length} read
+                notifications
+              </span>
+              ? This action cannot be undone.
+            </p>
+            {clearAllReadMutation.isPending && (
+              <div className="flex items-center justify-center py-2">
+                <div className="w-6 h-6 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-sm text-[#64748B]">Processing...</span>
+              </div>
+            )}
+          </div>
         }
         onConfirm={handleClearAll}
         onCancel={() => setClearAllModalOpen(false)}
-        confirmText="Clear All"
+        confirmText={
+          clearAllReadMutation.isPending ? "Processing..." : "Clear All"
+        }
         cancelText="Cancel"
         confirmVariant="destructive"
       />
@@ -679,6 +786,12 @@ export function UserNotifications() {
                   {notificationToDelete.message}
                 </p>
               </div>
+              {deleteMutation.isPending && (
+                <div className="flex items-center justify-center py-2">
+                  <div className="w-6 h-6 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin mr-2"></div>
+                  <span className="text-sm text-[#64748B]">Deleting...</span>
+                </div>
+              )}
             </div>
           ) : null
         }
@@ -687,7 +800,9 @@ export function UserNotifications() {
           setDeleteConfirmOpen(false);
           setNotificationToDelete(null);
         }}
-        confirmText="Delete Notification"
+        confirmText={
+          deleteMutation.isPending ? "Deleting..." : "Delete Notification"
+        }
         cancelText="Cancel"
         confirmVariant="destructive"
       />

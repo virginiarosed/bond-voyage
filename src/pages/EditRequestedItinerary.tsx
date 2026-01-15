@@ -2380,57 +2380,35 @@ export function EditRequestedItinerary() {
         </motion.div>
       )}
 
-      {itineraryDays.some((day) => {
-        const validLocations = day.activities.filter(
-          (a) =>
-            a.location &&
-            a.locationData &&
-            typeof a.locationData.lat === "number" &&
-            typeof a.locationData.lng === "number"
-        );
-        return validLocations.length >= 2;
-      }) && (
-        <RouteOptimizationPanel
-          itineraryDays={itineraryDays}
-          selectedDayId={
-            selectedDayForRoute ||
-            itineraryDays.find((d) => {
-              const validLocations = d.activities.filter(
-                (a) =>
-                  a.location &&
-                  a.locationData &&
-                  typeof a.locationData.lat === "number" &&
-                  typeof a.locationData.lng === "number"
-              );
-              return validLocations.length >= 2;
-            })?.id
-          }
-          onAcceptOptimization={(dayId, optimizedActivities) => {
-            // apply optimized activities
-            setItineraryDays((prev) =>
-              prev.map((day) =>
-                day.id === dayId
-                  ? {
-                      ...day,
-                      activities: optimizedActivities.map(
-                        (activity, index) => ({
-                          ...activity,
-                          order: index,
-                        })
-                      ),
-                    }
-                  : day
-              )
-            );
-            toast.success("Route Optimized", {
-              description: `Activities for Day ${
-                dayId.split("-")[1]
-              } have been reordered for optimal routing.`,
-            });
-            setHasUnsavedChanges(true);
-          }}
-        />
-      )}
+      {/* Route Optimization Panel */}
+      <RouteOptimizationPanel
+        itineraryDays={itineraryDays}
+        selectedDayId={selectedDayForRoute}
+        onAcceptOptimization={(dayId, optimizedActivities) => {
+          // apply optimized activities
+          setItineraryDays((prev) =>
+            prev.map((day) =>
+              day.id === dayId
+                ? {
+                    ...day,
+                    activities: optimizedActivities.map(
+                      (activity, index) => ({
+                        ...activity,
+                        order: index,
+                      })
+                    ),
+                  }
+                : day
+            )
+          );
+          toast.success("Route Optimized", {
+            description: `Activities for Day ${
+              dayId.split("-")[1]
+            } have been reordered for optimal routing.`,
+          });
+          setHasUnsavedChanges(true);
+        }}
+      />
 
       {/* Day-by-Day Itinerary */}
       <ContentCard>

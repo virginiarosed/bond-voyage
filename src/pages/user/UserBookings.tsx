@@ -423,7 +423,7 @@ export function UserBookings() {
             <div className="text-right">
               <p className="text-white/80 text-sm mb-1">Booking ID</p>
               <p className="text-2xl font-semibold">
-                {selectedBooking.id.substring(0, 8)}...
+                {selectedBooking.bookingCode}
               </p>
             </div>
           </div>

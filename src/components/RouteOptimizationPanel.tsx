@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Route,
   Sparkles,
+  Zap,
   ArrowRight,
   CheckCircle2,
   Calendar,
@@ -18,7 +19,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import { useOptimizeRoute, useCalculateRoute } from "../hooks/useOptimizeRoute";
 import { isMeaningfulLocation } from "../utils/helpers/isMeaningFulLocation";
-import type { Place, RouteSelectionMeta } from "../types/types";
+import type { Place } from "../types/types";
 import "leaflet/dist/leaflet.css";
 import * as L from "leaflet";
 
@@ -53,7 +54,7 @@ interface RouteAnalysis {
   originalDistance: number;
   optimizedDistance: number;
   kmSaved: number;
-  baselineMeta?: RouteSelectionMeta;
+  optimizedOrder?: number[];
   routeGeometry?: {
     type: string;
     coordinates: number[][][];
@@ -62,12 +63,7 @@ interface RouteAnalysis {
     type: string;
     coordinates: number[][][];
   };
-  savings?: {
-    distance: number;
-    distancePercent: number;
-    time?: number;
-    timePercent?: number;
-  }
+  totalTime?: number;
 }
 
 interface DayAnalysis {
@@ -75,7 +71,6 @@ interface DayAnalysis {
   optimizedActivities: Activity[];
   routeAnalysis: RouteAnalysis;
   isLoading?: boolean;
-  activeRoute: "original" | "optimized";
 }
 
 interface MapInstance {
@@ -83,12 +78,9 @@ interface MapInstance {
   L: any;
   originalMarkers: any[];
   optimizedMarkers: any[];
-  originalPolyline: any;
-  optimizedPolyline: any;
+  originalPolylines: any[];
+  optimizedPolylines: any[];
 }
-
-const toFiniteNumber = (value: unknown): number =>
-  typeof value === "number" && Number.isFinite(value) ? value : 0;
 
 export function RouteOptimizationPanel({
   itineraryDays,
@@ -109,11 +101,13 @@ export function RouteOptimizationPanel({
   const optimizationTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const pendingOptimizationsRef = useRef<Set<string>>(new Set());
   const processedDaysRef = useRef<Map<string, string>>(new Map());
+  const appliedDaysRef = useRef<Map<string, string>>(new Map()); // tracks dayId -> fingerprint when applied
 
   const { mutate: optimizeRoute } = useOptimizeRoute();
   const { mutate: calculateRoute } = useCalculateRoute();
 
-  const daysWithValidLocations = useMemo(
+  // Days with 4+ valid locations (required for optimization)
+  const daysReadyForOptimization = useMemo(
     () =>
       itineraryDays.filter((d) => {
         const validLocations = d.activities.filter(
@@ -123,7 +117,7 @@ export function RouteOptimizationPanel({
             typeof a.locationData.lat === "number" &&
             typeof a.locationData.lng === "number"
         );
-        return validLocations.length >= 2;
+        return validLocations.length >= 4;
       }),
     [itineraryDays]
   );
@@ -240,54 +234,18 @@ export function RouteOptimizationPanel({
     (
       response: any,
       originalActivities: Activity[]
-    ): { 
-      optimizedActivities: Activity[]; 
-      routeData?: any;
-      comparisonData?: any;
-    } => {
-      // Check for new comparison format first
-      const comparison = response?.data?.comparison || response?.comparison;
-      
-      if (comparison) {
-        // NEW: Use server-provided comparison data (Real vs Real)
-        const optimizedActivities = (comparison.optimized?.activities || response?.data?.optimizedActivities || [])
-          .map((activityData: any) => {
-            const original = originalActivities.find((a) => a.id === activityData.id);
-            return original || originalActivities[0];
-          })
-          .filter(Boolean);
-
-        return {
-          optimizedActivities,
-          routeData: {
-            geometry:
-              comparison.optimized?.geometry || response?.data?.routeGeometry,
-            totalDistance:
-              comparison.optimized?.distance || response?.data?.totalDistance,
-            totalTime: comparison.optimized?.time || response?.data?.totalTime,
-          },
-          comparisonData: {
-            original: {
-              geometry: comparison.original?.geometry,
-              distance: comparison.original?.distance,
-              time: comparison.original?.time,
-            },
-            optimized: {
-              geometry: comparison.optimized?.geometry,
-              distance: comparison.optimized?.distance,
-              time: comparison.optimized?.time,
-            },
-            savings: comparison.savings,
-          },
-        };
-      }
-
-      // Fallback: Legacy response format
-      if (response?.data?.activities && Array.isArray(response.data.activities)) {
+    ): { optimizedActivities: Activity[]; routeData?: any } => {
+      if (
+        response?.data?.activities &&
+        Array.isArray(response.data.activities)
+      ) {
         const optimizedActivities = response.data.activities
           .map((activityData: any) => {
-            const original = originalActivities.find((a) => a.id === activityData.id);
-            return original || originalActivities[0];
+            const original = originalActivities.find(
+              (a) => a.id === activityData.id
+            );
+            if (original) return original;
+            return originalActivities[0];
           })
           .filter(Boolean);
 
@@ -295,7 +253,7 @@ export function RouteOptimizationPanel({
           optimizedActivities,
           routeData: {
             geometry: response.data.routeGeometry,
-            totalDistance: response.data.totalDistance,
+            totalDistance: response.data.optimizedDistance,
             totalTime: response.data.totalTime,
           },
         };
@@ -304,8 +262,11 @@ export function RouteOptimizationPanel({
       if (response?.activities && Array.isArray(response.activities)) {
         const optimizedActivities = response.activities
           .map((activityData: any) => {
-            const original = originalActivities.find((a) => a.id === activityData.id);
-            return original || originalActivities[0];
+            const original = originalActivities.find(
+              (a) => a.id === activityData.id
+            );
+            if (original) return original;
+            return originalActivities[0];
           })
           .filter(Boolean);
 
@@ -321,7 +282,7 @@ export function RouteOptimizationPanel({
         };
       }
 
-      // Final fallback
+      // Fallback: return original order
       return {
         optimizedActivities: originalActivities,
         routeData: undefined,
@@ -337,21 +298,21 @@ export function RouteOptimizationPanel({
       calculatedRouteData: any,
       activityFingerprint: string
     ) => {
-      const calculatedActivities =
-        calculatedRouteData?.optimizedActivities ?? calculatedRouteData?.activities;
-
-      const optimizationData =
-        calculatedActivities && calculatedActivities.length >= 2
-          ? {
-              activities: calculatedActivities,
-              origin: `${calculatedActivities[0].lat},${calculatedActivities[0].lng}`,
-              destination: `${
-                calculatedActivities[calculatedActivities.length - 1].lat
-              },${
-                calculatedActivities[calculatedActivities.length - 1].lng
-              }`,
-            }
-          : prepareRouteOptimizationData(originalActivities);
+      const optimizationData = calculatedRouteData
+        ? {
+            activities: calculatedRouteData.activities,
+            origin: `${calculatedRouteData.activities[0].lat},${calculatedRouteData.activities[0].lng}`,
+            destination: `${
+              calculatedRouteData.activities[
+                calculatedRouteData.activities.length - 1
+              ].lat
+            },${
+              calculatedRouteData.activities[
+                calculatedRouteData.activities.length - 1
+              ].lng
+            }`,
+          }
+        : prepareRouteOptimizationData(originalActivities);
 
       if (!optimizationData) {
         return;
@@ -377,78 +338,27 @@ export function RouteOptimizationPanel({
 
       optimizeRoute(optimizationData, {
         onSuccess: (response) => {
-          const optimizationMeta = response?.meta;
-          const { optimizedActivities, routeData, comparisonData } =
+          const { optimizedActivities, routeData } =
             processOptimizationResponse(response, originalActivities);
 
-          // Use comparison data if available (Real vs Real)
-          let originalDistance: number;
-          let optimizedDistance: number;
-          let kmSaved: number;
-          let originalGeometry: any;
-          let optimizedGeometry: any;
-          let savings: any;
-
-          if (comparisonData) {
-            // NEW: Server-calculated road-network distances
-            originalDistance =
-              toFiniteNumber(comparisonData.original?.distance) / 1000;
-            optimizedDistance =
-              toFiniteNumber(
-                comparisonData.optimized?.distance ?? routeData?.totalDistance
-              ) / 1000;
-            const backendKmSaved =
-              toFiniteNumber(comparisonData.savings?.distance) / 1000;
-            const computedKmSaved = Math.max(
-              0,
-              originalDistance - optimizedDistance
-            );
-            kmSaved =
-              Number.isFinite(backendKmSaved) && backendKmSaved > 0
-                ? backendKmSaved
-                : computedKmSaved;
-            originalGeometry = comparisonData.original?.geometry;
-            optimizedGeometry =
-              comparisonData.optimized?.geometry ?? routeData?.geometry;
-            savings = comparisonData.savings;
-          } else {
-            // Fallback: Use existing logic
-            optimizedDistance =
-              toFiniteNumber(routeData?.totalDistance) / 1000;
-
-            // Get original from current state
-            const current = dayAnalyses.get(dayId);
-            originalDistance = toFiniteNumber(
-              current?.routeAnalysis?.originalDistance
-            );
-            kmSaved = Math.max(0, originalDistance - optimizedDistance);
-            optimizedGeometry = routeData?.geometry;
-            originalGeometry = current?.routeAnalysis?.originalGeometry;
-          }
-
-          kmSaved = Number.isFinite(kmSaved) ? kmSaved : 0;
+          const optimizedDistance = routeData?.totalDistance || 0;
+          const originalRouteGeometry = response?.data?.originalRouteGeometry;
 
           setDayAnalyses((prev) => {
             const updated = new Map(prev);
             const current = updated.get(dayId);
             if (current) {
-              const mergedBaselineMeta = {
-                ...(current.routeAnalysis.baselineMeta ?? {}),
-                ...(optimizationMeta ?? {}),
-              };
+              const kmSaved = Math.max(0, current.routeAnalysis.originalDistance - optimizedDistance);
 
               updated.set(dayId, {
                 ...current,
                 optimizedActivities,
                 routeAnalysis: {
                   ...current.routeAnalysis,
-                  originalDistance,
                   optimizedDistance,
-                  kmSaved: Math.max(0, kmSaved), // Ensure non-negative
-                  routeGeometry: optimizedGeometry,
-                  originalGeometry, // NEW: Road-snapped original route
-                  savings,
-                  baselineMeta: mergedBaselineMeta,
+                  kmSaved,
+                  routeGeometry: routeData?.geometry,
+                  originalGeometry: originalRouteGeometry || current.routeAnalysis.originalGeometry,
                 },
                 isLoading: false,
               });
@@ -456,6 +366,8 @@ export function RouteOptimizationPanel({
             return updated;
           });
 
+          // Reset applied state since we have new optimization data
+          appliedDaysRef.current.delete(dayId);
           processedDaysRef.current.set(dayId, activityFingerprint);
           pendingOptimizationsRef.current.delete(dayId);
         },
@@ -514,6 +426,9 @@ export function RouteOptimizationPanel({
           const distance = response.data?.totalDistance
             ? response.data.totalDistance / 1000
             : 0;
+          const duration = response.data?.totalTime
+            ? Math.round(response.data.totalTime / 60)
+            : 0;
 
           setDayAnalyses((prev) => {
             const updated = new Map(prev);
@@ -524,8 +439,8 @@ export function RouteOptimizationPanel({
                 routeAnalysis: {
                   ...current.routeAnalysis,
                   originalDistance: distance,
+                  totalTime: duration,
                   originalGeometry: response.data?.routeGeometry,
-                  baselineMeta: response.meta,
                 },
               });
             }
@@ -666,8 +581,8 @@ export function RouteOptimizationPanel({
         L,
         originalMarkers: [],
         optimizedMarkers: [],
-        originalPolyline: null,
-        optimizedPolyline: null,
+        originalPolylines: [],
+        optimizedPolylines: [],
       };
 
       setTimeout(() => {
@@ -700,18 +615,20 @@ export function RouteOptimizationPanel({
     mapRef.current.originalMarkers?.forEach((marker: any) => marker.remove());
     mapRef.current.optimizedMarkers?.forEach((marker: any) => marker.remove());
 
-    if (mapRef.current.originalPolyline) {
-      mapRef.current.originalPolyline.remove();
-    }
+    // Remove all original polylines
+    mapRef.current.originalPolylines?.forEach((polyline: any) => {
+      if (polyline) polyline.remove();
+    });
 
-    if (mapRef.current.optimizedPolyline) {
-      mapRef.current.optimizedPolyline.remove();
-    }
+    // Remove all optimized polylines
+    mapRef.current.optimizedPolylines?.forEach((polyline: any) => {
+      if (polyline) polyline.remove();
+    });
 
     mapRef.current.originalMarkers = [];
     mapRef.current.optimizedMarkers = [];
-    mapRef.current.originalPolyline = null;
-    mapRef.current.optimizedPolyline = null;
+    mapRef.current.originalPolylines = [];
+    mapRef.current.optimizedPolylines = [];
 
     const originalActivities = analysis.day.activities.filter(
       (a) => a.location && a.locationData
@@ -723,14 +640,50 @@ export function RouteOptimizationPanel({
     const allCoords: [number, number][] = [];
 
     if (showOriginalRoute) {
+      const originalCoords: [number, number][] = [];
       const newOriginalMarkers: any[] = [];
-      
-      // NEW: Check if we have road-snapped geometry from server
+
+      originalActivities.forEach((activity, index) => {
+        const coord = getCoordinates(
+          activity.locationData ?? activity.location
+        );
+        if (!coord) return;
+
+        originalCoords.push(coord);
+        allCoords.push(coord);
+
+        const icon = L.divIcon({
+          html: `<div style="background: #0A7AFF; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">${
+            index + 1
+          }</div>`,
+          className: "",
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        const marker = L.marker(coord, { icon }).addTo(map);
+        marker.bindPopup(`
+          <div style="padding: 4px;">
+            <strong style="color: #0A7AFF;">🔵 Original Route</strong><br/>
+            <strong style="color: #1A2B4F;">${activity.title}</strong><br/>
+            <span style="color: #64748B; font-size: 12px;">${
+              activity.location
+            }</span>
+            ${
+              activity.time
+                ? `<br/><span style="color: #0A7AFF; font-size: 12px;">⏰ ${activity.time}</span>`
+                : ""
+            }
+          </div>
+        `);
+
+        newOriginalMarkers.push(marker);
+      });
+
+      // Use originalGeometry from routing API for terrain-based path (not euclidean straight lines)
       if (analysis.routeAnalysis.originalGeometry?.coordinates) {
         const coords = analysis.routeAnalysis.originalGeometry.coordinates;
-        
         if (Array.isArray(coords) && coords.length > 0) {
-          // GeoJSON coordinates are [lng, lat], Leaflet needs [lat, lng]
           const lineStrings = coords.map((lineString: number[][]) =>
             lineString.map(
               (point: number[]) => [point[1], point[0]] as [number, number]
@@ -745,72 +698,27 @@ export function RouteOptimizationPanel({
               dashArray: "12, 8",
             }).addTo(map);
 
-            if (!mapRef.current!.originalPolyline) {
-              mapRef.current!.originalPolyline = polyline;
-            }
+            mapRef.current!.originalPolylines.push(polyline);
           });
-
-          // Collect bounds from geometry
-          lineStrings.flat().forEach((coord) => allCoords.push(coord));
         }
-      } else {
-        // Fallback: Draw straight lines between markers (legacy behavior)
-        const originalCoords: [number, number][] = [];
-        
-        originalActivities.forEach((activity) => {
-          const coord = getCoordinates(activity.locationData ?? activity.location);
-          if (!coord) return;
-          originalCoords.push(coord);
-          allCoords.push(coord);
-        });
+      } else if (originalCoords.length > 1) {
+        // Fallback to straight lines only if no geometry available
+        const polyline = L.polyline(originalCoords, {
+          color: "#0A7AFF",
+          weight: 4,
+          opacity: 0.7,
+          dashArray: "12, 8",
+        }).addTo(map);
 
-        if (originalCoords.length > 1) {
-          const polyline = L.polyline(originalCoords, {
-            color: "#0A7AFF",
-            weight: 4,
-            opacity: 0.7,
-            dashArray: "12, 8",
-          }).addTo(map);
-
-          mapRef.current.originalPolyline = polyline;
-        }
+        mapRef.current.originalPolylines.push(polyline);
       }
-
-      // Add markers for original route (unchanged)
-      originalActivities.forEach((activity, index) => {
-        const coord = getCoordinates(activity.locationData ?? activity.location);
-        if (!coord) return;
-
-        if (!analysis.routeAnalysis.originalGeometry) {
-          allCoords.push(coord);
-        }
-
-        const icon = L.divIcon({
-          html: `<div style="background: #0A7AFF; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">${
-            index + 1
-          }</div>`,
-          className: "",
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
-        });
-
-        const marker = L.marker(coord, { icon }).addTo(map);
-        marker.bindPopup(`
-          <div style="padding: 4px;">
-            <strong style="color: #0A7AFF;">🔵 Calculated Route</strong><br/>
-            <strong style="color: #1A2B4F;">${activity.title}</strong><br/>
-            <span style="color: #64748B; font-size: 12px;">${activity.location}</span>
-            ${activity.time ? `<br/><span style="color: #0A7AFF; font-size: 12px;">⏰ ${activity.time}</span>` : ""}
-          </div>
-        `);
-
-        newOriginalMarkers.push(marker);
-      });
 
       mapRef.current.originalMarkers = newOriginalMarkers;
     }
 
-    if (showOptimizedRoute) {
+    // Only show optimized route if there's a meaningful difference
+    const showOptimized = showOptimizedRoute && hasOptimizationAvailable(activeTab);
+    if (showOptimized) {
       if (analysis.routeAnalysis.routeGeometry?.coordinates) {
         const coords = analysis.routeAnalysis.routeGeometry.coordinates;
 
@@ -828,12 +736,8 @@ export function RouteOptimizationPanel({
               opacity: 0.8,
             }).addTo(map);
 
-            if (!mapRef.current!.optimizedPolyline) {
-              mapRef.current!.optimizedPolyline = polyline;
-            }
+            mapRef.current!.optimizedPolylines.push(polyline);
           });
-
-          lineStrings.flat().forEach((coord) => allCoords.push(coord));
         }
       } else {
         const optimizedCoords: [number, number][] = [];
@@ -851,10 +755,8 @@ export function RouteOptimizationPanel({
             opacity: 0.8,
           }).addTo(map);
 
-          mapRef.current.optimizedPolyline = polyline;
+          mapRef.current.optimizedPolylines.push(polyline);
         }
-
-        optimizedCoords.forEach((coord) => allCoords.push(coord));
       }
 
       const newOptimizedMarkers: any[] = [];
@@ -905,7 +807,7 @@ export function RouteOptimizationPanel({
 
   useEffect(() => {
     const initializeAnalyses = () => {
-      if (daysWithValidLocations.length === 0) {
+      if (daysReadyForOptimization.length === 0) {
         setDayAnalyses(new Map());
         setActiveTab("");
         return;
@@ -913,7 +815,7 @@ export function RouteOptimizationPanel({
 
       const newAnalyses = new Map<string, DayAnalysis>();
 
-      for (const day of daysWithValidLocations) {
+      for (const day of daysReadyForOptimization) {
         const originalActivities = day.activities.filter(
           (a) =>
             isMeaningfulLocation(a.location) &&
@@ -932,7 +834,6 @@ export function RouteOptimizationPanel({
             kmSaved: 0,
           },
           isLoading: false,
-          activeRoute: "original",
         });
 
         // CRITICAL FIX: Only optimize if not already processed
@@ -945,14 +846,14 @@ export function RouteOptimizationPanel({
 
       if (
         selectedDayId &&
-        daysWithValidLocations.find((d) => d.id === selectedDayId)
+        daysReadyForOptimization.find((d) => d.id === selectedDayId)
       ) {
         setActiveTab(selectedDayId);
       } else if (
         !activeTab ||
-        !daysWithValidLocations.find((d) => d.id === activeTab)
+        !daysReadyForOptimization.find((d) => d.id === activeTab)
       ) {
-        setActiveTab(daysWithValidLocations[0]?.id || "");
+        setActiveTab(daysReadyForOptimization[0]?.id || "");
       }
     };
 
@@ -965,8 +866,9 @@ export function RouteOptimizationPanel({
       optimizationTimerRef.current.clear();
       pendingOptimizationsRef.current.clear();
       processedDaysRef.current.clear();
+      appliedDaysRef.current.clear();
     };
-  }, [daysWithValidLocations, selectedDayId, sendOptimizationRequest]);
+  }, [daysReadyForOptimization, selectedDayId, sendOptimizationRequest]);
 
   useEffect(() => {
     if (mapView === "map") {
@@ -1018,62 +920,94 @@ export function RouteOptimizationPanel({
       analysis.optimizedActivities.length > 0 &&
       onAcceptOptimization
     ) {
-      setDayAnalyses((prev) => {
-        const updated = new Map(prev);
-        const current = updated.get(dayId);
-        if (current) {
-          updated.set(dayId, {
-            ...current,
-            activeRoute: "optimized",
-          });
-        }
-        return updated;
-      });
-
+      // Get current fingerprint to track applied state
+      const activityFingerprint = analysis.day.activities
+        .filter(
+          (a) =>
+            isMeaningfulLocation(a.location) &&
+            a.locationData &&
+            typeof a.locationData.lat === "number" &&
+            typeof a.locationData.lng === "number"
+        )
+        .map((a) => `${a.id}-${a.location}-${a.order}`)
+        .join("|");
+      
+      appliedDaysRef.current.set(dayId, activityFingerprint);
       onAcceptOptimization(dayId, analysis.optimizedActivities);
-      const kmSaved = Math.max(
-        0,
-        toFiniteNumber(analysis.routeAnalysis.kmSaved)
-      );
-      const alreadyOptimized = Boolean(
-        analysis.routeAnalysis.baselineMeta?.alreadyOptimized
-      );
-      toast.success("Route Optimized!", {
-        description: alreadyOptimized
-          ? `Day ${analysis.day.dayNumber} is already optimized.`
-          : `Day ${analysis.day.dayNumber} updated. You'll save ~${kmSaved.toFixed(
-              1
-            )} km!`,
+      toast.success("Route Applied!", {
+        description: `Day ${analysis.day.dayNumber} reordered. You'll save ~${analysis.routeAnalysis.kmSaved.toFixed(1)} km!`,
       });
     }
   };
 
-  if (daysWithValidLocations.length === 0) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="p-8 rounded-2xl border-2 border-dashed border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)]"
-      >
-        <div className="flex flex-col items-center text-center max-w-md mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[#0A7AFF]/10 to-[#14B8A6]/10 flex items-center justify-center mb-4">
-            <MapPinned className="w-8 h-8 text-[#0A7AFF]" />
-          </div>
-          <h3 className="text-[#1A2B4F] mb-2">Route Optimization Ready</h3>
-          <p className="text-sm text-[#64748B] mb-4">
-            Add at least 4 activities with valid locations for AI-powered
-            optimization.
-          </p>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F8FAFB] border border-[#E5E7EB]">
-            <Info className="w-4 h-4 text-[#14B8A6]" />
-            <span className="text-xs text-[#64748B]">
-              Powered by backend route calculation
-            </span>
-          </div>
-        </div>
-      </motion.div>
+  // Helper to check if optimization is already applied for a day
+  const isOptimizationApplied = (dayId: string): boolean => {
+    const analysis = dayAnalyses.get(dayId);
+    if (!analysis) return false;
+    
+    const appliedFingerprint = appliedDaysRef.current.get(dayId);
+    if (!appliedFingerprint) return false;
+    
+    // Check if current fingerprint matches applied fingerprint
+    const currentFingerprint = analysis.day.activities
+      .filter(
+        (a) =>
+          isMeaningfulLocation(a.location) &&
+          a.locationData &&
+          typeof a.locationData.lat === "number" &&
+          typeof a.locationData.lng === "number"
+      )
+      .map((a) => `${a.id}-${a.location}-${a.order}`)
+      .join("|");
+    
+    return currentFingerprint === appliedFingerprint;
+  };
+
+  // Helper to check if current route order matches optimized route order (same stops = already optimal)
+  const isRouteAlreadyOptimal = (dayId: string): boolean => {
+    const analysis = dayAnalyses.get(dayId);
+    if (!analysis) return false;
+    
+    const originalActivities = analysis.day.activities.filter(
+      (a) =>
+        isMeaningfulLocation(a.location) &&
+        a.locationData &&
+        typeof a.locationData.lat === "number" &&
+        typeof a.locationData.lng === "number"
     );
-  }
+    
+    const optimizedActivities = analysis.optimizedActivities;
+    
+    // If lengths don't match, something went wrong
+    if (originalActivities.length !== optimizedActivities.length) return false;
+    if (originalActivities.length === 0) return true;
+    
+    // Compare activity IDs in order - if same order, route is already optimal
+    for (let i = 0; i < originalActivities.length; i++) {
+      if (originalActivities[i].id !== optimizedActivities[i].id) {
+        return false; // Different order = optimization available
+      }
+    }
+    
+    return true; // Same order = already optimal
+  };
+
+  // Helper to check if optimization should be shown (has meaningful savings)
+  const hasOptimizationAvailable = (dayId: string): boolean => {
+    const analysis = dayAnalyses.get(dayId);
+    if (!analysis) return false;
+    
+    // Check 1: If route order is same, no optimization needed
+    if (isRouteAlreadyOptimal(dayId)) return false;
+    
+    // Check 2: If km saved is negligible (< 0.1 km), don't show optimization
+    if (analysis.routeAnalysis.kmSaved < 0.1) return false;
+    
+    return true;
+  };
+
+  // Check if we have any days at all to show
+  const hasAnyDays = itineraryDays.length > 0;
 
   return (
     <motion.div
@@ -1092,13 +1026,28 @@ export function RouteOptimizationPanel({
               <Sparkles className="w-4 h-4" />
             </h3>
             <p className="text-xs text-white/80">
-              AI-powered route planning to reduce travel distance
+              AI-powered route planning to save travel time
             </p>
           </div>
         </div>
       </div>
 
-      {daysWithValidLocations.length > 1 && (
+      {/* Show placeholder when not enough valid locations for optimization (need 4+) */}
+      {daysReadyForOptimization.length === 0 && (
+        <div className="p-8">
+          <div className="flex flex-col items-center text-center max-w-md mx-auto">
+            <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[#0A7AFF]/10 to-[#14B8A6]/10 flex items-center justify-center mb-4">
+              <MapPinned className="w-8 h-8 text-[#0A7AFF]" />
+            </div>
+            <h4 className="text-[#1A2B4F] mb-2">Route Optimization Standby</h4>
+            <p className="text-sm text-[#64748B]">
+              Add at least 4 activities with valid locations to optimize routes.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {daysReadyForOptimization.length > 1 && (
         <div className="px-5 pt-5 pb-3 border-b border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-transparent">
           <Tabs
             value={activeTab}
@@ -1106,10 +1055,9 @@ export function RouteOptimizationPanel({
             className="w-full"
           >
             <TabsList className="w-full justify-start bg-white/60 backdrop-blur-sm p-1 rounded-xl border border-[#E5E7EB] overflow-x-auto flex-nowrap">
-              {daysWithValidLocations.map((day) => {
+              {daysReadyForOptimization.map((day) => {
                 const analysis = dayAnalyses.get(day.id);
-                const hasSavings =
-                  analysis && analysis.routeAnalysis.kmSaved > 0;
+                const hasSavings = hasOptimizationAvailable(day.id);
                 const isLoading = analysis?.isLoading;
 
                 return (
@@ -1135,50 +1083,26 @@ export function RouteOptimizationPanel({
         </div>
       )}
 
-      <div className="p-5">
-        {daysWithValidLocations.map((day) => {
-          const analysis = dayAnalyses.get(day.id);
-          if (!analysis || day.id !== activeTab) return null;
+      {daysReadyForOptimization.length > 0 && (
+        <div className="p-5">
+          {daysReadyForOptimization.map((day) => {
+            const analysis = dayAnalyses.get(day.id);
+            if (!analysis || day.id !== activeTab) return null;
 
-          const isLoading = analysis.isLoading;
-          const baselineMeta = analysis.routeAnalysis.baselineMeta;
-          const alreadyOptimized = Boolean(baselineMeta?.alreadyOptimized);
-          const showOptimizationFallbackNote = Boolean(
-            baselineMeta?.optimizationFallbackUsed
-          );
-          const calculatedDistanceKm = toFiniteNumber(
-            analysis.routeAnalysis.originalDistance
-          );
-          const optimizedDistanceKm = toFiniteNumber(
-            analysis.routeAnalysis.optimizedDistance
-          );
-          const kmSavedValue = Math.max(
-            0,
-            toFiniteNumber(analysis.routeAnalysis.kmSaved)
-          );
-          const hasKmSavings = kmSavedValue > 0 && !alreadyOptimized;
-          const isOptimizedApplied = analysis.activeRoute === "optimized";
-          const hasOriginalGeometry = Boolean(
-            analysis.routeAnalysis.originalGeometry?.coordinates?.length
-          );
-          const hasOptimizedGeometry = Boolean(
-            analysis.routeAnalysis.routeGeometry?.coordinates?.length
-          );
-          const showGeometryFallbackNote =
-            mapView === "map" && (!hasOriginalGeometry || !hasOptimizedGeometry);
+            const isLoading = analysis.isLoading;
 
-          return (
-            <motion.div
-              key={day.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm text-[#64748B]">
-                    Day {day.dayNumber}
-                  </span>
+            return (
+              <motion.div
+                key={day.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm text-[#64748B]">
+                      Day {day.dayNumber}
+                    </span>
                   <ChevronRight className="w-4 h-4 text-[#94A3B8]" />
                 </div>
                 <h4 className="text-lg text-[#1A2B4F]">
@@ -1195,18 +1119,15 @@ export function RouteOptimizationPanel({
                     <div className="w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center">
                       <Route className="w-4 h-4 text-[#0A7AFF]" />
                     </div>
-                    <span className="text-xs text-[#0369A1]">
-                      Calculated
-                    </span>
+                    <span className="text-xs text-[#0369A1]">Original</span>
                   </div>
                   <p className="text-xl text-[#0A7AFF]">
-                    {calculatedDistanceKm > 0
-                      ? `${calculatedDistanceKm.toFixed(1)} km`
-                      : isLoading
-                        ? "Calculating..."
-                        : "0 km"}
+                    {analysis.routeAnalysis.originalDistance > 0
+                      ? `${analysis.routeAnalysis.originalDistance.toFixed(
+                          1
+                        )} km`
+                      : "Calculating..."}
                   </p>
-                  <p className="text-xs text-[#64748B]">Road distance</p>
                 </motion.div>
 
                 <motion.div
@@ -1217,85 +1138,48 @@ export function RouteOptimizationPanel({
                     <div className="w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center">
                       <Sparkles className="w-4 h-4 text-[#10B981]" />
                     </div>
-                    <span className="text-xs text-[#065F46]">
-                      Optimized
-                    </span>
+                    <span className="text-xs text-[#065F46]">Optimized</span>
                   </div>
                   <p className="text-xl text-[#10B981]">
-                    {optimizedDistanceKm > 0
-                      ? `${optimizedDistanceKm.toFixed(1)} km`
-                      : isLoading
-                        ? "Pending..."
-                        : "0 km"}
+                    {analysis.routeAnalysis.optimizedDistance > 0
+                      ? `${analysis.routeAnalysis.optimizedDistance.toFixed(
+                          1
+                        )} km`
+                      : "Pending..."}
                   </p>
-                  <p className="text-xs text-[#64748B]">Road distance</p>
                 </motion.div>
 
                 <motion.div
                   whileHover={{ y: -2 }}
                   className={`p-4 rounded-xl ${
-                    hasKmSavings
+                    hasOptimizationAvailable(day.id)
                       ? "bg-linear-to-br from-[#FEF3C7] to-[#FDE68A] border border-[#FFB84D]/20"
                       : "bg-linear-to-br from-[#F1F5F9] to-[#E2E8F0] border border-[#CBD5E1]/20"
                   } shadow-sm`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center">
-                      <CheckCircle2
-                        className={`w-4 h-4 ${
-                          hasKmSavings ? "text-[#FFB84D]" : "text-[#64748B]"
-                        }`}
-                      />
+                      {hasOptimizationAvailable(day.id) ? (
+                        <Zap className="w-4 h-4 text-[#FFB84D]" />
+                      ) : (
+                        <Route className="w-4 h-4 text-[#64748B]" />
+                      )}
                     </div>
                     <span className="text-xs text-[#78350F]">KM Saved</span>
                   </div>
                   <p
                     className={`text-xl ${
-                      hasKmSavings
+                      hasOptimizationAvailable(day.id)
                         ? "text-[#FFB84D]"
                         : "text-[#64748B]"
                     }`}
                   >
-                    {isLoading
-                      ? "Calculating..."
-                      : `${(alreadyOptimized ? 0 : kmSavedValue).toFixed(
-                          1
-                        )} km`}
+                    {hasOptimizationAvailable(day.id)
+                      ? `${analysis.routeAnalysis.kmSaved.toFixed(1)} km`
+                      : isRouteAlreadyOptimal(day.id) ? "0.0 km" : "Calculating..."}
                   </p>
-                  {alreadyOptimized && (
-                    <p className="mt-1 text-xs text-[#64748B]">
-                      This route is already optimized.
-                    </p>
-                  )}
                 </motion.div>
               </div>
-
-              {alreadyOptimized && (
-                <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-xs text-[#64748B]">
-                  <Info className="w-4 h-4 text-[#0A7AFF]" />
-                  <p>This route is already optimized.</p>
-                </div>
-              )}
-
-              {showOptimizationFallbackNote && (
-                <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-xs text-[#64748B]">
-                  <Info className="w-4 h-4 text-[#0A7AFF]" />
-                  <p>
-                    Optimization produced no shorter route; showing baseline as
-                    optimized.
-                  </p>
-                </div>
-              )}
-
-              {showGeometryFallbackNote && (
-                <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-xs text-[#64748B]">
-                  <Info className="w-4 h-4 text-[#0A7AFF]" />
-                  <p>
-                    Routing geometry missing for one or more legs; showing a
-                    straight-line fallback on the map.
-                  </p>
-                </div>
-              )}
 
               <div className="mb-6 flex items-center gap-2 p-1 rounded-xl bg-[#F8FAFB] border border-[#E5E7EB] w-fit">
                 <button
@@ -1328,7 +1212,8 @@ export function RouteOptimizationPanel({
                     Route Visualization
                   </h5>
                   <div className="flex items-center gap-3">
-                    {mapView === "map" && (
+                    {mapView === "map" &&
+                      hasOptimizationAvailable(day.id) && (
                         <>
                           <button
                             onClick={() =>
@@ -1346,7 +1231,7 @@ export function RouteOptimizationPanel({
                               <EyeOff className="w-3 h-3" />
                             )}
                             <div className="w-3 h-3 rounded-full bg-[#0A7AFF] border-2 border-white"></div>
-                            <span className="text-xs">Calculated</span>
+                            <span className="text-xs">Original</span>
                           </button>
                           <button
                             onClick={() =>
@@ -1382,7 +1267,7 @@ export function RouteOptimizationPanel({
                             </span>
                           </div>
                           <span className="text-sm font-medium text-[#0A7AFF]">
-                            Calculated Route
+                            Current Route
                           </span>
                         </div>
                         <span className="text-xs text-[#64748B]">
@@ -1424,7 +1309,7 @@ export function RouteOptimizationPanel({
                       </div>
                     </div>
 
-                    {analysis.optimizedActivities.length > 0 && (
+                    {hasOptimizationAvailable(day.id) && (
                       <div className="p-4 rounded-xl border-2 border-[#10B981]/20 bg-linear-to-br from-[rgba(16,185,129,0.05)] to-transparent">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
@@ -1432,12 +1317,10 @@ export function RouteOptimizationPanel({
                               <Sparkles className="w-3 h-3 text-white" />
                             </div>
                             <span className="text-sm font-medium text-[#10B981]">
-                              Optimized Route
+                              Suggested Route
                             </span>
                             <span className="px-2 py-0.5 rounded-full bg-[#10B981]/10 text-xs text-[#10B981] font-medium">
-                              {hasKmSavings
-                                ? `-${kmSavedValue.toFixed(1)} km`
-                                : "0.0 km"}
+                              -{analysis.routeAnalysis.kmSaved.toFixed(1)} km
                             </span>
                           </div>
                           <span className="text-xs text-[#64748B]">
@@ -1479,15 +1362,15 @@ export function RouteOptimizationPanel({
                       </div>
                     )}
 
-                    {alreadyOptimized &&
+                    {(isRouteAlreadyOptimal(day.id) || analysis.routeAnalysis.kmSaved < 0.1) &&
                       analysis.routeAnalysis.originalDistance > 0 && (
                         <div className="p-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] text-center">
                           <CheckCircle2 className="w-8 h-8 text-[#10B981] mx-auto mb-2" />
                           <p className="text-sm text-[#1A2B4F] font-medium mb-1">
-                            This route is already optimized.
+                            Route Already Optimized!
                           </p>
                           <p className="text-xs text-[#64748B]">
-                            No shorter-distance alternative was found.
+                            Your current route is the most efficient path.
                           </p>
                         </div>
                       )}
@@ -1515,7 +1398,7 @@ export function RouteOptimizationPanel({
                     )}
 
                     {mapRef.current?.map &&
-                      (showOriginalRoute || showOptimizedRoute) && (
+                      hasOptimizationAvailable(day.id) && (
                         <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-[#E5E7EB] z-1000">
                           <p className="text-xs text-[#64748B] mb-2">
                             Route Comparison
@@ -1524,7 +1407,7 @@ export function RouteOptimizationPanel({
                             <div className="flex items-center gap-2 mb-1.5">
                               <div className="w-4 h-0.5 bg-[#0A7AFF] border-dashed border-2 border-[#0A7AFF]"></div>
                               <span className="text-xs text-[#1A2B4F]">
-                                Calculated (
+                                Original (
                                 {analysis.routeAnalysis.originalDistance.toFixed(
                                   1
                                 )}{" "}
@@ -1550,31 +1433,37 @@ export function RouteOptimizationPanel({
                 )}
               </div>
 
-              {analysis.optimizedActivities.length > 0 && (
-                <button
-                  onClick={() => handleAcceptOptimization(day.id)}
-                  disabled={isLoading || isOptimizedApplied}
-                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Optimizing...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-5 h-5" />
-                      {isOptimizedApplied
-                        ? "Optimized Route Applied"
-                        : "Apply Optimized Route"}
-                    </>
-                  )}
-                </button>
+              {hasOptimizationAvailable(day.id) && (
+                isOptimizationApplied(day.id) ? (
+                  <div className="w-full h-11 px-4 rounded-xl bg-[#D1FAE5] border-2 border-[#10B981] text-[#065F46] flex items-center justify-center gap-2 font-medium">
+                    <CheckCircle2 className="w-5 h-5 text-[#10B981]" />
+                    Route Applied!
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleAcceptOptimization(day.id)}
+                    disabled={isLoading}
+                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Optimizing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-5 h-5" />
+                        Apply Optimized Route
+                      </>
+                    )}
+                  </button>
+                )
               )}
             </motion.div>
           );
         })}
-      </div>
+        </div>
+      )}
     </motion.div>
   );
 }
