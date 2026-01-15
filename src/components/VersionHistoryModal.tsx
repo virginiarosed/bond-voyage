@@ -1,28 +1,13 @@
 import { ScrollArea } from "./ui/scroll-area";
 import { History, RotateCcw, ChevronRight, MapPin, Calendar, Clock } from "lucide-react";
-
-interface Activity {
-  id: string;
-  time: string;
-  icon: string;
-  title: string;
-  description: string;
-  location: string;
-}
-
-interface Day {
-  id: string;
-  day: number;
-  title: string;
-  activities: Activity[];
-}
+import { Day, IActivity } from "../types/types";
 
 interface BookingFormData {
   destination: string;
   travelDateFrom: string;
   travelDateTo: string;
   travelers: string;
-  totalAmount: string;
+  totalPrice: string;
 }
 
 interface Version {
@@ -284,8 +269,8 @@ export function VersionHistoryModal({
                       <div className="space-y-2">
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Budget</span>
                         <p className="text-base text-card-foreground font-semibold">
-                          {displayData.bookingData.totalAmount 
-                            ? `₱${parseFloat(displayData.bookingData.totalAmount).toLocaleString()}` 
+                          {displayData.bookingData.totalPrice
+                            ? `₱${parseFloat(displayData.bookingData.totalPrice).toLocaleString()}` 
                             : "N/A"}
                         </p>
                       </div>
@@ -308,10 +293,10 @@ export function VersionHistoryModal({
                         <div key={day.id} className="p-7 rounded-2xl border-2 border-border bg-card shadow-sm hover:shadow-md transition-shadow">
                           <div className="flex items-center gap-4 mb-5 pb-5 border-b border-border">
                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-primary/20">
-                              <span className="text-white font-bold">D{day.day}</span>
+                              <span className="text-white font-bold">D{day.dayNumber}</span>
                             </div>
                             <div className="flex-1">
-                              <h5 className="text-sm font-medium text-muted-foreground">Day {day.day}</h5>
+                              <h5 className="text-sm font-medium text-muted-foreground">Day {day.dayNumber}</h5>
                               <p className="text-base font-semibold text-card-foreground mt-0.5">{day.title || "Untitled Day"}</p>
                             </div>
                           </div>

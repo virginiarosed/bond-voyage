@@ -801,7 +801,7 @@ export function CreateNewTravel() {
         onAcceptOptimization={handleAcceptOptimization}
       />
 
-      {/* Travel Information */}}
+      {/* Travel Information */}
       <ContentCard>
         <div className="mb-6">
           <h2 className="text-lg text-[#1A2B4F] font-semibold">

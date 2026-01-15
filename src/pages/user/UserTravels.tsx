@@ -97,6 +97,7 @@ import { toast } from "sonner";
 import { FAQAssistant } from "../../components/FAQAssistant";
 import {
   useMyBookings,
+  useSharedBookings,
   useBookingDetail,
   useSubmitBooking,
   useDeleteBooking,
@@ -105,13 +106,16 @@ import {
 import { Booking, User } from "../../types/types";
 import { queryKeys } from "../../utils/lib/queryKeys";
 import { useProfile } from "../../hooks/useAuth";
-import { useAddCollaborator } from "../../hooks/useCollaborators";
+import {
+  useAcceptItineraryShare,
+  useCreateItineraryShare,
+} from "../../hooks/useItineraryShares";
 import { getIconForActivity } from "../../utils/helpers/getIconForActivity";
-import { QueryClient } from "@tanstack/react-query";
 
 interface TransformedBooking {
   id: string;
   bookingCode: string;
+  itineraryId: string;
   owner: string;
   email: string;
   mobile: string;
@@ -190,7 +194,6 @@ export function UserTravels() {
   const location = useLocation();
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
   const bookingRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const queryClient = new QueryClient();
 
   const [selectedTab, setSelectedTab] = useState<
     "draft" | "pending" | "rejected"
@@ -203,7 +206,7 @@ export function UserTravels() {
   >("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinTravelModal, setShowJoinTravelModal] = useState(false);
-  const [joinTravelId, setJoinTravelId] = useState("");
+  const [joinShareToken, setJoinShareToken] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "detail">("list");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null
@@ -213,7 +216,7 @@ export function UserTravels() {
   const [showConfirmBookingModal, setShowConfirmBookingModal] = useState(false);
   const [showConfirmStatusModal, setShowConfirmStatusModal] = useState(false);
   const [showShareQRModal, setShowShareQRModal] = useState(false);
-  const [shareQRBookingId, setShareQRBookingId] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
   const [joinMethod, setJoinMethod] = useState<"manual" | "scan" | "upload">(
     "manual"
   );
@@ -222,26 +225,41 @@ export function UserTravels() {
   const qrCodeCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { mutate: addCollaborator, isPending: isAddingCollaborator } =
-    useAddCollaborator(joinTravelId, {
+  const { mutate: acceptShare, isPending: isAcceptingShare } =
+    useAcceptItineraryShare({
       onSuccess: (data) => {
         toast.success("Successfully Joined!", {
-          description:
-            data.message ||
-            `You are now a collaborator on booking ${joinTravelId}`,
+          description: data.message || "You are now a collaborator on this trip.",
         });
         setShowJoinTravelModal(false);
-        setJoinTravelId("");
-        // Invalidate queries to refresh the list
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.bookings.myBookings(),
-        });
+        setJoinShareToken("");
       },
       onError: (error: any) => {
         toast.error("Failed to join travel", {
           description:
             error.response?.data?.message ||
-            "Please check the booking ID and try again",
+            "Please check the share token and try again",
+        });
+      },
+    });
+
+  const { mutate: createShare } = useCreateItineraryShare({
+      onSuccess: (data) => {
+        const token = data.data?.token;
+        if (!token) {
+          toast.error("Failed to create share token");
+          return;
+        }
+        setShareToken(token);
+        setShowShareQRModal(true);
+        setTimeout(() => {
+          generateQRCode(token);
+        }, 100);
+      },
+      onError: (error: any) => {
+        toast.error("Failed to create share token", {
+          description:
+            error.response?.data?.message || "Please try again later",
         });
       },
     });
@@ -283,10 +301,25 @@ export function UserTravels() {
     {}
   );
 
-  const { data: myBookingsResponse, isLoading: isLoadingBookings } =
+  const { data: myBookingsResponse, isLoading: isLoadingMyBookings } =
     useMyBookings({
       status: selectedTab.toUpperCase(),
     });
+
+  const { data: sharedBookingsResponse, isLoading: isLoadingSharedBookings } =
+    useSharedBookings(
+      {
+        status: selectedTab.toUpperCase(),
+      },
+      {
+        enabled: selectedFilter === "collaborated" || selectedFilter === "all",
+      }
+    );
+
+  const isLoadingBookings =
+    isLoadingMyBookings ||
+    ((selectedFilter === "collaborated" || selectedFilter === "all") &&
+      isLoadingSharedBookings);
 
   const { data: selectedBookingData } = useBookingDetail(
     selectedBookingId || "",
@@ -343,20 +376,25 @@ export function UserTravels() {
   });
 
   const bookings: TransformedBooking[] = useMemo(() => {
-    if (!myBookingsResponse?.data) return [];
+    const formatDate = (dateString: string) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+    };
 
-    return myBookingsResponse.data.map((booking) => {
-      // Use the ownership from the API response if available, otherwise calculate it
+    const mapBooking = (booking: Booking): TransformedBooking => {
       let ownership: "owned" | "collaborated" | "requested" = "owned";
 
       if (booking.ownership) {
-        // Map the API ownership value to our expected values
         ownership = booking.ownership.toLowerCase() as
           | "owned"
           | "collaborated"
           | "requested";
       } else if (profileData.id) {
-        // Fall back to calculating if ownership is not provided
         const isOwner = booking.userId === profileData.id;
         const isCollaborator = booking.itinerary?.collaborators?.some(
           (collab: any) => collab.userId === profileData.id
@@ -369,19 +407,9 @@ export function UserTravels() {
         }
       }
 
-      const formatDate = (dateString: string) => {
-        if (!dateString) return "";
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        });
-      };
-
       const startDate = booking.startDate ? formatDate(booking.startDate) : "";
       const endDate = booking.endDate ? formatDate(booking.endDate) : "";
-      const dates = startDate && endDate ? `${startDate} – ${endDate}` : "";
+      const dates = startDate && endDate ? `${startDate} ??" ${endDate}` : "";
 
       const bookedDate = booking.bookedDate
         ? formatDate(booking.bookedDate)
@@ -390,8 +418,8 @@ export function UserTravels() {
         : "";
 
       const budget = booking.totalPrice
-        ? `₱${booking.totalPrice.toLocaleString()}`
-        : "₱0";
+        ? `?,?${booking.totalPrice.toLocaleString()}`
+        : "?,?0";
 
       let resolutionStatus: "solved" | "unsolved" | undefined;
       if (booking.rejectionReason && !booking.isResolved) {
@@ -403,6 +431,7 @@ export function UserTravels() {
       return {
         id: booking.id,
         bookingCode: booking.bookingCode,
+        itineraryId: booking.itineraryId,
         owner: booking.customerName || "Unknown",
         email: booking.customerEmail || "",
         mobile: booking.customerMobile || "",
@@ -420,8 +449,26 @@ export function UserTravels() {
         resolutionStatus,
         itinerary: booking.itinerary?.days || [],
       };
-    });
-  }, [myBookingsResponse?.data, profileData.id]);
+    };
+
+    const ownedBookings = myBookingsResponse?.data?.map(mapBooking) ?? [];
+    const sharedBookings = sharedBookingsResponse?.data?.map(mapBooking) ?? [];
+
+    if (selectedFilter === "collaborated") {
+      return sharedBookings;
+    }
+
+    if (selectedFilter === "all") {
+      return [...ownedBookings, ...sharedBookings];
+    }
+
+    return ownedBookings;
+  }, [
+    myBookingsResponse?.data,
+    sharedBookingsResponse?.data,
+    profileData.id,
+    selectedFilter,
+  ]);
 
   const filteredTravels = useMemo(() => {
     return bookings.filter((booking) => {
@@ -490,23 +537,14 @@ export function UserTravels() {
   };
 
   const handleConfirmJoinTravel = () => {
-    const trimmedId = joinTravelId.trim();
+    const trimmedToken = joinShareToken.trim().toUpperCase();
 
-    if (!trimmedId) {
-      toast.error("Please enter a booking ID");
+    if (!trimmedToken) {
+      toast.error("Please enter a share token");
       return;
     }
 
-    if (profileData.id) {
-      addCollaborator({
-        userId: profileData.id,
-        email: profileData.email,
-      });
-    } else {
-      toast.error("User information not available", {
-        description: "Please try refreshing the page",
-      });
-    }
+    acceptShare(trimmedToken);
   };
 
   const handleBookFromStandard = () => {
@@ -568,22 +606,17 @@ export function UserTravels() {
   };
 
   // QR Code handlers
-  const handleShareBooking = async (bookingId: string) => {
-    setShareQRBookingId(bookingId);
-    setShowShareQRModal(true);
-
-    setTimeout(() => {
-      generateQRCode(bookingId);
-    }, 100);
+  const handleShareBooking = async (itineraryId: string) => {
+    createShare({ itineraryId });
   };
 
-  const generateQRCode = async (bookingId: string) => {
+  const generateQRCode = async (token: string) => {
     const canvas = qrCodeCanvasRef.current;
     if (!canvas) return;
 
     try {
       const QRCode = (await import("qrcode")).default;
-      await QRCode.toCanvas(canvas, bookingId, {
+      await QRCode.toCanvas(canvas, token, {
         width: 200,
         margin: 2,
         color: {
@@ -599,13 +632,13 @@ export function UserTravels() {
 
   const handleDownloadQR = () => {
     const canvas = qrCodeCanvasRef.current;
-    if (!canvas || !shareQRBookingId) return;
+    if (!canvas || !shareToken) return;
 
     canvas.toBlob((blob) => {
       if (blob) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.download = `booking-${shareQRBookingId}-qr.png`;
+        link.download = `itinerary-share-${shareToken}.png`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
@@ -670,18 +703,14 @@ export function UserTravels() {
         const code = jsQR(imageData.data, imageData.width, imageData.height);
 
         if (code) {
-          setScannedQRData(code.data);
-          setJoinTravelId(code.data);
+          const normalizedToken = code.data.trim().toUpperCase();
+          setScannedQRData(normalizedToken);
+          setJoinShareToken(normalizedToken);
           stopScanning();
           toast.success("QR code scanned successfully!");
 
           // Automatically trigger join after scanning
-          if (profileData.id) {
-            addCollaborator({
-              userId: profileData.id,
-              email: profileData.email,
-            });
-          }
+          acceptShare(normalizedToken);
           return;
         }
       }
@@ -736,17 +765,13 @@ export function UserTravels() {
             );
 
             if (code) {
-              setScannedQRData(code.data);
-              setJoinTravelId(code.data);
+              const normalizedToken = code.data.trim().toUpperCase();
+              setScannedQRData(normalizedToken);
+              setJoinShareToken(normalizedToken);
               toast.success("QR code read successfully!");
 
               // Automatically trigger join after reading QR from file
-              if (profileData.id) {
-                addCollaborator({
-                  userId: profileData.id,
-                  email: profileData.email,
-                });
-              }
+              acceptShare(normalizedToken);
             } else {
               toast.error("No QR code found in image");
             }
@@ -1392,77 +1417,86 @@ export function UserTravels() {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredTravels.map((travel) => (
-                <div
-                  key={travel.id}
-                  ref={(el) => (bookingRefs.current[travel.id] = el)}
-                >
-                  <BookingListCard
-                    booking={{
-                      id: travel.id,
-                      customerName: travel.owner,
-                      customerEmail: travel.email,
-                      customerMobile: travel.mobile,
-                      destination: travel.destination,
-                      startDate: travel.startDate,
-                      endDate: travel.endDate,
-                      travelers: travel.travelers,
-                      totalPrice: travel.budget,
-                      bookedDate: travel.bookedDate,
-                      resolutionStatus: travel.resolutionStatus as any,
-                      bookingCode: travel.bookingCode,
-                    }}
-                    onViewDetails={handleViewDetails}
-                    onShare={
-                      selectedTab === "draft" ? handleShareBooking : undefined
-                    }
-                    variant={
-                      travel.status === "rejected" ? "rejected" : "default"
-                    }
-                    userSide={true}
-                    additionalBadges={
-                      <>
-                        {/* Booking Type Badge */}
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                          {capitalize(travel.bookingType)}
-                        </span>
-                        {/* Tour Type Badge */}
-                        {travel.tourType && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
-                            {capitalize(travel.tourType)}
+              {filteredTravels.map((travel) => {
+                const canShare =
+                  selectedTab === "draft" &&
+                  travel.bookingType === "CUSTOMIZED" &&
+                  travel.ownership === "owned";
+                return (
+                  <div
+                    key={travel.id}
+                    ref={(el) => (bookingRefs.current[travel.id] = el)}
+                  >
+                    <BookingListCard
+                      booking={{
+                        id: travel.id,
+                        customerName: travel.owner,
+                        customerEmail: travel.email,
+                        customerMobile: travel.mobile,
+                        destination: travel.destination,
+                        startDate: travel.startDate,
+                        endDate: travel.endDate,
+                        travelers: travel.travelers,
+                        totalPrice: travel.budget,
+                        bookedDate: travel.bookedDate,
+                        resolutionStatus: travel.resolutionStatus as any,
+                        bookingCode: travel.bookingCode,
+                      }}
+                      onViewDetails={handleViewDetails}
+                      onShare={
+                        canShare
+                          ? () => handleShareBooking(travel.itineraryId)
+                          : undefined
+                      }
+                      showShare={canShare}
+                      variant={
+                        travel.status === "rejected" ? "rejected" : "default"
+                      }
+                      userSide={true}
+                      additionalBadges={
+                        <>
+                          {/* Booking Type Badge */}
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                            {capitalize(travel.bookingType)}
                           </span>
-                        )}
-                        {/* Ownership Badge */}
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                            travel.ownership === "owned"
-                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                          {/* Tour Type Badge */}
+                          {travel.tourType && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
+                              {capitalize(travel.tourType)}
+                            </span>
+                          )}
+                          {/* Ownership Badge */}
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                              travel.ownership === "owned"
+                                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                                : travel.ownership === "collaborated"
+                                ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+                                : "bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20"
+                            }`}
+                          >
+                            {travel.ownership === "owned"
+                              ? "Owned"
                               : travel.ownership === "collaborated"
-                              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
-                              : "bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20"
-                          }`}
-                        >
-                          {travel.ownership === "owned"
-                            ? "Owned"
-                            : travel.ownership === "collaborated"
-                            ? "Collaborated"
-                            : "Requested"}
-                        </span>
-                      </>
-                    }
-                    pendingStatusMessage={
-                      travel.status === "pending" && (
-                        <div className="w-full p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center">
-                          <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                            Waiting for admin review. You'll be notified once
-                            reviewed.
-                          </p>
-                        </div>
-                      )
-                    }
-                  />
-                </div>
-              ))}
+                              ? "Collaborated"
+                              : "Requested"}
+                          </span>
+                        </>
+                      }
+                      pendingStatusMessage={
+                        travel.status === "pending" && (
+                          <div className="w-full p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center">
+                            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                              Waiting for admin review. You'll be notified once
+                              reviewed.
+                            </p>
+                          </div>
+                        )
+                      }
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -1534,7 +1568,7 @@ export function UserTravels() {
           setShowJoinTravelModal(open);
           if (!open) {
             setJoinMethod("manual");
-            setJoinTravelId("");
+            setJoinShareToken("");
             setScannedQRData("");
             stopScanning();
           }
@@ -1566,7 +1600,7 @@ export function UserTravels() {
               <button
                 onClick={() => {
                   setJoinMethod("scan");
-                  setJoinTravelId("");
+                  setJoinShareToken("");
                   handleStartScanning();
                 }}
                 className={`flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -1582,7 +1616,7 @@ export function UserTravels() {
                 onClick={() => {
                   setJoinMethod("upload");
                   stopScanning();
-                  setJoinTravelId("");
+                  setJoinShareToken("");
                 }}
                 className={`flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   joinMethod === "upload"
@@ -1598,17 +1632,17 @@ export function UserTravels() {
             {joinMethod === "manual" && (
               <div>
                 <label className="block text-sm mb-2 text-card-foreground">
-                  Booking ID <span className="text-red-500">*</span>
+                  Share Token <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g., BV-2025-001"
-                  value={joinTravelId}
-                  onChange={(e) => setJoinTravelId(e.target.value)}
+                  placeholder="e.g., AB7K2M9Q"
+                  value={joinShareToken}
+                  onChange={(e) => setJoinShareToken(e.target.value)}
                   className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                  disabled={isAddingCollaborator}
+                  disabled={isAcceptingShare}
                   onKeyPress={(e) => {
-                    if (e.key === "Enter" && !isAddingCollaborator) {
+                    if (e.key === "Enter" && !isAcceptingShare) {
                       handleConfirmJoinTravel();
                     }
                   }}
@@ -1616,32 +1650,101 @@ export function UserTravels() {
               </div>
             )}
 
-            {/* ... rest of the content remains the same ... */}
+            {joinMethod === "scan" && (
+              <div className="space-y-4">
+                <div className="relative aspect-square max-w-[280px] mx-auto bg-black rounded-xl overflow-hidden">
+                  <video
+                    ref={videoRef}
+                    className="w-full h-full object-cover"
+                    playsInline
+                    muted
+                  />
+                  {!isScanning && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted/80">
+                      <p className="text-sm text-muted-foreground">
+                        Camera initializing...
+                      </p>
+                    </div>
+                  )}
+                  <div className="absolute inset-4 border-2 border-white/50 rounded-lg pointer-events-none" />
+                </div>
+                {scannedQRData && (
+                  <div className="text-center">
+                    <p className="text-sm text-green-600 font-medium">
+                      QR Code detected: {scannedQRData}
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-center text-muted-foreground">
+                  Position the QR code within the frame to scan
+                </p>
+              </div>
+            )}
+
+            {joinMethod === "upload" && (
+              <div className="space-y-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer"
+                >
+                  <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                  <p className="text-sm font-medium text-card-foreground mb-1">
+                    Click to upload QR code image
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Supports PNG, JPG, and other image formats
+                  </p>
+                </button>
+                {scannedQRData && (
+                  <div className="text-center p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                    <p className="text-sm text-green-600 font-medium">
+                      QR Code detected: {scannedQRData}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         }
         onConfirm={handleConfirmJoinTravel}
         onCancel={() => {
-          if (!isAddingCollaborator) {
+          if (!isAcceptingShare) {
             setShowJoinTravelModal(false);
             setJoinMethod("manual");
-            setJoinTravelId("");
+            setJoinShareToken("");
             setScannedQRData("");
             stopScanning();
           }
         }}
-        confirmText={isAddingCollaborator ? "Joining..." : "Join Travel"}
+        confirmText={isAcceptingShare ? "Joining..." : "Join Travel"}
         cancelText="Cancel"
         confirmVariant="default"
       />
       {/* Share QR Code Modal */}
-      <Dialog open={showShareQRModal} onOpenChange={setShowShareQRModal}>
+      <Dialog
+        open={showShareQRModal}
+        onOpenChange={(open) => {
+          setShowShareQRModal(open);
+          if (!open) {
+            setShareToken(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-125">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                 <Share2 className="w-5 h-5 text-white" />
               </div>
-              Share Travel Booking
+              Share Travel Itinerary
             </DialogTitle>
             <DialogDescription>
               Share this QR code with others to let them join as collaborators
@@ -1654,22 +1757,22 @@ export function UserTravels() {
               </div>
               <div className="flex items-center gap-2 mt-4">
                 <p className="text-sm text-muted-foreground">
-                  Booking ID:{" "}
+                  Share Token:{" "}
                   <span className="font-semibold text-card-foreground">
-                    {shareQRBookingId}
+                    {shareToken}
                   </span>
                 </p>
                 <button
                   onClick={() => {
-                    if (shareQRBookingId) {
-                      navigator.clipboard.writeText(shareQRBookingId);
+                    if (shareToken) {
+                      navigator.clipboard.writeText(shareToken);
                       toast.success("Copied to clipboard!", {
-                        description: `Booking ID ${shareQRBookingId} copied`,
+                        description: `Share token ${shareToken} copied`,
                       });
                     }
                   }}
                   className="p-1.5 rounded-lg hover:bg-accent transition-all"
-                  title="Copy booking ID"
+                  title="Copy share token"
                 >
                   <Copy className="w-4 h-4 text-muted-foreground hover:text-primary" />
                 </button>

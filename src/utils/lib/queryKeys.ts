@@ -10,9 +10,14 @@ export const queryKeys = {
   bookings: {
     all: ["bookings"] as const,
     myBookings: (params?: any) => ["bookings", "my", params] as const,
+    sharedBookings: (params?: any) => ["bookings", "shared", params] as const,
     adminBookings: (params?: any) => ["bookings", "admin", params] as const,
     detail: (id: string) => ["bookings", "detail", id] as const,
     collaborators: (id: string) => ["bookings", id, "collaborators"] as const,
+    versions: (id: string) => ["bookings", id, "versions"] as const,
+  },
+  itineraryShares: {
+    create: (id: string) => ["itineraries", id, "shares"] as const,
   },
   tourPackages: {
     all: ["tourPackages"] as const,

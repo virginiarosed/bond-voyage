@@ -1,4 +1,4 @@
-import { MapPin, Calendar, Users, Clock, Eye } from "lucide-react";
+import { MapPin, Calendar, Users, Clock, Eye, Share2 } from "lucide-react";
 import { capitalize } from "../utils/helpers/capitalize";
 import { formatDateRange } from "../App";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
@@ -7,6 +7,8 @@ import { Booking } from "../types/types";
 interface BookingListCardProps {
   booking: Booking;
   onViewDetails: (bookingId: string) => void;
+  onShare?: () => void;
+  showShare?: boolean;
   context?: "approvals" | "rejected" | "active" | "cancelled";
   activeTab?: "all" | "byDate" | "rejected";
   showViewDetailsButton?: boolean;
@@ -16,6 +18,8 @@ interface BookingListCardProps {
 export function BookingListCard({
   booking,
   onViewDetails,
+  onShare,
+  showShare = false,
   context = "approvals",
   activeTab,
   showViewDetailsButton = true,
@@ -29,6 +33,11 @@ export function BookingListCard({
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onViewDetails(booking.id);
+  };
+
+  const handleShareClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onShare?.();
   };
 
   const getStatusBadge = () => {
@@ -180,14 +189,27 @@ export function BookingListCard({
           </div>
         </div>
 
-        {showViewDetailsButton && (
-          <button
-            onClick={handleButtonClick}
-            className="h-9 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] flex items-center gap-2 text-sm font-medium transition-all"
-          >
-            <Eye className="w-4 h-4" />
-            View Details
-          </button>
+        {(showViewDetailsButton || showShare) && (
+          <div className="flex items-center gap-2">
+            {showViewDetailsButton && (
+              <button
+                onClick={handleButtonClick}
+                className="h-9 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] flex items-center gap-2 text-sm font-medium transition-all"
+              >
+                <Eye className="w-4 h-4" />
+                View Details
+              </button>
+            )}
+            {showShare && onShare && (
+              <button
+                onClick={handleShareClick}
+                className="h-9 w-9 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] flex items-center justify-center transition-all"
+                title="Share itinerary"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         )}
       </div>
 
