@@ -106,6 +106,8 @@ import {
   useUpdateBookingStatus,
   useBookingPayments,
   useDeleteBooking,
+  useUpdateBooking,
+  useUpdateBookingWithId,
 } from "../hooks/useBookings";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUsers } from "../hooks/useUsers";
@@ -542,7 +544,9 @@ export function Itinerary({
   const [selectedCategory, setSelectedCategory] = useState<
     "Standard" | "Requested"
   >("Standard");
+  const [updateId, setUpdatedId] = useState<string>("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const updateBookingMutation = useUpdateBookingWithId();
 
   const [queryParams, setQueryParams] = useState({
     page: 1,
@@ -1318,7 +1322,6 @@ export function Itinerary({
       ? standard.pricePerPax * travelers
       : 0;
 
-    // Transform itinerary details to match expected format
     let itineraryDays: any[] = [];
 
     if (selectedBookingPackageDetail?.data?.days) {
@@ -1349,7 +1352,6 @@ export function Itinerary({
       ...(bookingFormData.travelDateTo && {
         endDate: bookingFormData.travelDateTo,
       }),
-      // Include itinerary data if available
       ...(itineraryDays.length > 0 && {
         itinerary: {
           title:
@@ -1361,28 +1363,53 @@ export function Itinerary({
           days: itineraryDays,
         },
       }),
+      status: "BOOKED",
     };
 
     createBooking(newBooking, {
       onSuccess: (response) => {
-        setBookingFormData({
-          customerName: "",
-          customerId: "",
-          email: "",
-          mobile: "",
-          travelDateFrom: "",
-          travelDateTo: "",
-          travelers: "1",
-          tourType: "Private" as any,
-        });
-        setCreateBookingConfirmOpen(false);
-        setStandardBookingModalOpen(false);
-        setSelectedStandardForBooking(null);
+        const bookingId = response.data?.id;
 
-        toast.success("Standard Booking Created!", {
-          description: `Booking for ${bookingFormData.customerName} has been successfully created.`,
-        });
-        navigate("/bookings");
+        if (bookingId) {
+          // Update booking status if needed (optional)
+          updateBookingMutation.mutate(
+            {
+              id: bookingId,
+              data: { status: "BOOKED" },
+            },
+            {
+              onSuccess: () => {
+                toast.success("Booking Updated!", {
+                  description: "Booking status has been updated.",
+                });
+              },
+              onError: (error: any) => {
+                console.error("Status update error:", error);
+              },
+            }
+          );
+
+          // Reset form state
+          setBookingFormData({
+            customerName: "",
+            customerId: "",
+            email: "",
+            mobile: "",
+            travelDateFrom: "",
+            travelDateTo: "",
+            travelers: "1",
+            tourType: "Private" as any,
+          });
+          setCreateBookingConfirmOpen(false);
+          setStandardBookingModalOpen(false);
+          setSelectedStandardForBooking(null);
+
+          toast.success("Standard Booking Created!", {
+            description: `Booking for ${bookingFormData.customerName} has been successfully created.`,
+          });
+
+          navigate("/bookings");
+        }
       },
       onError: (error: any) => {
         console.error("Booking creation error:", error);
@@ -1395,7 +1422,6 @@ export function Itinerary({
       },
     });
   };
-
   const handleCreateBookingFromRequested = () => {
     if (!selectedRequestedForBooking || !bookingFormData.customerName) {
       toast.error("Missing required information");
@@ -1457,8 +1483,6 @@ export function Itinerary({
         },
       }),
     };
-
-    console.log("Creating requested booking payload:", newBooking);
 
     createBooking(newBooking, {
       onSuccess: (response) => {

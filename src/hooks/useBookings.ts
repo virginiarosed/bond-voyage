@@ -341,3 +341,24 @@ export const useBookingVersionHistory = (
     ...options,
   });
 };
+
+export const useUpdateBookingWithId = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiClient.put<ApiResponse<Booking>>(
+        `/bookings/${id}`,
+        data
+      );
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      const { id } = variables;
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.bookings.detail(id),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
+    },
+  });
+};

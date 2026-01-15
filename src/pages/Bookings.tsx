@@ -114,7 +114,7 @@ export function Bookings({
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
-    status: "CONFIRMED",
+    status: "BOOKED",
   });
 
   const {
@@ -319,7 +319,7 @@ export function Bookings({
     const params: any = {
       ...queryParams,
       page: 1,
-      status: "CONFIRMED",
+      status: "BOOKED",
     };
 
     if (searchQuery) {
@@ -999,6 +999,54 @@ export function Bookings({
               </div>
             )}
 
+            {/* Complete Booking Modal */}
+            <ConfirmationModal
+              open={completeDialogOpen}
+              onOpenChange={(open) => {
+                setCompleteDialogOpen(open);
+                if (!open) setActionError(null);
+              }}
+              title="Mark Trip as Complete"
+              description="Confirm that this trip has been successfully completed."
+              icon={<CheckCircle2 className="w-5 h-5 text-white" />}
+              iconGradient="bg-gradient-to-br from-[#10B981] to-[#34D399]"
+              iconShadow="shadow-[#10B981]/20"
+              contentGradient="bg-gradient-to-br from-[rgba(16,185,129,0.08)] to-[rgba(16,185,129,0.12)]"
+              contentBorder="border-[rgba(16,185,129,0.2)]"
+              isLoading={isCompletingBooking}
+              content={
+                bookingToComplete && (
+                  <div>
+                    {actionError && (
+                      <div className="p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[rgba(255,107,107,0.2)] mb-4">
+                        <div className="flex items-center gap-2 text-[#FF6B6B] text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>{actionError}</span>
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-sm text-[#334155]">
+                      Are you sure you want to mark the trip for{" "}
+                      <span className="font-semibold text-[#10B981]">
+                        {bookingToComplete.customer}
+                      </span>{" "}
+                      as completed?
+                    </p>
+                  </div>
+                )
+              }
+              onConfirm={handleConfirmComplete}
+              onCancel={() => {
+                setCompleteDialogOpen(false);
+                setActionError(null);
+              }}
+              confirmText={
+                isCompletingBooking ? "Completing..." : "Mark as Complete"
+              }
+              cancelText="Cancel"
+              confirmVariant="success"
+            />
+
             {/* Cancel Booking Modal */}
             <ConfirmationModal
               open={cancelDialogOpen}
@@ -1554,21 +1602,20 @@ export function Bookings({
             )}
 
             {/* Complete Button */}
-            {selectedBooking.status !== "COMPLETED" &&
-              selectedBooking.paymentStatus === "Paid" && (
-                <button
-                  onClick={() => handleCompleteClick(selectedBooking)}
-                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                  disabled={isLoadingDetail || isCompletingBooking}
-                >
-                  {isCompletingBooking ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-4 h-4" />
-                  )}
-                  {isCompletingBooking ? "Completing..." : "Mark as Complete"}
-                </button>
-              )}
+            {selectedBooking.status !== "COMPLETED" && (
+              <button
+                onClick={() => handleCompleteClick(selectedBooking)}
+                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                disabled={isLoadingDetail || isCompletingBooking}
+              >
+                {isCompletingBooking ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                {isCompletingBooking ? "Completing..." : "Mark as Complete"}
+              </button>
+            )}
 
             {/* Cancel Button */}
             <button
@@ -1898,52 +1945,6 @@ export function Bookings({
           )}
         </div>
       </ContentCard>
-
-      {/* Complete Booking Modal */}
-      <ConfirmationModal
-        open={completeDialogOpen}
-        onOpenChange={(open) => {
-          setCompleteDialogOpen(open);
-          if (!open) setActionError(null);
-        }}
-        title="Mark Trip as Complete"
-        description="Confirm that this trip has been successfully completed."
-        icon={<CheckCircle2 className="w-5 h-5 text-white" />}
-        iconGradient="bg-gradient-to-br from-[#10B981] to-[#34D399]"
-        iconShadow="shadow-[#10B981]/20"
-        contentGradient="bg-gradient-to-br from-[rgba(16,185,129,0.08)] to-[rgba(16,185,129,0.12)]"
-        contentBorder="border-[rgba(16,185,129,0.2)]"
-        isLoading={isCompletingBooking}
-        content={
-          bookingToComplete && (
-            <div>
-              {actionError && (
-                <div className="p-3 rounded-lg bg-[rgba(255,107,107,0.1)] border border-[rgba(255,107,107,0.2)] mb-4">
-                  <div className="flex items-center gap-2 text-[#FF6B6B] text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>{actionError}</span>
-                  </div>
-                </div>
-              )}
-              <p className="text-sm text-[#334155]">
-                Are you sure you want to mark the trip for{" "}
-                <span className="font-semibold text-[#10B981]">
-                  {bookingToComplete.customer}
-                </span>{" "}
-                as completed?
-              </p>
-            </div>
-          )
-        }
-        onConfirm={handleConfirmComplete}
-        onCancel={() => {
-          setCompleteDialogOpen(false);
-          setActionError(null);
-        }}
-        confirmText={isCompletingBooking ? "Completing..." : "Mark as Complete"}
-        cancelText="Cancel"
-        confirmVariant="success"
-      />
 
       {/* Payment Detail Modal */}
       <Dialog

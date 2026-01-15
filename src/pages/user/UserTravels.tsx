@@ -203,8 +203,8 @@ export function UserTravels() {
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [selectedTab, setSelectedTab] = useState<
-    "draft" | "pending" | "rejected"
-  >("draft");
+    "booked" | "pending" | "rejected"
+  >("booked");
   const [selectedFilter, setSelectedFilter] = useState<
     "all" | "owned" | "collaborated" | "requested"
   >("all");
