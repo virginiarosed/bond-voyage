@@ -1239,7 +1239,7 @@ export function EditCustomizedBooking() {
         onAcceptOptimization={handleAcceptOptimization}
       />
 
-      {/* Day-by-Day Itinerary */}}
+      {/* Day-by-Day Itinerary */}
       <ContentCard>
         <div className="mb-6">
           <h2 className="text-lg text-[#1A2B4F] font-semibold">
