@@ -308,10 +308,13 @@ export function UserTravels() {
     {}
   );
 
-  const { data: myBookingsResponse, isLoading: isLoadingMyBookings } =
-    useMyBookings({
-      status: selectedTab.toUpperCase(),
-    });
+  const {
+    data: myBookingsResponse,
+    isLoading: isLoadingMyBookings,
+    refetch: refetchMyBookings,
+  } = useMyBookings({
+    status: selectedTab.toUpperCase(),
+  });
 
   const { data: sharedBookingsResponse, isLoading: isLoadingSharedBookings } =
     useSharedBookings({
@@ -336,6 +339,7 @@ export function UserTravels() {
       setViewMode("list");
       setSelectedBookingId(null);
       setSelectedTab("pending");
+      refetchMyBookings();
     },
     onError: (error: any) => {
       toast.error("Failed to submit booking", {
