@@ -113,7 +113,7 @@ export function Bookings({
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
-    status: "PENDING",
+    status: "DRAFT",
   });
 
   const {
@@ -1069,19 +1069,6 @@ export function Bookings({
                           ₱{bookingToCancel.totalAmount.toLocaleString()}
                         </p>
                       </div>
-                    </div>
-                    <div className="grid gap-3 pt-3 border-t border-[rgba(10,122,255,0.2)] mt-2">
-                      <Label htmlFor="cancellation-reason">
-                        Reason for Cancellation
-                      </Label>
-                      <Textarea
-                        id="cancellation-reason"
-                        placeholder="Enter reason..."
-                        value={cancellationReason}
-                        onChange={(e) => setCancellationReason(e.target.value)}
-                        rows={3}
-                        disabled={isCancellingBooking}
-                      />
                     </div>
                   </>
                 )
