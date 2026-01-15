@@ -88,10 +88,10 @@ export function AdventureAvatar() {
   };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center gap-4 min-h-[300px]">
-      {/* Floating Background Elements */}
+    <div className="relative w-full h-full flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-4 min-h-[300px]">
+      {/* Floating Background Elements - Adjusted for mobile */}
       <motion.div
-        className="absolute top-8 left-8 w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm"
+        className="absolute top-8 left-8 w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm hidden lg:block"
         animate={{
           y: [0, -20, 0],
           x: [0, 10, 0],
@@ -104,7 +104,7 @@ export function AdventureAvatar() {
         }}
       />
       <motion.div
-        className="absolute top-20 right-12 w-12 h-12 rounded-full bg-white/15 backdrop-blur-sm"
+        className="absolute top-20 right-12 w-12 h-12 rounded-full bg-white/15 backdrop-blur-sm hidden lg:block"
         animate={{
           y: [0, 15, 0],
           x: [0, -15, 0],
@@ -118,8 +118,37 @@ export function AdventureAvatar() {
         }}
       />
 
-      {/* Left Side: Activity Label and Buttons */}
-      <div className="flex flex-col items-center gap-3 z-10">
+      {/* Mobile-only floating elements for better mobile experience */}
+      <motion.div
+        className="absolute top-4 left-4 w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm lg:hidden"
+        animate={{
+          y: [0, -15, 0],
+          x: [0, 8, 0],
+          opacity: [0.2, 0.4, 0.2],
+        }}
+        transition={{
+          duration: 5,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute bottom-20 right-6 w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm lg:hidden"
+        animate={{
+          y: [0, 10, 0],
+          x: [0, -10, 0],
+          opacity: [0.2, 0.4, 0.2],
+        }}
+        transition={{
+          duration: 7,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.5,
+        }}
+      />
+
+      {/* Mobile: Activity Label and Buttons on Top */}
+      <div className="order-1 lg:order-none flex flex-col items-center gap-3 z-10 w-full lg:w-auto">
         {/* Activity Label with Glassmorphism */}
         <motion.div
           key={`label-${currentAdventure.type}`}
@@ -138,8 +167,8 @@ export function AdventureAvatar() {
           </div>
         </motion.div>
 
-        {/* Adventure Buttons */}
-        <div className="flex gap-2 flex-wrap justify-center max-w-[200px]">
+        {/* Adventure Buttons - Adjusted for mobile */}
+        <div className="flex gap-2 flex-wrap justify-center max-w-[280px] lg:max-w-[200px]">
           {adventures.map((adventure, index) => (
             <motion.button
               key={adventure.type}
@@ -147,14 +176,14 @@ export function AdventureAvatar() {
                 e.stopPropagation();
                 setCurrentAdventureIndex(index);
               }}
-              className="group relative focus:outline-none focus:ring-2 focus:ring-white/50 rounded-full p-1.5"
+              className="group relative focus:outline-none focus:ring-2 focus:ring-white/50 rounded-full p-1"
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.9 }}
               transition={{ duration: 0.15 }}
               title={adventure.label}
             >
               <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
+                className={`w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
                   index === currentAdventureIndex
                     ? "bg-white shadow-lg"
                     : "bg-white/20 backdrop-blur-sm group-hover:bg-white/40"
@@ -165,7 +194,7 @@ export function AdventureAvatar() {
                 }}
               >
                 <adventure.icon
-                  className="w-4 h-4 transition-colors duration-300"
+                  className="w-3.5 h-3.5 lg:w-4 lg:h-4 transition-colors duration-300"
                   style={{
                     color: index === currentAdventureIndex ? adventure.color : "white",
                   }}
@@ -173,11 +202,11 @@ export function AdventureAvatar() {
                 />
               </div>
               
-              {/* Tooltip on hover */}
+              {/* Tooltip on hover - only on desktop */}
               <motion.div
                 initial={{ opacity: 0, y: 5 }}
                 whileHover={{ opacity: 1, y: 0 }}
-                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#1A2B4F] text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap pointer-events-none shadow-lg z-50"
+                className="hidden lg:block absolute -top-10 left-1/2 -translate-x-1/2 bg-[#1A2B4F] text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap pointer-events-none shadow-lg z-50"
               >
                 {adventure.label}
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-[#1A2B4F] rotate-45" />
@@ -194,17 +223,17 @@ export function AdventureAvatar() {
               animate={{ opacity: [0.5, 1, 0.5] }}
               exit={{ opacity: 0 }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="text-white/60 text-xs"
+              className="text-white/60 text-xs text-center px-4"
             >
-              👆 Explore adventures!
+              👆 Tap the avatar to explore adventures!
             </motion.p>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Right Side: Main Interactive Avatar Container */}
+      {/* Mobile: Main Interactive Avatar Container Below */}
       <motion.div
-        className="relative cursor-pointer select-none"
+        className="order-2 lg:order-none relative cursor-pointer select-none mt-4 lg:mt-0"
         onClick={handleAvatarClick}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
@@ -219,14 +248,16 @@ export function AdventureAvatar() {
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
             exit={{ opacity: 0, scale: 0.8, rotate: 10 }}
             transition={{ duration: 0.3, ease: "backOut" }}
+            className="w-[200px] h-[200px] lg:w-[240px] lg:h-[240px] mx-auto"
           >
             <svg
-              width="240"
-              height="240"
+              width="100%"
+              height="100%"
               viewBox="0 0 240 240"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               className="drop-shadow-2xl"
+              preserveAspectRatio="xMidYMid meet"
             >
               {/* Enhanced Glow Effect Background */}
               <motion.circle
@@ -1952,11 +1983,11 @@ export function AdventureAvatar() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Pulsing Ring on Hover */}
+        {/* Pulsing Ring on Hover - only on desktop */}
         <AnimatePresence>
           {isHovered && (
             <motion.div
-              className="absolute inset-0 rounded-full border-4 border-white/40"
+              className="hidden lg:block absolute inset-0 rounded-full border-4 border-white/40"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1.15, opacity: [0.6, 0, 0.6] }}
               exit={{ scale: 0.9, opacity: 0 }}

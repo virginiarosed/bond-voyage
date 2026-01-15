@@ -165,7 +165,7 @@ export function CreateRequestedItinerary({
     {
       enabled: !!userSearchParams.q && userSearchParams.q?.length >= 2,
       staleTime: 30000,
-      queryKey: [queryKeys.users.list],
+      queryKey: [queryKeys.users.list(formData)],
     }
   );
 
@@ -641,7 +641,11 @@ export function CreateRequestedItinerary({
           const previousActivity = day.activities[activityIndex - 1];
           if (previousActivity.time && value <= previousActivity.time) {
             toast.error("Invalid Time Sequence", {
-              description: `Activity time must be later than the previous activity (${previousActivity.time}) on Day ${day.day}.`,
+              description: `Activity ${index + 1} time (${
+                activity.time
+              }) must be after Activity ${index} time (${
+                prevActivity.time
+              }) on Day ${day.day}.`,
             });
             return; // Don't update if not sequential
           }
@@ -1079,8 +1083,9 @@ export function CreateRequestedItinerary({
               Customer & Booking Information
             </h2>
           </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            {/* Customer Name - Full width on mobile */}
+            <div className="col-span-1 sm:col-span-2">
               <Label
                 htmlFor="customerName"
                 className="text-[#1A2B4F] mb-2 block"
@@ -1109,7 +1114,7 @@ export function CreateRequestedItinerary({
                       setIsUserSearching(false);
                     }, 200);
                   }}
-                  className="h-12 pl-12 pr-10 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
+                  className="h-12 pl-12 pr-10 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
                 />
 
                 {/* Loading indicator */}
@@ -1350,9 +1355,6 @@ export function CreateRequestedItinerary({
                           <span className="text-sm font-medium text-[#1A2B4F]">
                             Existing Customer Selected
                           </span>
-                          <span className="text-xs px-2 py-0.5 bg-[#10B981]/10 text-[#10B981] rounded-full font-medium">
-                            ID: {formData.customerId.substring(0, 8)}...
-                          </span>
                         </div>
                         <p className="text-xs text-[#64748B] mt-0.5">
                           Email and mobile have been auto-filled from customer
@@ -1380,22 +1382,14 @@ export function CreateRequestedItinerary({
                       >
                         Change Customer
                       </button>
-                      <a
-                        href={`/users/${formData.customerId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1 text-xs rounded-lg bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] text-white hover:shadow-lg transition-shadow flex items-center gap-1"
-                      >
-                        <User className="w-3 h-3" />
-                        View Profile
-                      </a>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            <div>
+            {/* Email - Full width on mobile */}
+            <div className="col-span-1 sm:col-span-1">
               <Label htmlFor="email" className="text-[#1A2B4F] mb-2 block">
                 Email Address <span className="text-[#FF6B6B]">*</span>
               </Label>
@@ -1407,7 +1401,7 @@ export function CreateRequestedItinerary({
                   placeholder="maria.santos@email.com"
                   value={formData.email}
                   onChange={(e) => handleFormChange("email", e.target.value)}
-                  className={`h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all ${
+                  className={`h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full ${
                     formData.customerId
                       ? "bg-[#F8FAFB] text-[#94A3B8]"
                       : "bg-white"
@@ -1426,7 +1420,8 @@ export function CreateRequestedItinerary({
               )}
             </div>
 
-            <div>
+            {/* Mobile - Full width on mobile */}
+            <div className="col-span-1 sm:col-span-1">
               <Label htmlFor="mobile" className="text-[#1A2B4F] mb-2 block">
                 Mobile Number <span className="text-[#FF6B6B]">*</span>
               </Label>
@@ -1438,7 +1433,7 @@ export function CreateRequestedItinerary({
                   placeholder="+63 917 123 4567"
                   value={formData.mobile}
                   onChange={(e) => handleFormChange("mobile", e.target.value)}
-                  className={`h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all ${
+                  className={`h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full ${
                     formData.customerId
                       ? "bg-[#F8FAFB] text-[#94A3B8]"
                       : "bg-white"
@@ -1457,7 +1452,8 @@ export function CreateRequestedItinerary({
               )}
             </div>
 
-            <div>
+            {/* Destination - Full width on mobile */}
+            <div className="col-span-1 sm:col-span-2">
               <Label
                 htmlFor="destination"
                 className="text-[#1A2B4F] mb-2 block"
@@ -1473,96 +1469,105 @@ export function CreateRequestedItinerary({
                   onChange={(e) =>
                     handleFormChange("destination", e.target.value)
                   }
-                  className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
+                  className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
                 />
               </div>
             </div>
 
-            <div>
-              <Label
-                htmlFor="travelDateFrom"
-                className="text-[#1A2B4F] mb-2 block"
-              >
-                Travel Start Date <span className="text-[#FF6B6B]">*</span>
-              </Label>
-              <div className="relative">
-                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B] pointer-events-none" />
-                <Input
-                  id="travelDateFrom"
-                  type="date"
-                  value={formData.travelDateFrom}
-                  onChange={(e) =>
-                    handleFormChange("travelDateFrom", e.target.value)
-                  }
-                  className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
-                />
+            {/* Travel Dates - Two columns on desktop, side-by-side on mobile */}
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 col-span-1 sm:col-span-2">
+              <div className="col-span-1">
+                <Label
+                  htmlFor="travelDateFrom"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Travel Start Date <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <div className="relative">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelDateFrom"
+                    type="date"
+                    value={formData.travelDateFrom}
+                    onChange={(e) =>
+                      handleFormChange("travelDateFrom", e.target.value)
+                    }
+                    className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="col-span-1">
+                <Label
+                  htmlFor="travelDateTo"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Travel End Date <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <div className="relative">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelDateTo"
+                    type="date"
+                    value={formData.travelDateTo}
+                    onChange={(e) =>
+                      handleFormChange("travelDateTo", e.target.value)
+                    }
+                    className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
+                  />
+                </div>
               </div>
             </div>
 
-            <div>
-              <Label
-                htmlFor="travelDateTo"
-                className="text-[#1A2B4F] mb-2 block"
-              >
-                Travel End Date <span className="text-[#FF6B6B]">*</span>
-              </Label>
-              <div className="relative">
-                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B] pointer-events-none" />
-                <Input
-                  id="travelDateTo"
-                  type="date"
-                  value={formData.travelDateTo}
-                  onChange={(e) =>
-                    handleFormChange("travelDateTo", e.target.value)
-                  }
-                  className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
-                />
+            {/* Travelers and Total Amount - Two columns on desktop, side-by-side on mobile */}
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 col-span-1 sm:col-span-2">
+              <div className="col-span-1">
+                <Label
+                  htmlFor="travelers"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Number of Travelers <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <div className="relative">
+                  <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B] pointer-events-none" />
+                  <Input
+                    id="travelers"
+                    type="number"
+                    min="1"
+                    placeholder="2"
+                    value={formData.travelers}
+                    onChange={(e) =>
+                      handleFormChange("travelers", e.target.value)
+                    }
+                    className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <Label htmlFor="travelers" className="text-[#1A2B4F] mb-2 block">
-                Number of Travelers <span className="text-[#FF6B6B]">*</span>
-              </Label>
-              <div className="relative">
-                <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B] pointer-events-none" />
-                <Input
-                  id="travelers"
-                  type="number"
-                  min="1"
-                  placeholder="2"
-                  value={formData.travelers}
-                  onChange={(e) =>
-                    handleFormChange("travelers", e.target.value)
-                  }
-                  className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label
-                htmlFor="totalAmount"
-                className="text-[#1A2B4F] mb-2 block"
-              >
-                Total Amount (₱) <span className="text-[#FF6B6B]">*</span>
-              </Label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B] font-medium">
-                  ₱
-                </span>
-                <Input
-                  id="totalAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Enter Total Amount"
-                  value={formData.totalAmount}
-                  onChange={(e) =>
-                    handleFormChange("totalAmount", e.target.value)
-                  }
-                  className="h-12 pl-10 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
-                />
+              <div className="col-span-1">
+                <Label
+                  htmlFor="totalAmount"
+                  className="text-[#1A2B4F] mb-2 block"
+                >
+                  Total Amount (₱) <span className="text-[#FF6B6B]">*</span>
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B] font-medium">
+                    ₱
+                  </span>
+                  <Input
+                    id="totalAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Enter Total Amount"
+                    value={formData.totalAmount}
+                    onChange={(e) =>
+                      handleFormChange("totalAmount", e.target.value)
+                    }
+                    className="h-12 pl-10 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all w-full"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1589,14 +1594,16 @@ export function CreateRequestedItinerary({
             {itineraryDays.map((day, dayIndex) => (
               <div
                 key={day.id}
-                className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
+                className="p-4 sm:p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
               >
                 {/* Day Header */}
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                    <span className="text-white font-bold">D{day.day}</span>
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6 flex-col sm:flex-row">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20 self-start">
+                    <span className="text-white font-bold text-sm sm:text-base">
+                      D{day.day}
+                    </span>
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 w-full sm:w-auto">
                     <Label
                       htmlFor={`day-${day.id}-title`}
                       className="text-[#1A2B4F] mb-2 block text-sm font-medium"
@@ -1609,29 +1616,31 @@ export function CreateRequestedItinerary({
                       placeholder="e.g., Arrival & Beach Sunset"
                       value={day.title}
                       onChange={(e) => updateDayTitle(day.id, e.target.value)}
-                      className="h-11 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] bg-white transition-all"
+                      className="h-11 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] bg-white transition-all w-full"
                     />
                   </div>
                   <button
                     onClick={() => addActivity(day.id)}
-                    className="h-11 px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
+                    className="h-11 px-4 sm:px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-1 sm:gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all self-stretch sm:self-auto justify-center min-w-[44px] sm:min-w-auto"
+                    aria-label="Add Activity"
                   >
-                    <Plus className="w-4 h-4" />
-                    Add Activity
+                    <Plus className="w-4 h-4 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Add Activity</span>
+                    <span className="sm:hidden text-xs">Add</span>
                   </button>
                 </div>
 
                 {/* Activities */}
                 <div className="space-y-4">
                   {day.activities.length === 0 ? (
-                    <div className="py-10 text-center border-2 border-dashed border-[#E5E7EB] rounded-xl bg-white">
-                      <div className="w-14 h-14 rounded-xl bg-[#F8FAFB] flex items-center justify-center mx-auto mb-3">
-                        <Package className="w-7 h-7 text-[#CBD5E1]" />
+                    <div className="py-8 sm:py-10 text-center border-2 border-dashed border-[#E5E7EB] rounded-xl bg-white">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#F8FAFB] flex items-center justify-center mx-auto mb-3">
+                        <Package className="w-6 h-6 sm:w-7 sm:h-7 text-[#CBD5E1]" />
                       </div>
                       <p className="text-sm text-[#64748B] mb-1">
                         No activities yet for Day {day.day}
                       </p>
-                      <p className="text-xs text-[#94A3B8]">
+                      <p className="text-xs text-[#94A3B8] px-2">
                         Click "Add Activity" to start building this day
                       </p>
                     </div>
@@ -1641,25 +1650,26 @@ export function CreateRequestedItinerary({
                       return (
                         <div
                           key={activity.id}
-                          className="relative p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
+                          className="relative p-3 sm:p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
                         >
                           {/* Activity number badge */}
-                          <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
+                          <div className="absolute -left-2 sm:-left-3 -top-2 sm:-top-3 w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
                             {activityIndex + 1}
                           </div>
 
-                          <div className="flex items-start gap-4">
+                          <div className="flex items-start gap-3 sm:gap-4">
                             {/* Drag Handle */}
-                            <div className="flex flex-col gap-1 pt-2">
+                            <div className="flex flex-col gap-1 pt-1 sm:pt-2 shrink-0">
                               <button
                                 onClick={() =>
                                   moveActivityUp(day.id, activityIndex)
                                 }
                                 disabled={activityIndex === 0}
-                                className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                 title="Move Up"
+                                aria-label="Move Activity Up"
                               >
-                                <GripVertical className="w-4 h-4 text-[#CBD5E1] rotate-90" />
+                                <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-[#CBD5E1] rotate-90" />
                               </button>
                               <button
                                 onClick={() =>
@@ -1668,17 +1678,18 @@ export function CreateRequestedItinerary({
                                 disabled={
                                   activityIndex === day.activities.length - 1
                                 }
-                                className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                 title="Move Down"
+                                aria-label="Move Activity Down"
                               >
-                                <GripVertical className="w-4 h-4 text-[#CBD5E1] -rotate-90" />
+                                <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-[#CBD5E1] -rotate-90" />
                               </button>
                             </div>
 
                             {/* Form Fields */}
-                            <div className="flex-1 grid grid-cols-12 gap-4">
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4">
                               {/* Time */}
-                              <div className="col-span-2">
+                              <div className="col-span-1 sm:col-span-2">
                                 <Label className="text-xs text-[#64748B] mb-1 block">
                                   Time
                                 </Label>
@@ -1693,12 +1704,12 @@ export function CreateRequestedItinerary({
                                       e.target.value
                                     )
                                   }
-                                  className="h-9 rounded-lg border-[#E5E7EB] text-sm"
+                                  className="h-9 rounded-lg border-[#E5E7EB] text-sm w-full"
                                 />
                               </div>
 
                               {/* Icon */}
-                              <div className="col-span-2">
+                              <div className="col-span-1 sm:col-span-2">
                                 <Label className="text-xs text-[#64748B] mb-1 block">
                                   Icon
                                 </Label>
@@ -1708,13 +1719,14 @@ export function CreateRequestedItinerary({
                                     openIconPicker(day.id, activity.id)
                                   }
                                   className="w-full h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white flex items-center justify-center transition-all"
+                                  aria-label="Select Icon"
                                 >
                                   <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
                                 </button>
                               </div>
 
                               {/* Title */}
-                              <div className="col-span-8">
+                              <div className="col-span-1 sm:col-span-8">
                                 <Label className="text-xs text-[#64748B] mb-1 block">
                                   Activity Title *
                                 </Label>
@@ -1729,12 +1741,12 @@ export function CreateRequestedItinerary({
                                       e.target.value
                                     )
                                   }
-                                  className="h-9 rounded-lg border-[#E5E7EB] text-sm"
+                                  className="h-9 rounded-lg border-[#E5E7EB] text-sm w-full"
                                 />
                               </div>
 
                               {/* Location */}
-                              <div className="col-span-12 relative">
+                              <div className="col-span-1 sm:col-span-12 relative">
                                 <Label className="text-xs text-[#64748B] mb-1 block">
                                   Location
                                 </Label>
@@ -1773,7 +1785,7 @@ export function CreateRequestedItinerary({
                                         setActiveLocationInput(null);
                                       }, 200);
                                     }}
-                                    className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm"
+                                    className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm w-full"
                                   />
                                 </div>
 
@@ -1794,11 +1806,11 @@ export function CreateRequestedItinerary({
                                               activity.id
                                             )
                                           }
-                                          className="w-full px-4 py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
+                                          className="w-full px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
                                         >
-                                          <div className="flex items-start gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
-                                              <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                                          <div className="flex items-start gap-2 sm:gap-3">
+                                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
+                                              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#0A7AFF]" />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                               <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
@@ -1807,8 +1819,8 @@ export function CreateRequestedItinerary({
                                               <p className="text-xs text-[#64748B] mt-0.5 truncate">
                                                 {place.address}
                                               </p>
-                                              <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-xs px-2 py-0.5 rounded bg-[#F1F5F9] text-[#64748B]">
+                                              <div className="flex items-center gap-1 sm:gap-2 mt-1">
+                                                <span className="text-xs px-2 py-0.5 rounded bg-[#F1F5F9] text-[#64748B] truncate max-w-[80px] sm:max-w-none">
                                                   {place.source}
                                                 </span>
                                               </div>
@@ -1825,10 +1837,10 @@ export function CreateRequestedItinerary({
                                   !isLoadingPlaces &&
                                   locationSearchQuery.length >= 2 &&
                                   locationSuggestions.length === 0 && (
-                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg p-4">
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-[#F8FAFB] flex items-center justify-center shrink-0">
-                                          <Search className="w-5 h-5 text-[#CBD5E1]" />
+                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg p-3 sm:p-4">
+                                      <div className="flex items-center gap-2 sm:gap-3">
+                                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#F8FAFB] flex items-center justify-center shrink-0">
+                                          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#CBD5E1]" />
                                         </div>
                                         <div>
                                           <p className="text-sm text-[#64748B]">
@@ -1844,7 +1856,7 @@ export function CreateRequestedItinerary({
                               </div>
 
                               {/* Description */}
-                              <div className="col-span-12">
+                              <div className="col-span-1 sm:col-span-12">
                                 <Label className="text-xs text-[#64748B] mb-1 block">
                                   Description
                                 </Label>
@@ -1859,7 +1871,7 @@ export function CreateRequestedItinerary({
                                       e.target.value
                                     )
                                   }
-                                  className="rounded-lg border-[#E5E7EB] text-sm resize-none"
+                                  className="rounded-lg border-[#E5E7EB] text-sm resize-none w-full"
                                   rows={2}
                                 />
                               </div>
@@ -1873,6 +1885,7 @@ export function CreateRequestedItinerary({
                               }
                               className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 shrink-0"
                               title="Delete Activity"
+                              aria-label="Delete Activity"
                             >
                               <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B] transition-colors" />
                             </button>

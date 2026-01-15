@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { getIconByValue } from "../utils/helpers/getIconByValue";
+import { convertTimeStringToPhilippineTime } from "../utils/helpers/convertTime";
 
 interface ItineraryActivity {
   time: string;
@@ -69,13 +70,13 @@ export function StandardItineraryDetailView({
 
       {/* Hero Image and Overview */}
       <div className="rounded-2xl border-2 border-[#E5E7EB] overflow-hidden bg-white shadow-sm">
-        <div className="h-[300px] relative overflow-hidden">
+        <div className="h-75 relative overflow-hidden">
           <ImageWithFallback
             src={itinerary.image}
             alt={itinerary.destination}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8">
             <div className="flex items-end justify-between">
               <div>
@@ -118,7 +119,7 @@ export function StandardItineraryDetailView({
       {/* Day-by-Day Itinerary */}
       <div className="rounded-2xl border-2 border-[#E5E7EB] bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+          <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
             <Calendar className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -138,7 +139,7 @@ export function StandardItineraryDetailView({
               className="border-l-4 border-[#0A7AFF] pl-6 relative"
             >
               {/* Day Header */}
-              <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30">
+              <div className="absolute -left-4.25 top-0 w-8 h-8 rounded-full bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30">
                 <span className="text-white text-sm font-semibold">
                   {day.day}
                 </span>
@@ -159,8 +160,8 @@ export function StandardItineraryDetailView({
                       key={idx}
                       className="flex gap-4 p-4 rounded-xl bg-[#F8FAFB] hover:bg-white hover:shadow-sm border border-transparent hover:border-[#E5E7EB] transition-all"
                     >
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0A7AFF]/10 to-[#14B8A6]/10 flex items-center justify-center">
+                      <div className="shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#0A7AFF]/10 to-[#14B8A6]/10 flex items-center justify-center">
                           <IconComponent className="w-5 h-5 text-[#0A7AFF]" />
                         </div>
                       </div>
@@ -169,8 +170,8 @@ export function StandardItineraryDetailView({
                           <h5 className="font-medium text-[#1A2B4F]">
                             {activity.title}
                           </h5>
-                          <span className="flex-shrink-0 text-sm text-[#0A7AFF] font-medium">
-                            {activity.time}
+                          <span className="shrink-0 text-sm text-[#0A7AFF] font-medium">
+                            {convertTimeStringToPhilippineTime(activity.time)}
                           </span>
                         </div>
                         <p className="text-sm text-[#64748B] mb-1">
@@ -196,7 +197,7 @@ export function StandardItineraryDetailView({
       <div className="grid grid-cols-2 gap-6">
         <div className="rounded-2xl border-2 border-[#E5E7EB] bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#10B981] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
               <Package className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -232,7 +233,7 @@ export function StandardItineraryDetailView({
 
         <div className="rounded-2xl border-2 border-[#E5E7EB] bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FFB84D] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF6B6B] to-[#FFB84D] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
               <Users className="w-5 h-5 text-white" />
             </div>
             <div>

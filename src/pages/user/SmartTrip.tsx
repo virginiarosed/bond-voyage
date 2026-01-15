@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Sparkles,
   MapPin,
@@ -12,37 +12,74 @@ import {
   Palmtree,
   Loader2,
   Check,
-  Plane,
-  Hotel,
-  Car,
   AlertTriangle,
+  Compass,
+  Building2,
+  CheckCircle2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ContentCard } from "../../components/ContentCard";
-import { toast } from "sonner@2.0.3";
-import { useBookings } from "../../components/BookingContext";
+import { toast } from "sonner";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { FAQAssistant } from "../../components/FAQAssistant";
+import { useSmartTrip } from "../../hooks/useSmartTrip";
+import { X } from "lucide-react";
+import { usePlacesSearch } from "../../hooks/useLocations";
+import { Place } from "../../types/types";
+import { queryKeys } from "../../utils/lib/queryKeys";
+import { useCreateBooking } from "../../hooks/useBookings";
+import { useProfile } from "../../hooks/useAuth";
+import { convertTimeStringToPhilippineTime } from "../../utils/helpers/convertTime";
+
+// Icon mapping for activity types
+const iconMap: Record<string, any> = {
+  sightseeing: Compass,
+  museum: Building2,
+  food: Utensils,
+  culture: Camera,
+  nature: Mountain,
+  shopping: Building2,
+  default: Camera,
+};
 
 export function SmartTrip() {
   const navigate = useNavigate();
-  const { addUserTravel, moveUserTravelToPending } = useBookings();
+  const { data: userProfileResponse } = useProfile();
   const [step, setStep] = useState(1);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTrip, setGeneratedTrip] = useState<any>(null);
-  const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
+  const [showSaveConfirmModal, setShowSaveConfirmModal] = useState(false);
+
+  const [destinationQuery, setDestinationQuery] = useState("");
+  const [showDestinationSuggestions, setShowDestinationSuggestions] =
+    useState(false);
+  const [selectedDestination, setSelectedDestination] = useState<Place | null>(
+    null
+  );
 
   const [formData, setFormData] = useState({
     destination: "",
     startDate: "",
     endDate: "",
-    travelers: "0",
+    travelers: "1",
     budget: "",
     preferences: [] as string[],
     accommodationType: "hotel",
-    travelPace: "",
+    travelPace: "moderate",
   });
+
+  const { data: placesData, isLoading: isSearching } = usePlacesSearch(
+    { text: destinationQuery, limit: 5 },
+    {
+      enabled: destinationQuery.length >= 2,
+      staleTime: 5 * 60 * 1000,
+      queryKey: queryKeys.places.search(formData),
+    }
+  );
+
+  const suggestions = placesData?.data || [];
+
+  const destinationRef = useRef<HTMLDivElement>(null);
 
   const preferenceOptions = [
     { id: "beach", label: "Beach & Islands", icon: Waves },
@@ -53,6 +90,98 @@ export function SmartTrip() {
     { id: "relaxation", label: "Relaxation & Spa", icon: Heart },
   ];
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        destinationRef.current &&
+        !destinationRef.current.contains(event.target as Node)
+      ) {
+        setShowDestinationSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleDestinationSelect = (place: Place) => {
+    setSelectedDestination(place);
+    setDestinationQuery(place.name);
+    setFormData((prev) => ({
+      ...prev,
+      destination: place.name,
+    }));
+    setShowDestinationSuggestions(false);
+  };
+
+  const handleDestinationInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = e.target.value;
+    setDestinationQuery(value);
+    setFormData((prev) => ({ ...prev, destination: value }));
+
+    if (value.length >= 2) {
+      setShowDestinationSuggestions(true);
+    } else {
+      setShowDestinationSuggestions(false);
+      setSelectedDestination(null);
+    }
+  };
+
+  const clearDestination = () => {
+    setDestinationQuery("");
+    setFormData((prev) => ({ ...prev, destination: "" }));
+    setSelectedDestination(null);
+    setShowDestinationSuggestions(false);
+  };
+
+  const { mutate: generateSmartTrip, isPending: isGenerating } = useSmartTrip({
+    onSuccess: (response) => {
+      // Extract data from ApiResponse structure
+      if (response.data) {
+        setGeneratedTrip(response.data);
+        setStep(2);
+        toast.success("Trip generated successfully!");
+      }
+    },
+    onError: () => {
+      toast.error("Failed to generate trip", {
+        description: "Please try again later",
+      });
+    },
+  });
+
+  // API mutation for creating booking
+  const createBookingMutation = useCreateBooking({
+    onSuccess: (response) => {
+      const bookingId = response.data?.id;
+
+      toast.success("Travel Plan Saved!", {
+        description: `Your travel plan to ${formData.destination} has been successfully saved.`,
+      });
+
+      setShowSaveConfirmModal(false);
+
+      // Navigate to UserTravels after a short delay
+      setTimeout(() => {
+        navigate("/user/travels", {
+          state: {
+            scrollToId: bookingId,
+            tab: "in-progress",
+          },
+        });
+      }, 800);
+    },
+    onError: (error: any) => {
+      toast.error("Failed to save travel plan", {
+        description: error.response?.data?.message || "Please try again later",
+      });
+    },
+  });
+
   const handlePreferenceToggle = (id: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -62,315 +191,124 @@ export function SmartTrip() {
     }));
   };
 
-  const calculateDaysAndNights = (start: string, end: string) => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const days =
-      Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-      ) + 1;
-    const nights = days - 1;
-    return { days, nights };
-  };
-
-  const handleSaveToTravels = () => {
-    // Generate unique ID
-    const newTripId = `TP-${Date.now().toString().slice(-6)}`;
-
-    // Calculate date range string
-    const startDate = new Date(formData.startDate);
-    const endDate = new Date(formData.endDate);
-    const dateRange = `${startDate.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    })} – ${endDate.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    })}`;
-
-    // Create new travel with full itinerary structure
-    const newTravel = {
-      id: newTripId,
-      destination: formData.destination,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      travelers: parseInt(formData.travelers),
-      budget: formData.budget
-        ? `₱${parseInt(formData.budget).toLocaleString()}`
-        : generatedTrip?.totalCost || "₱0",
-      status: "in-progress" as const,
-      bookingType: "Customized" as const,
-      bookingSource: "Generated" as const,
-      ownership: "owned" as const,
-      owner: "Maria Santos",
-      collaborators: [],
-      createdOn: new Date().toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-      itinerary: generatedTrip?.itinerary || [],
-    };
-
-    // Add to context
-    addUserTravel(newTravel);
-
-    // Store the ID for navigation
-    setSavedTripId(newTripId);
-
-    toast.success("Trip saved to your travels!", {
-      description: "Redirecting to In Progress tab...",
-    });
-
-    // Navigate to UserTravels after a short delay
-    setTimeout(() => {
-      navigate("/user/travels", {
-        state: { scrollToId: newTripId, tab: "in-progress" },
-      });
-    }, 800);
-  };
-
   const handleGenerate = () => {
     if (!formData.destination || !formData.startDate || !formData.endDate) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    const { days, nights } = calculateDaysAndNights(
-      formData.startDate,
-      formData.endDate
-    );
+    const payload = {
+      destination: formData.destination,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      travelers: parseInt(formData.travelers),
+      budget: parseInt(formData.budget) || 0,
+      preference: formData.preferences,
+      accomodationType: formData.accommodationType,
+      travelPace: formData.travelPace as "drive" | "walk",
+    };
 
-    setIsGenerating(true);
+    generateSmartTrip(payload);
+  };
 
-    setTimeout(() => {
-      // Generate itinerary based on calculated days
-      const generatedItinerary = Array.from({ length: days }, (_, index) => {
-        const dayNum = index + 1;
+  const calculateDuration = () => {
+    if (!formData.startDate || !formData.endDate) return { days: 0, nights: 0 };
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    const days =
+      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const nights = days - 1;
+    return { days, nights };
+  };
 
-        if (dayNum === 1) {
-          return {
-            day: dayNum,
-            title: "Arrival & Beach Exploration",
-            activities: [
-              {
-                time: "10:00 AM",
-                icon: Plane,
-                title: "Arrival at Airport",
-                description: "Meet and greet with tour guide",
-                location: formData.destination,
-              },
-              {
-                time: "12:00 PM",
-                icon: Car,
-                title: "Transfer to Hotel",
-                description: "Scenic drive to beachfront resort",
-                location: `${formData.destination} City Center`,
-              },
-              {
-                time: "2:00 PM",
-                icon: Hotel,
-                title: "Check-in at Resort",
-                description: "Settle in at beachfront resort",
-                location: "Beachfront Resort",
-              },
-              {
-                time: "6:00 PM",
-                icon: Camera,
-                title: "Sunset Beach Walk",
-                description: "Enjoy the sunset view at the beach",
-                location: "Main Beach",
-              },
-              {
-                time: "8:00 PM",
-                icon: Utensils,
-                title: "Welcome Dinner",
-                description: "Fresh seafood at local restaurant",
-                location: "Seaside Restaurant",
-              },
-            ],
-          };
-        } else if (dayNum === days) {
-          return {
-            day: dayNum,
-            title: "Departure & Last Moments",
-            activities: [
-              {
-                time: "7:00 AM",
-                icon: Utensils,
-                title: "Sunrise Breakfast",
-                description: "Final breakfast with ocean view",
-                location: "Resort Restaurant",
-              },
-              {
-                time: "9:00 AM",
-                icon: Camera,
-                title: "Last-minute Shopping",
-                description: "Pick up souvenirs and local products",
-                location: "Souvenir Shop",
-              },
-              {
-                time: "12:00 PM",
-                icon: Car,
-                title: "Airport Transfer",
-                description: "Transfer to airport for departure",
-                location: "Airport",
-              },
-            ],
-          };
-        } else if (dayNum === 2) {
-          return {
-            day: dayNum,
-            title: "Island Hopping Adventure",
-            activities: [
-              {
-                time: "7:00 AM",
-                icon: Utensils,
-                title: "Breakfast",
-                description: "Breakfast at hotel",
-                location: "Resort",
-              },
-              {
-                time: "9:00 AM",
-                icon: Waves,
-                title: "Visit Secret Lagoon",
-                description: "Explore the beautiful hidden lagoon",
-                location: "Secret Lagoon",
-              },
-              {
-                time: "11:00 AM",
-                icon: Camera,
-                title: "Snorkeling at Coral Reefs",
-                description: "Discover underwater marine life",
-                location: "Coral Garden",
-              },
-              {
-                time: "1:00 PM",
-                icon: Utensils,
-                title: "Beach BBQ Lunch",
-                description: "Delicious BBQ lunch on the beach",
-                location: "Paradise Beach",
-              },
-              {
-                time: "5:00 PM",
-                icon: Camera,
-                title: "Sunset Viewing Point",
-                description: "Panoramic sunset view",
-                location: "Hilltop Viewpoint",
-              },
-            ],
-          };
-        } else if (dayNum === 3) {
-          return {
-            day: dayNum,
-            title: "Cultural & Nature Experience",
-            activities: [
-              {
-                time: "7:00 AM",
-                icon: Mountain,
-                title: "Mountain Hiking Tour",
-                description: "Trek through scenic mountain trails",
-                location: "Mountain Trail",
-              },
-              {
-                time: "11:00 AM",
-                icon: Camera,
-                title: "Visit Local Village",
-                description: "Experience local culture and traditions",
-                location: "Traditional Village",
-              },
-              {
-                time: "2:00 PM",
-                icon: Utensils,
-                title: "Traditional Cooking Class",
-                description: "Learn to cook local delicacies",
-                location: "Cultural Center",
-              },
-              {
-                time: "7:00 PM",
-                icon: Camera,
-                title: "Night Market Exploration",
-                description: "Browse local crafts and street food",
-                location: "Night Market",
-              },
-            ],
-          };
-        } else {
-          return {
-            day: dayNum,
-            title: "Relaxation & Spa Day",
-            activities: [
-              {
-                time: "7:00 AM",
-                icon: Heart,
-                title: "Morning Yoga Session",
-                description: "Beachside yoga and meditation",
-                location: "Resort Beach",
-              },
-              {
-                time: "10:00 AM",
-                icon: Heart,
-                title: "Traditional Filipino Massage",
-                description: "Relaxing spa treatment",
-                location: "Resort Spa",
-              },
-              {
-                time: "2:00 PM",
-                icon: Waves,
-                title: "Pool Time & Leisure",
-                description: "Free time to relax by the pool",
-                location: "Resort Pool",
-              },
-              {
-                time: "7:00 PM",
-                icon: Utensils,
-                title: "Fine Dining Experience",
-                description: "Gourmet dinner at resort restaurant",
-                location: "Fine Dining Restaurant",
-              },
-            ],
-          };
-        }
+  const handleSaveToTravels = () => {
+    if (!generatedTrip || !userProfileResponse?.data?.user) {
+      toast.error("Unable to save", {
+        description: "Please wait while we load your profile information.",
       });
+      return;
+    }
 
-      setGeneratedTrip({
-        title: `${formData.destination}`,
-        duration: `${days} ${days > 1 ? "Days" : "Day"}, ${nights} ${
-          nights > 1 ? "Nights" : "Night"
-        }`,
-        totalCost: "₱" + (parseInt(formData.budget) || 45000).toLocaleString(),
-        itinerary: generatedItinerary,
-        inclusions: [
-          `${nights} ${nights > 1 ? "nights" : "night"} accommodation`,
-          "Daily breakfast",
-          "Airport transfers",
-          "Island hopping tour",
-          "Entrance fees",
-          "Tour guide services",
-        ],
-      });
-      setIsGenerating(false);
-      setStep(2);
-    }, 3000);
+    setShowSaveConfirmModal(true);
+  };
+
+  const confirmSaveToTravels = () => {
+    if (!generatedTrip || !userProfileResponse?.data?.user) return;
+
+    const userProfile = userProfileResponse.data.user;
+
+    // Transform generated trip itinerary to API format
+    const apiDays = generatedTrip.itinerary.map((day: any, index: number) => ({
+      dayNumber: day.day,
+      date: day.date,
+      activities: day.activities.map(
+        (activity: any, activityIndex: number) => ({
+          time: activity.time || "00:00",
+          title: activity.title,
+          description: activity.description || null,
+          location: activity.locationName || null,
+          icon: activity.iconKey || null,
+          order: activity.order || activityIndex + 1,
+        })
+      ),
+    }));
+
+    const itineraryTitle = `AI Generated Trip to ${formData.destination}`;
+
+    const bookingData = {
+      destination: formData.destination,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      travelers: parseInt(formData.travelers),
+      totalPrice: parseFloat(formData.budget) || 0,
+      type: "CUSTOMIZED",
+      tourType: "PRIVATE",
+      customerName: `${userProfile.firstName || ""} ${
+        userProfile.lastName || ""
+      }`.trim(),
+      customerEmail: userProfile.email || "",
+      customerMobile: userProfile.mobile || "",
+      itinerary: {
+        title: itineraryTitle,
+        destination: formData.destination,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        travelers: parseInt(formData.travelers),
+        estimatedCost: parseFloat(formData.budget) || 0,
+        type: "CUSTOMIZED",
+        tourType: "PRIVATE",
+        days: apiDays,
+      },
+    };
+
+    createBookingMutation.mutate(bookingData);
   };
 
   const handleRegenerateTrip = () => {
     setShowRegenerateModal(false);
     setStep(1);
     setGeneratedTrip(null);
+    setDestinationQuery("");
+    setSelectedDestination(null);
+    setShowDestinationSuggestions(false);
     setFormData({
       destination: "",
       startDate: "",
       endDate: "",
-      travelers: "0",
+      travelers: "1",
       budget: "",
       preferences: [],
       accommodationType: "hotel",
-      travelPace: "",
+      travelPace: "moderate",
     });
   };
+
+  const getActivityIcon = (iconKey: string) => {
+    const IconComponent = iconMap[iconKey] || iconMap.default;
+    return <IconComponent className="w-5 h-5" strokeWidth={2} />;
+  };
+
+  const { days, nights } = calculateDuration();
 
   return (
     <div className="space-y-6">
@@ -379,7 +317,8 @@ export function SmartTrip() {
           {/* Trip Details Form */}
           <ContentCard title="Trip Details" icon={MapPin}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+              {/* Destination with search suggestions */}
+              <div className="relative" ref={destinationRef}>
                 <label className="block text-sm mb-2 text-card-foreground">
                   Destination <span className="text-red-500">*</span>
                 </label>
@@ -391,15 +330,102 @@ export function SmartTrip() {
                   <input
                     type="text"
                     placeholder="e.g., Palawan, Boracay, Cebu"
-                    value={formData.destination}
-                    onChange={(e) =>
-                      setFormData({ ...formData, destination: e.target.value })
-                    }
-                    className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                    value={destinationQuery}
+                    onChange={handleDestinationInputChange}
+                    onFocus={() => {
+                      if (
+                        destinationQuery.length >= 2 &&
+                        suggestions.length > 0
+                      ) {
+                        setShowDestinationSuggestions(true);
+                      }
+                    }}
+                    className="w-full pl-10 pr-10 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                    required
                   />
+                  {destinationQuery && (
+                    <button
+                      onClick={clearDestination}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-card-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
+
+                {/* Search Suggestions Dropdown */}
+                {showDestinationSuggestions && (
+                  <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {isSearching ? (
+                      <div className="p-4 text-center">
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Searching destinations...
+                        </p>
+                      </div>
+                    ) : suggestions.length > 0 ? (
+                      <div className="py-2">
+                        {suggestions.map((place: Place) => (
+                          <button
+                            key={`${place.source}-${place.name}-${place.lat}`}
+                            type="button"
+                            onClick={() => handleDestinationSelect(place)}
+                            className="w-full px-4 py-3 text-left hover:bg-accent transition-colors flex items-start gap-3"
+                          >
+                            <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-card-foreground font-medium truncate">
+                                {place.name}
+                              </p>
+                              {place.address && (
+                                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                  {place.address}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground shrink-0">
+                              {place.source}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : destinationQuery.length >= 2 ? (
+                      <div className="p-4 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          No destinations found
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Try a different search term
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Selected Destination Details */}
+                {selectedDestination && (
+                  <div className="mt-2 p-3 bg-accent/30 rounded-lg border border-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-medium text-card-foreground">
+                          {selectedDestination.name}
+                        </span>
+                      </div>
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        {selectedDestination.source}
+                      </span>
+                    </div>
+                    {selectedDestination.address && (
+                      <p className="text-xs text-muted-foreground truncate mt-1">
+                        {selectedDestination.address}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
+              {/* Budget */}
               <div>
                 <label className="block text-sm mb-2 text-card-foreground">
                   Budget (PHP)
@@ -420,6 +446,7 @@ export function SmartTrip() {
                 </div>
               </div>
 
+              {/* Start Date */}
               <div>
                 <label className="block text-sm mb-2 text-card-foreground">
                   Start Date <span className="text-red-500">*</span>
@@ -436,10 +463,12 @@ export function SmartTrip() {
                       setFormData({ ...formData, startDate: e.target.value })
                     }
                     className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                    required
                   />
                 </div>
               </div>
 
+              {/* End Date */}
               <div>
                 <label className="block text-sm mb-2 text-card-foreground">
                   End Date <span className="text-red-500">*</span>
@@ -456,10 +485,12 @@ export function SmartTrip() {
                       setFormData({ ...formData, endDate: e.target.value })
                     }
                     className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                    required
                   />
                 </div>
               </div>
 
+              {/* Travelers */}
               <div>
                 <label className="block text-sm mb-2 text-card-foreground">
                   Number of Travelers
@@ -482,6 +513,7 @@ export function SmartTrip() {
                 </div>
               </div>
 
+              {/* Travel Pace */}
               <div>
                 <label className="block text-sm mb-2 text-card-foreground">
                   Travel Pace
@@ -493,12 +525,34 @@ export function SmartTrip() {
                   }
                   className="w-full px-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none transition-all"
                 >
-                  <option value="">Choose your own pace</option>
                   <option value="relaxed">Relaxed - Lots of free time</option>
                   <option value="moderate">
                     Moderate - Balanced itinerary
                   </option>
-                  <option value="packed">Packed - See everything</option>
+                  <option value="fast">Fast - See everything</option>
+                </select>
+              </div>
+
+              {/* Accommodation Type */}
+              <div>
+                <label className="block text-sm mb-2 text-card-foreground">
+                  Accommodation Type
+                </label>
+                <select
+                  value={formData.accommodationType}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      accommodationType: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none transition-all"
+                >
+                  <option value="hotel">Hotel</option>
+                  <option value="resort">Resort</option>
+                  <option value="villa">Villa</option>
+                  <option value="apartment">Apartment</option>
+                  <option value="hostel">Hostel</option>
                 </select>
               </div>
             </div>
@@ -513,6 +567,7 @@ export function SmartTrip() {
                 return (
                   <button
                     key={pref.id}
+                    type="button"
                     onClick={() => handlePreferenceToggle(pref.id)}
                     className={`p-5 border-2 rounded-xl transition-all duration-200 ${
                       isSelected
@@ -601,16 +656,31 @@ export function SmartTrip() {
                   <Sparkles className="w-6 h-6" />
                   <span className="text-sm opacity-90">AI Generated</span>
                 </div>
-                <h2 className="text-2xl mb-2">{generatedTrip.title}</h2>
-                <p className="text-white/90">{generatedTrip.duration}</p>
-                <p className="text-xs text-white/70 mt-3 italic">
-                  💡 You can edit this generated trip once you add this to
-                  Travels
+                <h2 className="text-2xl mb-2">
+                  {generatedTrip.metadata?.destination} Trip
+                </h2>
+                <p className="text-white/90">
+                  {days} {days > 1 ? "Days" : "Day"}, {nights}{" "}
+                  {nights > 1 ? "Nights" : "Night"}
                 </p>
+                <div className="mt-3 space-y-1 text-xs text-white/70">
+                  <p>📍 {generatedTrip.metadata?.destination}</p>
+                  <p>
+                    👥 {generatedTrip.metadata?.travelers} Traveler
+                    {generatedTrip.metadata?.travelers > 1 ? "s" : ""}
+                  </p>
+                  <p>⚡ {generatedTrip.metadata?.travelPace} Pace</p>
+                </div>
               </div>
               <div className="text-right">
                 <p className="text-sm text-white/80 mb-1">Total Cost</p>
-                <p className="text-3xl">{generatedTrip.totalCost}</p>
+                <p className="text-3xl">
+                  ₱{generatedTrip.metadata?.budget?.toLocaleString() || "0"}
+                </p>
+                <p className="text-xs text-white/70 mt-1 italic">
+                  💡 You can edit this generated trip once you add this to
+                  Travels
+                </p>
               </div>
             </div>
           </div>
@@ -618,98 +688,143 @@ export function SmartTrip() {
           {/* Itinerary */}
           <ContentCard title="Your Itinerary" icon={Calendar}>
             <div className="space-y-4">
-              {generatedTrip.itinerary.map((day: any, index: number) => (
+              {generatedTrip.itinerary?.map((day: any, index: number) => (
                 <div
                   key={index}
                   className="border border-border rounded-xl p-5 hover:border-primary/50 hover:shadow-md transition-all"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-md">
-                      <span className="text-lg">{day.day}</span>
+                    <div className="w-12 h-12 rounded-xl bg-linear-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-md">
+                      <span className="text-lg">D{day.day}</span>
                     </div>
-                    <h3 className="text-base text-card-foreground flex-1">
-                      {day.title}
-                    </h3>
+                    <div className="flex-1">
+                      <h3 className="text-base text-card-foreground">
+                        {day.title}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {day.date}
+                      </p>
+                    </div>
                   </div>
                   <div className="space-y-3">
-                    {day.activities.map((activity: any, i: number) => {
-                      const ActivityIcon = activity.icon;
-                      return (
-                        <div
-                          key={i}
-                          className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
-                        >
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white flex-shrink-0 shadow-sm">
-                            <ActivityIcon className="w-5 h-5" strokeWidth={2} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs text-primary">
-                                {activity.time}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                •
-                              </span>
-                              <span className="text-xs text-muted-foreground truncate">
-                                {activity.location}
-                              </span>
-                            </div>
-                            <h4 className="text-sm text-card-foreground mb-1">
-                              {activity.title}
-                            </h4>
-                            <p className="text-xs text-muted-foreground">
-                              {activity.description}
-                            </p>
-                          </div>
+                    {day.activities?.map((activity: any, i: number) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-linear-to-br from-primary to-primary/80 flex items-center justify-center text-white shrink-0 shadow-sm">
+                          {getActivityIcon(activity.iconKey)}
                         </div>
-                      );
-                    })}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-primary">
+                              {convertTimeStringToPhilippineTime(activity.time)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              •
+                            </span>
+                            <span className="text-xs text-muted-foreground truncate">
+                              {activity.locationName}
+                            </span>
+                          </div>
+                          <h4 className="text-sm text-card-foreground font-medium mb-1">
+                            {activity.title}
+                          </h4>
+                          <p className="text-xs text-muted-foreground">
+                            {activity.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
           </ContentCard>
 
-          {/* Inclusions */}
-          <ContentCard title="Package Inclusions" icon={Check}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {generatedTrip.inclusions.map((item: string, index: number) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
-                >
-                  <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                    <Check
-                      className="w-4 h-4 text-green-500"
-                      strokeWidth={2.5}
-                    />
-                  </div>
-                  <span className="text-sm text-card-foreground">{item}</span>
+          {/* Trip Metadata */}
+          {generatedTrip.metadata && (
+            <ContentCard title="Trip Details" icon={Check}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Destination
+                  </p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    {generatedTrip.metadata.destination}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </ContentCard>
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Travel Dates
+                  </p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    {generatedTrip.metadata.startDate} to{" "}
+                    {generatedTrip.metadata.endDate}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Travelers
+                  </p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    {generatedTrip.metadata.travelers} Traveler
+                    {generatedTrip.metadata.travelers > 1 ? "s" : ""}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">Budget</p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    ₱{generatedTrip.metadata.budget?.toLocaleString() || "0"}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Travel Pace
+                  </p>
+                  <p className="text-sm text-card-foreground font-medium capitalize">
+                    {generatedTrip.metadata.travelPace}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Preferences
+                  </p>
+                  <p className="text-sm text-card-foreground font-medium">
+                    {generatedTrip.metadata.preferences?.length > 0
+                      ? generatedTrip.metadata.preferences.join(", ")
+                      : "None specified"}
+                  </p>
+                </div>
+              </div>
+            </ContentCard>
+          )}
 
           {/* Actions */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Generate Another Trip Button */}
             <button
               onClick={() => setShowRegenerateModal(true)}
-              className="px-6 py-3 border-2 border-border rounded-xl hover:bg-accent hover:border-primary/50 transition-all text-center flex items-center justify-center"
+              className="px-6 py-3 border-2 border-border rounded-xl hover:bg-accent hover:border-primary/50 transition-all text-center flex items-center justify-center gap-2"
             >
+              <Sparkles className="w-4 h-4" />
               Generate Another Trip
             </button>
 
-            {/* Save to My Travels Button */}
             <button
               onClick={handleSaveToTravels}
-              className="px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center"
+              disabled={createBookingMutation.isPending || !userProfileResponse}
+              className="px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: "linear-gradient(135deg, #0A7AFF, #14B8A6)",
+                background: createBookingMutation.isPending
+                  ? "#9CA3AF"
+                  : "linear-gradient(135deg, #0A7AFF, #14B8A6)",
                 color: "white",
               }}
             >
-              Save to My Travels
+              <Check className="w-4 h-4" />
+              {createBookingMutation.isPending
+                ? "Saving..."
+                : "Save to My Travels"}
             </button>
           </div>
         </>
@@ -735,15 +850,22 @@ export function SmartTrip() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Current Trip:</span>
-                <span className="font-medium">{generatedTrip?.title}</span>
+                <span className="font-medium">
+                  {generatedTrip?.metadata?.destination} Trip
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Duration:</span>
-                <span className="font-medium">{generatedTrip?.duration}</span>
+                <span className="font-medium">
+                  {days} {days > 1 ? "Days" : "Day"}, {nights}{" "}
+                  {nights > 1 ? "Nights" : "Night"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Cost:</span>
-                <span className="font-medium">{generatedTrip?.totalCost}</span>
+                <span className="font-medium">
+                  ₱{generatedTrip?.metadata?.budget?.toLocaleString() || "0"}
+                </span>
               </div>
             </div>
             <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -758,6 +880,59 @@ export function SmartTrip() {
         onCancel={() => setShowRegenerateModal(false)}
         confirmText="Yes, Generate New Trip"
         cancelText="Keep This Trip"
+        confirmVariant="default"
+      />
+
+      {/* Save Confirmation Modal */}
+      <ConfirmationModal
+        open={showSaveConfirmModal}
+        onOpenChange={setShowSaveConfirmModal}
+        title="Save Travel Plan"
+        description="Are you ready to save this AI-generated travel plan? It will be added to your In Progress travels."
+        icon={<CheckCircle2 className="w-5 h-5 text-white" />}
+        iconGradient="bg-gradient-to-br from-[#10B981] to-[#14B8A6]"
+        iconShadow="shadow-[#10B981]/20"
+        contentGradient="bg-gradient-to-br from-[rgba(16,185,129,0.05)] to-[rgba(20,184,166,0.05)]"
+        contentBorder="border-[rgba(16,185,129,0.2)]"
+        content={
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                Destination:
+              </span>
+              <span className="text-sm text-card-foreground font-medium">
+                {formData.destination || "N/A"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Days:</span>
+              <span className="text-sm text-card-foreground font-medium">
+                {generatedTrip?.itinerary?.length || 0}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Travelers:</span>
+              <span className="text-sm text-card-foreground font-medium">
+                {formData.travelers}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Budget:</span>
+              <span className="text-sm text-primary font-bold">
+                ₱
+                {formData.budget
+                  ? parseFloat(formData.budget).toLocaleString()
+                  : "0"}
+              </span>
+            </div>
+          </div>
+        }
+        onConfirm={confirmSaveToTravels}
+        onCancel={() => setShowSaveConfirmModal(false)}
+        confirmText={
+          createBookingMutation.isPending ? "Saving..." : "Save Travel Plan"
+        }
+        cancelText="Review Again"
         confirmVariant="default"
       />
 

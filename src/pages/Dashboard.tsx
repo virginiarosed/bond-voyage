@@ -188,25 +188,25 @@ export function Dashboard() {
 
   return (
     <div>
-      {/* Profile Information Section */}
+      {/* Profile Information Section - Updated with UserHome.tsx design */}
       <div
-        className="mb-6 sm:mb-8 rounded-2xl p-4 sm:p-6 lg:p-8 relative overflow-hidden min-h-70 sm:min-h-85 lg:min-h-95"
+        className="mb-6 sm:mb-8 rounded-2xl p-3 xs:p-4 sm:p-5 md:p-6 lg:p-8 relative overflow-hidden min-h-[auto] xs:min-h-[320px] sm:min-h-[340px] md:min-h-[360px] lg:min-h-[380px]"
         style={{
           background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))`,
           boxShadow: `0 8px 32px var(--shadow-color-strong)`,
         }}
       >
         {/* Decorative Background Elements */}
-        <div className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-white/10 rounded-full blur-3xl -translate-y-24 sm:-translate-y-32 translate-x-24 sm:translate-x-32" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 bg-white/5 rounded-full blur-2xl translate-y-16 sm:translate-y-24 -translate-x-16 sm:-translate-x-24" />
+        <div className="absolute top-0 right-0 w-32 h-32 xs:w-40 xs:h-40 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-80 lg:h-80 bg-white/10 rounded-full blur-3xl -translate-y-16 xs:-translate-y-20 sm:-translate-y-24 md:-translate-y-28 lg:-translate-y-32 translate-x-16 xs:translate-x-20 sm:translate-x-24 md:translate-x-28 lg:translate-x-32" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 xs:w-28 xs:h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 bg-white/5 rounded-full blur-2xl translate-y-12 xs:translate-y-14 sm:translate-y-16 md:translate-y-20 lg:translate-y-24 -translate-x-12 xs:-translate-x-14 sm:-translate-x-16 md:-translate-x-20 lg:-translate-x-24" />
 
-        <div className="relative flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
+        <div className="relative flex flex-col gap-4 xs:gap-5 sm:gap-6 md:gap-7 lg:gap-8 lg:flex-row lg:items-center lg:justify-between">
           {/* Left Side - Profile Info */}
-          <div className="flex items-center gap-12 sm:gap-12 flex-1 pl-0 lg:pl-12 w-full lg:w-auto">
-            {/* Profile Avatar */}
-            <div className="relative shrink-0">
+          <div className="flex flex-col items-center lg:items-start lg:flex-row gap-4 xs:gap-5 sm:gap-6 md:gap-8 lg:gap-10 flex-1 lg:pl-4 xl:pl-8 w-full">
+            {/* Profile Avatar - Larger on mobile */}
+            <div className="relative flex-shrink-0 mt-4 lg:mt-0">
               <div
-                className={`w-30 h-30 sm:w-34 sm:h-34 rounded-full border-4 border-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] overflow-hidden ${
+                className={`w-28 xs:w-32 sm:w-36 md:w-40 lg:w-40 h-28 xs:h-32 sm:h-36 md:h-40 lg:h-40 rounded-full border-4 border-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] overflow-hidden ${
                   profileData && profileData.avatarUrl ? "" : "bg-blue-500"
                 }`}
               >
@@ -217,83 +217,95 @@ export function Dashboard() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white">
+                  <div className="w-full h-full flex items-center justify-center text-3xl xs:text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-bold text-white">
                     {getInitials(profileData.companyName!)}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Profile Info */}
-            <div className="max-w-md flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl text-white">
+            {/* Profile Info - Centered on mobile, left-aligned on desktop */}
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left w-full lg:w-auto">
+              <div className="flex flex-col items-center lg:items-start gap-2 xs:gap-2.5 sm:gap-3 mb-3 xs:mb-4 sm:mb-5">
+                <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-4xl text-white font-semibold break-words max-w-full">
                   {profileData ? profileData.companyName : ""}
                 </h1>
+                <p className="text-white/90 text-sm xs:text-base sm:text-lg lg:text-base break-all max-w-full">
+                  {profileData ? profileData.email : ""}
+                </p>
               </div>
-              <p className="text-white/90 text-sm sm:text-base mb-3 sm:mb-4">
-                {profileData ? profileData.email : ""}
-              </p>
-              {/* Quick Stats */}
-              <div className="flex items-center gap-4 sm:gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <TrendingUp
-                      className="w-5 h-5 text-white"
-                      strokeWidth={2}
-                    />
-                  </div>
-                  <div>
-                    <p className="text-xs text-white/70 whitespace-nowrap">
-                      Years in Operation
-                    </p>
-                    <p className="text-sm text-white">{`${
-                      new Date().getFullYear() - 2019
-                    } Years`}</p>
-                  </div>
-                </div>
 
-                <div className="h-10 w-px bg-white/20" />
+              {/* Quick Stats - Always in same row, visible divider */}
+              {/* Quick Stats - Stacked on mobile, row on desktop */}
+<div className="flex flex-col sm:flex-row items-center gap-4 xs:gap-5 sm:gap-6 w-full">
+  <div className="flex items-center gap-3 justify-center w-full sm:w-auto">
+    <div className="w-10 xs:w-11 sm:w-12 h-10 xs:h-11 sm:h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+      <TrendingUp
+        className="w-5 xs:w-5.5 sm:w-6 h-5 xs:h-5.5 sm:h-6 text-white"
+        strokeWidth={2}
+      />
+    </div>
+    <div className="text-left sm:text-left">
+      <p className="text-xs sm:text-sm text-white/70 whitespace-nowrap font-medium">
+        Years in Operation
+      </p>
+      <p className="text-base xs:text-lg sm:text-xl lg:text-base text-white font-semibold">{`${
+        new Date().getFullYear() - 2019
+      } Years`}</p>
+    </div>
+  </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs text-white/70 whitespace-nowrap">
-                      Customer Satisfaction
-                    </p>
-                    <p className="text-sm text-white flex items-center gap-1">
-                      {profileData && profileData.customerRating !== undefined 
-                        ? (
-                          <>
-                            <span className="font-semibold">{profileData.customerRating}</span>
-                            <span className="text-white/80">/ 5 stars</span>
-                          </>
-                        )
-                        : "N/A"}
-                    </p>
-                  </div>
-                </div>
-              </div>
+  {/* Divider - Hidden on mobile, visible on sm and up */}
+  <div className="hidden sm:block h-10 w-px bg-white/20" />
+
+  <div className="flex items-center gap-3 justify-center w-full sm:w-auto">
+    <div className="w-10 xs:w-11 sm:w-12 h-10 xs:h-11 sm:h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+      <svg
+        className="w-5 xs:w-5.5 sm:w-6 h-5 xs:h-5.5 sm:h-6 text-white"
+        fill="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>
+    </div>
+    <div className="text-left sm:text-left">
+      <p className="text-xs sm:text-sm text-white/70 whitespace-nowrap font-medium">
+        Customer Satisfaction
+      </p>
+      <p className="text-base xs:text-lg sm:text-xl lg:text-base text-white font-semibold flex items-center gap-1">
+        {profileData && profileData.customerRating !== undefined
+          ? (
+            <>
+              <span>{profileData.customerRating}</span>
+              <span className="text-white/80 text-sm">/ 5 stars</span>
+            </>
+          )
+          : "N/A"}
+      </p>
+    </div>
+  </div>
+</div>
             </div>
           </div>
 
-          {/* Right Side - Interactive Traveling Avatar */}
-          <div className="shrink-0 w-full lg:w-1/2 min-w-70 sm:min-w-[320px] flex-1">
+          {/* Right Side - Interactive Traveling Avatar - Hidden on mobile (moved below) */}
+          <div className="hidden lg:flex w-full lg:w-auto lg:flex-1 justify-center items-center min-h-[200px] lg:min-h-[250px]">
+            <div className="w-full max-w-[300px] lg:max-w-none">
+              <TravelingAvatar />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Traveling Avatar - Moved to bottom and always visible on mobile/tablet */}
+        <div className="lg:hidden mt-6 xs:mt-7 sm:mt-8 flex justify-center items-center min-h-[200px] xs:min-h-[220px] sm:min-h-[240px]">
+          <div className="w-full max-w-[280px] xs:max-w-[300px] sm:max-w-[350px]">
             <TravelingAvatar />
           </div>
         </div>
       </div>
 
-      {/* Stats Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      {/* Stats Cards Row - Mobile: 2 per row, Desktop: 4 per row */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatCard
           icon={isAdmin ? Users : MapPin}
           value={isAdmin ? (cards.totalUsers || "0") : (cards.travelPlans || "0")}
