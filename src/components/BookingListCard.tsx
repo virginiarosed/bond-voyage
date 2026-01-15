@@ -32,53 +32,40 @@ export function BookingListCard({
   };
 
   const getStatusBadge = () => {
-    if (context === "rejected") {
-      return (
-        <>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] text-xs font-medium border border-[rgba(255,107,107,0.2)]">
-            <XCircle className="w-3 h-3" />
-            Rejected
-          </span>
-          {booking.resolutionStatus === "resolved" ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)]">
-              <CheckCircle className="w-3 h-3" />
-              Resolved
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)]">
-              <AlertTriangle className="w-3 h-3" />
-              Unresolved
-            </span>
-          )}
-        </>
+    const sentBadge =
+      booking.sentStatus?.toLowerCase() === "sent" ? (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)]">
+          <CheckCircle className="w-3 h-3" />
+          Sent
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)]">
+          <AlertTriangle className="w-3 h-3" />
+          Unsent
+        </span>
       );
-    }
 
-    switch (booking.status?.toLowerCase()) {
-      case "confirmed":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)]">
-            <CheckCircle className="w-3 h-3" />
-            Confirmed
-          </span>
-        );
-      case "pending":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)]">
-            <AlertTriangle className="w-3 h-3" />
-            Pending
-          </span>
-        );
-      case "cancelled":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] text-xs font-medium border border-[rgba(255,107,107,0.2)]">
-            <XCircle className="w-3 h-3" />
-            Cancelled
-          </span>
-        );
-      default:
-        return null;
-    }
+    // Confirmed/Unconfirmed badge - requires BOTH status === "CONFIRMED" AND sentStatus === "Sent"
+    const confirmedBadge =
+      booking.status?.toUpperCase() === "CONFIRMED" &&
+      booking.sentStatus?.toLowerCase() === "sent" ? (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] text-xs font-medium border border-[rgba(139,92,246,0.2)]">
+          <CheckCircle className="w-3 h-3" />
+          Confirmed
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(100,116,139,0.1)] text-[#64748B] text-xs font-medium border border-[rgba(100,116,139,0.2)]">
+          <XCircle className="w-3 h-3" />
+          Unconfirmed
+        </span>
+      );
+
+    return (
+      <>
+        {sentBadge}
+        {confirmedBadge}
+      </>
+    );
   };
 
   const getBookingTypeBadge = () => {
@@ -161,8 +148,8 @@ export function BookingListCard({
                 Booking {booking.bookingCode}
               </h3>
               {getStatusBadge()}
-              {getBookingTypeBadge()}
-              {getTourTypeBadge()}
+              {/* {getBookingTypeBadge()}
+              {getTourTypeBadge()} */}
             </div>
             <div className="flex items-center gap-2 text-sm text-[#64748B]">
               <span className="font-medium text-[#334155]">

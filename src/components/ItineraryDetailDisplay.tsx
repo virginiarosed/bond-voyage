@@ -25,51 +25,9 @@ const iconMap: Record<string, any> = {
   Clock,
 };
 
-interface ItineraryActivity {
-  time: string;
-  icon: any;
-  title: string;
-  description: string;
-  location?: string;
-}
-
-interface ItineraryDay {
-  day: number;
-  title: string;
-  activities: ItineraryActivity[];
-}
-
-// User side format (from UserBookings, UserHistory, UserTravelDetail)
-interface ItineraryDataObject {
-  id: string;
-  destination: string;
-  duration: string;
-  description: string;
-  destinations: string[];
-  days: {
-    day: number;
-    title: string;
-    description: string;
-    activities: {
-      time: string;
-      activity: string;
-      location: string;
-    }[];
-  }[];
-  inclusions: string[];
-  exclusions: string[];
-  pricing: {
-    basePrice: number;
-    breakdown: {
-      item: string;
-      amount: number;
-    }[];
-  };
-}
-
 interface ItineraryDetailDisplayProps {
   itinerary?: Day[];
-  itineraryData?: ItineraryDataObject;
+  itineraryData?: Itinerary;
   daysCount?: number;
 }
 
@@ -80,12 +38,12 @@ export function ItineraryDetailDisplay({
 }: ItineraryDetailDisplayProps) {
   const processedItinerary: any[] = itineraryData
     ? itineraryData.days.map((day) => ({
-        day: day.day,
+        day: day.dayNumber,
         title: day.title,
         activities: day.activities.map((activity) => ({
           time: activity.time,
           icon: Hotel, // Default icon, could be more sophisticated based on activity type
-          title: activity.activity,
+          title: activity.title,
           description: activity.location,
           location: activity.location,
         })),

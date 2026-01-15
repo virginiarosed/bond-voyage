@@ -858,7 +858,6 @@ export function UserHome() {
       // Simulate API call to send email
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // In a real app, this would be an API call to your backend
       const emailData = {
         to: "4bstravelandtours.bondvoyage@gmail.com",
         from: `${userProfile.firstName} ${userProfile.lastName} <${userProfile.email}>`,
@@ -944,127 +943,148 @@ export function UserHome() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Profile Information Section */}
-      <div
-        className="mb-6 sm:mb-8 rounded-2xl p-4 sm:p-6 lg:p-8 relative overflow-hidden min-h-[280px] sm:min-h-[340px] lg:min-h-[380px]"
-        style={{
-          background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))`,
-          boxShadow: `0 8px 32px var(--shadow-color-strong)`,
-        }}
-      >
-        {/* Decorative Background Elements */}
-        <div className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-white/10 rounded-full blur-3xl -translate-y-24 sm:-translate-y-32 translate-x-24 sm:translate-x-32" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 bg-white/5 rounded-full blur-2xl translate-y-16 sm:translate-y-24 -translate-x-16 sm:-translate-x-24" />
+{/* Profile Information Section */}
+<div
+  className="mb-6 sm:mb-8 rounded-2xl p-3 xs:p-4 sm:p-5 md:p-6 lg:p-8 relative overflow-hidden min-h-[auto] xs:min-h-[320px] sm:min-h-[340px] md:min-h-[360px] lg:min-h-[380px]"
+  style={{
+    background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-to))`,
+    boxShadow: `0 8px 32px var(--shadow-color-strong)`,
+  }}
+>
+  {/* Decorative Background Elements */}
+  <div className="absolute top-0 right-0 w-32 h-32 xs:w-40 xs:h-40 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-80 lg:h-80 bg-white/10 rounded-full blur-3xl -translate-y-16 xs:-translate-y-20 sm:-translate-y-24 md:-translate-y-28 lg:-translate-y-32 translate-x-16 xs:translate-x-20 sm:translate-x-24 md:translate-x-28 lg:translate-x-32" />
+  <div className="absolute bottom-0 left-0 w-24 h-24 xs:w-28 xs:h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 bg-white/5 rounded-full blur-2xl translate-y-12 xs:translate-y-14 sm:translate-y-16 md:translate-y-20 lg:translate-y-24 -translate-x-12 xs:-translate-x-14 sm:-translate-x-16 md:-translate-x-20 lg:-translate-x-24" />
 
-        <div className="relative flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
-          {/* Left Side - Profile Info */}
-          <div className="flex items-center gap-12 sm:gap-12 flex-1 pl-0 lg:pl-12 w-full lg:w-auto">
-            {/* Profile Avatar */}
-            <div className="relative flex-shrink-0">
-              <div
-                className={`w-30 h-30 sm:w-34 sm:h-34 rounded-full border-4 border-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] overflow-hidden ${
-                  userProfileData && userProfileData.avatarUrl
-                    ? ""
-                    : "bg-primary"
-                }`}
-              >
-                {userProfileData && userProfileData.avatarUrl ? (
-                  <img
-                    src={userProfileData.avatarUrl}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white">
-                    {getInitials()}
-                  </div>
-                )}
-              </div>
+  <div className="relative flex flex-col gap-4 xs:gap-5 sm:gap-6 md:gap-7 lg:gap-8 lg:flex-row lg:items-center lg:justify-between">
+    {/* Left Side - Profile Info - Modified for mobile */}
+    <div className="flex flex-col items-center lg:items-start lg:flex-row gap-4 xs:gap-5 sm:gap-6 md:gap-8 lg:gap-10 flex-1 lg:pl-4 xl:pl-8 w-full">
+      {/* Profile Avatar - Larger on mobile */}
+      <div className="relative flex-shrink-0 mt-4 lg:mt-0">
+        <div
+          className={`w-28 xs:w-32 sm:w-36 md:w-40 lg:w-40 h-28 xs:h-32 sm:h-36 md:h-40 lg:h-40 rounded-full border-4 border-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] overflow-hidden ${
+            userProfileData && userProfileData.avatarUrl
+              ? ""
+              : "bg-primary"
+          }`}
+        >
+          {userProfileData && userProfileData.avatarUrl ? (
+            <img
+              src={userProfileData.avatarUrl}
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-3xl xs:text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-bold text-white">
+              {getInitials()}
             </div>
-
-            {/* Profile Info */}
-            <div className="max-w-md flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl text-white">
-                  {userProfile.firstName} {userProfile.lastName}
-                </h1>
-              </div>
-              <p className="text-white/90 text-sm sm:text-base mb-3 sm:mb-4">
-                {userProfile.email}
-              </p>
-              {/* Quick Stats */}
-              <div className="flex items-center gap-4 sm:gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <Briefcase className="w-5 h-5 text-white" strokeWidth={2} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-white/70 whitespace-nowrap">
-                      Owned Travel
-                    </p>
-                    <p className="text-sm text-white">
-                      {userProfile.ownedTravel}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="h-10 w-px bg-white/20" />
-
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <UserPlus className="w-5 h-5 text-white" strokeWidth={2} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-white/70 whitespace-nowrap">
-                      Collaborated Travel
-                    </p>
-                    <p className="text-sm text-white">
-                      {userProfile.collaboratedTravel}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Side - Interactive Traveling Avatar */}
-          <div className="flex-shrink-0 flex-1 w-full lg:w-1/2 min-w-[280px] sm:min-w-[320px]">
-            <AdventureAvatar />
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard
-          icon={FileText}
-          label="Travel Plans"
-          value="0"
-          gradientFrom="#F472B6"
-          gradientTo="#38BDF8"
-        />
-        <StatCard
-          icon={Clock}
-          label="Pending"
-          value="0"
-          gradientFrom="#F97316"
-          gradientTo="#EF4444"
-        />
-        <StatCard
-          icon={Plane}
-          label="Active Bookings"
-          value="0"
-          gradientFrom="#14B8A6"
-          gradientTo="#0A7AFF"
-        />
-        <StatCard
-          icon={Award}
-          label="Completed Trips"
-          value="0"
-          gradientFrom="#22C55E"
-          gradientTo="#16A34A"
-        />
+      {/* Profile Info - Centered on mobile, left-aligned on desktop */}
+      <div className="flex flex-col items-center lg:items-start text-center lg:text-left w-full lg:w-auto">
+        <div className="flex flex-col items-center lg:items-start gap-2 xs:gap-2.5 sm:gap-3 mb-3 xs:mb-4 sm:mb-5">
+          <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-4xl text-white font-semibold break-words max-w-full">
+            {userProfile.firstName} {userProfile.lastName}
+          </h1>
+          <p className="text-white/90 text-sm xs:text-base sm:text-lg lg:text-base break-all max-w-full">
+            {userProfile.email}
+          </p>
+        </div>
+        
+        {/* Quick Stats - Always in same row, visible divider on mobile */}
+        <div className="flex items-center justify-center lg:justify-start gap-4 xs:gap-5 sm:gap-6 w-full">
+          <div className="flex items-center gap-3 justify-center">
+            <div className="w-10 xs:w-11 sm:w-12 h-10 xs:h-11 sm:h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+              <Briefcase
+                className="w-5 xs:w-5.5 sm:w-6 h-5 xs:h-5.5 sm:h-6 text-white"
+                strokeWidth={2}
+              />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm text-white/70 whitespace-nowrap font-medium">
+                Owned Travel
+              </p>
+              <p className="text-base xs:text-lg sm:text-xl lg:text-base text-white font-semibold">
+                {userProfile.ownedTravel}
+              </p>
+            </div>
+          </div>
+
+          {/* Divider - Always visible on mobile */}
+          <div className="h-10 w-px bg-white/20" />
+
+          <div className="flex items-center gap-3 justify-center">
+            <div className="w-10 xs:w-11 sm:w-12 h-10 xs:h-11 sm:h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+              <UserPlus
+                className="w-5 xs:w-5.5 sm:w-6 h-5 xs:h-5.5 sm:h-6 text-white"
+                strokeWidth={2}
+              />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm text-white/70 whitespace-nowrap font-medium">
+                Collaborated Travel
+              </p>
+              <p className="text-base xs:text-lg sm:text-xl lg:text-base text-white font-semibold">
+                {userProfile.collaboratedTravel}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+
+    {/* Right Side - Interactive Traveling Avatar - Hidden on mobile (moved below) */}
+    <div className="hidden lg:flex w-full lg:w-auto lg:flex-1 justify-center items-center min-h-[200px] lg:min-h-[250px]">
+      <div className="w-full max-w-[300px] lg:max-w-none">
+        <AdventureAvatar />
+      </div>
+    </div>
+  </div>
+
+  {/* Mobile Adventure Avatar - Moved to bottom and always visible on mobile/tablet */}
+  <div className="lg:hidden mt-6 xs:mt-7 sm:mt-8 flex justify-center items-center min-h-[200px] xs:min-h-[220px] sm:min-h-[240px]">
+    <div className="w-full max-w-[280px] xs:max-w-[300px] sm:max-w-[350px]">
+      <AdventureAvatar />
+    </div>
+  </div>
+</div>
+
+{/* Stats Grid - 2 per row on mobile, 4 per row on desktop */}
+<div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+  <StatCard
+    icon={FileText}
+    label="Travel Plans"
+    value="0"
+    gradientFrom="#F472B6"
+    gradientTo="#38BDF8"
+    className="h-full"
+  />
+  <StatCard
+    icon={Clock}
+    label="Pending"
+    value="0"
+    gradientFrom="#F97316"
+    gradientTo="#EF4444"
+    className="h-full"
+  />
+  <StatCard
+    icon={Plane}
+    label="Active Bookings"
+    value="0"
+    gradientFrom="#14B8A6"
+    gradientTo="#0A7AFF"
+    className="h-full"
+  />
+  <StatCard
+    icon={Award}
+    label="Completed Trips"
+    value="0"
+    gradientFrom="#22C55E"
+    gradientTo="#16A34A"
+    className="h-full"
+  />
+</div>
 
       {/* Recent Activity & Weather Widget */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1425,77 +1445,6 @@ export function UserHome() {
           </div>
         </ContentCard>
       </div>
-
-      {/* Upcoming Trips */}
-      <ContentCard title="Upcoming Trips" icon={Calendar}>
-        {upcomingBookings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--gradient-from), var(--gradient-to))",
-                opacity: 0.1,
-              }}
-            >
-              <Calendar className="w-10 h-10 text-primary" strokeWidth={1.5} />
-            </div>
-            <h3 className="text-lg text-card-foreground mb-2">
-              No Upcoming Trips
-            </h3>
-            <p className="text-sm text-muted-foreground mb-6 max-w-md">
-              You don't have any upcoming trips planned yet. Start planning your
-              next adventure!
-            </p>
-            <button
-              onClick={() => {
-                navigate("/user/travels");
-              }}
-              className="px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--gradient-from), var(--gradient-to))",
-                color: "white",
-              }}
-            >
-              <Sparkles className="w-5 h-5" />
-              Plan a Trip
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {upcomingBookings.map((trip) => (
-              <BookingListCard
-                key={trip.id}
-                booking={{
-                  id: trip.id,
-                  customer: userProfile.firstName + " " + userProfile.lastName,
-                  email: userProfile.email,
-                  mobile: "",
-                  destination: trip.destination,
-                  dates: trip.dates,
-                  travelers: trip.travelers,
-                  total: trip.amount,
-                  bookedDate: trip.bookingDate,
-                }}
-                onViewDetails={() => navigate(`/user/bookings`)}
-                additionalBadges={
-                  <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                      trip.status === "confirmed"
-                        ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"
-                        : "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20"
-                    }`}
-                  >
-                    {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
-                  </span>
-                }
-                userSide={true}
-              />
-            ))}
-          </div>
-        )}
-      </ContentCard>
 
       {/* Travel Tips & Inspiration */}
       <ContentCard title="Travel Tips & Inspiration" icon={Sparkles}>

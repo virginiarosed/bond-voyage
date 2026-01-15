@@ -98,10 +98,10 @@ export function TravelingAvatar() {
   };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center gap-8 min-h-[300px]">
+    <div className="relative w-full h-full flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 min-h-[300px] p-4">
       {/* Floating Background Elements */}
       <motion.div
-        className="absolute top-8 left-8 w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm"
+        className="absolute top-8 left-8 w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm hidden lg:block"
         animate={{
           y: [0, -20, 0],
           x: [0, 10, 0],
@@ -114,7 +114,7 @@ export function TravelingAvatar() {
         }}
       />
       <motion.div
-        className="absolute top-20 right-12 w-12 h-12 rounded-full bg-white/15 backdrop-blur-sm"
+        className="absolute top-20 right-12 w-12 h-12 rounded-full bg-white/15 backdrop-blur-sm hidden lg:block"
         animate={{
           y: [0, 15, 0],
           x: [0, -15, 0],
@@ -128,8 +128,37 @@ export function TravelingAvatar() {
         }}
       />
 
-      {/* Left Side: Activity Label and Buttons */}
-      <div className="flex flex-col items-center gap-4 z-10">
+      {/* Mobile-only floating elements */}
+      <motion.div
+        className="absolute top-4 left-4 w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm lg:hidden"
+        animate={{
+          y: [0, -15, 0],
+          x: [0, 8, 0],
+          opacity: [0.2, 0.4, 0.2],
+        }}
+        transition={{
+          duration: 5,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute bottom-20 right-4 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm lg:hidden"
+        animate={{
+          y: [0, 10, 0],
+          x: [0, -10, 0],
+          opacity: [0.2, 0.4, 0.2],
+        }}
+        transition={{
+          duration: 7,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.5,
+        }}
+      />
+
+      {/* For mobile: Activity Label and Buttons on TOP */}
+      <div className="flex flex-col items-center gap-4 z-10 order-1 lg:order-none">
         {/* Activity Label with Glassmorphism */}
         <motion.div
           key={`label-${currentActivity.type}`}
@@ -139,7 +168,7 @@ export function TravelingAvatar() {
           transition={{ duration: 0.25 }}
           className="text-center"
         >
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-2xl px-5 py-2.5 border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-2xl px-4 lg:px-5 py-2 lg:py-2.5 border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
             <currentActivity.icon
               className="w-4 h-4 text-white"
               strokeWidth={2.5}
@@ -155,7 +184,7 @@ export function TravelingAvatar() {
           </div>
         </motion.div>
 
-        {/* Activity Buttons */}
+        {/* Activity Buttons - Adjusted for mobile */}
         <div className="grid grid-cols-4 gap-2 justify-items-center max-w-[200px]">
           {activities.map((activity, index) => (
             <motion.button
@@ -171,7 +200,7 @@ export function TravelingAvatar() {
               title={activity.label}
             >
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                   index === currentActivityIndex
                     ? "bg-white shadow-lg"
                     : "bg-white/20 backdrop-blur-sm group-hover:bg-white/40"
@@ -185,7 +214,7 @@ export function TravelingAvatar() {
                 }}
               >
                 <activity.icon
-                  className="w-5 h-5 transition-colors duration-300"
+                  className="w-4 h-4 lg:w-5 lg:h-5 transition-colors duration-300"
                   style={{
                     color:
                       index === currentActivityIndex ? activity.color : "white",
@@ -194,11 +223,11 @@ export function TravelingAvatar() {
                 />
               </div>
 
-              {/* Tooltip on hover */}
+              {/* Tooltip on hover - hidden on mobile */}
               <motion.div
                 initial={{ opacity: 0, y: 5 }}
                 whileHover={{ opacity: 1, y: 0 }}
-                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#1A2B4F] text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap pointer-events-none shadow-lg"
+                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#1A2B4F] text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap pointer-events-none shadow-lg hidden lg:block"
               >
                 {activity.label}
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-[#1A2B4F] rotate-45" />
@@ -215,7 +244,7 @@ export function TravelingAvatar() {
               animate={{ opacity: [0.5, 1, 0.5] }}
               exit={{ opacity: 0 }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="text-white/60 text-xs"
+              className="text-white/60 text-xs text-center px-4"
             >
               👆 Click the avatar or buttons to explore!
             </motion.p>
@@ -223,9 +252,9 @@ export function TravelingAvatar() {
         </AnimatePresence>
       </div>
 
-      {/* Right Side: Main Interactive Avatar Container */}
+      {/* For mobile: Main Interactive Avatar Container BELOW */}
       <motion.div
-        className="relative cursor-pointer select-none"
+        className="relative cursor-pointer select-none order-2 lg:order-none mt-4 lg:mt-0"
         onClick={handleActivityClick}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
@@ -247,7 +276,7 @@ export function TravelingAvatar() {
               viewBox="0 0 220 220"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="drop-shadow-2xl"
+              className="drop-shadow-2xl w-[180px] h-[180px] lg:w-[220px] lg:h-[220px]"
             >
               {/* Glow Effect Background */}
               <motion.circle
