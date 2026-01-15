@@ -269,7 +269,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
       setBreadcrumbs([
         { label: "Home", path: "/" },
         { label: "Approvals", path: "/approvals" },
-        { label: `Booking ${selectedBooking.id.substring(0, 8)}` },
+        { label: `Booking ${selectedBooking.bookingCode}` },
       ]);
     } else {
       resetBreadcrumbs();

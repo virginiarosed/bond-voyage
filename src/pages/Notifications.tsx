@@ -49,17 +49,43 @@ export function Notifications() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [notificationToDelete, setNotificationToDelete] =
     useState<INotification | null>(null);
-  
-  // Simple state to prevent double clicks during API calls
-  const [isProcessingAction, setIsProcessingAction] = useState(false);
-  
+
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   // Fetch notifications from API
   const { data: notificationsResponse, isLoading, error } = useNotifications();
   const notifications = notificationsResponse?.data?.items || [];
 
-  // Initialize mutation hooks
+  // Initialize mutation hooks at component level (React hooks rules)
+  const markReadMutation = useMarkNotificationRead({
+    onSuccess: () => {
+      toast.success("Notification marked as read!");
+    },
+    onError: () => {
+      toast.error("Failed to mark notification as read");
+    },
+  });
+
+  const markUnreadMutation = useMarkNotificationUnread({
+    onSuccess: () => {
+      toast.success("Notification marked as unread!");
+    },
+    onError: () => {
+      toast.error("Failed to mark notification as unread");
+    },
+  });
+
+  const deleteMutation = useDeleteNotification({
+    onSuccess: () => {
+      toast.success("Notification deleted!");
+      setDeleteConfirmOpen(false);
+      setNotificationToDelete(null);
+    },
+    onError: () => {
+      toast.error("Failed to delete notification");
+    },
+  });
+
   const markAllReadMutation = useMarkAllNotificationsRead({
     onSuccess: () => {
       toast.success("All notifications marked as read!");
@@ -80,36 +106,18 @@ export function Notifications() {
     },
   });
 
+  // Check if any mutation is in progress
+  const isProcessingAction =
+    markReadMutation.isPending ||
+    markUnreadMutation.isPending ||
+    deleteMutation.isPending;
+
   const handleMarkAsRead = (notificationId: string) => {
-    setIsProcessingAction(true);
-    
-    const markReadMutation = useMarkNotificationRead(notificationId, {
-      onSuccess: () => {
-        toast.success("Notification marked as read!");
-        setIsProcessingAction(false);
-      },
-      onError: () => {
-        toast.error("Failed to mark notification as read");
-        setIsProcessingAction(false);
-      },
-    });
-    markReadMutation.mutate();
+    markReadMutation.mutate(notificationId);
   };
 
-  const handleMarkAsUnread = (id: string) => {
-    setIsProcessingAction(true);
-    
-    const markUnreadMutation = useMarkNotificationUnread(id, {
-      onSuccess: () => {
-        toast.success("Notification marked as unread!");
-        setIsProcessingAction(false);
-      },
-      onError: () => {
-        toast.error("Failed to mark notification as unread");
-        setIsProcessingAction(false);
-      },
-    });
-    markUnreadMutation.mutate();
+  const handleMarkAsUnread = (notificationId: string) => {
+    markUnreadMutation.mutate(notificationId);
   };
 
   const handleDeleteClick = (notification: INotification) => {
@@ -119,21 +127,7 @@ export function Notifications() {
 
   const handleConfirmDelete = () => {
     if (notificationToDelete) {
-      setIsProcessingAction(true);
-      
-      const deleteMutation = useDeleteNotification(notificationToDelete.id, {
-        onSuccess: () => {
-          toast.success("Notification deleted!");
-          setDeleteConfirmOpen(false);
-          setNotificationToDelete(null);
-          setIsProcessingAction(false);
-        },
-        onError: () => {
-          toast.error("Failed to delete notification");
-          setIsProcessingAction(false);
-        },
-      });
-      deleteMutation.mutate();
+      deleteMutation.mutate(notificationToDelete.id);
     }
   };
 
@@ -298,7 +292,7 @@ export function Notifications() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
             <Bell className="w-8 h-8 text-[#0A7AFF] animate-pulse" />
           </div>
           <p className="text-sm text-[#64748B]">Loading notifications...</p>
@@ -311,7 +305,7 @@ export function Notifications() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(255,107,107,0.1)] to-[rgba(239,68,68,0.1)] flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(255,107,107,0.1)] to-[rgba(239,68,68,0.1)] flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-[#FF6B6B]" />
           </div>
           <p className="text-sm text-[#FF6B6B] font-medium mb-2">
@@ -337,7 +331,7 @@ export function Notifications() {
             gradientTo="#3B9EFF"
           />
         </div>
-        
+
         {/* Mobile: Second row - Unread and Today side by side */}
         <div className="sm:hidden grid grid-cols-2 gap-4">
           <StatCard
@@ -355,7 +349,7 @@ export function Notifications() {
             gradientTo="#14B8A6"
           />
         </div>
-        
+
         {/* Desktop: All three cards in one row (original layout) */}
         <div className="hidden sm:block">
           <StatCard
@@ -413,7 +407,10 @@ export function Notifications() {
               </button>
               <button
                 onClick={() => setClearAllModalOpen(true)}
-                disabled={clearAllReadMutation.isPending || notifications.filter((n) => n.isRead).length === 0}
+                disabled={
+                  clearAllReadMutation.isPending ||
+                  notifications.filter((n) => n.isRead).length === 0
+                }
                 className="h-10 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {clearAllReadMutation.isPending ? (
@@ -429,7 +426,7 @@ export function Notifications() {
                 )}
               </button>
             </div>
-            
+
             {/* Desktop: Original layout */}
             <div className="hidden sm:flex items-center gap-3">
               <button
@@ -451,7 +448,10 @@ export function Notifications() {
               </button>
               <button
                 onClick={() => setClearAllModalOpen(true)}
-                disabled={clearAllReadMutation.isPending || notifications.filter((n) => n.isRead).length === 0}
+                disabled={
+                  clearAllReadMutation.isPending ||
+                  notifications.filter((n) => n.isRead).length === 0
+                }
                 className="h-10 px-5 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {clearAllReadMutation.isPending ? (
@@ -477,7 +477,7 @@ export function Notifications() {
               onClick={() => setSelectedTab("all")}
               className={`px-4 sm:px-5 h-10 sm:h-11 text-sm transition-colors whitespace-nowrap ${
                 selectedTab === "all"
-                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
@@ -487,7 +487,7 @@ export function Notifications() {
               onClick={() => setSelectedTab("unread")}
               className={`px-4 sm:px-5 h-10 sm:h-11 text-sm transition-colors whitespace-nowrap ${
                 selectedTab === "unread"
-                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
@@ -504,24 +504,26 @@ export function Notifications() {
                   Filter by Type
                 </span>
                 {typeFilters.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30">
                     {typeFilters.length}
                   </span>
                 )}
               </button>
             </PopoverTrigger>
-            <PopoverContent 
-              className="w-80 p-0 border-0 shadow-[0_20px_25px_rgba(0,0,0,0.12),0_10px_10px_rgba(0,0,0,0.04)]" 
+            <PopoverContent
+              className="w-80 p-0 border-0 shadow-[0_20px_25px_rgba(0,0,0,0.12),0_10px_10px_rgba(0,0,0,0.04)]"
               align="end"
               sideOffset={8}
             >
               {/* Glassmorphism backdrop with brand styling */}
               <div className="rounded-2xl overflow-hidden backdrop-blur-xl bg-white/95 border border-white/20 shadow-2xl">
                 {/* Header with gradient */}
-                <div className="p-5 border-b border-[#E5E7EB]/50 bg-gradient-to-r from-[#F8FAFB] to-white">
+                <div className="p-5 border-b border-[#E5E7EB]/50 bg-linear-to-r from-[#F8FAFB] to-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-semibold text-[#1A2B4F] text-[15px]">Filter by Type</h4>
+                      <h4 className="font-semibold text-[#1A2B4F] text-[15px]">
+                        Filter by Type
+                      </h4>
                       <p className="text-xs text-[#64748B] mt-0.5">
                         Select notification types to filter
                       </p>
@@ -538,12 +540,14 @@ export function Notifications() {
                 </div>
 
                 {/* Filter options list */}
-                <div className="p-2 max-h-[320px] overflow-y-auto">
+                <div className="p-2 max-h-80 overflow-y-auto">
                   {notificationTypes.map(({ type, label, icon: Icon }) => {
                     const colors = getNotificationColor(type);
-                    const count = notifications.filter((n) => n.type === type).length;
+                    const count = notifications.filter(
+                      (n) => n.type === type
+                    ).length;
                     const isSelected = typeFilters.includes(type);
-                    
+
                     return (
                       <div
                         key={type}
@@ -557,46 +561,72 @@ export function Notifications() {
                           onCheckedChange={() => toggleTypeFilter(type)}
                           className="sr-only"
                         />
-                        
+
                         {/* Custom styled checkbox */}
                         <div className="relative">
-                          <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
-                            isSelected 
-                              ? 'border-[#0A7AFF] bg-[#0A7AFF] text-white shadow-[0_2px_4px_rgba(10,122,255,0.3)]' 
-                              : 'border-[#E5E7EB] bg-white group-hover:border-[#0A7AFF]/30'
-                          }`}>
+                          <div
+                            className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
+                              isSelected
+                                ? "border-[#0A7AFF] bg-[#0A7AFF] text-white shadow-[0_2px_4px_rgba(10,122,255,0.3)]"
+                                : "border-[#E5E7EB] bg-white group-hover:border-[#0A7AFF]/30"
+                            }`}
+                          >
                             {isSelected && (
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={3}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M5 13l4 4L19 7"
+                                />
                               </svg>
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Type icon with gradient background */}
-                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow} transition-transform group-hover:scale-105 ${
-                          isSelected ? 'ring-2 ring-[#0A7AFF] ring-offset-1' : ''
-                        }`}>
+                        <div
+                          className={`w-10 h-10 rounded-xl bg-linear-to-br ${
+                            colors.bg
+                          } flex items-center justify-center shadow-lg ${
+                            colors.shadow
+                          } transition-transform group-hover:scale-105 ${
+                            isSelected
+                              ? "ring-2 ring-[#0A7AFF] ring-offset-1"
+                              : ""
+                          }`}
+                        >
                           <Icon className="w-5 h-5 text-white" />
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
-                          <span className={`text-sm font-medium block transition-colors ${
-                            isSelected ? 'text-[#0A7AFF]' : 'text-[#334155]'
-                          }`}>
+                          <span
+                            className={`text-sm font-medium block transition-colors ${
+                              isSelected ? "text-[#0A7AFF]" : "text-[#334155]"
+                            }`}
+                          >
                             {label}
                           </span>
                           <span className="text-xs text-[#94A3B8] mt-0.5 block">
-                            {count === 1 ? "1 notification" : `${count} notifications`}
+                            {count === 1
+                              ? "1 notification"
+                              : `${count} notifications`}
                           </span>
                         </div>
-                        
+
                         {/* Count badge */}
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-colors ${
-                          isSelected 
-                            ? 'bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white shadow-[#0A7AFF]/20' 
-                            : 'bg-[#F8FAFB] text-[#64748B]'
-                        }`}>
+                        <div
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-colors ${
+                            isSelected
+                              ? "bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] text-white shadow-[#0A7AFF]/20"
+                              : "bg-[#F8FAFB] text-[#64748B]"
+                          }`}
+                        >
                           {count}
                         </div>
                       </div>
@@ -606,13 +636,15 @@ export function Notifications() {
 
                 {/* Footer with selected count */}
                 {typeFilters.length > 0 && (
-                  <div className="p-4 border-t border-[#E5E7EB]/50 bg-gradient-to-r from-[#F8FAFB] to-white">
+                  <div className="p-4 border-t border-[#E5E7EB]/50 bg-linear-to-r from-[#F8FAFB] to-white">
                     <div className="flex items-center justify-center">
                       <div className="text-sm text-[#64748B]">
                         <span className="font-medium text-[#1A2B4F]">
-                          {typeFilters.length} {typeFilters.length === 1 ? "type" : "types"}
+                          {typeFilters.length}{" "}
+                          {typeFilters.length === 1 ? "type" : "types"}
                         </span>{" "}
-                        selected • <button 
+                        selected •{" "}
+                        <button
                           onClick={clearFilters}
                           className="text-[#0A7AFF] hover:text-[#3B9EFF] font-medium hover:underline transition-colors"
                         >
@@ -631,7 +663,7 @@ export function Notifications() {
         <div className="space-y-3">
           {filteredNotifications.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
                 <Bell className="w-8 h-8 text-[#0A7AFF]" />
               </div>
               <h3 className="font-semibold text-[#1A2B4F] mb-2">
@@ -666,7 +698,7 @@ export function Notifications() {
                 >
                   <div className="flex items-start gap-3 sm:gap-4">
                     <div
-                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow} flex-shrink-0`}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-linear-to-br ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow} shrink-0`}
                     >
                       <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
@@ -685,7 +717,7 @@ export function Notifications() {
                               {notification.title}
                             </h3>
                             {!notification.isRead && (
-                              <span className="w-2 h-2 rounded-full bg-[#0A7AFF] flex-shrink-0" />
+                              <span className="w-2 h-2 rounded-full bg-[#0A7AFF] shrink-0" />
                             )}
                           </div>
                           <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed mb-2 line-clamp-2">
@@ -720,10 +752,12 @@ export function Notifications() {
                               handleMarkAsRead(notification.id);
                             }}
                             disabled={isProcessingAction}
-                            className="flex-1 sm:flex-none h-8 px-3 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 sm:flex-none h-8 px-3 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <CheckCircle className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Mark as Read</span>
+                            <span className="hidden sm:inline">
+                              Mark as Read
+                            </span>
                             <span className="sm:hidden">Read</span>
                           </button>
                         ) : (
@@ -736,7 +770,9 @@ export function Notifications() {
                             className="flex-1 sm:flex-none h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#64748B] text-xs font-medium flex items-center justify-center gap-1.5 hover:border-[#0A7AFF] hover:text-[#0A7AFF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Bell className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Mark as Unread</span>
+                            <span className="hidden sm:inline">
+                              Mark as Unread
+                            </span>
                             <span className="sm:hidden">Unread</span>
                           </button>
                         )}
@@ -792,10 +828,11 @@ export function Notifications() {
         }
         onConfirm={handleMarkAllRead}
         onCancel={() => setMarkAllReadModalOpen(false)}
-        confirmText={markAllReadMutation.isPending ? "Processing..." : "Mark All Read"}
+        confirmText={
+          markAllReadMutation.isPending ? "Processing..." : "Mark All Read"
+        }
         cancelText="Cancel"
         confirmVariant="default"
-        disabled={markAllReadMutation.isPending}
       />
 
       <ConfirmationModal
@@ -813,7 +850,8 @@ export function Notifications() {
             <p className="text-sm text-[#334155] leading-relaxed">
               Are you sure you want to delete all{" "}
               <span className="font-semibold text-[#FF6B6B]">
-                {notifications.filter((n) => n.isRead).length} read notifications
+                {notifications.filter((n) => n.isRead).length} read
+                notifications
               </span>
               ? This action cannot be undone.
             </p>
@@ -827,10 +865,11 @@ export function Notifications() {
         }
         onConfirm={handleClearAll}
         onCancel={() => setClearAllModalOpen(false)}
-        confirmText={clearAllReadMutation.isPending ? "Processing..." : "Clear All"}
+        confirmText={
+          clearAllReadMutation.isPending ? "Processing..." : "Clear All"
+        }
         cancelText="Cancel"
         confirmVariant="destructive"
-        disabled={clearAllReadMutation.isPending}
       />
 
       <ConfirmationModal
@@ -858,7 +897,7 @@ export function Notifications() {
                   {notificationToDelete.message}
                 </p>
               </div>
-              {isProcessingAction && (
+              {deleteMutation.isPending && (
                 <div className="flex items-center justify-center py-2">
                   <div className="w-6 h-6 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin mr-2"></div>
                   <span className="text-sm text-[#64748B]">Deleting...</span>
@@ -872,10 +911,11 @@ export function Notifications() {
           setDeleteConfirmOpen(false);
           setNotificationToDelete(null);
         }}
-        confirmText={isProcessingAction ? "Deleting..." : "Delete Notification"}
+        confirmText={
+          deleteMutation.isPending ? "Deleting..." : "Delete Notification"
+        }
         cancelText="Cancel"
         confirmVariant="destructive"
-        disabled={isProcessingAction}
       />
     </div>
   );
