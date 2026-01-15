@@ -32,6 +32,10 @@ import { FAQAssistant } from "../../components/FAQAssistant";
 import {
   useNotifications,
   useMarkNotificationRead,
+  useMarkNotificationUnread,
+  useDeleteNotification,
+  useMarkAllNotificationsRead,
+  useClearAllReadNotifications,
 } from "../../hooks/useNotifications";
 import { INotification } from "../../types/types";
 
@@ -56,21 +60,68 @@ export function UserNotifications() {
   const { data: notificationsResponse, isLoading, error } = useNotifications();
   const notifications = notificationsResponse?.data?.items || [];
 
+  // Initialize mutation hooks at component level (React hooks rules)
+  const markReadMutation = useMarkNotificationRead({
+    onSuccess: () => {
+      toast.success("Notification marked as read!");
+    },
+    onError: () => {
+      toast.error("Failed to mark notification as read");
+    },
+  });
+
+  const markUnreadMutation = useMarkNotificationUnread({
+    onSuccess: () => {
+      toast.success("Notification marked as unread!");
+    },
+    onError: () => {
+      toast.error("Failed to mark notification as unread");
+    },
+  });
+
+  const deleteMutation = useDeleteNotification({
+    onSuccess: () => {
+      toast.success("Notification deleted!");
+      setDeleteConfirmOpen(false);
+      setNotificationToDelete(null);
+    },
+    onError: () => {
+      toast.error("Failed to delete notification");
+    },
+  });
+
+  const markAllReadMutation = useMarkAllNotificationsRead({
+    onSuccess: () => {
+      toast.success("All notifications marked as read!");
+      setMarkAllReadModalOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to mark all notifications as read");
+    },
+  });
+
+  const clearAllReadMutation = useClearAllReadNotifications({
+    onSuccess: () => {
+      toast.success("All read notifications cleared!");
+      setClearAllModalOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to clear read notifications");
+    },
+  });
+
+  // Check if any mutation is in progress
+  const isProcessingAction =
+    markReadMutation.isPending ||
+    markUnreadMutation.isPending ||
+    deleteMutation.isPending;
+
   const handleMarkAsRead = (notificationId: string) => {
-    const markReadMutation = useMarkNotificationRead(notificationId, {
-      onSuccess: () => {
-        toast.success("Notification marked as read!");
-      },
-      onError: () => {
-        toast.error("Failed to mark notification as read");
-      },
-    });
-    markReadMutation.mutate();
+    markReadMutation.mutate(notificationId);
   };
 
-  const handleMarkAsUnread = (id: string) => {
-    // TODO: Implement unmark as read API endpoint and mutation
-    toast.info("Mark as unread functionality to be implemented");
+  const handleMarkAsUnread = (notificationId: string) => {
+    markUnreadMutation.mutate(notificationId);
   };
 
   const handleDeleteClick = (notification: INotification) => {
@@ -80,23 +131,16 @@ export function UserNotifications() {
 
   const handleConfirmDelete = () => {
     if (notificationToDelete) {
-      // TODO: Implement delete notification API endpoint and mutation
-      toast.info("Delete functionality to be implemented");
+      deleteMutation.mutate(notificationToDelete.id);
     }
-    setDeleteConfirmOpen(false);
-    setNotificationToDelete(null);
   };
 
   const handleMarkAllRead = () => {
-    // TODO: Implement mark all as read API endpoint
-    toast.info("Mark all as read functionality to be implemented");
-    setMarkAllReadModalOpen(false);
+    markAllReadMutation.mutate();
   };
 
   const handleClearAll = () => {
-    // TODO: Implement clear all read notifications API endpoint
-    toast.info("Clear all functionality to be implemented");
-    setClearAllModalOpen(false);
+    clearAllReadMutation.mutate();
   };
 
   const toggleTypeFilter = (type: NotificationType) => {
@@ -317,18 +361,37 @@ export function UserNotifications() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMarkAllReadModalOpen(true)}
-              disabled={unreadCount === 0}
+              disabled={unreadCount === 0 || markAllReadMutation.isPending}
               className="h-10 px-5 rounded-[20px] bg-white dark:bg-transparent border-2 border-[#0A7AFF] dark:border-[#0A7AFF] text-[#0A7AFF] dark:text-[#0A7AFF] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(10,122,255,0.05)] dark:hover:bg-[rgba(10,122,255,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <CheckCheck className="w-4 h-4" />
-              Mark All Read
+              {markAllReadMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-[#0A7AFF] border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCheck className="w-4 h-4" />
+                  Mark All Read
+                </>
+              )}
             </button>
             <button
               onClick={() => setClearAllModalOpen(true)}
-              className="h-10 px-5 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)]"
+              disabled={clearAllReadMutation.isPending || notifications.filter((n) => n.isRead).length === 0}
+              className="h-10 px-5 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Trash2 className="w-4 h-4" />
-              Clear Read
+              {clearAllReadMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Clear Read
+                </>
+              )}
             </button>
           </div>
         }
@@ -497,7 +560,8 @@ export function UserNotifications() {
                               e.stopPropagation();
                               handleMarkAsRead(notification.id);
                             }}
-                            className="h-8 px-3 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center gap-1.5 hover:opacity-90 transition-all"
+                            disabled={isProcessingAction}
+                            className="h-8 px-3 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center gap-1.5 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <CheckCircle className="w-3.5 h-3.5" />
                             Mark as Read
@@ -508,7 +572,8 @@ export function UserNotifications() {
                               e.stopPropagation();
                               handleMarkAsUnread(notification.id);
                             }}
-                            className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#64748B] text-xs font-medium flex items-center gap-1.5 hover:border-[#0A7AFF] hover:text-[#0A7AFF] transition-colors"
+                            disabled={isProcessingAction}
+                            className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#64748B] text-xs font-medium flex items-center gap-1.5 hover:border-[#0A7AFF] hover:text-[#0A7AFF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Bell className="w-3.5 h-3.5" />
                             Mark as Unread
@@ -519,7 +584,8 @@ export function UserNotifications() {
                             e.stopPropagation();
                             handleDeleteClick(notification);
                           }}
-                          className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#FF6B6B] text-xs font-medium flex items-center gap-1.5 hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] transition-colors"
+                          disabled={isProcessingAction}
+                          className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#FF6B6B] text-xs font-medium flex items-center gap-1.5 hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           Delete
@@ -546,19 +612,28 @@ export function UserNotifications() {
         contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.08)] to-[rgba(20,184,166,0.12)]"
         contentBorder="border-[rgba(10,122,255,0.2)]"
         content={
-          <p className="text-sm text-[#334155] leading-relaxed">
-            Are you sure you want to mark all{" "}
-            <span className="font-semibold text-[#0A7AFF]">
-              {unreadCount} unread notifications
-            </span>{" "}
-            as read?
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-[#334155] leading-relaxed">
+              Are you sure you want to mark all{" "}
+              <span className="font-semibold text-[#0A7AFF]">
+                {unreadCount} unread notifications
+              </span>{" "}
+              as read?
+            </p>
+            {markAllReadMutation.isPending && (
+              <div className="flex items-center justify-center py-2">
+                <div className="w-6 h-6 border-2 border-[#0A7AFF] border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-sm text-[#64748B]">Processing...</span>
+              </div>
+            )}
+          </div>
         }
         onConfirm={handleMarkAllRead}
         onCancel={() => setMarkAllReadModalOpen(false)}
-        confirmText="Mark All Read"
+        confirmText={markAllReadMutation.isPending ? "Processing..." : "Mark All Read"}
         cancelText="Cancel"
         confirmVariant="default"
+        disabled={markAllReadMutation.isPending}
       />
 
       {/* Clear All Modal */}
@@ -573,19 +648,28 @@ export function UserNotifications() {
         contentGradient="bg-gradient-to-br from-[rgba(255,107,107,0.08)] to-[rgba(239,68,68,0.12)]"
         contentBorder="border-[rgba(255,107,107,0.2)]"
         content={
-          <p className="text-sm text-[#334155] leading-relaxed">
-            Are you sure you want to delete all{" "}
-            <span className="font-semibold text-[#FF6B6B]">
-              {notifications.filter((n) => n.isRead).length} read notifications
-            </span>
-            ? This action cannot be undone.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-[#334155] leading-relaxed">
+              Are you sure you want to delete all{" "}
+              <span className="font-semibold text-[#FF6B6B]">
+                {notifications.filter((n) => n.isRead).length} read notifications
+              </span>
+              ? This action cannot be undone.
+            </p>
+            {clearAllReadMutation.isPending && (
+              <div className="flex items-center justify-center py-2">
+                <div className="w-6 h-6 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-sm text-[#64748B]">Processing...</span>
+              </div>
+            )}
+          </div>
         }
         onConfirm={handleClearAll}
         onCancel={() => setClearAllModalOpen(false)}
-        confirmText="Clear All"
+        confirmText={clearAllReadMutation.isPending ? "Processing..." : "Clear All"}
         cancelText="Cancel"
         confirmVariant="destructive"
+        disabled={clearAllReadMutation.isPending}
       />
 
       {/* Delete Notification Modal */}
@@ -614,6 +698,12 @@ export function UserNotifications() {
                   {notificationToDelete.message}
                 </p>
               </div>
+              {deleteMutation.isPending && (
+                <div className="flex items-center justify-center py-2">
+                  <div className="w-6 h-6 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin mr-2"></div>
+                  <span className="text-sm text-[#64748B]">Deleting...</span>
+                </div>
+              )}
             </div>
           ) : null
         }
@@ -622,9 +712,10 @@ export function UserNotifications() {
           setDeleteConfirmOpen(false);
           setNotificationToDelete(null);
         }}
-        confirmText="Delete Notification"
+        confirmText={deleteMutation.isPending ? "Deleting..." : "Delete Notification"}
         cancelText="Cancel"
         confirmVariant="destructive"
+        disabled={deleteMutation.isPending}
       />
 
       <FAQAssistant />

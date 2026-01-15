@@ -29,68 +29,117 @@ export const useNotifications = (
 };
 
 export const useMarkNotificationRead = (
-  notificationId: string,
-  options?: UseMutationOptions<ApiResponse, AxiosError, void>
+  options?: UseMutationOptions<ApiResponse, AxiosError, string>
 ) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (notificationId: string) => {
       const response = await apiClient.patch<ApiResponse>(
         `/notifications/${notificationId}/read`
       );
       return response.data;
     },
-    onSuccess: () => {
+    onMutate: async (notificationId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all });
+      const previous = queryClient.getQueryData<ApiResponse<PaginatedData<INotification>>>(queryKeys.notifications.all);
+      queryClient.setQueryData<ApiResponse<PaginatedData<INotification>>>(queryKeys.notifications.all, (old) => {
+        if (!old?.data?.items) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            items: old.data.items.map((n) => n.id === notificationId ? { ...n, isRead: true } : n),
+          },
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.notifications.all, context.previous);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     },
     ...options,
   });
 };
 
-// NEW: Add mutation for marking notification as unread
 export const useMarkNotificationUnread = (
-  notificationId: string,
-  options?: UseMutationOptions<ApiResponse, AxiosError, void>
+  options?: UseMutationOptions<ApiResponse, AxiosError, string>
 ) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (notificationId: string) => {
       const response = await apiClient.patch<ApiResponse>(
         `/notifications/${notificationId}/unread`
       );
       return response.data;
     },
-    onSuccess: () => {
+    onMutate: async (notificationId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all });
+      const previous = queryClient.getQueryData<ApiResponse<PaginatedData<INotification>>>(queryKeys.notifications.all);
+      queryClient.setQueryData<ApiResponse<PaginatedData<INotification>>>(queryKeys.notifications.all, (old) => {
+        if (!old?.data?.items) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            items: old.data.items.map((n) => n.id === notificationId ? { ...n, isRead: false } : n),
+          },
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.notifications.all, context.previous);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     },
     ...options,
   });
 };
 
-// NEW: Add mutation for deleting a notification
 export const useDeleteNotification = (
-  notificationId: string,
-  options?: UseMutationOptions<ApiResponse, AxiosError, void>
+  options?: UseMutationOptions<ApiResponse, AxiosError, string>
 ) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (notificationId: string) => {
       const response = await apiClient.delete<ApiResponse>(
         `/notifications/${notificationId}`
       );
       return response.data;
     },
-    onSuccess: () => {
+    onMutate: async (notificationId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all });
+      const previous = queryClient.getQueryData<ApiResponse<PaginatedData<INotification>>>(queryKeys.notifications.all);
+      queryClient.setQueryData<ApiResponse<PaginatedData<INotification>>>(queryKeys.notifications.all, (old) => {
+        if (!old?.data?.items) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            items: old.data.items.filter((n) => n.id !== notificationId),
+            meta: { ...old.data.meta, total: old.data.meta.total - 1 },
+          },
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.notifications.all, context.previous);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     },
     ...options,
   });
 };
 
-// NEW: Add mutation for marking all notifications as read
 export const useMarkAllNotificationsRead = (
   options?: UseMutationOptions<ApiResponse, AxiosError, void>
 ) => {
@@ -103,14 +152,28 @@ export const useMarkAllNotificationsRead = (
       );
       return response.data;
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all });
+      const previous = queryClient.getQueryData<ApiResponse<PaginatedData<INotification>>>(queryKeys.notifications.all);
+      queryClient.setQueryData<ApiResponse<PaginatedData<INotification>>>(queryKeys.notifications.all, (old) => {
+        if (!old?.data?.items) return old;
+        return {
+          ...old,
+          data: { ...old.data, items: old.data.items.map((n) => ({ ...n, isRead: true })) },
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.notifications.all, context.previous);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     },
     ...options,
   });
 };
 
-// NEW: Add mutation for clearing all read notifications
 export const useClearAllReadNotifications = (
   options?: UseMutationOptions<ApiResponse, AxiosError, void>
 ) => {
@@ -123,7 +186,23 @@ export const useClearAllReadNotifications = (
       );
       return response.data;
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all });
+      const previous = queryClient.getQueryData<ApiResponse<PaginatedData<INotification>>>(queryKeys.notifications.all);
+      queryClient.setQueryData<ApiResponse<PaginatedData<INotification>>>(queryKeys.notifications.all, (old) => {
+        if (!old?.data?.items) return old;
+        const remaining = old.data.items.filter((n) => !n.isRead);
+        return {
+          ...old,
+          data: { ...old.data, items: remaining, meta: { ...old.data.meta, total: remaining.length } },
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.notifications.all, context.previous);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     },
     ...options,

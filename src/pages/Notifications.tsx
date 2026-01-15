@@ -49,14 +49,40 @@ export function Notifications() {
   const [notificationToDelete, setNotificationToDelete] =
     useState<INotification | null>(null);
   
-  // Simple state to prevent double clicks during API calls
-  const [isProcessingAction, setIsProcessingAction] = useState(false);
-
   // Fetch notifications from API
   const { data: notificationsResponse, isLoading, error } = useNotifications();
   const notifications = notificationsResponse?.data?.items || [];
 
-  // Initialize mutation hooks
+  // Initialize mutation hooks at component level (React hooks rules)
+  const markReadMutation = useMarkNotificationRead({
+    onSuccess: () => {
+      toast.success("Notification marked as read!");
+    },
+    onError: () => {
+      toast.error("Failed to mark notification as read");
+    },
+  });
+
+  const markUnreadMutation = useMarkNotificationUnread({
+    onSuccess: () => {
+      toast.success("Notification marked as unread!");
+    },
+    onError: () => {
+      toast.error("Failed to mark notification as unread");
+    },
+  });
+
+  const deleteMutation = useDeleteNotification({
+    onSuccess: () => {
+      toast.success("Notification deleted!");
+      setDeleteConfirmOpen(false);
+      setNotificationToDelete(null);
+    },
+    onError: () => {
+      toast.error("Failed to delete notification");
+    },
+  });
+
   const markAllReadMutation = useMarkAllNotificationsRead({
     onSuccess: () => {
       toast.success("All notifications marked as read!");
@@ -77,36 +103,18 @@ export function Notifications() {
     },
   });
 
+  // Check if any mutation is in progress
+  const isProcessingAction =
+    markReadMutation.isPending ||
+    markUnreadMutation.isPending ||
+    deleteMutation.isPending;
+
   const handleMarkAsRead = (notificationId: string) => {
-    setIsProcessingAction(true);
-    
-    const markReadMutation = useMarkNotificationRead(notificationId, {
-      onSuccess: () => {
-        toast.success("Notification marked as read!");
-        setIsProcessingAction(false);
-      },
-      onError: () => {
-        toast.error("Failed to mark notification as read");
-        setIsProcessingAction(false);
-      },
-    });
-    markReadMutation.mutate();
+    markReadMutation.mutate(notificationId);
   };
 
-  const handleMarkAsUnread = (id: string) => {
-    setIsProcessingAction(true);
-    
-    const markUnreadMutation = useMarkNotificationUnread(id, {
-      onSuccess: () => {
-        toast.success("Notification marked as unread!");
-        setIsProcessingAction(false);
-      },
-      onError: () => {
-        toast.error("Failed to mark notification as unread");
-        setIsProcessingAction(false);
-      },
-    });
-    markUnreadMutation.mutate();
+  const handleMarkAsUnread = (notificationId: string) => {
+    markUnreadMutation.mutate(notificationId);
   };
 
   const handleDeleteClick = (notification: INotification) => {
@@ -116,21 +124,7 @@ export function Notifications() {
 
   const handleConfirmDelete = () => {
     if (notificationToDelete) {
-      setIsProcessingAction(true);
-      
-      const deleteMutation = useDeleteNotification(notificationToDelete.id, {
-        onSuccess: () => {
-          toast.success("Notification deleted!");
-          setDeleteConfirmOpen(false);
-          setNotificationToDelete(null);
-          setIsProcessingAction(false);
-        },
-        onError: () => {
-          toast.error("Failed to delete notification");
-          setIsProcessingAction(false);
-        },
-      });
-      deleteMutation.mutate();
+      deleteMutation.mutate(notificationToDelete.id);
     }
   };
 
@@ -773,7 +767,7 @@ export function Notifications() {
                   {notificationToDelete.message}
                 </p>
               </div>
-              {isProcessingAction && (
+              {deleteMutation.isPending && (
                 <div className="flex items-center justify-center py-2">
                   <div className="w-6 h-6 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin mr-2"></div>
                   <span className="text-sm text-[#64748B]">Deleting...</span>
@@ -787,10 +781,10 @@ export function Notifications() {
           setDeleteConfirmOpen(false);
           setNotificationToDelete(null);
         }}
-        confirmText={isProcessingAction ? "Deleting..." : "Delete Notification"}
+        confirmText={deleteMutation.isPending ? "Deleting..." : "Delete Notification"}
         cancelText="Cancel"
         confirmVariant="destructive"
-        disabled={isProcessingAction}
+        disabled={deleteMutation.isPending}
       />
     </div>
   );
