@@ -30,6 +30,25 @@ export const useMyBookings = (
   });
 };
 
+export const useSharedBookings = (
+  params?: { page?: number; limit?: number; status?: string },
+  options?: UseQueryOptions<ApiResponse<Booking[]>, AxiosError>
+) => {
+  return useQuery({
+    queryKey: queryKeys.bookings.sharedBookings(params),
+    queryFn: async () => {
+      const response = await apiClient.get<ApiResponse<Booking[]>>(
+        "/bookings/shared-with-me",
+        {
+          params,
+        }
+      );
+      return response.data;
+    },
+    ...options,
+  });
+};
+
 export const useBookingDetail = (
   id: string,
   options?: UseQueryOptions<ApiResponse<Booking>, AxiosError>
@@ -267,4 +286,58 @@ export const usePaymentProofImage = (paymentId?: string) => {
     error,
     refetch,
   };
+};
+
+// Version history types
+export interface BookingVersion {
+  id: string;
+  timestamp: number;
+  author: string;
+  bookingData: {
+    destination: string;
+    travelDateFrom: string;
+    travelDateTo: string;
+    travelers: string;
+    totalPrice: string;
+  };
+  itineraryDays: Array<{
+    id?: string;
+    dayNumber: number;
+    title?: string;
+    date?: string;
+    activities: Array<{
+      id?: string;
+      time: string;
+      title: string;
+      description?: string;
+      location?: string;
+      icon?: string;
+      order: number;
+      locationData?: {
+        source: string;
+        name: string;
+        address: string;
+        lat: number;
+        lng: number;
+      };
+    }>;
+  }>;
+  label?: string;
+}
+
+export const useBookingVersionHistory = (
+  id: string,
+  options?: UseQueryOptions<ApiResponse<BookingVersion[]>, AxiosError>
+) => {
+  return useQuery({
+    queryKey: queryKeys.bookings.versions(id),
+    queryFn: async () => {
+      const response = await apiClient.get<ApiResponse<BookingVersion[]>>(
+        `/bookings/${id}/versions`
+      );
+      return response.data;
+    },
+    enabled: !!id,
+    ...options,
+  });
 };
