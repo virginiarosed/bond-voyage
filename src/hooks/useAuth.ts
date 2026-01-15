@@ -43,20 +43,6 @@ export const useLogin = (
 
       const { accessToken, refreshToken } = response.data.data!;
 
-      // const decodedAccessToken = jwtDecode(accessToken);
-      // const decodedRefreshToken = jwtDecode(refreshToken);
-
-      // if (decodedAccessToken.exp && decodedRefreshToken.exp) {
-      //   console.log(
-      //     "access token exp: ",
-      //     new Date(decodedAccessToken.exp * 1000)
-      //   );
-      //   console.log(
-      //     "refreshToken token exp: ",
-      //     new Date(decodedRefreshToken.exp * 1000)
-      //   );
-      // }
-
       if (accessToken && refreshToken) {
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);

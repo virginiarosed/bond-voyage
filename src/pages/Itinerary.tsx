@@ -1363,8 +1363,6 @@ export function Itinerary({
       }),
     };
 
-    console.log("Creating standard booking payload:", newBooking);
-
     createBooking(newBooking, {
       onSuccess: (response) => {
         setBookingFormData({
@@ -1459,8 +1457,6 @@ export function Itinerary({
         },
       }),
     };
-
-    console.log("Creating requested booking payload:", newBooking);
 
     createBooking(newBooking, {
       onSuccess: (response) => {
