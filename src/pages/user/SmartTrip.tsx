@@ -170,7 +170,7 @@ export function SmartTrip() {
         navigate("/user/travels", {
           state: {
             scrollToId: bookingId,
-            tab: "in-progress",
+            tab: "draft",
           },
         });
       }, 800);
