@@ -13,10 +13,13 @@ import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { toast } from "sonner";
 import { useProfile } from "../components/ProfileContext";
-import { useFeedbackList } from "../hooks/useFeedbackList";
+import {
+  useFeedbackList,
+  useRespondToFeedback,
+} from "../hooks/useFeedbackList";
 
 interface FeedbackItem {
-  id: number;
+  id: string;
   customer: string;
   bookingId: string;
   trip: string;
@@ -43,6 +46,21 @@ export function Feedback() {
   const [replyText, setReplyText] = useState("");
 
   const { data } = useFeedbackList();
+
+  // Mutation to respond to feedback (uses optimistic updates for instant UI reflection)
+  const respondMutation = useRespondToFeedback({
+    onSuccess: () => {
+      toast.success("Reply sent successfully!");
+      setReplyModalOpen(false);
+      setSelectedFeedbackForReply(null);
+      setReplyText("");
+    },
+    onError: (error: any) => {
+      toast.error("Failed to send reply", {
+        description: error.response?.data?.message || "Please try again later",
+      });
+    },
+  });
 
   // View reply modal state
   const [viewReplyModalOpen, setViewReplyModalOpen] = useState(false);
@@ -81,7 +99,7 @@ export function Feedback() {
     }
   }, [data]);
 
-  const handleMarkAsRead = (id: number) => {
+  const handleMarkAsRead = (id: string) => {
     setFeedbackItems(
       feedbackItems.map((item) =>
         item.id === id ? { ...item, unread: false, read: true } : item
@@ -90,7 +108,7 @@ export function Feedback() {
     toast.success("Feedback marked as read!");
   };
 
-  const handleMarkAsUnread = (id: number) => {
+  const handleMarkAsUnread = (id: string) => {
     setFeedbackItems(
       feedbackItems.map((item) =>
         item.id === id ? { ...item, unread: true, read: false } : item
@@ -111,31 +129,11 @@ export function Feedback() {
       return;
     }
 
-    const today = new Date().toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
+    // Call the API to save the reply
+    respondMutation.mutate({
+      feedbackId: String(selectedFeedbackForReply.id),
+      response: replyText,
     });
-
-    setFeedbackItems(
-      feedbackItems.map((item) =>
-        item.id === selectedFeedbackForReply.id
-          ? {
-              ...item,
-              responded: true,
-              read: true,
-              unread: false,
-              reply: replyText,
-              replyDate: today,
-            }
-          : item
-      )
-    );
-
-    setReplyModalOpen(false);
-    setSelectedFeedbackForReply(null);
-    setReplyText("");
-    toast.success("Reply sent successfully!");
   };
 
   const handleViewReply = (item: FeedbackItem) => {
@@ -534,7 +532,7 @@ export function Feedback() {
           setSelectedFeedbackForReply(null);
           setReplyText("");
         }}
-        confirmText="Send Reply"
+        confirmText={respondMutation.isPending ? "Sending..." : "Send Reply"}
         cancelText="Cancel"
         confirmVariant="default"
       />
