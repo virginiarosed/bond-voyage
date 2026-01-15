@@ -22,24 +22,6 @@ import { Pagination } from "../../components/Pagination";
 import { FAQAssistant } from "../../components/FAQAssistant";
 import { useMyBookings } from "../../hooks/useBookings";
 import { useMediaQuery } from "react-responsive";
-import { capitalize } from "../../utils/helpers/capitalize";
-
-interface TransformedTrip {
-  id: string;
-  customer: string;
-  email: string;
-  mobile: string;
-  destination: string;
-  dates: string;
-  amount: string;
-  travelers: number;
-  bookingType: "Standard" | "Customized" | "Requested";
-  status: "completed" | "cancelled";
-  bookedDate: string;
-  completedDate?: string;
-  cancelledDate?: string;
-  cancellationReason?: string;
-}
 
 export function UserHistory() {
   const navigate = useNavigate();
@@ -54,10 +36,15 @@ export function UserHistory() {
   const itemsPerPage = 6;
 
   // API query params
-  const [queryParams, setQueryParams] = useState({
+  const [queryParams, setQueryParams] = useState<{
+    page: number;
+    limit: number;
+    status: "COMPLETED" | "CANCELLED";
+    type?: string;
+  }>({
     page: 1,
     limit: 6,
-    status: "COMPLETED" as "COMPLETED" | "CANCELLED",
+    status: "COMPLETED",
   });
 
   // Fetch bookings with server-side filtering
@@ -68,44 +55,17 @@ export function UserHistory() {
     refetch,
   } = useMyBookings(queryParams);
 
-  // Transform API data
-  const transformBooking = (apiBooking: any): TransformedTrip => {
-    const totalAmount =
-      parseFloat(apiBooking.total?.replace(/[₱,]/g, "") || apiBooking.total) ||
-      0;
-
-    const dates = apiBooking.dates?.split(" - ") || [];
-    const startDate = dates[0] || new Date().toISOString().split("T")[0];
-    const endDate = dates[1] || startDate;
-
-    return {
-      id: apiBooking.id,
-      customer: apiBooking.customer || "Unknown Customer",
-      email: apiBooking.email || "",
-      mobile: apiBooking.mobile || "N/A",
-      destination: apiBooking.destination,
-      dates: apiBooking.dates,
-      amount: apiBooking.total,
-      travelers: apiBooking.travelers,
-      bookingType: apiBooking.bookingType,
-      status:
-        apiBooking.statusBadges === "COMPLETED" ? "completed" : "cancelled",
-      bookedDate: new Date(apiBooking.bookedDate).toLocaleDateString(),
-      completedDate: apiBooking.completedDate
-        ? new Date(apiBooking.completedDate).toLocaleDateString()
-        : undefined,
-      cancelledDate: apiBooking.cancelledDate
-        ? new Date(apiBooking.cancelledDate).toLocaleDateString()
-        : undefined,
-      cancellationReason: apiBooking.cancellationReason,
-    };
-  };
-
-  const bookings = bookingsData?.data?.map(transformBooking) || [];
+  // Use data directly - no transformation
+  const bookings = bookingsData?.data || [];
 
   // Build API query params based on filters and active tab
   useEffect(() => {
-    const params: any = {
+    const params: {
+      page: number;
+      limit: number;
+      status: "COMPLETED" | "CANCELLED";
+      type?: string;
+    } = {
       page: currentPage,
       limit: itemsPerPage,
       status: activeTab === "completed" ? "COMPLETED" : "CANCELLED",
@@ -113,15 +73,15 @@ export function UserHistory() {
 
     // Booking type filter
     if (selectedTypeFilter) {
-      params.type = selectedTypeFilter.toUpperCase();
+      params.type = selectedTypeFilter;
     }
 
     setQueryParams(params);
   }, [currentPage, selectedTypeFilter, activeTab]);
 
   // Apply booking type filter (client-side for consistency with existing UI)
-  const filteredTrips = selectedTypeFilter
-    ? bookings.filter((t) => t.bookingType === selectedTypeFilter)
+  const filteredBookings = selectedTypeFilter
+    ? bookings.filter((b) => b.type === selectedTypeFilter)
     : bookings;
 
   // Use API pagination
@@ -129,15 +89,15 @@ export function UserHistory() {
   const totalPages = bookingsData?.meta?.totalPages || 1;
 
   // Calculate stats based on filtered bookings
-  const statusTripsCount = filteredTrips.length;
-  const customizedCount = filteredTrips.filter(
-    (t) => t.bookingType === "Customized"
+  const statusTripsCount = filteredBookings.length;
+  const customizedCount = filteredBookings.filter(
+    (b) => b.type === "CUSTOMIZED"
   ).length;
-  const standardCount = filteredTrips.filter(
-    (t) => t.bookingType === "Standard"
+  const standardCount = filteredBookings.filter(
+    (b) => b.type === "STANDARD"
   ).length;
-  const requestedCount = filteredTrips.filter(
-    (t) => t.bookingType === "Requested"
+  const requestedCount = filteredBookings.filter(
+    (b) => b.type === "REQUESTED"
   ).length;
 
   const handleViewDetails = (bookingId: string) => {
@@ -147,7 +107,7 @@ export function UserHistory() {
   // Handle stat card click for filtering
   const handleStatCardClick = (type: string | null) => {
     if (selectedTypeFilter === type) {
-      setSelectedTypeFilter(null); // Deselect if clicking the same filter
+      setSelectedTypeFilter(null);
     } else {
       setSelectedTypeFilter(type);
     }
@@ -163,9 +123,9 @@ export function UserHistory() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed":
+      case "COMPLETED":
         return "bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]";
-      case "cancelled":
+      case "CANCELLED":
         return "bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[rgba(255,107,107,0.2)]";
       default:
         return "bg-[rgba(100,116,139,0.1)] text-[#64748B] border-[rgba(100,116,139,0.2)]";
@@ -174,9 +134,9 @@ export function UserHistory() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "completed":
+      case "COMPLETED":
         return "✓";
-      case "cancelled":
+      case "CANCELLED":
         return "✗";
       default:
         return "•";
@@ -185,15 +145,32 @@ export function UserHistory() {
 
   const getBookingTypeColor = (type: string) => {
     switch (type) {
-      case "Customized":
+      case "CUSTOMIZED":
         return "bg-[rgba(255,127,110,0.1)] text-[#FF7F6E] border-[rgba(255,127,110,0.2)]";
-      case "Standard":
+      case "STANDARD":
         return "bg-[rgba(139,125,107,0.1)] text-[#8B7D6B] border-[rgba(139,125,107,0.2)]";
-      case "Requested":
+      case "REQUESTED":
         return "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]";
       default:
         return "bg-[rgba(100,116,139,0.1)] text-[#64748B] border-[rgba(100,116,139,0.2)]";
     }
+  };
+
+  const getBookingTypeLabel = (type: string) => {
+    switch (type) {
+      case "CUSTOMIZED":
+        return "Customized";
+      case "STANDARD":
+        return "Standard";
+      case "REQUESTED":
+        return "Requested";
+      default:
+        return type;
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return `₱${price.toLocaleString()}`;
   };
 
   // Loading state
@@ -274,7 +251,7 @@ export function UserHistory() {
           />
         </div>
         <div
-          onClick={() => handleStatCardClick("Customized")}
+          onClick={() => handleStatCardClick("CUSTOMIZED")}
           className="cursor-pointer"
         >
           <StatCard
@@ -283,11 +260,11 @@ export function UserHistory() {
             value={customizedCount.toString()}
             gradientFrom="#0A7AFF"
             gradientTo="#3B9EFF"
-            selected={selectedTypeFilter === "Customized"}
+            selected={selectedTypeFilter === "CUSTOMIZED"}
           />
         </div>
         <div
-          onClick={() => handleStatCardClick("Standard")}
+          onClick={() => handleStatCardClick("STANDARD")}
           className="cursor-pointer"
         >
           <StatCard
@@ -296,11 +273,11 @@ export function UserHistory() {
             value={standardCount.toString()}
             gradientFrom="#10B981"
             gradientTo="#14B8A6"
-            selected={selectedTypeFilter === "Standard"}
+            selected={selectedTypeFilter === "STANDARD"}
           />
         </div>
         <div
-          onClick={() => handleStatCardClick("Requested")}
+          onClick={() => handleStatCardClick("REQUESTED")}
           className="cursor-pointer"
         >
           <StatCard
@@ -309,7 +286,7 @@ export function UserHistory() {
             value={requestedCount.toString()}
             gradientFrom="#FFB84D"
             gradientTo="#FF9800"
-            selected={selectedTypeFilter === "Requested"}
+            selected={selectedTypeFilter === "REQUESTED"}
           />
         </div>
       </div>
@@ -321,7 +298,7 @@ export function UserHistory() {
         } Trips (${totalItems})`}
         icon={Archive}
       >
-        {filteredTrips.length === 0 ? (
+        {filteredBookings.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Archive className="w-10 h-10 text-primary opacity-50" />
@@ -336,10 +313,10 @@ export function UserHistory() {
         ) : (
           <>
             <div className="space-y-4">
-              {filteredTrips.map((trip) => (
+              {filteredBookings.map((booking) => (
                 <div
-                  key={trip.id}
-                  onClick={() => handleViewDetails(trip.id)}
+                  key={booking.id}
+                  onClick={() => handleViewDetails(booking.id)}
                   className="p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)] cursor-pointer"
                 >
                   {/* Header - Responsive */}
@@ -351,24 +328,28 @@ export function UserHistory() {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col md:flex-row md:items-center md:gap-2">
                           <h3 className="text-lg text-[#1A2B4F] font-semibold truncate">
-                            Booking {trip.id.substring(0, 8)}...
+                            {booking.bookingCode}
                           </h3>
                           <div className="flex flex-wrap gap-1 mt-1 md:mt-0">
                             {/* Status Badge */}
-                            <span className={`inline-flex items-center justify-center min-w-[60px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${getStatusColor(
-                              trip.status
-                            )}`}>
-                              {getStatusIcon(trip.status)}{" "}
-                              {trip.status === "completed"
+                            <span
+                              className={`inline-flex items-center justify-center min-w-[60px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${getStatusColor(
+                                booking.status
+                              )}`}
+                            >
+                              {getStatusIcon(booking.status)}{" "}
+                              {booking.status === "COMPLETED"
                                 ? "Completed"
                                 : "Cancelled"}
                             </span>
-                            
+
                             {/* Booking Type Badge */}
-                            <span className={`inline-flex items-center justify-center min-w-[70px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${getBookingTypeColor(
-                              trip.bookingType
-                            )}`}>
-                              {trip.bookingType}
+                            <span
+                              className={`inline-flex items-center justify-center min-w-[70px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${getBookingTypeColor(
+                                booking.type
+                              )}`}
+                            >
+                              {getBookingTypeLabel(booking.type)}
                             </span>
                           </div>
                         </div>
@@ -378,7 +359,7 @@ export function UserHistory() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleViewDetails(trip.id);
+                        handleViewDetails(booking.id);
                       }}
                       className="hidden md:flex h-9 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] items-center gap-2 text-sm font-medium transition-all"
                     >
@@ -392,20 +373,22 @@ export function UserHistory() {
                     <div className="flex items-center gap-2 mb-1">
                       <Users className="w-4 h-4 text-[#0A7AFF]" />
                       <span className="text-sm text-[#334155] font-medium truncate">
-                        {trip.customer}
+                        {booking.customerName}
                       </span>
-                      <span className="hidden md:inline text-sm text-[#64748B]">•</span>
+                      <span className="hidden md:inline text-sm text-[#64748B]">
+                        •
+                      </span>
                       <span className="hidden md:inline text-sm text-[#64748B] truncate">
-                        {trip.email}
+                        {booking.customerEmail}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[#64748B] md:hidden">
                       <Mail className="w-3 h-3" />
-                      <span className="truncate">{trip.email}</span>
+                      <span className="truncate">{booking.customerEmail}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[#64748B] md:hidden mt-1">
                       <Phone className="w-3 h-3" />
-                      <span>{trip.mobile}</span>
+                      <span>{booking.customerMobile}</span>
                     </div>
                   </div>
 
@@ -417,7 +400,7 @@ export function UserHistory() {
                       <div>
                         <p className="text-xs text-[#64748B]">Destination</p>
                         <p className="text-sm text-[#334155] font-medium">
-                          {trip.destination}
+                          {booking.destination}
                         </p>
                       </div>
                     </div>
@@ -426,7 +409,7 @@ export function UserHistory() {
                       <div>
                         <p className="text-xs text-[#64748B]">Travel Dates</p>
                         <p className="text-sm text-[#334155] font-medium leading-tight">
-                          {trip.dates}
+                          {booking.dateRangeDisplay || "Not specified"}
                         </p>
                       </div>
                     </div>
@@ -435,8 +418,8 @@ export function UserHistory() {
                       <div>
                         <p className="text-xs text-[#64748B]">Travelers</p>
                         <p className="text-sm text-[#334155] font-medium">
-                          {trip.travelers}{" "}
-                          {trip.travelers > 1 ? "People" : "Person"}
+                          {booking.travelers}{" "}
+                          {booking.travelers > 1 ? "People" : "Person"}
                         </p>
                       </div>
                     </div>
@@ -445,7 +428,7 @@ export function UserHistory() {
                       <div>
                         <p className="text-xs text-[#64748B]">Total Amount</p>
                         <p className="text-sm text-[#334155] font-medium">
-                          {trip.amount}
+                          {formatPrice(booking.totalPrice)}
                         </p>
                       </div>
                     </div>
@@ -454,7 +437,7 @@ export function UserHistory() {
                       <div>
                         <p className="text-xs text-[#64748B]">Booked On</p>
                         <p className="text-sm text-[#334155] font-medium">
-                          {trip.bookedDate}
+                          {booking.bookedDateDisplay}
                         </p>
                       </div>
                     </div>
@@ -466,9 +449,11 @@ export function UserHistory() {
                         <div className="flex items-start gap-2">
                           <MapPin className="w-4 h-4 text-[#0A7AFF] flex-shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-xs text-[#64748B]">Destination</p>
+                            <p className="text-xs text-[#64748B]">
+                              Destination
+                            </p>
                             <p className="text-sm text-[#334155] font-medium line-clamp-1">
-                              {trip.destination}
+                              {booking.destination}
                             </p>
                           </div>
                         </div>
@@ -477,8 +462,8 @@ export function UserHistory() {
                           <div>
                             <p className="text-xs text-[#64748B]">Travelers</p>
                             <p className="text-sm text-[#334155] font-medium">
-                              {trip.travelers}{" "}
-                              {trip.travelers > 1 ? "Pax" : "Pax"}
+                              {booking.travelers}{" "}
+                              {booking.travelers > 1 ? "Pax" : "Pax"}
                             </p>
                           </div>
                         </div>
@@ -487,9 +472,11 @@ export function UserHistory() {
                         <div className="flex items-start gap-2 col-span-2">
                           <Calendar className="w-4 h-4 text-[#14B8A6] flex-shrink-0 mt-0.5" />
                           <div className="flex-1">
-                            <p className="text-xs text-[#64748B]">Travel Dates</p>
+                            <p className="text-xs text-[#64748B]">
+                              Travel Dates
+                            </p>
                             <p className="text-sm text-[#334155] font-medium leading-tight">
-                              {trip.dates}
+                              {booking.dateRangeDisplay || "Not specified"}
                             </p>
                           </div>
                         </div>
@@ -500,7 +487,7 @@ export function UserHistory() {
                           <div>
                             <p className="text-xs text-[#64748B]">Amount</p>
                             <p className="text-sm text-[#334155] font-medium">
-                              {trip.amount}
+                              {formatPrice(booking.totalPrice)}
                             </p>
                           </div>
                         </div>
@@ -509,7 +496,7 @@ export function UserHistory() {
                           <div>
                             <p className="text-xs text-[#64748B]">Booked</p>
                             <p className="text-sm text-[#334155] font-medium truncate">
-                              {trip.bookedDate}
+                              {booking.bookedDateDisplay}
                             </p>
                           </div>
                         </div>
@@ -522,7 +509,7 @@ export function UserHistory() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleViewDetails(trip.id);
+                        handleViewDetails(booking.id);
                       }}
                       className="w-full h-11 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#3B9EFF] text-white font-medium flex items-center justify-center gap-2"
                     >
