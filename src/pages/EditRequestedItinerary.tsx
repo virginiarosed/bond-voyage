@@ -72,6 +72,7 @@ import {
   Map as MapIcon,
   Eye,
   EyeOff,
+  Loader2,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import { ImageUploadField } from "../components/ImageUploadField";
@@ -112,6 +113,7 @@ interface Activity {
   description: string;
   location: string;
   locationData?: Place;
+  order: number;
 }
 
 interface Day {
@@ -191,42 +193,58 @@ const ICON_OPTIONS = [
   { value: "Gift", label: "Gift / Souvenir", icon: Gift },
 ];
 
-// Philippine cities/destinations for autocomplete suggestions
-const PHILIPPINE_LOCATIONS = [
-  "Boracay, Aklan",
-  "Caticlan Airport, Malay, Aklan",
-  "White Beach, Boracay",
-  "D'Mall, Boracay",
-  "Manila, Metro Manila",
-  "Makati, Metro Manila",
-  "BGC, Taguig City",
-  "Intramuros, Manila",
-  "Rizal Park, Manila",
-  "Palawan",
-  "El Nido, Palawan",
-  "Coron, Palawan",
-  "Puerto Princesa, Palawan",
-  "Underground River, Palawan",
-  "Cebu City, Cebu",
-  "Mactan Island, Cebu",
-  "Oslob, Cebu",
-  "Moalboal, Cebu",
-  "Kawasan Falls, Cebu",
-  "Baguio City, Benguet",
-  "Banaue Rice Terraces, Ifugao",
-  "Sagada, Mountain Province",
-  "Vigan, Ilocos Sur",
-  "Pagudpud, Ilocos Norte",
-  "Siargao Island",
-  "Cloud 9, Siargao",
-  "Bohol",
-  "Chocolate Hills, Bohol",
-  "Panglao Island, Bohol",
-  "Tagbilaran, Bohol",
-  "Davao City",
-  "Camiguin Island",
-  "Batanes",
-  "Hundred Islands, Pangasinan",
+// Generic location suggestions for autocomplete
+const GENERIC_LOCATIONS = [
+  "City Center",
+  "Main Airport",
+  "Central Station",
+  "Downtown Area",
+  "Shopping District",
+  "Historic Old Town",
+  "Beachfront",
+  "Mountain Viewpoint",
+  "National Park Entrance",
+  "Tourist Information Center",
+  "Convention Center",
+  "University Campus",
+  "Hospital District",
+  "Business District",
+  "Art Museum",
+  "Science Museum",
+  "Botanical Gardens",
+  "Zoo Entrance",
+  "Amusement Park",
+  "Sports Stadium",
+  "Concert Hall",
+  "Theater District",
+  "Fine Dining Restaurant",
+  "Local Market",
+  "Farmers Market",
+  "Harbor Front",
+  "Marina",
+  "Ski Resort",
+  "Hot Springs",
+  "Wildlife Sanctuary",
+  "Observation Deck",
+  "Cable Car Station",
+  "Ferry Terminal",
+  "Bus Terminal",
+  "Train Station",
+  "Hotel District",
+  "Resort Area",
+  "Camping Ground",
+  "Hiking Trailhead",
+  "Bike Rental Station",
+  "Car Rental Office",
+  "Tour Bus Pickup",
+  "Cruise Ship Port",
+  "Island Ferry Dock",
+  "Mountain Pass",
+  "Valley Viewpoint",
+  "Waterfall Trail",
+  "Cave Entrance",
+  "Desert Outpost",
+  "Rainforest Center",
 ];
 
 const getIconComponent = (iconName: string) => {
@@ -249,7 +267,7 @@ const convertTo24Hour = (time12h: string): string => {
 
   // Parse 12-hour format
   const match = time12h.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-  if (!match) return time12h; // Return original if can't parse
+  if (!match) return time12h;
 
   let hours = parseInt(match[1]);
   const minutes = match[2];
@@ -315,7 +333,6 @@ export function EditRequestedItinerary() {
         setHasUnsavedChanges(false);
         setSaveConfirmOpen(false);
 
-        // Navigate back to itinerary page
         navigate("/itinerary", {
           state: {
             scrollToId: id,
@@ -358,6 +375,24 @@ export function EditRequestedItinerary() {
     field: "travelDateFrom" | "travelDateTo";
     value: string;
   } | null>(null);
+  const [pendingDaysChange, setPendingDaysChange] = useState<number | null>(
+    null
+  );
+
+  // Location enrichment states
+  const [isEnrichingLocations, setIsEnrichingLocations] = useState(false);
+  const [enrichmentQueue, setEnrichmentQueue] = useState<
+    Array<{
+      dayId: string;
+      activityId: string;
+      location: string;
+    }>
+  >([]);
+  const [currentEnrichmentIndex, setCurrentEnrichmentIndex] = useState(0);
+  const enrichmentCompleted = useRef(false);
+  const enrichmentStarted = useRef(false);
+
+  const currentEnrichment = enrichmentQueue[currentEnrichmentIndex];
 
   // Location autocomplete states
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
@@ -382,6 +417,23 @@ export function EditRequestedItinerary() {
     {
       enabled: debouncedValue.length >= 2,
       queryKey: queryKeys.places.search(debouncedValue),
+    }
+  );
+
+  // Enrichment search query
+  const {
+    data: enrichmentPlacesData,
+    isLoading: isEnrichmentSearching,
+    isFetching: isEnrichmentFetching,
+  } = usePlacesSearch(
+    currentEnrichment
+      ? { text: currentEnrichment.location.split(",")[0].trim(), limit: 1 }
+      : undefined,
+    {
+      enabled: !!currentEnrichment && isEnrichingLocations,
+      queryKey: ["enrichment", currentEnrichment?.location],
+      staleTime: 0,
+      gcTime: 0,
     }
   );
 
@@ -412,30 +464,116 @@ export function EditRequestedItinerary() {
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  if (isLoadingBooking && !passedItineraryData) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#0A7AFF] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#64748B]">Loading booking details...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Generate unique ID
   const generateId = () =>
     `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  // Handle enrichment process
+  useEffect(() => {
+    if (
+      !isEnrichingLocations ||
+      !currentEnrichment ||
+      isEnrichmentSearching ||
+      isEnrichmentFetching
+    ) {
+      return;
+    }
+
+    const place = enrichmentPlacesData?.data?.[0];
+
+    if (place) {
+      setItineraryDays((prev) =>
+        prev.map((day) =>
+          day.id === currentEnrichment.dayId
+            ? {
+                ...day,
+                activities: day.activities.map((activity) =>
+                  activity.id === currentEnrichment.activityId
+                    ? { ...activity, locationData: place }
+                    : activity
+                ),
+              }
+            : day
+        )
+      );
+    }
+
+    if (currentEnrichmentIndex < enrichmentQueue.length - 1) {
+      setTimeout(() => {
+        setCurrentEnrichmentIndex((prev) => prev + 1);
+      }, 300);
+    } else {
+      setIsEnrichingLocations(false);
+      enrichmentCompleted.current = true;
+      toast.success("Location Enrichment Complete", {
+        description: `Enhanced ${enrichmentQueue.length} activities with coordinates`,
+      });
+    }
+  }, [
+    enrichmentPlacesData,
+    isEnrichmentSearching,
+    isEnrichmentFetching,
+    currentEnrichment,
+    currentEnrichmentIndex,
+    enrichmentQueue.length,
+    isEnrichingLocations,
+  ]);
+
+  // Start enrichment when itinerary loads
+  useEffect(() => {
+    if (
+      !itineraryDays.length ||
+      enrichmentCompleted.current ||
+      enrichmentStarted.current ||
+      isEnrichingLocations
+    ) {
+      return;
+    }
+
+    const activitiesToEnrich: Array<{
+      dayId: string;
+      activityId: string;
+      location: string;
+    }> = [];
+
+    itineraryDays.forEach((day) => {
+      day.activities.forEach((activity) => {
+        if (activity.location && !activity.locationData) {
+          activitiesToEnrich.push({
+            dayId: day.id,
+            activityId: activity.id,
+            location: activity.location,
+          });
+        }
+      });
+    });
+
+    if (activitiesToEnrich.length > 0) {
+      enrichmentStarted.current = true;
+      setEnrichmentQueue(activitiesToEnrich);
+      setCurrentEnrichmentIndex(0);
+      setIsEnrichingLocations(true);
+
+      toast.info("Enriching Activity Locations", {
+        description: `Finding coordinates for ${activitiesToEnrich.length} activities...`,
+        duration: 3000,
+      });
+    } else {
+      enrichmentCompleted.current = true;
+    }
+  }, [itineraryDays, isEnrichingLocations]);
 
   // Route Optimization Functions
   const calculateDistance = (location1: string, location2: string): number => {
     // Simplified distance calculation - in real app would use actual coordinates
     const commonRoutes: { [key: string]: number } = {
-      "boracay-manila": 350,
-      "manila-baguio": 250,
-      "manila-cebu": 570,
-      "cebu-bohol": 70,
-      "manila-palawan": 580,
+      "city-center-airport": 25,
+      "airport-hotel": 20,
+      "hotel-downtown": 5,
+      "downtown-station": 3,
+      "station-museum": 2,
+      "museum-park": 1.5,
+      "park-restaurant": 2,
+      "restaurant-hotel": 3,
     };
 
     const key = `${location1.toLowerCase().split(",")[0].trim()}-${location2
@@ -453,7 +591,7 @@ export function EditRequestedItinerary() {
   };
 
   const calculateTravelTime = (distance: number): number => {
-    return Math.round((distance / 40) * 60); // Assuming 40 km/h average speed
+    return Math.round((distance / 40) * 60);
   };
 
   const optimizeRoute = (activities: Activity[]): Activity[] => {
@@ -546,7 +684,7 @@ export function EditRequestedItinerary() {
         setActiveOptimizationTab(daysWithLocations[0].id);
       }
     }
-  }, [daysWithLocations]);
+  }, [daysWithLocations, activeOptimizationTab]);
 
   const handleAcceptOptimization = (dayId: string) => {
     const optimization = dayOptimizations.get(dayId);
@@ -588,22 +726,21 @@ export function EditRequestedItinerary() {
     });
   };
 
-  // Philippine location coordinates for map
+  // Location coordinates for map
   const LOCATION_COORDS: { [key: string]: [number, number] } = {
-    manila: [14.5995, 120.9842],
-    quezon: [14.676, 121.0437],
-    makati: [14.5547, 121.0244],
-    boracay: [11.9674, 121.9248],
-    cebu: [10.3157, 123.8854],
-    bohol: [9.85, 124.1435],
-    palawan: [9.8349, 118.7384],
-    "el nido": [11.1949, 119.4013],
-    coron: [12.0067, 120.207],
-    baguio: [16.4023, 120.596],
-    davao: [7.1907, 125.4553],
-    siargao: [9.86, 126.046],
-    tagaytay: [14.1088, 120.9618],
-    batangas: [13.7565, 121.0583],
+    "city center": [40.7128, -74.006],
+    airport: [40.6413, -73.7781],
+    downtown: [40.7589, -73.9851],
+    station: [40.7506, -73.9776],
+    hotel: [40.7614, -73.9776],
+    museum: [40.7794, -73.9632],
+    park: [40.7851, -73.9683],
+    restaurant: [40.761, -73.982],
+    beach: [40.5795, -73.9822],
+    mountain: [40.6635, -74.1953],
+    university: [40.8075, -73.9626],
+    stadium: [40.6825, -73.9756],
+    harbor: [40.7029, -74.014],
   };
 
   const getCoordinates = (location: string): [number, number] | null => {
@@ -623,8 +760,8 @@ export function EditRequestedItinerary() {
     }
 
     return [
-      14.5995 + (Math.random() - 0.5) * 0.5,
-      120.9842 + (Math.random() - 0.5) * 0.5,
+      40.7128 + (Math.random() - 0.5) * 0.5,
+      -74.006 + (Math.random() - 0.5) * 0.5,
     ];
   };
 
@@ -639,16 +776,13 @@ export function EditRequestedItinerary() {
           optimizedPolyline,
         } = mapRef.current;
 
-        // Remove all markers and polylines
         originalMarkers.forEach((marker: any) => marker.remove());
         optimizedMarkers.forEach((marker: any) => marker.remove());
         if (originalPolyline) originalPolyline.remove();
         if (optimizedPolyline) optimizedPolyline.remove();
 
-        // Remove the map
         map.remove();
 
-        // Clear the ref
         mapRef.current = null;
       } catch (error) {
         console.error("Error cleaning up map:", error);
@@ -662,7 +796,6 @@ export function EditRequestedItinerary() {
     try {
       const L = await import("leaflet");
 
-      // Add Leaflet styles dynamically
       if (!document.getElementById("leaflet-styles")) {
         const style = document.createElement("style");
         style.id = "leaflet-styles";
@@ -670,160 +803,13 @@ export function EditRequestedItinerary() {
           .leaflet-container {
             font-family: inherit;
           }
-          .leaflet-pane,
-          .leaflet-tile,
-          .leaflet-marker-icon,
-          .leaflet-marker-shadow,
-          .leaflet-tile-container,
-          .leaflet-pane > svg,
-          .leaflet-pane > canvas,
-          .leaflet-zoom-box,
-          .leaflet-image-layer,
-          .leaflet-layer {
-            position: absolute;
-            left: 0;
-            top: 0;
-          }
-          .leaflet-container {
-            overflow: hidden;
-          }
-          .leaflet-tile,
-          .leaflet-marker-icon,
-          .leaflet-marker-shadow {
-            user-select: none;
-          }
-          .leaflet-tile-pane { z-index: 200; }
-          .leaflet-overlay-pane { z-index: 400; }
-          .leaflet-shadow-pane { z-index: 500; }
-          .leaflet-marker-pane { z-index: 600; }
-          .leaflet-tooltip-pane { z-index: 650; }
-          .leaflet-popup-pane { z-index: 700; }
-          .leaflet-control { z-index: 800; }
-          .leaflet-top,
-          .leaflet-bottom {
-            position: absolute;
-            z-index: 1000;
-            pointer-events: none;
-          }
-          .leaflet-top {
-            top: 0;
-          }
-          .leaflet-right {
-            right: 0;
-          }
-          .leaflet-bottom {
-            bottom: 0;
-          }
-          .leaflet-left {
-            left: 0;
-          }
-          .leaflet-control {
-            float: left;
-            clear: both;
-            pointer-events: auto;
-          }
-          .leaflet-top .leaflet-control {
-            margin-top: 10px;
-          }
-          .leaflet-bottom .leaflet-control {
-            margin-bottom: 10px;
-          }
-          .leaflet-left .leaflet-control {
-            margin-left: 10px;
-          }
-          .leaflet-right .leaflet-control {
-            margin-right: 10px;
-          }
-          .leaflet-fade-anim .leaflet-popup {
-            opacity: 0;
-            transition: opacity 0.2s linear;
-          }
-          .leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
-            opacity: 1;
-          }
-          .leaflet-zoom-animated {
-            transform-origin: 0 0;
-          }
-          svg.leaflet-zoom-animated {
-            will-change: transform;
-          }
-          .leaflet-zoom-anim .leaflet-zoom-animated {
-            transition: transform 0.25s cubic-bezier(0,0,0.25,1);
-          }
-          .leaflet-interactive {
-            cursor: pointer;
-          }
-          .leaflet-popup {
-            position: absolute;
-            text-align: center;
-            margin-bottom: 20px;
-          }
-          .leaflet-popup-content-wrapper {
-            padding: 1px;
-            text-align: left;
-            border-radius: 12px;
-            background: white;
-            box-shadow: 0 3px 14px rgba(0,0,0,0.4);
-          }
-          .leaflet-popup-content {
-            margin: 13px 24px 13px 20px;
-            line-height: 1.3;
-            font-size: 13px;
-            min-height: 1px;
-          }
-          .leaflet-popup-tip-container {
-            width: 40px;
-            height: 20px;
-            position: absolute;
-            left: 50%;
-            margin-top: -1px;
-            margin-left: -20px;
-            overflow: hidden;
-            pointer-events: none;
-          }
-          .leaflet-popup-tip {
-            width: 17px;
-            height: 17px;
-            padding: 1px;
-            margin: -10px auto 0;
-            transform: rotate(45deg);
-            background: white;
-            box-shadow: 0 3px 14px rgba(0,0,0,0.4);
-          }
-          .leaflet-control-zoom {
-            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
-            border-radius: 4px;
-          }
-          .leaflet-control-zoom a {
-            background-color: #fff;
-            border-bottom: 1px solid #ccc;
-            width: 26px;
-            height: 26px;
-            text-align: center;
-            text-decoration: none;
-            color: black;
-            display: block;
-            font-size: 18px;
-            line-height: 26px;
-          }
-          .leaflet-control-zoom a:hover {
-            background-color: #f4f4f4;
-          }
-          .leaflet-control-zoom-in {
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
-          }
-          .leaflet-control-zoom-out {
-            border-bottom-left-radius: 4px;
-            border-bottom-right-radius: 4px;
-          }
         `;
         document.head.appendChild(style);
       }
 
       const map = L.map(mapContainerRef.current, {
-        center: [12.8797, 121.774],
-        zoom: 6,
+        center: [40.7128, -74.006],
+        zoom: 12,
         zoomControl: true,
       });
 
@@ -841,7 +827,6 @@ export function EditRequestedItinerary() {
         optimizedPolyline: null,
       };
 
-      // Force map to recalculate size
       setTimeout(() => {
         if (mapRef.current) {
           mapRef.current.map.invalidateSize();
@@ -1000,23 +985,18 @@ export function EditRequestedItinerary() {
     }
   };
 
-  // Initialize map when switching to map view and cleanup when switching away
+  // Initialize map when switching to map view
   useEffect(() => {
     if (mapView === "map") {
-      // Initialize map if not already done
       if (mapContainerRef.current && !mapRef.current) {
         initializeMap();
-      }
-      // Update routes if map exists
-      else if (mapRef.current && activeOptimizationTab) {
+      } else if (mapRef.current && activeOptimizationTab) {
         updateMapRoutes();
       }
     } else {
-      // Cleanup map when switching to list view
       cleanupMap();
     }
 
-    // Cleanup on unmount
     return () => {
       if (mapView !== "map") {
         cleanupMap();
@@ -1031,7 +1011,6 @@ export function EditRequestedItinerary() {
     }
   }, [dayOptimizations, activeOptimizationTab]);
 
-  // Helper function to convert icon component to string name
   const getIconNameFromComponent = (iconComponent: any): string => {
     if (!iconComponent) return "Clock";
     if (typeof iconComponent === "string") return iconComponent;
@@ -1050,7 +1029,7 @@ export function EditRequestedItinerary() {
     return "Clock";
   };
 
-  // Load itinerary data from passed state
+  // Load itinerary data
   useEffect(() => {
     if (!id) {
       navigate("/itinerary");
@@ -1078,24 +1057,27 @@ export function EditRequestedItinerary() {
       setFormData(loadedFormData);
       setInitialFormData(loadedFormData);
 
-      // Load itinerary details
       if (
         bookingData.itinerary?.days &&
         Array.isArray(bookingData.itinerary.days)
       ) {
         const convertedItinerary = bookingData.itinerary.days.map(
-          (day: any) => ({
+          (day: any, index: number) => ({
             id: day.id || generateId(),
-            day: day.dayNumber,
-            title: day.title || `Day ${day.dayNumber}`,
-            activities: (day.activities || []).map((activity: any) => ({
-              id: activity.id || generateId(),
-              time: activity.time || "00:00",
-              icon: activity.icon || "Clock",
-              title: activity.title || "",
-              description: activity.description || "",
-              location: activity.location || "",
-            })),
+            day: day.dayNumber || index + 1,
+            title: day.title || `Day ${day.dayNumber || index + 1}`,
+            activities: (day.activities || []).map(
+              (activity: any, actIdx: number) => ({
+                id: activity.id || generateId(),
+                time: activity.time || "",
+                icon: activity.icon || "Clock",
+                title: activity.title || "",
+                description: activity.description || "",
+                location: activity.location || "",
+                locationData: activity.locationData || undefined,
+                order: activity.order !== undefined ? activity.order : actIdx,
+              })
+            ),
           })
         );
         setItineraryDays(convertedItinerary);
@@ -1121,7 +1103,6 @@ export function EditRequestedItinerary() {
       passedItineraryData.dates &&
       typeof passedItineraryData.dates === "string"
     ) {
-      // Parse date range from string like "February 10, 2025 - February 15, 2025"
       const dateMatch = passedItineraryData.dates.match(
         /([\w\s,]+)\s*[-–]\s*([\w\s,]+)/
       );
@@ -1139,7 +1120,6 @@ export function EditRequestedItinerary() {
       }
     }
 
-    // Parse total amount
     let parsedAmount = "";
     if (passedItineraryData.totalAmount) {
       const numericValue = passedItineraryData.totalAmount
@@ -1172,7 +1152,6 @@ export function EditRequestedItinerary() {
       passedItineraryData.itineraryDetails &&
       Array.isArray(passedItineraryData.itineraryDetails)
     ) {
-      // Convert icon components to string names
       const convertedItinerary = passedItineraryData.itineraryDetails.map(
         (day: any) => ({
           ...day,
@@ -1181,6 +1160,7 @@ export function EditRequestedItinerary() {
             ...activity,
             id: activity.id || generateId(),
             icon: getIconNameFromComponent(activity.icon),
+            order: activity.order || 0,
           })),
         })
       );
@@ -1190,7 +1170,6 @@ export function EditRequestedItinerary() {
       passedItineraryData.itineraryDays &&
       Array.isArray(passedItineraryData.itineraryDays)
     ) {
-      // Fallback to itineraryDays if itineraryDetails is not available
       const convertedItinerary = passedItineraryData.itineraryDays.map(
         (day: any) => ({
           ...day,
@@ -1199,16 +1178,20 @@ export function EditRequestedItinerary() {
             ...activity,
             id: activity.id || generateId(),
             icon: getIconNameFromComponent(activity.icon),
+            order: activity.order || 0,
           })),
         })
       );
       setItineraryDays(convertedItinerary);
       setInitialItineraryDays(JSON.parse(JSON.stringify(convertedItinerary)));
     } else {
-      // Generate empty itinerary based on days
-      const dayCount = parseInt(loadedItineraryData.days) || 1;
+      const dayCount =
+        Math.ceil(
+          (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+            (1000 * 60 * 60 * 24)
+        ) + 1;
       const days: Day[] = [];
-      for (let i = 1; i <= dayCount; i++) {
+      for (let i = 1; i <= (dayCount > 0 ? dayCount : 1); i++) {
         days.push({
           id: generateId(),
           day: i,
@@ -1250,22 +1233,25 @@ export function EditRequestedItinerary() {
     setHasUnsavedChanges(formChanged || itineraryChanged);
   }, [formData, itineraryDays, initialFormData, initialItineraryDays]);
 
-  // Recalculate days when dates change
+  // Adjust days when dates change
   useEffect(() => {
     if (
       formData.travelDateFrom &&
       formData.travelDateTo &&
-      !pendingDateChange
+      !pendingDateChange &&
+      !pendingDaysChange
     ) {
       const start = new Date(formData.travelDateFrom);
       const end = new Date(formData.travelDateTo);
+
+      if (end < start) return;
+
       const dayCount =
         Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) +
         1;
 
       if (dayCount > 0 && dayCount !== itineraryDays.length) {
         if (dayCount > itineraryDays.length) {
-          // Add more days
           const newDays: Day[] = [];
           for (let i = itineraryDays.length + 1; i <= dayCount; i++) {
             newDays.push({
@@ -1277,17 +1263,20 @@ export function EditRequestedItinerary() {
           }
           setItineraryDays((prev) => [...prev, ...newDays]);
         } else {
-          // Days need to be reduced - check if empty days can be auto-removed
           const daysToRemove = itineraryDays.slice(dayCount);
           const hasContent = daysToRemove.some(
             (day) => day.title || day.activities.length > 0
           );
 
           if (!hasContent) {
-            // Auto-remove empty days
             setItineraryDays((prev) => prev.slice(0, dayCount));
+          } else {
+            setPendingDaysChange(dayCount);
+            setReduceDaysConfirm({
+              newDayCount: dayCount,
+              daysToRemove: itineraryDays.length - dayCount,
+            });
           }
-          // If there's content, the confirmation modal is already shown by handleFormChange
         }
       }
     }
@@ -1295,6 +1284,7 @@ export function EditRequestedItinerary() {
     formData.travelDateFrom,
     formData.travelDateTo,
     pendingDateChange,
+    pendingDaysChange,
     itineraryDays,
   ]);
 
@@ -1307,10 +1297,9 @@ export function EditRequestedItinerary() {
     updateActivity(dayId, activityId, "location", searchTerm);
     setLocationSearchQuery(searchTerm);
     if (searchTerm.length >= 2) {
-      const filtered = PHILIPPINE_LOCATIONS.filter((location) =>
+      const filtered = GENERIC_LOCATIONS.filter((location) =>
         location.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      // show quick local suggestions while places API resolves
       setLocationSuggestions(filtered.slice(0, 5));
       setActiveLocationInput({ dayId, activityId });
     } else {
@@ -1340,29 +1329,32 @@ export function EditRequestedItinerary() {
     field: keyof RequestedBookingFormData,
     value: string
   ) => {
-    // Special handling for date changes
     if (field === "travelDateFrom" || field === "travelDateTo") {
       const tempData = { ...formData, [field]: value };
 
-      // Check if both dates are set
       if (tempData.travelDateFrom && tempData.travelDateTo) {
         const start = new Date(tempData.travelDateFrom);
         const end = new Date(tempData.travelDateTo);
+
+        if (end < start) {
+          toast.error("Invalid Date Range", {
+            description: "End date cannot be before start date",
+          });
+          return;
+        }
+
         const newDayCount =
           Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) +
           1;
         const currentDayCount = itineraryDays.length;
 
-        // Check if days will be reduced
         if (newDayCount > 0 && newDayCount < currentDayCount) {
-          // Check if any of the days to be removed have content
           const daysToRemove = itineraryDays.slice(newDayCount);
           const hasContent = daysToRemove.some(
             (day) => day.title || day.activities.length > 0
           );
 
           if (hasContent) {
-            // Store the pending change and show confirmation
             setPendingDateChange({ field, value });
             setReduceDaysConfirm({
               newDayCount,
@@ -1379,14 +1371,19 @@ export function EditRequestedItinerary() {
 
   // Confirm reduce days
   const handleConfirmReduceDays = () => {
-    if (reduceDaysConfirm && pendingDateChange) {
-      // Apply the pending date change
-      setFormData((prev) => ({
-        ...prev,
-        [pendingDateChange.field]: pendingDateChange.value,
-      }));
+    if (reduceDaysConfirm) {
+      if (pendingDateChange) {
+        setFormData((prev) => ({
+          ...prev,
+          [pendingDateChange.field]: pendingDateChange.value,
+        }));
+      } else if (pendingDaysChange !== null) {
+        setFormData((prev) => ({
+          ...prev,
+          days: pendingDaysChange,
+        }));
+      }
 
-      // Remove the extra days
       setItineraryDays((prev) => prev.slice(0, reduceDaysConfirm.newDayCount));
 
       toast.success("Travel Dates Updated", {
@@ -1398,12 +1395,14 @@ export function EditRequestedItinerary() {
 
     setReduceDaysConfirm(null);
     setPendingDateChange(null);
+    setPendingDaysChange(null);
   };
 
   // Cancel reduce days
   const handleCancelReduceDays = () => {
     setReduceDaysConfirm(null);
     setPendingDateChange(null);
+    setPendingDaysChange(null);
   };
 
   // Update day title
@@ -1416,6 +1415,7 @@ export function EditRequestedItinerary() {
 
   // Add activity to a day
   const addActivity = (dayId: string) => {
+    const day = itineraryDays.find((d) => d.id === dayId);
     const newActivity: Activity = {
       id: generateId(),
       time: "",
@@ -1423,6 +1423,7 @@ export function EditRequestedItinerary() {
       title: "",
       description: "",
       location: "",
+      order: day ? day.activities.length : 0,
     };
 
     setItineraryDays((prev) =>
@@ -1453,7 +1454,9 @@ export function EditRequestedItinerary() {
         day.id === dayId
           ? {
               ...day,
-              activities: day.activities.filter((a) => a.id !== activityId),
+              activities: day.activities
+                .filter((a) => a.id !== activityId)
+                .map((a, idx) => ({ ...a, order: idx })),
             }
           : day
       )
@@ -1473,11 +1476,9 @@ export function EditRequestedItinerary() {
     field: keyof Activity,
     value: string | Place
   ) => {
-    // Validate time overlap if updating time field
     if (field === "time" && value) {
       const day = itineraryDays.find((d) => d.id === dayId);
       if (day) {
-        // Check if this time already exists in other activities of the same day
         const timeExists = day.activities.some(
           (activity) => activity.id !== activityId && activity.time === value
         );
@@ -1486,10 +1487,9 @@ export function EditRequestedItinerary() {
           toast.error("Time Overlap Detected", {
             description: `The time ${value} is already used by another activity on Day ${day.day}. Please choose a different time.`,
           });
-          return; // Don't update if time overlaps
+          return;
         }
 
-        // Check if time is sequential (later than previous activity)
         const activityIndex = day.activities.findIndex(
           (a) => a.id === activityId
         );
@@ -1499,7 +1499,7 @@ export function EditRequestedItinerary() {
             toast.error("Invalid Time Sequence", {
               description: `Activity time must be later than the previous activity (${previousActivity.time}) on Day ${day.day}.`,
             });
-            return; // Don't update if not sequential
+            return;
           }
         }
       }
@@ -1530,11 +1530,14 @@ export function EditRequestedItinerary() {
       prev.map((day) => {
         if (day.id === dayId) {
           const newActivities = [...day.activities];
-          [newActivities[activityIndex - 1], newActivities[activityIndex]] = [
-            newActivities[activityIndex],
+          [newActivities[activityIndex], newActivities[activityIndex - 1]] = [
             newActivities[activityIndex - 1],
+            newActivities[activityIndex],
           ];
-          return { ...day, activities: newActivities };
+          return {
+            ...day,
+            activities: newActivities.map((a, idx) => ({ ...a, order: idx })),
+          };
         }
         return day;
       })
@@ -1552,7 +1555,10 @@ export function EditRequestedItinerary() {
             newActivities[activityIndex + 1],
             newActivities[activityIndex],
           ];
-          return { ...day, activities: newActivities };
+          return {
+            ...day,
+            activities: newActivities.map((a, idx) => ({ ...a, order: idx })),
+          };
         }
         return day;
       })
@@ -1582,80 +1588,52 @@ export function EditRequestedItinerary() {
 
   // Handle save
   const handleSaveClick = () => {
-    // Validation
+    const errors = [];
+
     if (!formData.customerName.trim()) {
-      toast.error("Missing Required Field", {
-        description: "Please enter the customer name.",
-      });
-      return;
+      errors.push("Customer Name");
     }
-
     if (!formData.email.trim()) {
-      toast.error("Missing Required Field", {
-        description: "Please enter the customer's email address.",
-      });
-      return;
+      errors.push("Email Address");
     }
-
     if (!formData.mobile.trim()) {
-      toast.error("Missing Required Field", {
-        description: "Please enter the customer's mobile number.",
-      });
-      return;
+      errors.push("Mobile Number");
     }
-
     if (!formData.destination.trim()) {
-      toast.error("Missing Required Field", {
-        description: "Please enter a destination.",
-      });
-      return;
+      errors.push("Destination");
     }
-
     if (!formData.travelDateFrom) {
-      toast.error("Missing Required Field", {
-        description: "Please enter a travel start date.",
-      });
-      return;
+      errors.push("Travel Start Date");
     }
-
     if (!formData.travelDateTo) {
-      toast.error("Missing Required Field", {
-        description: "Please enter a travel end date.",
-      });
-      return;
+      errors.push("Travel End Date");
     }
-
     if (!formData.totalAmount || parseFloat(formData.totalAmount) <= 0) {
-      toast.error("Invalid Amount", {
-        description:
-          "Please enter a valid total amount (must be greater than 0).",
+      errors.push("Valid Total Amount");
+    }
+
+    if (errors.length > 0) {
+      toast.error("Missing Required Fields", {
+        description: `Please fill in: ${errors.join(", ")}`,
       });
       return;
     }
 
-    // Check if all days have titles and at least one activity
     for (const day of itineraryDays) {
       if (!day.title.trim()) {
         toast.error(`Day ${day.day} Incomplete`, {
           description: `Please enter a title for Day ${day.day}.`,
         });
-        return false;
-      }
-      if (day.activities.length === 0) {
-        toast.error(`Day ${day.day} Empty`, {
-          description: `Please add at least one activity for Day ${day.day}.`,
-        });
-        return false;
+        return;
       }
 
-      // Check if all activities have required fields
-      for (const activity of day.activities) {
-        if (!activity.title.trim()) {
-          toast.error(`Activity Title Missing`, {
-            description: `Please enter a title for all activities on Day ${day.day}.`,
-          });
-          return false;
-        }
+      const times = day.activities.map((a) => a.time).filter(Boolean);
+      const uniqueTimes = new Set(times);
+      if (times.length !== uniqueTimes.size) {
+        toast.error(`Time Conflict on Day ${day.day}`, {
+          description: "Multiple activities have the same time.",
+        });
+        return;
       }
     }
 
@@ -1665,7 +1643,19 @@ export function EditRequestedItinerary() {
   const handleConfirmSave = () => {
     if (!id) return;
 
-    // Prepare the update payload
+    const enrichedActivities = itineraryDays.flatMap((day) =>
+      day.activities.map((activity, activityIndex) => ({
+        dayNumber: day.day,
+        time: activity.time || "00:00",
+        title: activity.title,
+        description: activity.description || "",
+        location: activity.location || "",
+        locationData: activity.locationData || null,
+        icon: activity.icon || null,
+        order: activity.order !== undefined ? activity.order : activityIndex,
+      }))
+    );
+
     const updatePayload = {
       destination: formData.destination,
       customerName: formData.customerName,
@@ -1687,18 +1677,9 @@ export function EditRequestedItinerary() {
               new Date(formData.travelDateFrom).getTime() +
                 index * 24 * 60 * 60 * 1000
             ).toISOString(),
+            title: day.title,
           })),
-          activities: itineraryDays.flatMap((day) =>
-            day.activities.map((activity, activityIndex) => ({
-              dayNumber: day.day,
-              time: activity.time || "00:00",
-              title: activity.title,
-              description: activity.description || "",
-              location: activity.location || "",
-              icon: activity.icon || null,
-              order: activityIndex,
-            }))
-          ),
+          activities: enrichedActivities,
           type: "CUSTOMIZED",
           status: "DRAFT",
           tourType: "PRIVATE",
@@ -1723,30 +1704,6 @@ export function EditRequestedItinerary() {
     navigate("/itinerary");
   };
 
-  // Handle route optimization
-  const handleOptimizeRoute = (dayId: string) => {
-    const day = itineraryDays.find((d) => d.id === dayId);
-    if (!day || day.activities.length < 2) {
-      toast.error("Not Enough Activities", {
-        description:
-          "At least 2 activities with locations are required for route optimization.",
-      });
-      return;
-    }
-
-    // Check if activities have locations
-    const activitiesWithLocations = day.activities.filter(
-      (a) => a.location && a.location.trim()
-    );
-    if (activitiesWithLocations.length < 2) {
-      toast.error("Missing Locations", {
-        description:
-          "Please add locations to at least 2 activities before optimizing the route.",
-      });
-      return;
-    }
-  };
-
   const handleApplyOptimizedRoute = (
     dayId: string,
     optimizedActivities: Activity[]
@@ -1762,8 +1719,63 @@ export function EditRequestedItinerary() {
     });
   };
 
+  if (isLoadingBooking && !passedItineraryData) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#0A7AFF] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#64748B]">Loading booking details...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6" style={{ paddingBottom: 45 }}>
+      {/* Enrichment Progress Banner */}
+      {isEnrichingLocations && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <ContentCard>
+            <div className="flex items-center gap-4">
+              <Loader2 className="w-6 h-6 animate-spin text-[#0A7AFF]" />
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-[#1A2B4F] mb-1">
+                  Enriching Activity Locations
+                </h3>
+                <p className="text-xs text-[#64748B]">
+                  Finding coordinates for activities...{" "}
+                  {currentEnrichmentIndex + 1} of {enrichmentQueue.length}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-32 h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] transition-all duration-300"
+                    style={{
+                      width: `${
+                        ((currentEnrichmentIndex + 1) /
+                          enrichmentQueue.length) *
+                        100
+                      }%`,
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-[#64748B] font-medium">
+                  {Math.round(
+                    ((currentEnrichmentIndex + 1) / enrichmentQueue.length) *
+                      100
+                  )}
+                  %
+                </span>
+              </div>
+            </div>
+          </ContentCard>
+        </motion.div>
+      )}
+
       {/* Header */}
       <ContentCard>
         <div className="flex items-center gap-4">
@@ -1779,6 +1791,15 @@ export function EditRequestedItinerary() {
               Update the requested booking details and day-by-day activities
             </p>
           </div>
+          {isEnrichingLocations && (
+            <div className="flex items-center gap-2 text-sm text-[#0A7AFF]">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>
+                Enriching locations... {currentEnrichmentIndex + 1}/
+                {enrichmentQueue.length}
+              </span>
+            </div>
+          )}
         </div>
       </ContentCard>
 
@@ -1797,8 +1818,9 @@ export function EditRequestedItinerary() {
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B] pointer-events-none" />
               <Input
+                disabled
                 id="customerName"
-                placeholder="e.g., Maria Santos"
+                placeholder="e.g., John Smith"
                 value={formData.customerName}
                 onChange={(e) =>
                   handleFormChange("customerName", e.target.value)
@@ -1817,7 +1839,8 @@ export function EditRequestedItinerary() {
               <Input
                 id="email"
                 type="email"
-                placeholder="maria.santos@email.com"
+                disabled
+                placeholder="john.smith@email.com"
                 value={formData.email}
                 onChange={(e) => handleFormChange("email", e.target.value)}
                 className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
@@ -1834,8 +1857,9 @@ export function EditRequestedItinerary() {
               <Input
                 id="mobile"
                 type="tel"
-                placeholder="+63 917 123 4567"
+                placeholder="+1 234 567 8900"
                 value={formData.mobile}
+                disabled
                 onChange={(e) => handleFormChange("mobile", e.target.value)}
                 className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
               />
@@ -1850,7 +1874,7 @@ export function EditRequestedItinerary() {
               <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B] pointer-events-none" />
               <Input
                 id="destination"
-                placeholder="e.g., Baguio City"
+                placeholder="e.g., New York City"
                 value={formData.destination}
                 onChange={(e) =>
                   handleFormChange("destination", e.target.value)
@@ -1919,11 +1943,11 @@ export function EditRequestedItinerary() {
 
           <div>
             <Label htmlFor="totalAmount" className="text-[#1A2B4F] mb-2 block">
-              Total Amount (₱) <span className="text-[#FF6B6B]">*</span>
+              Total Amount ($) <span className="text-[#FF6B6B]">*</span>
             </Label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B] font-medium">
-                ₱
+                $
               </span>
               <Input
                 id="totalAmount"
@@ -2383,28 +2407,7 @@ export function EditRequestedItinerary() {
       <RouteOptimizationPanel
         itineraryDays={itineraryDays}
         selectedDayId={selectedDayForRoute}
-        onAcceptOptimization={(dayId, optimizedActivities) => {
-          // apply optimized activities
-          setItineraryDays((prev) =>
-            prev.map((day) =>
-              day.id === dayId
-                ? {
-                    ...day,
-                    activities: optimizedActivities.map((activity, index) => ({
-                      ...activity,
-                      order: index,
-                    })),
-                  }
-                : day
-            )
-          );
-          toast.success("Route Optimized", {
-            description: `Activities for Day ${
-              dayId.split("-")[1]
-            } have been reordered for optimal routing.`,
-          });
-          setHasUnsavedChanges(true);
-        }}
+        onAcceptOptimization={handleApplyOptimizedRoute}
       />
 
       {/* Day-by-Day Itinerary */}
@@ -2435,7 +2438,7 @@ export function EditRequestedItinerary() {
                   </Label>
                   <Input
                     id={`day-${day.id}-title`}
-                    placeholder="e.g., Arrival & Beach Sunset"
+                    placeholder="e.g., Arrival & City Tour"
                     value={day.title}
                     onChange={(e) => updateDayTitle(day.id, e.target.value)}
                     className="h-11 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] bg-white transition-all"
@@ -2467,6 +2470,11 @@ export function EditRequestedItinerary() {
                 ) : (
                   day.activities.map((activity, activityIndex) => {
                     const IconComponent = getIconComponent(activity.icon);
+                    const hasCoordinates =
+                      activity.locationData &&
+                      typeof activity.locationData.lat === "number" &&
+                      typeof activity.locationData.lng === "number";
+
                     return (
                       <div
                         key={activity.id}
@@ -2476,6 +2484,28 @@ export function EditRequestedItinerary() {
                         <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
                           {activityIndex + 1}
                         </div>
+
+                        {/* Coordinate Status Badge */}
+                        {activity.location && (
+                          <div className="absolute -right-3 -top-3">
+                            {hasCoordinates ? (
+                              <div
+                                className="w-7 h-7 rounded-lg bg-[#10B981] flex items-center justify-center shadow-md"
+                                title="Coordinates found"
+                              >
+                                <MapPin className="w-4 h-4 text-white" />
+                              </div>
+                            ) : isEnrichingLocations &&
+                              currentEnrichment?.activityId === activity.id ? (
+                              <div
+                                className="w-7 h-7 rounded-lg bg-[#FF9800] flex items-center justify-center shadow-md"
+                                title="Searching for coordinates"
+                              >
+                                <Loader2 className="w-4 h-4 text-white animate-spin" />
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
 
                         <div className="flex items-start gap-4">
                           {/* Drag Handle */}
@@ -2565,9 +2595,20 @@ export function EditRequestedItinerary() {
                             <div className="col-span-12 relative">
                               <Label className="text-xs text-[#64748B] mb-1 block">
                                 Location
+                                {hasCoordinates && (
+                                  <span className="ml-2 text-xs text-[#10B981]">
+                                    ✓ Coordinates found
+                                  </span>
+                                )}
                               </Label>
                               <div className="relative">
                                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                                {isLoadingPlaces &&
+                                  activeLocationInput?.dayId === day.id &&
+                                  activeLocationInput?.activityId ===
+                                    activity.id && (
+                                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
+                                  )}
                                 <Input
                                   placeholder="Search location..."
                                   value={activity.location}
@@ -2594,13 +2635,12 @@ export function EditRequestedItinerary() {
                                     }
                                   }}
                                   onBlur={() => {
-                                    // Delay hiding suggestions to allow click
                                     setTimeout(() => {
                                       setLocationSuggestions([]);
                                       setActiveLocationInput(null);
                                     }, 200);
                                   }}
-                                  className="h-9 pl-9 rounded-lg border-[#E5E7EB] text-sm"
+                                  className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm"
                                 />
                               </div>
 
@@ -2610,15 +2650,12 @@ export function EditRequestedItinerary() {
                                   activity.id &&
                                 (placesSuggestions.length > 0 ||
                                   locationSuggestions.length > 0) && (
-                                  <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-40 overflow-auto">
+                                  <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
                                     {placesSuggestions.length > 0
                                       ? placesSuggestions.map(
-                                          (
-                                            place: any,
-                                            suggestionIndex: number
-                                          ) => (
+                                          (place: any, idx: number) => (
                                             <button
-                                              key={`${day.id}-${activity.id}-${suggestionIndex}-${place.name}`}
+                                              key={idx}
                                               type="button"
                                               onClick={() =>
                                                 selectLocationSuggestion(
@@ -2627,19 +2664,28 @@ export function EditRequestedItinerary() {
                                                   activity.id
                                                 )
                                               }
-                                              className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
+                                              className="w-full px-4 py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
                                             >
-                                              <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
-                                              <span className="truncate">
-                                                {place.name}
-                                              </span>
+                                              <div className="flex items-start gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
+                                                  <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                  <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
+                                                    {place.name}
+                                                  </p>
+                                                  <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                                                    {place.address}
+                                                  </p>
+                                                </div>
+                                              </div>
                                             </button>
                                           )
                                         )
                                       : locationSuggestions.map(
-                                          (suggestion, suggestionIndex) => (
+                                          (suggestion, idx) => (
                                             <button
-                                              key={`${day.id}-${activity.id}-${suggestionIndex}-${suggestion}`}
+                                              key={idx}
                                               type="button"
                                               onClick={() =>
                                                 selectLocationSuggestion(
