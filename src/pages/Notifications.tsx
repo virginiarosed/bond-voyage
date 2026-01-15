@@ -292,7 +292,7 @@ export function Notifications() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
             <Bell className="w-8 h-8 text-[#0A7AFF] animate-pulse" />
           </div>
           <p className="text-sm text-[#64748B]">Loading notifications...</p>
@@ -305,7 +305,7 @@ export function Notifications() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(255,107,107,0.1)] to-[rgba(239,68,68,0.1)] flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(255,107,107,0.1)] to-[rgba(239,68,68,0.1)] flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-[#FF6B6B]" />
           </div>
           <p className="text-sm text-[#FF6B6B] font-medium mb-2">
@@ -477,7 +477,7 @@ export function Notifications() {
               onClick={() => setSelectedTab("all")}
               className={`px-4 sm:px-5 h-10 sm:h-11 text-sm transition-colors whitespace-nowrap ${
                 selectedTab === "all"
-                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
@@ -487,7 +487,7 @@ export function Notifications() {
               onClick={() => setSelectedTab("unread")}
               className={`px-4 sm:px-5 h-10 sm:h-11 text-sm transition-colors whitespace-nowrap ${
                 selectedTab === "unread"
-                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+                  ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
                   : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
               }`}
             >
@@ -504,7 +504,7 @@ export function Notifications() {
                   Filter by Type
                 </span>
                 {typeFilters.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30">
                     {typeFilters.length}
                   </span>
                 )}
@@ -518,7 +518,7 @@ export function Notifications() {
               {/* Glassmorphism backdrop with brand styling */}
               <div className="rounded-2xl overflow-hidden backdrop-blur-xl bg-white/95 border border-white/20 shadow-2xl">
                 {/* Header with gradient */}
-                <div className="p-5 border-b border-[#E5E7EB]/50 bg-gradient-to-r from-[#F8FAFB] to-white">
+                <div className="p-5 border-b border-[#E5E7EB]/50 bg-linear-to-r from-[#F8FAFB] to-white">
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-semibold text-[#1A2B4F] text-[15px]">
@@ -540,7 +540,7 @@ export function Notifications() {
                 </div>
 
                 {/* Filter options list */}
-                <div className="p-2 max-h-[320px] overflow-y-auto">
+                <div className="p-2 max-h-80 overflow-y-auto">
                   {notificationTypes.map(({ type, label, icon: Icon }) => {
                     const colors = getNotificationColor(type);
                     const count = notifications.filter(
@@ -591,7 +591,7 @@ export function Notifications() {
 
                         {/* Type icon with gradient background */}
                         <div
-                          className={`w-10 h-10 rounded-xl bg-gradient-to-br ${
+                          className={`w-10 h-10 rounded-xl bg-linear-to-br ${
                             colors.bg
                           } flex items-center justify-center shadow-lg ${
                             colors.shadow
@@ -623,7 +623,7 @@ export function Notifications() {
                         <div
                           className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-colors ${
                             isSelected
-                              ? "bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white shadow-[#0A7AFF]/20"
+                              ? "bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] text-white shadow-[#0A7AFF]/20"
                               : "bg-[#F8FAFB] text-[#64748B]"
                           }`}
                         >
@@ -636,7 +636,7 @@ export function Notifications() {
 
                 {/* Footer with selected count */}
                 {typeFilters.length > 0 && (
-                  <div className="p-4 border-t border-[#E5E7EB]/50 bg-gradient-to-r from-[#F8FAFB] to-white">
+                  <div className="p-4 border-t border-[#E5E7EB]/50 bg-linear-to-r from-[#F8FAFB] to-white">
                     <div className="flex items-center justify-center">
                       <div className="text-sm text-[#64748B]">
                         <span className="font-medium text-[#1A2B4F]">
@@ -663,7 +663,7 @@ export function Notifications() {
         <div className="space-y-3">
           {filteredNotifications.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[rgba(10,122,255,0.1)] to-[rgba(20,184,166,0.1)] flex items-center justify-center mx-auto mb-4">
                 <Bell className="w-8 h-8 text-[#0A7AFF]" />
               </div>
               <h3 className="font-semibold text-[#1A2B4F] mb-2">
@@ -698,7 +698,7 @@ export function Notifications() {
                 >
                   <div className="flex items-start gap-3 sm:gap-4">
                     <div
-                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow} flex-shrink-0`}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-linear-to-br ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow} shrink-0`}
                     >
                       <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
@@ -717,7 +717,7 @@ export function Notifications() {
                               {notification.title}
                             </h3>
                             {!notification.isRead && (
-                              <span className="w-2 h-2 rounded-full bg-[#0A7AFF] flex-shrink-0" />
+                              <span className="w-2 h-2 rounded-full bg-[#0A7AFF] shrink-0" />
                             )}
                           </div>
                           <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed mb-2 line-clamp-2">
@@ -752,7 +752,7 @@ export function Notifications() {
                               handleMarkAsRead(notification.id);
                             }}
                             disabled={isProcessingAction}
-                            className="flex-1 sm:flex-none h-8 px-3 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 sm:flex-none h-8 px-3 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <CheckCircle className="w-3.5 h-3.5" />
                             <span className="hidden sm:inline">
@@ -833,7 +833,6 @@ export function Notifications() {
         }
         cancelText="Cancel"
         confirmVariant="default"
-        disabled={markAllReadMutation.isPending}
       />
 
       <ConfirmationModal
@@ -871,7 +870,6 @@ export function Notifications() {
         }
         cancelText="Cancel"
         confirmVariant="destructive"
-        disabled={clearAllReadMutation.isPending}
       />
 
       <ConfirmationModal
@@ -918,7 +916,6 @@ export function Notifications() {
         }
         cancelText="Cancel"
         confirmVariant="destructive"
-        disabled={deleteMutation.isPending}
       />
     </div>
   );
