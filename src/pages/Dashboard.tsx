@@ -12,7 +12,7 @@ import { StatCard } from "../components/StatCard";
 import { ContentCard } from "../components/ContentCard";
 import { TravelingAvatar } from "../components/TravelingAvatar";
 import { useProfile } from "../hooks/useAuth";
-import { useDashboardStats } from "../hooks/useDashboard";
+import { useDashboardStats, useUserDashboardStats } from "../hooks/useDashboard";
 import { useActivityLogs } from "../hooks/useActivityLogs";
 import { getInitials } from "../utils/helpers/getInitials";
 import {
@@ -41,7 +41,26 @@ import { useFaqs } from "../hooks/useFaqs";
 export function Dashboard() {
   const navigate = useNavigate();
   const { data: profileResponse } = useProfile();
-  const { data: dashboardStatsResponse, isLoading } = useDashboardStats();
+
+  // Determine if user is admin - only when profile is loaded
+  const userRole = profileResponse?.data?.user?.role;
+  const isProfileLoaded = !!profileResponse?.data?.user;
+  const isAdmin = userRole === "ADMIN";
+  const isUser = userRole === "USER";
+
+  // Use the appropriate dashboard stats hook based on role
+  const { data: adminStatsResponse, isLoading: adminLoading } = useDashboardStats(
+    undefined,
+    { enabled: isProfileLoaded && isAdmin }
+  );
+  const { data: userStatsResponse, isLoading: userLoading } = useUserDashboardStats(
+    undefined,
+    { enabled: isProfileLoaded && isUser }
+  );
+
+  // Combine responses - use admin stats if admin, otherwise user stats
+  const dashboardStatsResponse = isAdmin ? adminStatsResponse : userStatsResponse;
+  const isLoading = isAdmin ? adminLoading : userLoading;
 
   // Use real FAQ data from the API
   const { data: faqsResponse } = useFaqs({ limit: 3 });
@@ -71,14 +90,18 @@ export function Dashboard() {
   }, [profileResponse?.data?.user]);
 
   const cards = useMemo(() => {
-    return (
-      dashboardStatsResponse?.data?.cards || {
+    const data = dashboardStatsResponse?.data?.cards;
+    if (!data) {
+      return {
         activeBookings: 0,
         completedTrips: 0,
         pendingApprovals: 0,
         totalUsers: 0,
-      }
-    );
+        travelPlans: 0,
+        pending: 0,
+      };
+    }
+    return data;
   }, [dashboardStatsResponse?.data?.cards]);
 
   const distributions = useMemo(() => {
@@ -272,17 +295,17 @@ export function Dashboard() {
       {/* Stats Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatCard
-          icon={Users}
-          value={cards.totalUsers || "0"}
-          label="Total Users"
+          icon={isAdmin ? Users : MapPin}
+          value={isAdmin ? (cards.totalUsers || "0") : (cards.travelPlans || "0")}
+          label={isAdmin ? "Total Users" : "Travel Plans"}
           gradientFrom="#F472B6"
           gradientTo="#38BDF8"
           isLoading={isLoading}
         />
         <StatCard
           icon={Clock}
-          label="Pending Approvals"
-          value={cards.pendingApprovals || "0"}
+          label={isAdmin ? "Pending Approvals" : "Pending Bookings"}
+          value={isAdmin ? (cards.pendingApprovals || "0") : (cards.pending || "0")}
           gradientFrom="#F97316"
           gradientTo="#EF4444"
           isLoading={isLoading}

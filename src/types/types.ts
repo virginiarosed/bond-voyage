@@ -304,8 +304,13 @@ export interface DashboardStats {
   cards: {
     activeBookings: number;
     completedTrips: number;
-    pendingApprovals: number;
-    totalUsers: number;
+    // Admin dashboard fields
+    pendingApprovals?: number;
+    totalUsers?: number;
+    faqsCard?: number;
+    // User dashboard fields
+    travelPlans?: number;
+    pending?: number;
   };
 
   distributions: {

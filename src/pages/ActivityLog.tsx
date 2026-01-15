@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -17,9 +17,6 @@ import {
   Clock,
   MapPin,
   Users,
-  Package,
-  BookOpen,
-  AlertCircle,
   ChevronLeft,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
@@ -39,7 +36,7 @@ import {
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
-import { useActivityLogs } from "../hooks/useActivityLogs";
+import { usePaginatedActivityLogs } from "../hooks/useActivityLogs";
 
 interface ActivityLogEntry {
   id: string;
@@ -81,13 +78,21 @@ const getStatusFromAction = (action: string): ActivityLogEntry["status"] => {
   return "success";
 };
 
+// Map frontend category to backend action filter
+const categoryToActionFilter: Record<string, string | undefined> = {
+  all: undefined,
+  Booking: "booking",
+  Itinerary: "itinerary",
+  User: "user",
+  Approval: "approved", // Will also catch rejected via contains
+  Profile: "profile",
+  System: "auth", // Auth actions are system-level
+};
+
 export function ActivityLog() {
   const navigate = useNavigate();
-  const { data: activityLogsResponse, isLoading } = useActivityLogs();
 
-  const [activities, setActivities] = useState<ActivityLogEntry[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  // Pagination state - server-side
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -97,29 +102,63 @@ export function ActivityLog() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  // Search is client-side (filters within fetched results)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+
   // Temporary filter states (for the filter panel)
-  const [tempSelectedCategory, setTempSelectedCategory] =
-    useState<string>("all");
+  const [tempSelectedCategory, setTempSelectedCategory] = useState<string>("all");
   const [tempDateFrom, setTempDateFrom] = useState("");
   const [tempDateTo, setTempDateTo] = useState("");
 
+  // Fetch activity logs with server-side pagination
+  const { data: activityLogsResponse, isLoading, isFetching } = usePaginatedActivityLogs({
+    page: currentPage,
+    limit: itemsPerPage,
+    category: categoryToActionFilter[selectedCategory],
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+  });
+
   // Transform API data to component format
-  useEffect(() => {
-    if (activityLogsResponse?.data) {
-      const transformedActivities: ActivityLogEntry[] =
-        activityLogsResponse.data.map((log) => ({
-          id: log.id,
-          timestamp: new Date(log.timestamp),
-          user: `${log.user.firstName} ${log.user.lastName}`,
-          action: log.action,
-          category: getCategoryFromAction(log.action),
-          details: log.details,
-          status: getStatusFromAction(log.action),
-          // ipAddress is not in the API response, so we omit it
-        }));
-      setActivities(transformedActivities);
+  const activities = useMemo(() => {
+    if (!activityLogsResponse?.data) return [];
+
+    return activityLogsResponse.data.map((log) => ({
+      id: log.id,
+      timestamp: new Date(log.timestamp),
+      user: `${log.user.firstName} ${log.user.lastName}`,
+      action: log.action,
+      category: getCategoryFromAction(log.action),
+      details: log.details,
+      status: getStatusFromAction(log.action),
+    }));
+  }, [activityLogsResponse?.data]);
+
+  // Get total count from server response
+  const totalItems = activityLogsResponse?.meta?.total ?? 0;
+
+  // Client-side search filter (on current page results)
+  const displayedActivities = useMemo(() => {
+    let filtered = [...activities];
+
+    // Apply client-side search
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (activity) =>
+          activity.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          activity.details?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          activity.user.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
-  }, [activityLogsResponse]);
+
+    // Sort (server already returns desc by timestamp, so we only need to handle oldest)
+    if (sortOrder === "oldest") {
+      filtered.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    }
+
+    return filtered;
+  }, [activities, searchQuery, sortOrder]);
 
   // Get action icon
   const getActionIcon = (action: string) => {
@@ -158,20 +197,6 @@ export function ActivityLog() {
     }
   };
 
-  // Get status color
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case "success":
-        return "bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[#10B981]/20";
-      case "error":
-        return "bg-[rgba(239,68,68,0.1)] text-[#EF4444] border-[#EF4444]/20";
-      case "warning":
-        return "bg-[rgba(255,184,77,0.1)] text-[#FFB84D] border-[#FFB84D]/20";
-      default:
-        return "bg-[#F8FAFB] text-[#64748B] border-[#E5E7EB]";
-    }
-  };
-
   // Get category color
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -194,64 +219,12 @@ export function ActivityLog() {
   const activeFiltersCount =
     (selectedCategory !== "all" ? 1 : 0) + (dateFrom || dateTo ? 1 : 0);
 
-  // Filter activities
-  const getFilteredActivities = () => {
-    let filtered = [...activities];
-
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (activity) =>
-          activity.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          activity.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          activity.user.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(
-        (activity) => activity.category === selectedCategory
-      );
-    }
-
-    if (dateFrom) {
-      const fromDate = new Date(dateFrom);
-      fromDate.setHours(0, 0, 0, 0);
-      filtered = filtered.filter((activity) => activity.timestamp >= fromDate);
-    }
-
-    if (dateTo) {
-      const toDate = new Date(dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((activity) => activity.timestamp <= toDate);
-    }
-
-    // Sort
-    if (sortOrder === "newest") {
-      filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    } else if (sortOrder === "oldest") {
-      filtered.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-    }
-
-    return filtered;
-  };
-
-  const filteredActivities = getFilteredActivities();
-
-  // Pagination
-  const indexOfLastActivity = currentPage * itemsPerPage;
-  const indexOfFirstActivity = indexOfLastActivity - itemsPerPage;
-  const currentActivities = filteredActivities.slice(
-    indexOfFirstActivity,
-    indexOfLastActivity
-  );
-
   // Reset to page 1 when filters change
   const handleFilterChange = () => {
     setCurrentPage(1);
   };
 
   const handleApplyFilters = () => {
-    // Apply the temporary filter values to actual filter states
     setSelectedCategory(tempSelectedCategory);
     setDateFrom(tempDateFrom);
     setDateTo(tempDateTo);
@@ -260,7 +233,6 @@ export function ActivityLog() {
   };
 
   const handleResetFilters = () => {
-    // Reset both temporary and actual filter states
     setTempSelectedCategory("all");
     setTempDateFrom("");
     setTempDateTo("");
@@ -270,10 +242,8 @@ export function ActivityLog() {
     handleFilterChange();
   };
 
-  // Sync temporary filters with actual filters when opening the panel
   const handleFilterOpenChange = (open: boolean) => {
     if (open) {
-      // When opening, sync temp values with current values
       setTempSelectedCategory(selectedCategory);
       setTempDateFrom(dateFrom);
       setTempDateTo(dateTo);
@@ -291,7 +261,10 @@ export function ActivityLog() {
 
   const handleSortChange = (order: SortOrder) => {
     setSortOrder(order);
-    handleFilterChange();
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   // Filter content
@@ -419,13 +392,12 @@ export function ActivityLog() {
         </div>
       </div>
 
-      <ContentCard title={`Activity Log (${filteredActivities.length})`}>
+      <ContentCard title={`Activity Log (${totalItems} total)`}>
         <SearchFilterToolbar
           searchPlaceholder="Search activities..."
           searchValue={searchQuery}
           onSearchChange={(value) => {
             setSearchQuery(value);
-            handleFilterChange();
           }}
           sortOrder={sortOrder}
           onSortChange={handleSortChange}
@@ -439,9 +411,9 @@ export function ActivityLog() {
         />
 
         {/* Activities List */}
-        <div className="space-y-3 mt-6">
-          {currentActivities.length > 0 ? (
-            currentActivities.map((activity) => {
+        <div className={`space-y-3 mt-6 ${isFetching ? 'opacity-60' : ''}`}>
+          {displayedActivities.length > 0 ? (
+            displayedActivities.map((activity) => {
               const ActionIcon = getActionIcon(activity.action);
               const CategoryIcon = getCategoryIcon(activity.category);
 
@@ -468,7 +440,7 @@ export function ActivityLog() {
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-semibold text-[#1A2B4F] dark:text-white group-hover:text-[#0A7AFF] transition-colors">
-                            {activity.action}
+                            {activity.details || activity.action}
                           </h4>
                         </div>
                         <span
@@ -481,8 +453,8 @@ export function ActivityLog() {
                         </span>
                       </div>
 
-                      <p className="text-sm text-[#64748B] dark:text-gray-400 mb-3 line-clamp-2">
-                        {activity.details}
+                      <p className="text-xs text-[#94A3B8] dark:text-gray-500 mb-3 font-mono">
+                        {activity.action}
                       </p>
 
                       <div className="flex items-center gap-4 flex-wrap text-xs text-[#94A3B8] dark:text-gray-500">
@@ -526,14 +498,14 @@ export function ActivityLog() {
           )}
         </div>
 
-        {/* Pagination */}
-        {filteredActivities.length > itemsPerPage && (
+        {/* Pagination - uses total from server */}
+        {totalItems > itemsPerPage && (
           <div className="mt-6">
             <Pagination
               currentPage={currentPage}
-              totalItems={filteredActivities.length}
+              totalItems={totalItems}
               itemsPerPage={itemsPerPage}
-              onPageChange={setCurrentPage}
+              onPageChange={handlePageChange}
             />
           </div>
         )}
