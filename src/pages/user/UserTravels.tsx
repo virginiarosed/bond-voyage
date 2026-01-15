@@ -1393,59 +1393,6 @@ export function UserTravels() {
         }
       >
         <div className="space-y-4">
-          {/* Filter Buttons - Responsive */}
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            <button
-              onClick={() => {
-                setSelectedFilter("all");
-                setRequestedSubTab("all");
-              }}
-              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
-                selectedFilter === "all"
-                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
-                  : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => {
-                setSelectedFilter("owned");
-                setRequestedSubTab("all");
-              }}
-              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
-                selectedFilter === "owned"
-                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
-                  : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
-              }`}
-            >
-              Owned
-            </button>
-            <button
-              onClick={() => {
-                setSelectedFilter("collaborated");
-                setRequestedSubTab("all");
-              }}
-              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
-                selectedFilter === "collaborated"
-                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
-                  : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
-              }`}
-            >
-              {isMobile ? "Collab" : "Collaborated"}
-            </button>
-            <button
-              onClick={() => setSelectedFilter("requested")}
-              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
-                selectedFilter === "requested"
-                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
-                  : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
-              }`}
-            >
-              {isMobile ? "Req" : "Requested"}
-            </button>
-          </div>
-
           {/* Dropdown for Requested filter */}
           {selectedFilter === "requested" && (
             <div className="pt-3 pb-2">
