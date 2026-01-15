@@ -52,8 +52,6 @@ export function LoginModal({
         const role = response.data.user.role.toLowerCase() as SideType;
         switchSide(role);
 
-        console.log(response);
-
         setShowToast({
           type: "success",
           title: "Login Successful!",
@@ -69,7 +67,6 @@ export function LoginModal({
       }
     },
     onError: (error: any) => {
-      console.log(error);
       setShowToast({
         type: "error",
         title: "Login Failed",

@@ -112,7 +112,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
   const { data: bookingDetailData, isLoading: isLoadingDetail } =
     useBookingDetail(selectedBookingId || "", {
       enabled: !!selectedBookingId && viewMode === "detail",
-      queryKey: [queryKeys.bookings.detail],
+      queryKey: [queryKeys.bookings.detail(selectedBookingId!)],
     });
 
   // Local UI state

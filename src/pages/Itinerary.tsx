@@ -1363,8 +1363,6 @@ export function Itinerary({
       }),
     };
 
-    console.log("Creating standard booking payload:", newBooking);
-
     createBooking(newBooking, {
       onSuccess: (response) => {
         setBookingFormData({

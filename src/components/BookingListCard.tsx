@@ -148,8 +148,8 @@ export function BookingListCard({
                 Booking {booking.bookingCode}
               </h3>
               {getStatusBadge()}
-              {/* {getBookingTypeBadge()}
-              {getTourTypeBadge()} */}
+              {getBookingTypeBadge()}
+              {getTourTypeBadge()}
             </div>
             <div className="flex items-center gap-2 text-sm text-[#64748B]">
               <span className="font-medium text-[#334155]">
