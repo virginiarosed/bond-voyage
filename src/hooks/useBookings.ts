@@ -341,3 +341,25 @@ export const useBookingVersionHistory = (
     ...options,
   });
 };
+
+export const useJoinBooking = (
+  options?: UseMutationOptions<ApiResponse, AxiosError, string>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (bookingCode: string) => {
+      const response = await apiClient.post<ApiResponse>(
+        `/bookings/join/${bookingCode}`
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.myBookings() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.bookings.sharedBookings(),
+      });
+    },
+    ...options,
+  });
+};

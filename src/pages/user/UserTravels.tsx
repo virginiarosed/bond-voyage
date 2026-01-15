@@ -106,14 +106,12 @@ import {
   useSubmitBooking,
   useDeleteBooking,
   useUpdateBooking,
+  useJoinBooking,
 } from "../../hooks/useBookings";
 import { Booking, User } from "../../types/types";
 import { queryKeys } from "../../utils/lib/queryKeys";
 import { useProfile } from "../../hooks/useAuth";
-import {
-  useAcceptItineraryShare,
-  useCreateItineraryShare,
-} from "../../hooks/useItineraryShares";
+// Share token hooks removed - now using booking ID directly via useJoinBooking
 import { getIconForActivity } from "../../utils/helpers/getIconForActivity";
 import { QueryClient } from "@tanstack/react-query";
 
@@ -232,8 +230,8 @@ export function UserTravels() {
   const qrCodeCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { mutate: acceptShare, isPending: isAcceptingShare } =
-    useAcceptItineraryShare({
+  const { mutate: joinBooking, isPending: isAcceptingShare } =
+    useJoinBooking({
       onSuccess: (data) => {
         toast.success("Successfully Joined!", {
           description:
@@ -246,30 +244,10 @@ export function UserTravels() {
         toast.error("Failed to join travel", {
           description:
             error.response?.data?.message ||
-            "Please check the share token and try again",
+            "Please check the Booking Code and try again",
         });
       },
     });
-
-  const { mutate: createShare } = useCreateItineraryShare({
-    onSuccess: (data) => {
-      const token = data.data?.token;
-      if (!token) {
-        toast.error("Failed to create share token");
-        return;
-      }
-      setShareToken(token);
-      setShowShareQRModal(true);
-      setTimeout(() => {
-        generateQRCode(token);
-      }, 100);
-    },
-    onError: (error: any) => {
-      toast.error("Failed to create share token", {
-        description: error.response?.data?.message || "Please try again later",
-      });
-    },
-  });
 
   const { data: profileResponse, isLoading: profileDataIsLoading } =
     useProfile();
@@ -538,14 +516,14 @@ export function UserTravels() {
   };
 
   const handleConfirmJoinTravel = () => {
-    const trimmedToken = joinShareToken.trim().toUpperCase();
+    const trimmedBookingCode = joinShareToken.trim();
 
-    if (!trimmedToken) {
-      toast.error("Please enter a share token");
+    if (!trimmedBookingCode) {
+      toast.error("Please enter a Booking Code");
       return;
     }
 
-    acceptShare(trimmedToken);
+    joinBooking(trimmedBookingCode);
   };
 
   const handleBookFromStandard = () => {
@@ -612,9 +590,13 @@ export function UserTravels() {
     setShowConfirmStatusModal(false);
   };
 
-  // QR Code handlers
-  const handleShareBooking = async (itineraryId: string) => {
-    createShare({ itineraryId });
+  // QR Code handlers - Now uses Booking ID directly instead of share token
+  const handleShareBooking = async (bookingId: string) => {
+    setShareToken(bookingId);
+    setShowShareQRModal(true);
+    setTimeout(() => {
+      generateQRCode(bookingId);
+    }, 100);
   };
 
   const generateQRCode = async (token: string) => {
@@ -645,7 +627,7 @@ export function UserTravels() {
       if (blob) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.download = `itinerary-share-${shareToken}.png`;
+        link.download = `travel-qr-${shareToken}.png`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
@@ -710,14 +692,14 @@ export function UserTravels() {
         const code = jsQR(imageData.data, imageData.width, imageData.height);
 
         if (code) {
-          const normalizedToken = code.data.trim().toUpperCase();
-          setScannedQRData(normalizedToken);
-          setJoinShareToken(normalizedToken);
+          const bookingId = code.data.trim();
+          setScannedQRData(bookingId);
+          setJoinShareToken(bookingId);
           stopScanning();
           toast.success("QR code scanned successfully!");
 
           // Automatically trigger join after scanning
-          acceptShare(normalizedToken);
+          joinBooking(bookingId);
           return;
         }
       }
@@ -772,13 +754,13 @@ export function UserTravels() {
             );
 
             if (code) {
-              const normalizedToken = code.data.trim().toUpperCase();
-              setScannedQRData(normalizedToken);
-              setJoinShareToken(normalizedToken);
+              const bookingId = code.data.trim();
+              setScannedQRData(bookingId);
+              setJoinShareToken(bookingId);
               toast.success("QR code read successfully!");
 
               // Automatically trigger join after reading QR from file
-              acceptShare(normalizedToken);
+              joinBooking(bookingId);
             } else {
               toast.error("No QR code found in image");
             }
@@ -1476,9 +1458,13 @@ export function UserTravels() {
                       travel.status === "rejected" ? "rejected" : "default"
                     }
                     onShare={(bookingCode, bookingId) => {
+                      // Use booking code for QR code (e.g., BV-2025-001)
                       setShareToken(bookingCode);
                       setSelectedBookingId(bookingId);
                       setShowShareQRModal(true);
+                      setTimeout(() => {
+                        generateQRCode(bookingCode);
+                      }, 100);
                     }}
                     userSide={true}
                     additionalBadges={
@@ -1659,11 +1645,11 @@ export function UserTravels() {
             {joinMethod === "manual" && (
               <div>
                 <label className="block text-sm mb-2 text-card-foreground">
-                  Share Token <span className="text-red-500">*</span>
+                  Booking Code <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g., AB7K2M9Q"
+                  placeholder="e.g., BV-2025-001"
                   value={joinShareToken}
                   onChange={(e) => setJoinShareToken(e.target.value)}
                   className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
@@ -1723,7 +1709,7 @@ export function UserTravels() {
               </div>
               <div className="flex items-center gap-2 mt-4">
                 <p className="text-sm text-muted-foreground">
-                  Booking ID:{" "}
+                  Booking Code:{" "}
                   <span className="font-semibold text-card-foreground">
                     {shareToken}
                   </span>
@@ -1733,12 +1719,12 @@ export function UserTravels() {
                     if (shareToken) {
                       navigator.clipboard.writeText(shareToken);
                       toast.success("Copied to clipboard!", {
-                        description: `Share token ${shareToken} copied`,
+                        description: "Booking code copied",
                       });
                     }
                   }}
                   className="p-1.5 rounded-lg hover:bg-accent transition-all"
-                  title="Copy share token"
+                  title="Copy Booking Code"
                 >
                   <Copy className="w-4 h-4 text-muted-foreground hover:text-primary" />
                 </button>
