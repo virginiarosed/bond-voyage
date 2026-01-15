@@ -8,71 +8,22 @@ import {
   GripVertical,
   Save,
   History,
-  Plane,
-  Hotel,
-  Camera,
-  UtensilsCrossed,
-  Car,
   Package,
   MapPin,
   Compass,
-  TreePine,
-  Building2,
-  Ship,
-  Train,
-  Coffee,
-  ShoppingBag,
-  Music,
-  Sunset,
   Clock,
   AlertCircle,
   Sparkles,
   CheckCircle2,
-  User,
-  Mail,
-  Phone,
   Calendar,
   Users,
-  FileText,
-  Waves,
-  Mountain,
-  Palmtree,
-  Tent,
-  Bike,
-  Bus,
-  Anchor,
-  Film,
-  Ticket,
-  Wine,
-  IceCream,
-  Pizza,
-  Fish,
-  Salad,
-  Utensils,
-  Home,
-  Landmark,
-  Church,
-  Castle,
-  Globe,
-  Backpack,
-  Luggage,
-  Umbrella,
-  Sun,
-  Moon,
-  Star,
-  Heart,
-  Gift,
-  ShoppingCart,
   Search,
   RotateCcw,
-  ChevronRight,
   Loader2,
 } from "lucide-react";
 import { ContentCard } from "../../components/ContentCard";
-import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { RouteOptimizationPanel } from "../../components/RouteOptimizationPanel";
-import { VersionHistoryModal } from "../../components/VersionHistoryModal";
 import { AITravelAssistant } from "../../components/AITravelAssistant";
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
@@ -116,11 +67,8 @@ const getIconComponent = (iconName: string) => {
   return iconOption ? iconOption.icon : Clock;
 };
 
-// Time conversion helpers
 const convertTo24Hour = (time12h: string): string => {
   if (!time12h) return "";
-
-  // If already in 24-hour format (HH:MM), return as is
   if (
     /^\d{1,2}:\d{2}$/.test(time12h) &&
     !time12h.includes("AM") &&
@@ -128,87 +76,71 @@ const convertTo24Hour = (time12h: string): string => {
   ) {
     return time12h;
   }
-
-  // Parse 12-hour format
   const match = time12h.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-  if (!match) return time12h; // Return original if can't parse
-
+  if (!match) return time12h;
   let hours = parseInt(match[1]);
   const minutes = match[2];
   const period = match[3].toUpperCase();
-
   if (period === "PM" && hours !== 12) {
     hours += 12;
   } else if (period === "AM" && hours === 12) {
     hours = 0;
   }
-
   return `${hours.toString().padStart(2, "0")}:${minutes}`;
 };
 
 const convertTo12Hour = (time24h: string): string => {
   if (!time24h) return "";
-
-  // If already in 12-hour format, return as is
   if (time24h.includes("AM") || time24h.includes("PM")) {
     return time24h;
   }
-
   const [hoursStr, minutes] = time24h.split(":");
   let hours = parseInt(hoursStr);
-
   const period = hours >= 12 ? "PM" : "AM";
   hours = hours % 12 || 12;
-
   return `${hours}:${minutes} ${period}`;
 };
 
 export function EditCustomizedBooking() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
 
-  // Use the booking detail hook
   const { data: bookingDetailResponse, isLoading: isBookingLoading } =
     useBookingDetail(id!, {
       enabled: !!id,
       queryKey: [queryKeys.bookings.detail, id],
     });
 
-  // Use the update booking mutation
   const { mutate: updateBooking, isPending: isUpdating } = useUpdateBooking(
     id!
   );
-
-  const { data: profileResponse, isLoading: profileDataIsLoading } =
-    useProfile();
+  const { data: profileResponse } = useProfile();
 
   const profileData: IUser = useMemo(() => {
-    return profileResponse?.data?.user
-      ? profileResponse.data.user
-      : {
-          companyName: "",
-          id: "",
-          email: "",
-          firstName: "",
-          lastName: "",
-          phoneNumber: "",
-          role: "USER",
-          avatarUrl: "",
-          middleName: "",
-          mobile: "",
-          isActive: true,
-          createdAt: "",
-          updatedAt: "",
-          lastLogin: "",
-          birthday: "",
-          employeeId: "",
-          customerRating: 0,
-        };
+    return (
+      profileResponse?.data?.user || {
+        companyName: "",
+        id: "",
+        email: "",
+        firstName: "",
+        lastName: "",
+        phoneNumber: "",
+        role: "USER",
+        avatarUrl: "",
+        middleName: "",
+        mobile: "",
+        isActive: true,
+        createdAt: "",
+        updatedAt: "",
+        lastLogin: "",
+        birthday: "",
+        employeeId: "",
+        customerRating: 0,
+      }
+    );
   }, [profileResponse?.data?.user]);
 
-  // Get current user name from profile
   const currentUser = useMemo(() => {
     if (profileData?.firstName && profileData?.lastName) {
       return `${profileData.firstName} ${profileData.lastName}`;
@@ -232,12 +164,8 @@ export function EditCustomizedBooking() {
   >(null);
   const [bookingStatus, setBookingStatus] = useState<string>("");
 
-  // Version History states
   const [versions, setVersions] = useState<Version[]>([]);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
-  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
-    null
-  );
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
   const [versionToRestore, setVersionToRestore] = useState<Version | null>(
     null
@@ -265,29 +193,34 @@ export function EditCustomizedBooking() {
     value: string;
   } | null>(null);
 
-  // Location autocomplete states
   const [activeLocationInput, setActiveLocationInput] = useState<{
     dayId: string;
     activityId: string;
   } | null>(null);
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
   const debouncedValue = useDebounce(locationSearchQuery);
-
-  // Icon search state
   const [iconSearchQuery, setIconSearchQuery] = useState("");
-
-  // Route Optimization state
   const [selectedDayForRoute, setSelectedDayForRoute] = useState<string | null>(
     null
   );
 
-  // Use Places Search API with debounce
+  const [isEnrichingLocations, setIsEnrichingLocations] = useState(false);
+  const [enrichmentQueue, setEnrichmentQueue] = useState<
+    Array<{
+      dayId: string;
+      activityId: string;
+      location: string;
+    }>
+  >([]);
+  const [currentEnrichmentIndex, setCurrentEnrichmentIndex] = useState(0);
+  const enrichmentCompleted = useRef(false);
+  const enrichmentStarted = useRef(false);
+
+  const currentEnrichment = enrichmentQueue[currentEnrichmentIndex];
+
   const { data: placesData, isLoading: isLoadingPlaces } = usePlacesSearch(
     debouncedValue.length >= 2
-      ? {
-          text: debouncedValue,
-          limit: 10,
-        }
+      ? { text: debouncedValue, limit: 10 }
       : undefined,
     {
       enabled: debouncedValue.length >= 2,
@@ -297,11 +230,148 @@ export function EditCustomizedBooking() {
 
   const locationSuggestions = placesData?.data || [];
 
-  // Generate unique ID
+  const {
+    data: enrichmentPlacesData,
+    isLoading: isEnrichmentSearching,
+    isFetching: isEnrichmentFetching,
+  } = usePlacesSearch(
+    currentEnrichment
+      ? { text: currentEnrichment.location.split(",")[0].trim(), limit: 1 }
+      : undefined,
+    {
+      enabled: !!currentEnrichment && isEnrichingLocations,
+      queryKey: ["enrichment", currentEnrichment?.location],
+      staleTime: 0,
+      gcTime: 0,
+    }
+  );
+
   const generateId = () =>
     `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // Handle route optimization acceptance
+  useEffect(() => {
+    if (
+      !isEnrichingLocations ||
+      !currentEnrichment ||
+      isEnrichmentSearching ||
+      isEnrichmentFetching
+    ) {
+      return;
+    }
+
+    const place = enrichmentPlacesData?.data?.[0];
+
+    if (place) {
+      setItineraryDays((prev) =>
+        prev.map((day) =>
+          day.id === currentEnrichment.dayId
+            ? {
+                ...day,
+                activities: day.activities.map((activity) =>
+                  activity.id === currentEnrichment.activityId
+                    ? { ...activity, locationData: place }
+                    : activity
+                ),
+              }
+            : day
+        )
+      );
+    }
+
+    if (currentEnrichmentIndex < enrichmentQueue.length - 1) {
+      setTimeout(() => {
+        setCurrentEnrichmentIndex((prev) => prev + 1);
+      }, 300);
+    } else {
+      setIsEnrichingLocations(false);
+      enrichmentCompleted.current = true;
+      toast.success("Location Enrichment Complete", {
+        description: `Enhanced ${enrichmentQueue.length} activities with coordinates`,
+      });
+    }
+  }, [
+    enrichmentPlacesData,
+    isEnrichmentSearching,
+    isEnrichmentFetching,
+    currentEnrichment,
+    currentEnrichmentIndex,
+    enrichmentQueue.length,
+    isEnrichingLocations,
+  ]);
+
+  useEffect(() => {
+    if (
+      !itineraryDays.length ||
+      enrichmentCompleted.current ||
+      enrichmentStarted.current ||
+      isEnrichingLocations
+    ) {
+      return;
+    }
+
+    const activitiesToEnrich: Array<{
+      dayId: string;
+      activityId: string;
+      location: string;
+    }> = [];
+
+    itineraryDays.forEach((day) => {
+      day.activities.forEach((activity) => {
+        if (activity.location && !activity.locationData) {
+          activitiesToEnrich.push({
+            dayId: day.id,
+            activityId: activity.id,
+            location: activity.location,
+          });
+        }
+      });
+    });
+
+    if (activitiesToEnrich.length > 0) {
+      enrichmentStarted.current = true;
+      setEnrichmentQueue(activitiesToEnrich);
+      setCurrentEnrichmentIndex(0);
+      setIsEnrichingLocations(true);
+
+      toast.info("Enriching Activity Locations", {
+        description: `Finding coordinates for ${activitiesToEnrich.length} activities...`,
+        duration: 3000,
+      });
+    } else {
+      enrichmentCompleted.current = true;
+    }
+  }, [itineraryDays, isEnrichingLocations]);
+
+  const daysEligibleForOptimization = useMemo(() => {
+    return itineraryDays.filter((day) => {
+      const validActivities = day.activities.filter(
+        (a) =>
+          a.location &&
+          a.locationData &&
+          typeof a.locationData.lat === "number" &&
+          typeof a.locationData.lng === "number"
+      );
+      return validActivities.length >= 4;
+    });
+  }, [itineraryDays]);
+
+  useEffect(() => {
+    if (
+      enrichmentCompleted.current &&
+      daysEligibleForOptimization.length > 0 &&
+      !selectedDayForRoute
+    ) {
+      const timer = setTimeout(() => {
+        toast.success("Route Optimization Available", {
+          description: `${daysEligibleForOptimization.length} day(s) can be optimized. Check the Route Optimization panel below.`,
+          duration: 5000,
+        });
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [daysEligibleForOptimization.length, selectedDayForRoute]);
+
   const handleAcceptOptimization = (
     dayId: string,
     optimizedActivities: IActivity[]
@@ -327,7 +397,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Handle location input change
   const handleLocationInputChange = (
     searchTerm: string,
     dayId: string,
@@ -343,7 +412,6 @@ export function EditCustomizedBooking() {
     }
   };
 
-  // Select location suggestion
   const selectLocationSuggestion = (
     place: Place,
     dayId: string,
@@ -355,7 +423,6 @@ export function EditCustomizedBooking() {
     setActiveLocationInput(null);
   };
 
-  // Load versions from localStorage
   useEffect(() => {
     if (id) {
       const savedVersions = localStorage.getItem(`booking-versions-${id}`);
@@ -373,7 +440,6 @@ export function EditCustomizedBooking() {
     }
   }, [id]);
 
-  // Save version to localStorage
   const saveVersionToStorage = (newVersions: Version[]) => {
     if (id) {
       localStorage.setItem(
@@ -383,7 +449,6 @@ export function EditCustomizedBooking() {
     }
   };
 
-  // Create a new version snapshot
   const createVersionSnapshot = (label?: string) => {
     const newVersion: Version = {
       id: generateId(),
@@ -401,7 +466,6 @@ export function EditCustomizedBooking() {
     return newVersion;
   };
 
-  // Restore a version
   const handleRestoreVersion = (version: Version) => {
     setVersionToRestore(version);
     setRestoreConfirmOpen(true);
@@ -426,93 +490,6 @@ export function EditCustomizedBooking() {
     setVersionHistoryOpen(false);
   };
 
-  // Get version display data
-  const getVersionPreview = (versionId: string) => {
-    const version = versions.find((v) => v.id === versionId);
-    if (!version) return null;
-    return version;
-  };
-
-  // Calculate changes between versions
-  const getChangesSummary = (
-    version: Version,
-    previousVersion: Version | null
-  ) => {
-    const changes: string[] = [];
-
-    if (!previousVersion) {
-      return ["Initial version"];
-    }
-
-    // Check booking data changes
-    if (
-      version.bookingData.destination !==
-      previousVersion.bookingData.destination
-    ) {
-      changes.push("Destination changed");
-    }
-    if (
-      version.bookingData.travelDateFrom !==
-        previousVersion.bookingData.travelDateFrom ||
-      version.bookingData.travelDateTo !==
-        previousVersion.bookingData.travelDateTo
-    ) {
-      changes.push("Travel dates changed");
-    }
-    if (
-      version.bookingData.travelers !== previousVersion.bookingData.travelers
-    ) {
-      changes.push("Number of travelers changed");
-    }
-    if (
-      version.bookingData.totalPrice !== previousVersion.bookingData.totalPrice
-    ) {
-      changes.push("Budget changed");
-    }
-
-    // Check itinerary changes
-    if (version.itineraryDays.length !== previousVersion.itineraryDays.length) {
-      changes.push(
-        `Days count changed (${previousVersion.itineraryDays.length} → ${version.itineraryDays.length})`
-      );
-    }
-
-    // Check for activity changes
-    let activitiesAdded = 0;
-    let activitiesRemoved = 0;
-    version.itineraryDays.forEach((day, idx) => {
-      const prevDay = previousVersion.itineraryDays[idx];
-      if (prevDay) {
-        activitiesAdded += Math.max(
-          0,
-          day.activities.length - prevDay.activities.length
-        );
-        activitiesRemoved += Math.max(
-          0,
-          prevDay.activities.length - day.activities.length
-        );
-      }
-    });
-
-    if (activitiesAdded > 0) {
-      changes.push(
-        `${activitiesAdded} ${
-          activitiesAdded === 1 ? "activity" : "activities"
-        } added`
-      );
-    }
-    if (activitiesRemoved > 0) {
-      changes.push(
-        `${activitiesRemoved} ${
-          activitiesRemoved === 1 ? "activity" : "activities"
-        } removed`
-      );
-    }
-
-    return changes.length > 0 ? changes : ["Minor edits"];
-  };
-
-  // Load booking data from API
   useEffect(() => {
     if (!id || !bookingDetailResponse?.data) {
       return;
@@ -520,7 +497,6 @@ export function EditCustomizedBooking() {
 
     const booking = bookingDetailResponse.data;
 
-    // Format dates for input fields
     const formatDateForInput = (dateString: string | null) => {
       if (!dateString) return "";
       const date = new Date(dateString);
@@ -539,13 +515,12 @@ export function EditCustomizedBooking() {
     setInitialBookingData(loadedBookingData);
     setBookingStatus(booking.status || "");
 
-    // Load itinerary from API response
     if (booking.itinerary?.days) {
       const convertedItinerary = booking.itinerary.days.map(
         (day: any, index: number) => ({
           id: day.id || generateId(),
-          day: day.dayNumber || index + 1,
-          title: "",
+          dayNumber: day.dayNumber || index + 1,
+          title: day.title || "",
           activities:
             day.activities?.map((activity: any, activityIndex: number) => ({
               id: activity.id || generateId(),
@@ -563,7 +538,6 @@ export function EditCustomizedBooking() {
       setItineraryDays(convertedItinerary);
       setInitialItineraryDays(JSON.parse(JSON.stringify(convertedItinerary)));
     } else {
-      // Generate empty itinerary if none exists
       const days: Day[] = [];
       if (booking.startDate && booking.endDate) {
         const start = new Date(booking.startDate);
@@ -581,7 +555,6 @@ export function EditCustomizedBooking() {
           });
         }
       } else {
-        // Default to 1 day if no dates
         days.push({
           id: generateId(),
           dayNumber: 1,
@@ -594,7 +567,6 @@ export function EditCustomizedBooking() {
     }
   }, [bookingDetailResponse?.data, id]);
 
-  // Create initial version snapshot when data is first loaded
   useEffect(() => {
     if (
       initialBookingData &&
@@ -618,7 +590,6 @@ export function EditCustomizedBooking() {
     }
   }, [initialBookingData, initialItineraryDays, id, currentUser]);
 
-  // Update breadcrumbs
   useEffect(() => {
     if (id && bookingStatus) {
       const tabLabel =
@@ -644,7 +615,6 @@ export function EditCustomizedBooking() {
     };
   }, [id, bookingStatus, setBreadcrumbs, resetBreadcrumbs]);
 
-  // Track changes
   useEffect(() => {
     if (!initialBookingData || !initialItineraryDays) {
       setHasUnsavedChanges(false);
@@ -664,7 +634,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(bookingChanged || itineraryChanged);
   }, [bookingData, itineraryDays, initialBookingData, initialItineraryDays]);
 
-  // Recalculate days when dates change
   useEffect(() => {
     if (
       bookingData.travelDateFrom &&
@@ -679,7 +648,6 @@ export function EditCustomizedBooking() {
 
       if (dayCount > 0 && dayCount !== itineraryDays.length) {
         if (dayCount > itineraryDays.length) {
-          // Add more days
           const newDays: Day[] = [];
           for (let i = itineraryDays.length + 1; i <= dayCount; i++) {
             newDays.push({
@@ -691,14 +659,12 @@ export function EditCustomizedBooking() {
           }
           setItineraryDays((prev) => [...prev, ...newDays]);
         } else {
-          // Days need to be reduced - check if empty days can be auto-removed
           const daysToRemove = itineraryDays.slice(dayCount);
           const hasContent = daysToRemove.some(
             (day) => day.title || day.activities.length > 0
           );
 
           if (!hasContent) {
-            // Auto-remove empty days
             setItineraryDays((prev) => prev.slice(0, dayCount));
           }
         }
@@ -711,13 +677,10 @@ export function EditCustomizedBooking() {
     itineraryDays,
   ]);
 
-  // Handle booking data changes
   const handleBookingChange = (field: keyof BookingFormData, value: string) => {
-    // Special handling for date changes
     if (field === "travelDateFrom" || field === "travelDateTo") {
       const tempData = { ...bookingData, [field]: value };
 
-      // Check if both dates are set
       if (tempData.travelDateFrom && tempData.travelDateTo) {
         const start = new Date(tempData.travelDateFrom);
         const end = new Date(tempData.travelDateTo);
@@ -726,16 +689,13 @@ export function EditCustomizedBooking() {
           1;
         const currentDayCount = itineraryDays.length;
 
-        // Check if days will be reduced
         if (newDayCount > 0 && newDayCount < currentDayCount) {
-          // Check if any of the days to be removed have content
           const daysToRemove = itineraryDays.slice(newDayCount);
           const hasContent = daysToRemove.some(
             (day) => day.title || day.activities.length > 0
           );
 
           if (hasContent) {
-            // Store the pending change and show confirmation
             setPendingDateChange({ field, value });
             setReduceDaysConfirm({
               newDayCount,
@@ -750,16 +710,13 @@ export function EditCustomizedBooking() {
     setBookingData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Confirm reduce days
   const handleConfirmReduceDays = () => {
     if (reduceDaysConfirm && pendingDateChange) {
-      // Apply the pending date change
       setBookingData((prev) => ({
         ...prev,
         [pendingDateChange.field]: pendingDateChange.value,
       }));
 
-      // Remove the extra days
       setItineraryDays((prev) => prev.slice(0, reduceDaysConfirm.newDayCount));
 
       toast.success("Travel Dates Updated", {
@@ -773,13 +730,11 @@ export function EditCustomizedBooking() {
     setPendingDateChange(null);
   };
 
-  // Cancel reduce days
   const handleCancelReduceDays = () => {
     setReduceDaysConfirm(null);
     setPendingDateChange(null);
   };
 
-  // Update day title
   const updateDayTitle = (dayId: string, title: string) => {
     setItineraryDays((prev) =>
       prev.map((day) => (day.id === dayId ? { ...day, title } : day))
@@ -787,7 +742,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Add activity to a day
   const addActivity = (dayId: string) => {
     const day = itineraryDays.find((d) => d.id === dayId);
     const newActivity: IActivity = {
@@ -814,7 +768,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Remove activity from a day
   const confirmDeleteActivity = (dayId: string, activityId: string) => {
     setDeleteActivityConfirm({ dayId, activityId });
   };
@@ -843,18 +796,15 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Update activity
   const updateActivity = (
     dayId: string,
     activityId: string,
     field: keyof IActivity,
     value: string | Place
   ) => {
-    // Validate time overlap if updating time field
     if (field === "time" && typeof value === "string" && value) {
       const day = itineraryDays.find((d) => d.id === dayId);
       if (day) {
-        // Check if this time already exists in other activities of the same day
         const timeExists = day.activities.some(
           (activity) => activity.id !== activityId && activity.time === value
         );
@@ -863,10 +813,9 @@ export function EditCustomizedBooking() {
           toast.error("Time Overlap Detected", {
             description: `The time ${value} is already used by another activity on Day ${day.dayNumber}. Please choose a different time.`,
           });
-          return; // Don't update if time overlaps
+          return;
         }
 
-        // Check if time is sequential (later than previous activity)
         const activityIndex = day.activities.findIndex(
           (a) => a.id === activityId
         );
@@ -876,7 +825,7 @@ export function EditCustomizedBooking() {
             toast.error("Invalid Time Sequence", {
               description: `Activity time must be later than the previous activity (${previousActivity.time}) on Day ${day.dayNumber}.`,
             });
-            return; // Don't update if not sequential
+            return;
           }
         }
       }
@@ -899,7 +848,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Move activity up
   const moveActivityUp = (dayId: string, activityIndex: number) => {
     if (activityIndex === 0) return;
 
@@ -922,7 +870,6 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Move activity down
   const moveActivityDown = (dayId: string, activityIndex: number) => {
     setItineraryDays((prev) =>
       prev.map((day) => {
@@ -943,14 +890,12 @@ export function EditCustomizedBooking() {
     setHasUnsavedChanges(true);
   };
 
-  // Open icon picker
   const openIconPicker = (dayId: string, activityId: string) => {
     setCurrentActivityForIcon({ dayId, activityId });
     setIconPickerOpen(true);
     setIconSearchQuery("");
   };
 
-  // Select icon
   const selectIcon = (iconValue: string) => {
     if (currentActivityForIcon) {
       updateActivity(
@@ -967,7 +912,6 @@ export function EditCustomizedBooking() {
 
   // Handle save
   const handleSaveClick = () => {
-    // Validation
     if (!bookingData.destination.trim()) {
       toast.error("Validation Error", {
         description: "Please enter the destination.",
@@ -982,25 +926,14 @@ export function EditCustomizedBooking() {
       return;
     }
 
-    // Check if all days have at least a title
-    const hasEmptyDays = itineraryDays.some((day) => !day.title?.trim());
-    if (hasEmptyDays) {
-      toast.error("Validation Error", {
-        description: "Please provide a title for all days.",
-      });
-      return;
-    }
-
     setSaveConfirmOpen(true);
   };
 
   const handleConfirmSave = () => {
     if (!id) return;
 
-    // Create version snapshot before saving
     createVersionSnapshot();
 
-    // Prepare data for API update
     const updateData = {
       destination: bookingData.destination,
       startDate: bookingData.travelDateFrom
@@ -1015,6 +948,7 @@ export function EditCustomizedBooking() {
         : 0,
       itinerary: itineraryDays.map((day) => ({
         dayNumber: day.dayNumber,
+        title: day.title,
         activities: day.activities
           .sort((a, b) => a.order - b.order)
           .map((activity) => ({
@@ -1029,7 +963,6 @@ export function EditCustomizedBooking() {
       })),
     };
 
-    // Call the update mutation
     updateBooking(updateData, {
       onSuccess: () => {
         toast.success("Booking Updated!", {
@@ -1038,14 +971,10 @@ export function EditCustomizedBooking() {
 
         setHasUnsavedChanges(false);
         setSaveConfirmOpen(false);
-
-        // Navigate back to travels
         navigate("/user/travels");
       },
       onError: (error: any) => {
         console.error("Update error:", error);
-        console.error("Error response:", error.response?.data);
-
         toast.error("Update Failed", {
           description:
             error.response?.data?.message ||
@@ -1054,7 +983,7 @@ export function EditCustomizedBooking() {
       },
     });
   };
-  // Handle back
+
   const handleBackClick = () => {
     if (hasUnsavedChanges) {
       setBackConfirmOpen(true);
@@ -1081,6 +1010,43 @@ export function EditCustomizedBooking() {
 
   return (
     <div className="space-y-6" style={{ paddingBottom: 50 }}>
+      {/* NEW: Enrichment Progress Banner */}
+      {isEnrichingLocations && (
+        <ContentCard>
+          <div className="flex items-center gap-4">
+            <Loader2 className="w-6 h-6 animate-spin text-[#0A7AFF]" />
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-[#1A2B4F] mb-1">
+                Enriching Activity Locations
+              </h3>
+              <p className="text-xs text-[#64748B]">
+                Finding coordinates for activities...{" "}
+                {currentEnrichmentIndex + 1} of {enrichmentQueue.length}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-32 h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] transition-all duration-300"
+                  style={{
+                    width: `${
+                      ((currentEnrichmentIndex + 1) / enrichmentQueue.length) *
+                      100
+                    }%`,
+                  }}
+                />
+              </div>
+              <span className="text-xs text-[#64748B] font-medium">
+                {Math.round(
+                  ((currentEnrichmentIndex + 1) / enrichmentQueue.length) * 100
+                )}
+                %
+              </span>
+            </div>
+          </div>
+        </ContentCard>
+      )}
+
       {/* Header */}
       <ContentCard>
         <div className="flex items-center gap-4">
@@ -1112,11 +1078,7 @@ export function EditCustomizedBooking() {
       </ContentCard>
 
       {/* Booking Details */}
-      <ContentCard
-        title="Travel Information"
-        icon={MapPin}
-        gradient="bg-gradient-to-br from-[#14B8A6] to-[#10B981]"
-      >
+      <ContentCard title="Travel Information" icon={MapPin}>
         <div className="grid grid-cols-2 gap-6">
           <div>
             <Label
@@ -1233,316 +1195,407 @@ export function EditCustomizedBooking() {
       </ContentCard>
 
       {/* Route Optimization Panel */}
-      <RouteOptimizationPanel
-        itineraryDays={itineraryDays}
-        selectedDayId={selectedDayForRoute}
-        onAcceptOptimization={handleAcceptOptimization}
-      />
+      {itineraryDays.some((day) => {
+        const validLocations = day.activities.filter(
+          (a) =>
+            a.location &&
+            a.locationData &&
+            typeof a.locationData.lat === "number" &&
+            typeof a.locationData.lng === "number"
+        );
+        return validLocations.length >= 2;
+      }) && (
+        <RouteOptimizationPanel
+          itineraryDays={itineraryDays}
+          selectedDayId={
+            selectedDayForRoute ||
+            itineraryDays.find((d) => {
+              const validLocations = d.activities.filter(
+                (a) =>
+                  a.location &&
+                  a.locationData &&
+                  typeof a.locationData.lat === "number" &&
+                  typeof a.locationData.lng === "number"
+              );
+              return validLocations.length >= 2;
+            })?.id
+          }
+          onAcceptOptimization={handleAcceptOptimization}
+        />
+      )}
 
       {/* Day-by-Day Itinerary */}
       <ContentCard>
         <div className="mb-6">
-          <h2 className="text-lg text-[#1A2B4F] font-semibold">
-            Day-by-Day Itinerary ({itineraryDays.length} Days)
-          </h2>
-        </div>
-        <div className="space-y-6">
-          {itineraryDays.map((day, dayIndex) => (
-            <div
-              key={day.id}
-              className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
-            >
-              {/* Day Header */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                  <span className="text-white font-bold">D{day.dayNumber}</span>
-                </div>
-                <div className="flex-1">
-                  <Label
-                    htmlFor={`day-${day.id}-title`}
-                    className="text-[#1A2B4F] mb-2 block text-sm font-medium"
-                  >
-                    Day {day.dayNumber} Title{" "}
-                    <span className="text-[#FF6B6B]">*</span>
-                  </Label>
-                  <Input
-                    id={`day-${day.id}-title`}
-                    placeholder="e.g., Arrival & Beach Sunset"
-                    value={day.title}
-                    onChange={(e) => updateDayTitle(day.id, e.target.value)}
-                    className="h-11 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] bg-white transition-all"
-                  />
-                </div>
-                <button
-                  onClick={() => addActivity(day.id)}
-                  className="h-11 px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Activity
-                </button>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg text-[#1A2B4F] font-semibold">
+                Day-by-Day Itinerary ({itineraryDays.length} Days)
+              </h2>
+            </div>
+            {isEnrichingLocations && (
+              <div className="flex items-center gap-2 text-xs text-[#64748B]">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Enriching locations...</span>
               </div>
+            )}
+          </div>
+        </div>
 
-              {/* Activities */}
-              <div className="space-y-4">
-                {day.activities.length === 0 ? (
-                  <div className="py-10 text-center border-2 border-dashed border-[#E5E7EB] rounded-xl bg-white">
-                    <div className="w-14 h-14 rounded-xl bg-[#F8FAFB] flex items-center justify-center mx-auto mb-3">
-                      <Package className="w-7 h-7 text-[#CBD5E1]" />
-                    </div>
-                    <p className="text-sm text-[#64748B] mb-1">
-                      No activities yet for Day {day.dayNumber}
-                    </p>
-                    <p className="text-xs text-[#94A3B8]">
-                      Click "Add Activity" to start building this day
-                    </p>
+        <div className="space-y-6">
+          {itineraryDays.map((day) => {
+            const validActivities = day.activities.filter(
+              (a) =>
+                a.location &&
+                a.locationData &&
+                typeof a.locationData.lat === "number" &&
+                typeof a.locationData.lng === "number"
+            );
+            const canOptimize = validActivities.length >= 4;
+
+            return (
+              <div
+                key={day.id}
+                className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
+              >
+                {/* Day Header */}
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                    <span className="text-white font-bold">
+                      D{day.dayNumber}
+                    </span>
                   </div>
-                ) : (
-                  day.activities.map((activity, activityIndex) => {
-                    const IconComponent = getIconComponent(activity.icon);
-                    return (
-                      <div
-                        key={activity.id}
-                        className="relative p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
-                      >
-                        {/* Activity number badge */}
-                        <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
-                          {activityIndex + 1}
-                        </div>
+                  <div className="flex-1">
+                    <Label
+                      htmlFor={`day-${day.id}-title`}
+                      className="text-[#1A2B4F] mb-2 block text-sm font-medium"
+                    >
+                      Day {day.dayNumber} Title{" "}
+                      <span className="text-[#FF6B6B]">*</span>
+                    </Label>
+                    <Input
+                      id={`day-${day.id}-title`}
+                      placeholder="e.g., Arrival & Beach Sunset"
+                      value={day.title}
+                      onChange={(e) => updateDayTitle(day.id, e.target.value)}
+                      className="h-11 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] bg-white transition-all"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {canOptimize && (
+                      <div className="px-3 py-1 rounded-full bg-[#10B981]/10 border border-[#10B981]/20 flex items-center gap-1">
+                        <Compass className="w-3 h-3 text-[#10B981]" />
+                        <span className="text-xs text-[#10B981] font-medium">
+                          Route Ready
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => addActivity(day.id)}
+                      className="h-11 px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Activity
+                    </button>
+                  </div>
+                </div>
 
-                        <div className="flex items-start gap-4">
-                          {/* Drag Handle */}
-                          <div className="flex flex-col gap-1 pt-2">
-                            <button
-                              onClick={() =>
-                                moveActivityUp(day.id, activityIndex)
-                              }
-                              disabled={activityIndex === 0}
-                              className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                              title="Move Up"
-                            >
-                              <GripVertical className="w-4 h-4 text-[#CBD5E1] rotate-90" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                moveActivityDown(day.id, activityIndex)
-                              }
-                              disabled={
-                                activityIndex === day.activities.length - 1
-                              }
-                              className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                              title="Move Down"
-                            >
-                              <GripVertical className="w-4 h-4 text-[#CBD5E1] -rotate-90" />
-                            </button>
+                {/* Activities */}
+                <div className="space-y-4">
+                  {day.activities.length === 0 ? (
+                    <div className="py-10 text-center border-2 border-dashed border-[#E5E7EB] rounded-xl bg-white">
+                      <div className="w-14 h-14 rounded-xl bg-[#F8FAFB] flex items-center justify-center mx-auto mb-3">
+                        <Package className="w-7 h-7 text-[#CBD5E1]" />
+                      </div>
+                      <p className="text-sm text-[#64748B] mb-1">
+                        No activities yet for Day {day.dayNumber}
+                      </p>
+                      <p className="text-xs text-[#94A3B8]">
+                        Click "Add Activity" to start building this day
+                      </p>
+                    </div>
+                  ) : (
+                    day.activities.map((activity, activityIndex) => {
+                      const IconComponent = getIconComponent(activity.icon);
+                      const hasCoordinates =
+                        activity.locationData &&
+                        typeof activity.locationData.lat === "number" &&
+                        typeof activity.locationData.lng === "number";
+
+                      return (
+                        <div
+                          key={activity.id}
+                          className="relative p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
+                        >
+                          {/* Activity number badge */}
+                          <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
+                            {activityIndex + 1}
                           </div>
 
-                          {/* Form Fields */}
-                          <div className="flex-1 grid grid-cols-12 gap-4">
-                            {/* Time */}
-                            <div className="col-span-2">
-                              <Label className="text-xs text-[#64748B] mb-1 block">
-                                Time
-                              </Label>
-                              <Input
-                                type="time"
-                                value={convertTo24Hour(activity.time)}
-                                onChange={(e) =>
-                                  updateActivity(
-                                    day.id,
-                                    activity.id,
-                                    "time",
-                                    convertTo12Hour(e.target.value)
-                                  )
-                                }
-                                className="h-9 rounded-lg border-[#E5E7EB] text-sm"
-                              />
+                          {/* NEW: Coordinate Status Badge */}
+                          {activity.location && (
+                            <div className="absolute -right-3 -top-3">
+                              {hasCoordinates ? (
+                                <div
+                                  className="w-7 h-7 rounded-lg bg-[#10B981] flex items-center justify-center shadow-md"
+                                  title="Coordinates found"
+                                >
+                                  <MapPin className="w-4 h-4 text-white" />
+                                </div>
+                              ) : isEnrichingLocations &&
+                                currentEnrichment?.activityId ===
+                                  activity.id ? (
+                                <div
+                                  className="w-7 h-7 rounded-lg bg-[#FF9800] flex items-center justify-center shadow-md"
+                                  title="Searching for coordinates"
+                                >
+                                  <Loader2 className="w-4 h-4 text-white animate-spin" />
+                                </div>
+                              ) : null}
                             </div>
+                          )}
 
-                            {/* Icon */}
-                            <div className="col-span-2">
-                              <Label className="text-xs text-[#64748B] mb-1 block">
-                                Icon
-                              </Label>
+                          <div className="flex items-start gap-4">
+                            {/* Drag Handle */}
+                            <div className="flex flex-col gap-1 pt-2">
                               <button
-                                type="button"
                                 onClick={() =>
-                                  openIconPicker(day.id, activity.id)
+                                  moveActivityUp(day.id, activityIndex)
                                 }
-                                className="w-full h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white flex items-center justify-center transition-all"
+                                disabled={activityIndex === 0}
+                                className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                title="Move Up"
                               >
-                                <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
+                                <GripVertical className="w-4 h-4 text-[#CBD5E1] rotate-90" />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  moveActivityDown(day.id, activityIndex)
+                                }
+                                disabled={
+                                  activityIndex === day.activities.length - 1
+                                }
+                                className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                title="Move Down"
+                              >
+                                <GripVertical className="w-4 h-4 text-[#CBD5E1] -rotate-90" />
                               </button>
                             </div>
 
-                            {/* Title */}
-                            <div className="col-span-8">
-                              <Label className="text-xs text-[#64748B] mb-1 block">
-                                Activity Title *
-                              </Label>
-                              <Input
-                                placeholder="e.g., Arrival at the Hotel"
-                                value={activity.title}
-                                onChange={(e) =>
-                                  updateActivity(
-                                    day.id,
-                                    activity.id,
-                                    "title",
-                                    e.target.value
-                                  )
-                                }
-                                className="h-9 rounded-lg border-[#E5E7EB] text-sm"
-                              />
-                            </div>
-
-                            {/* Location */}
-                            <div className="col-span-12 relative">
-                              <Label className="text-xs text-[#64748B] mb-1 block">
-                                Location
-                              </Label>
-                              <div className="relative">
-                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none z-10" />
-                                {isLoadingPlaces &&
-                                  activeLocationInput?.dayId === day.id &&
-                                  activeLocationInput?.activityId ===
-                                    activity.id && (
-                                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
-                                  )}
+                            {/* Form Fields */}
+                            <div className="flex-1 grid grid-cols-12 gap-4">
+                              {/* Time */}
+                              <div className="col-span-2">
+                                <Label className="text-xs text-[#64748B] mb-1 block">
+                                  Time
+                                </Label>
                                 <Input
-                                  placeholder="Search location..."
-                                  value={activity.location}
+                                  type="time"
+                                  value={convertTo24Hour(activity.time)}
                                   onChange={(e) =>
-                                    handleLocationInputChange(
-                                      e.target.value,
+                                    updateActivity(
                                       day.id,
-                                      activity.id
+                                      activity.id,
+                                      "time",
+                                      convertTo12Hour(e.target.value)
                                     )
                                   }
-                                  onFocus={() => {
-                                    if (activity.location.length >= 2) {
-                                      setLocationSearchQuery(activity.location);
-                                      setActiveLocationInput({
-                                        dayId: day.id,
-                                        activityId: activity.id,
-                                      });
-                                    }
-                                  }}
-                                  onBlur={() => {
-                                    setTimeout(() => {
-                                      setLocationSearchQuery("");
-                                      setActiveLocationInput(null);
-                                    }, 200);
-                                  }}
-                                  className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm"
+                                  className="h-9 rounded-lg border-[#E5E7EB] text-sm"
                                 />
                               </div>
 
-                              {/* Location Suggestions Dropdown */}
-                              {activeLocationInput?.dayId === day.id &&
-                                activeLocationInput?.activityId ===
-                                  activity.id &&
-                                locationSuggestions.length > 0 && (
-                                  <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
-                                    {locationSuggestions.map((place, idx) => (
-                                      <button
-                                        key={idx}
-                                        type="button"
-                                        onClick={() =>
-                                          selectLocationSuggestion(
-                                            place,
-                                            day.id,
-                                            activity.id
-                                          )
-                                        }
-                                        className="w-full px-4 py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
-                                      >
-                                        <div className="flex items-start gap-3">
-                                          <div className="w-8 h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
-                                            <MapPin className="w-4 h-4 text-[#0A7AFF]" />
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
-                                              {place.name}
-                                            </p>
-                                            <p className="text-xs text-[#64748B] mt-0.5 truncate">
-                                              {place.address}
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                              <span className="text-xs px-2 py-0.5 rounded bg-[#F1F5F9] text-[#64748B]">
-                                                {place.source}
-                                              </span>
+                              {/* Icon */}
+                              <div className="col-span-2">
+                                <Label className="text-xs text-[#64748B] mb-1 block">
+                                  Icon
+                                </Label>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openIconPicker(day.id, activity.id)
+                                  }
+                                  className="w-full h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white flex items-center justify-center transition-all"
+                                >
+                                  <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
+                                </button>
+                              </div>
+
+                              {/* Title */}
+                              <div className="col-span-8">
+                                <Label className="text-xs text-[#64748B] mb-1 block">
+                                  Activity Title *
+                                </Label>
+                                <Input
+                                  placeholder="e.g., Arrival at the Hotel"
+                                  value={activity.title}
+                                  onChange={(e) =>
+                                    updateActivity(
+                                      day.id,
+                                      activity.id,
+                                      "title",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-9 rounded-lg border-[#E5E7EB] text-sm"
+                                />
+                              </div>
+
+                              {/* Location */}
+                              <div className="col-span-12 relative">
+                                <Label className="text-xs text-[#64748B] mb-1 block">
+                                  Location
+                                  {hasCoordinates && (
+                                    <span className="ml-2 text-xs text-[#10B981]">
+                                      ✓ Coordinates found
+                                    </span>
+                                  )}
+                                </Label>
+                                <div className="relative">
+                                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none z-10" />
+                                  {isLoadingPlaces &&
+                                    activeLocationInput?.dayId === day.id &&
+                                    activeLocationInput?.activityId ===
+                                      activity.id && (
+                                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
+                                    )}
+                                  <Input
+                                    placeholder="Search location..."
+                                    value={activity.location}
+                                    onChange={(e) =>
+                                      handleLocationInputChange(
+                                        e.target.value,
+                                        day.id,
+                                        activity.id
+                                      )
+                                    }
+                                    onFocus={() => {
+                                      if (activity.location.length >= 2) {
+                                        setLocationSearchQuery(
+                                          activity.location
+                                        );
+                                        setActiveLocationInput({
+                                          dayId: day.id,
+                                          activityId: activity.id,
+                                        });
+                                      }
+                                    }}
+                                    onBlur={() => {
+                                      setTimeout(() => {
+                                        setLocationSearchQuery("");
+                                        setActiveLocationInput(null);
+                                      }, 200);
+                                    }}
+                                    className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm"
+                                  />
+                                </div>
+
+                                {activeLocationInput?.dayId === day.id &&
+                                  activeLocationInput?.activityId ===
+                                    activity.id &&
+                                  locationSuggestions.length > 0 && (
+                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                                      {locationSuggestions.map((place, idx) => (
+                                        <button
+                                          key={idx}
+                                          type="button"
+                                          onClick={() =>
+                                            selectLocationSuggestion(
+                                              place,
+                                              day.id,
+                                              activity.id
+                                            )
+                                          }
+                                          className="w-full px-4 py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
+                                        >
+                                          <div className="flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
+                                              <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
+                                                {place.name}
+                                              </p>
+                                              <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                                                {place.address}
+                                              </p>
+                                              <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-xs px-2 py-0.5 rounded bg-[#F1F5F9] text-[#64748B]">
+                                                  {place.source}
+                                                </span>
+                                              </div>
                                             </div>
                                           </div>
-                                        </div>
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
 
-                              {activeLocationInput?.dayId === day.id &&
-                                activeLocationInput?.activityId ===
-                                  activity.id &&
-                                !isLoadingPlaces &&
-                                locationSearchQuery.length >= 2 &&
-                                locationSuggestions.length === 0 && (
-                                  <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg p-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-lg bg-[#F8FAFB] flex items-center justify-center shrink-0">
-                                        <Search className="w-5 h-5 text-[#CBD5E1]" />
-                                      </div>
-                                      <div>
-                                        <p className="text-sm text-[#64748B]">
-                                          No locations found
-                                        </p>
-                                        <p className="text-xs text-[#94A3B8] mt-0.5">
-                                          Try a different search term
-                                        </p>
+                                {activeLocationInput?.dayId === day.id &&
+                                  activeLocationInput?.activityId ===
+                                    activity.id &&
+                                  !isLoadingPlaces &&
+                                  locationSearchQuery.length >= 2 &&
+                                  locationSuggestions.length === 0 && (
+                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg p-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-[#F8FAFB] flex items-center justify-center shrink-0">
+                                          <Search className="w-5 h-5 text-[#CBD5E1]" />
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-[#64748B]">
+                                            No locations found
+                                          </p>
+                                          <p className="text-xs text-[#94A3B8] mt-0.5">
+                                            Try a different search term
+                                          </p>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                )}
+                                  )}
+                              </div>
+
+                              {/* Description */}
+                              <div className="col-span-12">
+                                <Label className="text-xs text-[#64748B] mb-1 block">
+                                  Description
+                                </Label>
+                                <Textarea
+                                  placeholder="Add activity details..."
+                                  value={activity.description}
+                                  onChange={(e) =>
+                                    updateActivity(
+                                      day.id,
+                                      activity.id,
+                                      "description",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="rounded-lg border-[#E5E7EB] text-sm resize-none"
+                                  rows={2}
+                                />
+                              </div>
                             </div>
 
-                            {/* Description */}
-                            <div className="col-span-12">
-                              <Label className="text-xs text-[#64748B] mb-1 block">
-                                Description
-                              </Label>
-                              <Textarea
-                                placeholder="Add activity details..."
-                                value={activity.description}
-                                onChange={(e) =>
-                                  updateActivity(
-                                    day.id,
-                                    activity.id,
-                                    "description",
-                                    e.target.value
-                                  )
-                                }
-                                className="rounded-lg border-[#E5E7EB] text-sm resize-none"
-                                rows={2}
-                              />
-                            </div>
+                            {/* Delete Button */}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                confirmDeleteActivity(day.id, activity.id)
+                              }
+                              className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 shrink-0"
+                              title="Delete Activity"
+                            >
+                              <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B] transition-colors" />
+                            </button>
                           </div>
-
-                          {/* Delete Button */}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              confirmDeleteActivity(day.id, activity.id)
-                            }
-                            className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 shrink-0"
-                            title="Delete Activity"
-                          >
-                            <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B] transition-colors" />
-                          </button>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </ContentCard>
 
@@ -1610,7 +1663,6 @@ export function EditCustomizedBooking() {
             </DialogDescription>
           </DialogHeader>
 
-          {/* Search */}
           <div className="px-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
@@ -1696,11 +1748,7 @@ export function EditCustomizedBooking() {
               <button
                 type="button"
                 onClick={() => setBackConfirmOpen(false)}
-                className="w-full h-12 px-6 rounded-xl border-2 border-transparent 
-                           bg-linear-to-br from-[#FFB84D] to-[#FF9800] 
-                           hover:opacity-90 text-white font-medium 
-                           transition-all flex items-center justify-center 
-                           shadow-md shadow-[#FFB84D]/20"
+                className="w-full h-12 px-6 rounded-xl border-2 border-transparent bg-linear-to-br from-[#FFB84D] to-[#FF9800] hover:opacity-90 text-white font-medium transition-all flex items-center justify-center shadow-md shadow-[#FFB84D]/20"
               >
                 Continue Editing
               </button>
@@ -1789,22 +1837,6 @@ export function EditCustomizedBooking() {
         cancelText="Keep All Days"
         confirmVariant="destructive"
       />
-
-      {/* Version History Modal - Commented out as in original
-      <VersionHistoryModal
-        open={versionHistoryOpen}
-        onOpenChange={setVersionHistoryOpen}
-        versions={versions}
-        selectedVersionId={selectedVersionId}
-        setSelectedVersionId={setSelectedVersionId}
-        currentUser={currentUser}
-        currentBookingData={bookingData}
-        currentItineraryDays={itineraryDays}
-        onRestoreVersion={handleRestoreVersion}
-        getChangesSummary={getChangesSummary}
-        getIconComponent={getIconComponent}
-        convertTo12Hour={convertTo12Hour}
-      /> */}
 
       {/* Restore Version Confirmation Modal */}
       <ConfirmationModal

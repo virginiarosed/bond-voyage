@@ -8,13 +8,21 @@ import {
   ClipboardList,
   Loader2,
   AlertCircle,
+  Calendar,
+  MapPin,
+  Users,
+  Eye,
+  Mail,
+  Phone,
+  Clock,
 } from "lucide-react";
 import { ContentCard } from "../../components/ContentCard";
 import { StatCard } from "../../components/StatCard";
-import { BookingListCard } from "../../components/BookingListCard";
 import { Pagination } from "../../components/Pagination";
 import { FAQAssistant } from "../../components/FAQAssistant";
 import { useMyBookings } from "../../hooks/useBookings";
+import { useMediaQuery } from "react-responsive";
+import { capitalize } from "../../utils/helpers/capitalize";
 
 interface TransformedTrip {
   id: string;
@@ -35,6 +43,7 @@ interface TransformedTrip {
 
 export function UserHistory() {
   const navigate = useNavigate();
+  const isMobile = useMediaQuery({ maxWidth: 768 });
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"completed" | "cancelled">(
     "completed"
@@ -241,8 +250,8 @@ export function UserHistory() {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
+      {/* Stats - Responsive */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6">
         <div
           onClick={() => handleStatCardClick(null)}
           className="cursor-pointer"
@@ -250,7 +259,13 @@ export function UserHistory() {
           <StatCard
             icon={BookOpen}
             label={
-              activeTab === "completed" ? "Completed Trips" : "Cancelled Trips"
+              isMobile
+                ? activeTab === "completed"
+                  ? "Completed"
+                  : "Cancelled"
+                : activeTab === "completed"
+                ? "Completed Trips"
+                : "Cancelled Trips"
             }
             value={statusTripsCount.toString()}
             gradientFrom={activeTab === "completed" ? "#10B981" : "#FF6B6B"}
@@ -264,7 +279,7 @@ export function UserHistory() {
         >
           <StatCard
             icon={Briefcase}
-            label="Customized"
+            label={isMobile ? "Custom" : "Customized"}
             value={customizedCount.toString()}
             gradientFrom="#0A7AFF"
             gradientTo="#3B9EFF"
@@ -277,7 +292,7 @@ export function UserHistory() {
         >
           <StatCard
             icon={FileCheck}
-            label="Standard"
+            label={isMobile ? "Standard" : "Standard"}
             value={standardCount.toString()}
             gradientFrom="#10B981"
             gradientTo="#14B8A6"
@@ -290,7 +305,7 @@ export function UserHistory() {
         >
           <StatCard
             icon={ClipboardList}
-            label="Requested"
+            label={isMobile ? "Requested" : "Requested"}
             value={requestedCount.toString()}
             gradientFrom="#FFB84D"
             gradientTo="#FF9800"
@@ -322,46 +337,200 @@ export function UserHistory() {
           <>
             <div className="space-y-4">
               {filteredTrips.map((trip) => (
-                <BookingListCard
+                <div
                   key={trip.id}
-                  booking={{
-                    id: trip.id,
-                    customer: trip.customer,
-                    email: trip.email,
-                    mobile: trip.mobile,
-                    destination: trip.destination,
-                    dates: trip.dates,
-                    travelers: trip.travelers,
-                    total: trip.amount,
-                    bookedDate: trip.bookedDate,
-                    bookingType: trip.bookingType,
-                  }}
-                  onViewDetails={handleViewDetails}
-                  variant={trip.status === "cancelled" ? "rejected" : "default"}
-                  statusBadge={
-                    <>
-                      <span
-                        className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                          trip.status
-                        )}`}
-                      >
-                        {getStatusIcon(trip.status)}{" "}
-                        {trip.status === "completed"
-                          ? "Completed"
-                          : "Cancelled"}
+                  onClick={() => handleViewDetails(trip.id)}
+                  className="p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)] cursor-pointer"
+                >
+                  {/* Header - Responsive */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                        <span className="text-white text-lg">🎫</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+                          <h3 className="text-lg text-[#1A2B4F] font-semibold truncate">
+                            Booking {trip.id.substring(0, 8)}...
+                          </h3>
+                          <div className="flex flex-wrap gap-1 mt-1 md:mt-0">
+                            {/* Status Badge */}
+                            <span className={`inline-flex items-center justify-center min-w-[60px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${getStatusColor(
+                              trip.status
+                            )}`}>
+                              {getStatusIcon(trip.status)}{" "}
+                              {trip.status === "completed"
+                                ? "Completed"
+                                : "Cancelled"}
+                            </span>
+                            
+                            {/* Booking Type Badge */}
+                            <span className={`inline-flex items-center justify-center min-w-[70px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${getBookingTypeColor(
+                              trip.bookingType
+                            )}`}>
+                              {trip.bookingType}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Hide button on mobile screens */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetails(trip.id);
+                      }}
+                      className="hidden md:flex h-9 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] items-center gap-2 text-sm font-medium transition-all"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>View Details</span>
+                    </button>
+                  </div>
+
+                  {/* Customer Info - Responsive layout */}
+                  <div className="mb-4 pb-4 border-b border-[#E5E7EB]">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Users className="w-4 h-4 text-[#0A7AFF]" />
+                      <span className="text-sm text-[#334155] font-medium truncate">
+                        {trip.customer}
                       </span>
-                      {trip.bookingType && (
-                        <span
-                          className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getBookingTypeColor(
-                            trip.bookingType
-                          )}`}
-                        >
-                          {trip.bookingType}
-                        </span>
-                      )}
-                    </>
-                  }
-                />
+                      <span className="hidden md:inline text-sm text-[#64748B]">•</span>
+                      <span className="hidden md:inline text-sm text-[#64748B] truncate">
+                        {trip.email}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-[#64748B] md:hidden">
+                      <Mail className="w-3 h-3" />
+                      <span className="truncate">{trip.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-[#64748B] md:hidden mt-1">
+                      <Phone className="w-3 h-3" />
+                      <span>{trip.mobile}</span>
+                    </div>
+                  </div>
+
+                  {/* Trip Details - Responsive grid layout */}
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5">
+                    {/* Desktop layout - hidden on mobile */}
+                    <div className="hidden md:flex md:items-center md:gap-2">
+                      <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                      <div>
+                        <p className="text-xs text-[#64748B]">Destination</p>
+                        <p className="text-sm text-[#334155] font-medium">
+                          {trip.destination}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="hidden md:flex md:items-center md:gap-2">
+                      <Calendar className="w-4 h-4 text-[#14B8A6]" />
+                      <div>
+                        <p className="text-xs text-[#64748B]">Travel Dates</p>
+                        <p className="text-sm text-[#334155] font-medium leading-tight">
+                          {trip.dates}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="hidden md:flex md:items-center md:gap-2">
+                      <Users className="w-4 h-4 text-[#64748B]" />
+                      <div>
+                        <p className="text-xs text-[#64748B]">Travelers</p>
+                        <p className="text-sm text-[#334155] font-medium">
+                          {trip.travelers}{" "}
+                          {trip.travelers > 1 ? "People" : "Person"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="hidden md:flex md:items-center md:gap-2">
+                      <span className="text-[#10B981] text-lg">₱</span>
+                      <div>
+                        <p className="text-xs text-[#64748B]">Total Amount</p>
+                        <p className="text-sm text-[#334155] font-medium">
+                          {trip.amount}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="hidden md:flex md:items-center md:gap-2">
+                      <Clock className="w-4 h-4 text-[#64748B]" />
+                      <div>
+                        <p className="text-xs text-[#64748B]">Booked On</p>
+                        <p className="text-sm text-[#334155] font-medium">
+                          {trip.bookedDate}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Mobile layout - shown only on mobile */}
+                    <div className="md:hidden">
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Row 1 */}
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 text-[#0A7AFF] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-[#64748B]">Destination</p>
+                            <p className="text-sm text-[#334155] font-medium line-clamp-1">
+                              {trip.destination}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Users className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-[#64748B]">Travelers</p>
+                            <p className="text-sm text-[#334155] font-medium">
+                              {trip.travelers}{" "}
+                              {trip.travelers > 1 ? "Pax" : "Pax"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Row 2 - Dates on two lines */}
+                        <div className="flex items-start gap-2 col-span-2">
+                          <Calendar className="w-4 h-4 text-[#14B8A6] flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-xs text-[#64748B]">Travel Dates</p>
+                            <p className="text-sm text-[#334155] font-medium leading-tight">
+                              {trip.dates}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Row 3 - Amount and Booked date */}
+                        <div className="flex items-start gap-2">
+                          <span className="text-[#10B981] text-lg">₱</span>
+                          <div>
+                            <p className="text-xs text-[#64748B]">Amount</p>
+                            <p className="text-sm text-[#334155] font-medium">
+                              {trip.amount}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Clock className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-[#64748B]">Booked</p>
+                            <p className="text-sm text-[#334155] font-medium truncate">
+                              {trip.bookedDate}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons - Mobile only */}
+                  <div className="md:hidden">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetails(trip.id);
+                      }}
+                      className="w-full h-11 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#3B9EFF] text-white font-medium flex items-center justify-center gap-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Details
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
 

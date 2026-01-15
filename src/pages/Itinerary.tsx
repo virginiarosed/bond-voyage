@@ -390,18 +390,6 @@ const getStatusBadge = (
   return statusMap[status] || "pending";
 };
 
-const getSentStatus = (booking: any): "sent" | "unsent" => {
-  const sentAt = booking.itinerary?.sentAt || booking.sentAt;
-  const sentStatus = booking.itinerary?.sentStatus || booking.sentStatus;
-  const status = booking.status || booking.itinerary?.status;
-
-  if (sentAt || sentStatus === "sent" || status === "CONFIRMED") {
-    return "sent";
-  }
-
-  return "unsent";
-};
-
 const getConfirmStatus = (status: string): "confirmed" | "unconfirmed" => {
   return status === "CONFIRMED" ? "confirmed" : "unconfirmed";
 };
@@ -527,13 +515,12 @@ const transformBookingForListCard = (apiBooking: any) => {
     rejectionReason: transformed.rejectionReason,
     rejectionResolution: transformed.rejectionResolution,
     resolutionStatus: transformed.resolutionStatus,
-    // For BookingListCard props
     customerName: transformed.customer,
     customerEmail: transformed.email,
     customerMobile: transformed.mobile,
     totalAmountNum: transformed.totalAmount,
-    // Keep raw booking for reference
     rawBooking: apiBooking,
+    sentStatus: apiBooking.itinerary.sentStatus,
   };
 };
 
@@ -698,7 +685,7 @@ export function Itinerary({
     {
       enabled: !!userSearchParams.q && userSearchParams.q?.length >= 2,
       staleTime: 30000,
-      queryKey: [queryKeys.users.list],
+      queryKey: queryKeys.users.list(userSearchParams),
     }
   );
 
@@ -1031,7 +1018,7 @@ export function Itinerary({
             : "₱0",
           bookedDate: booking.bookedDate,
           status: "pending",
-          sentStatus: getSentStatus(booking),
+          sentStatus: booking.itinerary.sentStatus,
           confirmStatus: getConfirmStatus(booking.status),
         })
       );
@@ -1902,7 +1889,7 @@ export function Itinerary({
               actionButtons={
                 <div className="space-y-3">
                   {/* Send to Client Button */}
-                  {bookingDetailData.data.status !== "CONFIRMED" && (
+                  {bookingDetailData.data.itinerary.sentStatus !== "Sent" && (
                     <button
                       onClick={() =>
                         handleSendToClient(bookingDetailData.data.id)
@@ -2045,14 +2032,6 @@ export function Itinerary({
                         </p>
                       </div>
                     )}
-
-                  {/* Back to List Button */}
-                  <button
-                    onClick={() => setRequestedViewMode("list")}
-                    className="w-full h-11 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-[#334155] font-medium transition-all"
-                  >
-                    Back to List
-                  </button>
                 </div>
               }
             />

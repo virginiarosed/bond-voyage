@@ -432,7 +432,7 @@ How can I assist you today?`,
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleChat}
-            className="fixed bottom-3 right-6 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center z-[100] group"
+            className="fixed bottom-3 right-6 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center z-100 group"
             style={{
               background: "linear-gradient(to bottom right, #0A7AFF, #10B981)",
               boxShadow: "0 25px 50px -12px rgba(10, 122, 255, 0.3)",
@@ -491,11 +491,11 @@ How can I assist you today?`,
             }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-3 right-6 w-[420px] h-[600px] rounded-2xl bg-white shadow-2xl border-2 border-[#E5E7EB] flex flex-col z-[100] overflow-hidden"
+            className="fixed bottom-3 right-6 w-105 h-150 rounded-2xl bg-white shadow-2xl border-2 border-[#E5E7EB] flex flex-col z-100 overflow-hidden"
           >
             {/* Header */}
             <div
-              className="relative p-4 overflow-hidden flex-shrink-0"
+              className="relative p-4 overflow-hidden shrink-0"
               style={{
                 background: "linear-gradient(to right, #0A7AFF, #10B981)",
               }}
@@ -607,7 +607,7 @@ How can I assist you today?`,
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-hidden bg-gradient-to-b from-[#F8FAFB] to-white">
+            <div className="flex-1 overflow-hidden bg-linear-to-b from-[#F8FAFB] to-white">
               <ScrollArea className="h-full">
                 <div className="p-4 space-y-4">
                   {messages.map((message, index) => (
@@ -624,7 +624,7 @@ How can I assist you today?`,
                     >
                       {message.type === "ai" && (
                         <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-md"
                           style={{
                             background:
                               "linear-gradient(to bottom right, #0A7AFF, #10B981)",
@@ -743,7 +743,7 @@ How can I assist you today?`,
                                     onClick={() =>
                                       handleQuickAction(action.label, action)
                                     }
-                                    className="px-3 py-1.5 rounded-lg bg-gradient-to-br from-white to-gray-50 border border-[#E5E7EB] flex items-center gap-1.5 text-xs text-[#1A2B4F] transition-all"
+                                    className="px-3 py-1.5 rounded-lg bg-linear-to-br from-white to-gray-50 border border-[#E5E7EB] flex items-center gap-1.5 text-xs text-[#1A2B4F] transition-all"
                                     style={{
                                       borderColor: "#10B981",
                                       boxShadow:
@@ -766,7 +766,7 @@ How can I assist you today?`,
                         </p>
                       </div>
                       {message.type === "user" && (
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#64748B] to-[#475569] flex items-center justify-center flex-shrink-0 shadow-md">
+                        <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#64748B] to-[#475569] flex items-center justify-center shrink-0 shadow-md">
                           <span className="text-xs text-white">You</span>
                         </div>
                       )}
@@ -780,7 +780,7 @@ How can I assist you today?`,
                       className="flex gap-2"
                     >
                       <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-md"
                         style={{
                           background:
                             "linear-gradient(to bottom right, #0A7AFF, #10B981)",
@@ -813,7 +813,7 @@ How can I assist you today?`,
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t-2 border-[#E5E7EB] bg-white flex-shrink-0">
+            <div className="p-4 border-t-2 border-[#E5E7EB] bg-white shrink-0">
               <div className="flex gap-2">
                 <Input
                   value={inputValue}
