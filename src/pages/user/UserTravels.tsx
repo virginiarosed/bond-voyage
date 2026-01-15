@@ -236,7 +236,8 @@ export function UserTravels() {
     useAcceptItineraryShare({
       onSuccess: (data) => {
         toast.success("Successfully Joined!", {
-          description: data.message || "You are now a collaborator on this trip.",
+          description:
+            data.message || "You are now a collaborator on this trip.",
         });
         setShowJoinTravelModal(false);
         setJoinShareToken("");
@@ -251,25 +252,24 @@ export function UserTravels() {
     });
 
   const { mutate: createShare } = useCreateItineraryShare({
-      onSuccess: (data) => {
-        const token = data.data?.token;
-        if (!token) {
-          toast.error("Failed to create share token");
-          return;
-        }
-        setShareToken(token);
-        setShowShareQRModal(true);
-        setTimeout(() => {
-          generateQRCode(token);
-        }, 100);
-      },
-      onError: (error: any) => {
-        toast.error("Failed to create share token", {
-          description:
-            error.response?.data?.message || "Please try again later",
-        });
-      },
-    });
+    onSuccess: (data) => {
+      const token = data.data?.token;
+      if (!token) {
+        toast.error("Failed to create share token");
+        return;
+      }
+      setShareToken(token);
+      setShowShareQRModal(true);
+      setTimeout(() => {
+        generateQRCode(token);
+      }, 100);
+    },
+    onError: (error: any) => {
+      toast.error("Failed to create share token", {
+        description: error.response?.data?.message || "Please try again later",
+      });
+    },
+  });
 
   const { data: profileResponse, isLoading: profileDataIsLoading } =
     useProfile();
@@ -313,12 +313,10 @@ export function UserTravels() {
       status: selectedTab.toUpperCase(),
     });
 
-  const {
-    data: sharedBookingsResponse,
-    isLoading: isLoadingSharedBookings,
-  } = useSharedBookings({
-    status: selectedTab.toUpperCase(),
-  });
+  const { data: sharedBookingsResponse, isLoading: isLoadingSharedBookings } =
+    useSharedBookings({
+      status: selectedTab.toUpperCase(),
+    });
 
   const { data: selectedBookingData, isLoading: isLoadingDetail } =
     useBookingDetail(selectedBookingId || "", {
@@ -363,10 +361,16 @@ export function UserTravels() {
   });
 
   const updateBookingMutation = useUpdateBooking(selectedBookingId || "", {
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success("Booking Updated", {
-        description: "Your changes have been saved successfully.",
+        description:
+          data.message || "Your changes have been saved successfully.",
       });
+      // Refresh the booking data
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.bookings.detail(selectedBookingId!)],
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
     },
     onError: (error: any) => {
       toast.error("Failed to update booking", {
@@ -374,7 +378,6 @@ export function UserTravels() {
       });
     },
   });
-
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     const parsedDate = new Date(dateString);
@@ -551,6 +554,12 @@ export function UserTravels() {
   };
 
   const handleConfirmBooking = () => {
+    if (selectedBookingId) {
+      submitBookingMutation.mutate(); // This will submit the booking for approval
+    }
+  };
+
+  const handleConfirmRequestedBooking = () => {
     if (selectedBookingId) {
       updateBookingMutation.mutate({ status: "CONFIRMED" });
     }
@@ -922,6 +931,7 @@ export function UserTravels() {
             resolutionStatus: bookingDetail.isResolved
               ? "resolved"
               : "unresolved",
+            type: bookingDetail.type,
           }}
           itinerary={bookingDetail.itinerary}
           onBack={handleBackToList}
@@ -933,7 +943,8 @@ export function UserTravels() {
               ? "approval"
               : "default"
           }
-          isRequestedItinerary={bookingDetail.ownership === "REQUESTED"}
+          isRequestedItinerary={bookingDetail.type === "REQUESTED"}
+          // Replace the entire actionButtons prop section with this updated version
           actionButtons={
             selectedTab === "pending" ? undefined : (
               <>
@@ -1082,13 +1093,62 @@ export function UserTravels() {
                   </div>
                 )}
 
-                {isOwner && selectedTab === "draft" && (
+                {bookingDetail.type === "REQUESTED" && (
                   <button
-                    onClick={handleBookThisTrip}
-                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
+                    onClick={() => setShowConfirmBookingModal(true)}
+                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={updateBookingMutation.isPending}
                   >
                     <BookOpen className="w-4 h-4" />
-                    Confirm Booking
+                    {updateBookingMutation.isPending
+                      ? "Confirming..."
+                      : "Confirm Booking"}
+                  </button>
+                )}
+
+                {bookingDetail.type === "CUSTOMIZED" &&
+                  bookingDetail.ownership === "OWNED" && (
+                    <>
+                      <button
+                        onClick={() => setShowBookConfirmModal(true)}
+                        className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={submitBookingMutation.isPending}
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        {submitBookingMutation.isPending
+                          ? "Submitting..."
+                          : "Book this trip"}
+                      </button>
+
+                      <button
+                        onClick={handleEditBooking}
+                        className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0970E6] hover:to-[#0A7AFF] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#0A7AFF]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={updateBookingMutation.isPending}
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit Booking
+                      </button>
+
+                      <button
+                        onClick={() => setShowDeleteConfirmModal(true)}
+                        className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#FF6B6B] to-[#FF5252] hover:from-[#FF5757] hover:to-[#FF6B6B] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#FF6B6B]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={deleteBookingMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {deleteBookingMutation.isPending
+                          ? "Deleting..."
+                          : "Delete Booking"}
+                      </button>
+                    </>
+                  )}
+
+                {bookingDetail.ownership === "COLLABORATED" && (
+                  <button
+                    onClick={() => setShowShareQRModal(true)}
+                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#8B5CF6] to-[#A78BFA] hover:from-[#7C3AED] hover:to-[#8B5CF6] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#8B5CF6]/20"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share with Others
                   </button>
                 )}
               </>
@@ -1109,7 +1169,7 @@ export function UserTravels() {
           content={
             <div className="text-card-foreground">
               <p className="mb-3">
-                Are you sure you want to confirm this travel plan
+                Are you sure you want to submit this travel plan for approval?
               </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -1155,6 +1215,48 @@ export function UserTravels() {
           onCancel={() => setShowBookConfirmModal(false)}
           confirmText={
             submitBookingMutation.isPending
+              ? "Submitting..."
+              : "Submit for Approval"
+          }
+          confirmVariant="success"
+        />
+
+        {/* Add this ConfirmationModal for confirming requested bookings */}
+        <ConfirmationModal
+          open={showConfirmBookingModal}
+          onOpenChange={setShowConfirmBookingModal}
+          title="Confirm Requested Booking"
+          icon={<CheckCircle2 className="w-5 h-5 text-white" />}
+          iconGradient="bg-gradient-to-br from-[#14B8A6] to-[#10B981]"
+          iconShadow="shadow-[#14B8A6]/20"
+          contentGradient="bg-gradient-to-br from-[rgba(20,184,166,0.05)] to-[rgba(16,185,129,0.05)]"
+          contentBorder="border-[rgba(20,184,166,0.2)]"
+          content={
+            <div className="text-card-foreground">
+              <p className="mb-3">
+                Are you sure you want to confirm this requested booking? This
+                will mark it as accepted.
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Booking Code:</span>
+                  <span className="font-medium">
+                    {bookingDetail.bookingCode}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Destination:</span>
+                  <span className="font-medium">
+                    {bookingDetail.destination}
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
+          onConfirm={handleConfirmRequestedBooking}
+          onCancel={() => setShowConfirmBookingModal(false)}
+          confirmText={
+            updateBookingMutation.isPending
               ? "Confirming..."
               : "Confirm Booking"
           }
@@ -1418,9 +1520,6 @@ export function UserTravels() {
                       bookingCode: travel.bookingCode,
                     }}
                     onViewDetails={handleViewDetails}
-                    onShare={
-                      selectedTab === "draft" ? handleShareBooking : undefined
-                    }
                     variant={
                       travel.status === "rejected" ? "rejected" : "default"
                     }
@@ -1641,7 +1740,7 @@ export function UserTravels() {
       {/* Share QR Code Modal */}
       <Dialog
         open={showShareQRModal}
-        onOpenChange={(open) => {
+        onOpenChange={(open: any) => {
           setShowShareQRModal(open);
           if (!open) {
             setShareToken(null);
