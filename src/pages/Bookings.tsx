@@ -643,6 +643,7 @@ export function Bookings({
       await updateBooking.mutateAsync({
         type: "REQUESTED",
         status: "DRAFT",
+        sentStatus: "Unsent",
       });
 
       onMoveToRequested(bookingToMoveToRequested);
@@ -1560,7 +1561,7 @@ export function Bookings({
             </div>
 
             {/* Edit/Move Buttons */}
-            {selectedBooking.bookingType === "STANDARD" ? (
+            {false ? (
               <button
                 onClick={() => handleEditBooking(selectedBooking)}
                 className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
@@ -1573,7 +1574,7 @@ export function Bookings({
                 )}
                 {isSavingEdit ? "Saving..." : "Edit Booking"}
               </button>
-            ) : selectedBooking.bookingType === "REQUESTED" ? (
+            ) : true ? (
               <button
                 onClick={() => handleMoveToRequestedClick(selectedBooking)}
                 className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
