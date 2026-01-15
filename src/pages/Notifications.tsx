@@ -50,6 +50,9 @@ export function Notifications() {
   const [notificationToDelete, setNotificationToDelete] =
     useState<INotification | null>(null);
 
+  // Simple state to prevent double clicks during API calls
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   // Fetch notifications from API

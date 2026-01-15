@@ -399,18 +399,37 @@ export function UserNotifications() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMarkAllReadModalOpen(true)}
-              disabled={unreadCount === 0}
+              disabled={unreadCount === 0 || markAllReadMutation.isPending}
               className="h-10 px-5 rounded-[20px] bg-white dark:bg-transparent border-2 border-[#0A7AFF] dark:border-[#0A7AFF] text-[#0A7AFF] dark:text-[#0A7AFF] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(10,122,255,0.05)] dark:hover:bg-[rgba(10,122,255,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <CheckCheck className="w-4 h-4" />
-              Mark All Read
+              {markAllReadMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-[#0A7AFF] border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCheck className="w-4 h-4" />
+                  Mark All Read
+                </>
+              )}
             </button>
             <button
               onClick={() => setClearAllModalOpen(true)}
-              className="h-10 px-5 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)]"
+              disabled={clearAllReadMutation.isPending || notifications.filter((n) => n.isRead).length === 0}
+              className="h-10 px-5 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Trash2 className="w-4 h-4" />
-              Clear Read
+              {clearAllReadMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-[#FF6B6B] border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Clear Read
+                </>
+              )}
             </button>
           </div>
         }
@@ -418,6 +437,54 @@ export function UserNotifications() {
         {/* Tabs and Filter */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-1 border-b-2 border-[#E5E7EB]">
+  title={`${selectedTab === "all" ? "All" : "Unread"} Notifications (${
+    filteredNotifications.length
+  })`}
+  action={
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full">
+      {/* Mobile: Full width buttons on same row */}
+      <div className="sm:hidden grid grid-cols-2 gap-2 w-full">
+        <button
+          onClick={() => setMarkAllReadModalOpen(true)}
+          disabled={unreadCount === 0}
+          className="h-10 rounded-[20px] bg-white dark:bg-transparent border-2 border-[#0A7AFF] dark:border-[#0A7AFF] text-[#0A7AFF] dark:text-[#0A7AFF] text-sm font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:bg-[rgba(10,122,255,0.05)] dark:hover:bg-[rgba(10,122,255,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <CheckCheck className="w-4 h-4" />
+          <span>Mark Read</span>
+        </button>
+        <button
+          onClick={() => setClearAllModalOpen(true)}
+          className="h-10 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)]"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span>Clear</span>
+        </button>
+      </div>
+      
+      {/* Desktop: Original layout */}
+      <div className="hidden sm:flex items-center gap-3">
+        <button
+          onClick={() => setMarkAllReadModalOpen(true)}
+          disabled={unreadCount === 0}
+          className="h-10 px-5 rounded-[20px] bg-white dark:bg-transparent border-2 border-[#0A7AFF] dark:border-[#0A7AFF] text-[#0A7AFF] dark:text-[#0A7AFF] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(10,122,255,0.05)] dark:hover:bg-[rgba(10,122,255,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <CheckCheck className="w-4 h-4" />
+          Mark All Read
+        </button>
+        <button
+          onClick={() => setClearAllModalOpen(true)}
+          className="h-10 px-5 rounded-[20px] bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,107,107,0.05)]"
+        >
+          <Trash2 className="w-4 h-4" />
+          Clear Read
+        </button>
+      </div>
+    </div>
+  }
+>
+        {/* Tabs and Filter - Responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-1 border-b-2 border-[#E5E7EB] self-start">
             <button
               onClick={() => setSelectedTab("all")}
               className={`px-4 sm:px-5 h-10 sm:h-11 text-sm transition-colors whitespace-nowrap ${
@@ -581,7 +648,12 @@ export function UserNotifications() {
                               e.stopPropagation();
                               handleMarkAsRead(notification.id);
                             }}
-                            className="h-8 px-3 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center gap-1.5 hover:opacity-90 transition-all"
+<<<<<<<<< Temporary merge branch 1
+                            className="flex-1 sm:flex-none h-8 px-3 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-all"
+=========
+                            disabled={isProcessingAction}
+                            className="h-8 px-3 rounded-lg bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] text-white text-xs font-medium flex items-center gap-1.5 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+>>>>>>>>> Temporary merge branch 2
                           >
                             <CheckCircle className="w-3.5 h-3.5" />
                             <span className="hidden sm:inline">
@@ -595,7 +667,12 @@ export function UserNotifications() {
                               e.stopPropagation();
                               handleMarkAsUnread(notification.id);
                             }}
-                            className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#64748B] text-xs font-medium flex items-center gap-1.5 hover:border-[#0A7AFF] hover:text-[#0A7AFF] transition-colors"
+<<<<<<<<< Temporary merge branch 1
+                            className="flex-1 sm:flex-none h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#64748B] text-xs font-medium flex items-center justify-center gap-1.5 hover:border-[#0A7AFF] hover:text-[#0A7AFF] transition-colors"
+=========
+                            disabled={isProcessingAction}
+                            className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#64748B] text-xs font-medium flex items-center gap-1.5 hover:border-[#0A7AFF] hover:text-[#0A7AFF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+>>>>>>>>> Temporary merge branch 2
                           >
                             <Bell className="w-3.5 h-3.5" />
                             <span className="hidden sm:inline">
@@ -609,7 +686,12 @@ export function UserNotifications() {
                             e.stopPropagation();
                             handleDeleteClick(notification);
                           }}
-                          className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#FF6B6B] text-xs font-medium flex items-center gap-1.5 hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] transition-colors"
+<<<<<<<<< Temporary merge branch 1
+                          className="flex-1 sm:flex-none h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#FF6B6B] text-xs font-medium flex items-center justify-center gap-1.5 hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] transition-colors"
+=========
+                          disabled={isProcessingAction}
+                          className="h-8 px-3 rounded-lg border border-[#E5E7EB] text-[#FF6B6B] text-xs font-medium flex items-center gap-1.5 hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+>>>>>>>>> Temporary merge branch 2
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">Delete</span>

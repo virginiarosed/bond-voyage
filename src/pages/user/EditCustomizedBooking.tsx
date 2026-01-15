@@ -1194,35 +1194,26 @@ export function EditCustomizedBooking() {
         </div>
       </ContentCard>
 
+<<<<<<<<< Temporary merge branch 1
+      {/* NEW: Route Optimization Panel - Show when eligible */}
+      {daysEligibleForOptimization.length > 0 &&
+        enrichmentCompleted.current && (
+          <RouteOptimizationPanel
+            itineraryDays={itineraryDays}
+            selectedDayId={
+              selectedDayForRoute || daysEligibleForOptimization[0]?.id
+            }
+            onAcceptOptimization={handleAcceptOptimization}
+          />
+        )}
+=========
       {/* Route Optimization Panel */}
-      {itineraryDays.some((day) => {
-        const validLocations = day.activities.filter(
-          (a) =>
-            a.location &&
-            a.locationData &&
-            typeof a.locationData.lat === "number" &&
-            typeof a.locationData.lng === "number"
-        );
-        return validLocations.length >= 2;
-      }) && (
-        <RouteOptimizationPanel
-          itineraryDays={itineraryDays}
-          selectedDayId={
-            selectedDayForRoute ||
-            itineraryDays.find((d) => {
-              const validLocations = d.activities.filter(
-                (a) =>
-                  a.location &&
-                  a.locationData &&
-                  typeof a.locationData.lat === "number" &&
-                  typeof a.locationData.lng === "number"
-              );
-              return validLocations.length >= 2;
-            })?.id
-          }
-          onAcceptOptimization={handleAcceptOptimization}
-        />
-      )}
+      <RouteOptimizationPanel
+        itineraryDays={itineraryDays}
+        selectedDayId={selectedDayForRoute}
+        onAcceptOptimization={handleAcceptOptimization}
+      />
+>>>>>>>>> Temporary merge branch 2
 
       {/* Day-by-Day Itinerary */}
       <ContentCard>
