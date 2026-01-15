@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useBookingDetail, useUpdateBooking } from "../../hooks/useBookings";
+import { useBookingDetail, useUpdateBooking, useBookingVersionHistory, BookingVersion } from "../../hooks/useBookings";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -44,6 +44,7 @@ import { queryKeys } from "../../utils/lib/queryKeys";
 import { useDebounce } from "../../hooks/useDebounce";
 import { usePlacesSearch } from "../../hooks/useLocations";
 import { ICON_OPTIONS } from "../../utils/constants/constants";
+import { VersionHistoryModal } from "../../components/VersionHistoryModal";
 
 interface BookingFormData {
   destination: string;
@@ -61,6 +62,37 @@ interface Version {
   itineraryDays: Day[];
   label?: string;
 }
+
+// Transform API version to local Version type
+const transformApiVersion = (apiVersion: BookingVersion, generateIdFn: () => string): Version => ({
+  id: apiVersion.id,
+  timestamp: apiVersion.timestamp,
+  author: apiVersion.author,
+  label: apiVersion.label,
+  bookingData: {
+    destination: apiVersion.bookingData.destination || "",
+    travelDateFrom: apiVersion.bookingData.travelDateFrom || "",
+    travelDateTo: apiVersion.bookingData.travelDateTo || "",
+    travelers: apiVersion.bookingData.travelers || "1",
+    totalPrice: apiVersion.bookingData.totalPrice || "0",
+  },
+  itineraryDays: (apiVersion.itineraryDays || []).map((day) => ({
+    id: day.id || generateIdFn(),
+    dayNumber: day.dayNumber,
+    title: day.title || "",
+    date: day.date,
+    activities: (day.activities || []).map((activity) => ({
+      id: activity.id || generateIdFn(),
+      time: activity.time || "",
+      title: activity.title || "",
+      description: activity.description || "",
+      location: activity.location || "",
+      icon: activity.icon || "Clock",
+      order: activity.order,
+      locationData: activity.locationData,
+    })),
+  })),
+});
 
 const getIconComponent = (iconName: string) => {
   const iconOption = ICON_OPTIONS.find((opt) => opt.value === iconName);
@@ -115,6 +147,10 @@ export function EditCustomizedBooking() {
   const { mutate: updateBooking, isPending: isUpdating } = useUpdateBooking(
     id!
   );
+
+  // Use the version history hook
+  const { data: versionHistoryResponse, refetch: refetchVersions } = useBookingVersionHistory(id!);
+
   const { data: profileResponse } = useProfile();
 
   const profileData: IUser = useMemo(() => {
@@ -166,6 +202,7 @@ export function EditCustomizedBooking() {
 
   const [versions, setVersions] = useState<Version[]>([]);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
   const [versionToRestore, setVersionToRestore] = useState<Version | null>(
     null
@@ -423,52 +460,99 @@ export function EditCustomizedBooking() {
     setActiveLocationInput(null);
   };
 
+  // Load versions from API and transform to local format
   useEffect(() => {
-    if (id) {
-      const savedVersions = localStorage.getItem(`booking-versions-${id}`);
-      if (savedVersions) {
-        try {
-          const parsed = JSON.parse(savedVersions);
-          setVersions(parsed);
-          if (parsed.length > 0) {
-            initialVersionCreated.current = true;
-          }
-        } catch (error) {
-          console.error("Failed to load versions:", error);
-        }
+    if (versionHistoryResponse?.data) {
+      const apiVersions = versionHistoryResponse.data;
+      const transformedVersions = apiVersions.map((v) => transformApiVersion(v, generateId));
+      setVersions(transformedVersions);
+      if (transformedVersions.length > 0) {
+        initialVersionCreated.current = true;
       }
     }
-  }, [id]);
+  }, [versionHistoryResponse?.data]);
 
-  const saveVersionToStorage = (newVersions: Version[]) => {
-    if (id) {
-      localStorage.setItem(
-        `booking-versions-${id}`,
-        JSON.stringify(newVersions)
-      );
-    }
-  };
-
-  const createVersionSnapshot = (label?: string) => {
-    const newVersion: Version = {
-      id: generateId(),
-      timestamp: Date.now(),
-      author: currentUser,
-      bookingData: JSON.parse(JSON.stringify(bookingData)),
-      itineraryDays: JSON.parse(JSON.stringify(itineraryDays)),
-      label,
-    };
-
-    const updatedVersions = [...versions, newVersion];
-    setVersions(updatedVersions);
-    saveVersionToStorage(updatedVersions);
-
-    return newVersion;
+  // Refetch versions from API after save (versions are auto-created server-side)
+  const refreshVersionHistory = () => {
+    refetchVersions();
   };
 
   const handleRestoreVersion = (version: Version) => {
     setVersionToRestore(version);
     setRestoreConfirmOpen(true);
+  };
+
+  // Calculate changes between versions
+  const getChangesSummary = (
+    version: Version,
+    previousVersion: Version | null
+  ) => {
+    const changes: string[] = [];
+
+    if (!previousVersion) {
+      return ["Initial version"];
+    }
+
+    // Check booking data changes
+    if (
+      version.bookingData.destination !==
+      previousVersion.bookingData.destination
+    ) {
+      changes.push("Destination changed");
+    }
+    if (
+      version.bookingData.travelDateFrom !==
+        previousVersion.bookingData.travelDateFrom ||
+      version.bookingData.travelDateTo !==
+        previousVersion.bookingData.travelDateTo
+    ) {
+      changes.push("Travel dates changed");
+    }
+    if (
+      version.bookingData.travelers !== previousVersion.bookingData.travelers
+    ) {
+      changes.push("Travelers count changed");
+    }
+    if (
+      version.bookingData.totalPrice !== previousVersion.bookingData.totalPrice
+    ) {
+      changes.push("Total price changed");
+    }
+
+    // Check itinerary changes
+    if (version.itineraryDays.length !== previousVersion.itineraryDays.length) {
+      changes.push(
+        `Days ${version.itineraryDays.length > previousVersion.itineraryDays.length ? "added" : "removed"}`
+      );
+    }
+
+    // Check for activity changes
+    let activitiesAdded = 0;
+    let activitiesRemoved = 0;
+    version.itineraryDays.forEach((day, idx) => {
+      const prevDay = previousVersion.itineraryDays[idx];
+      if (prevDay) {
+        if (day.activities.length > prevDay.activities.length) {
+          activitiesAdded += day.activities.length - prevDay.activities.length;
+        } else if (day.activities.length < prevDay.activities.length) {
+          activitiesRemoved +=
+            prevDay.activities.length - day.activities.length;
+        }
+      }
+    });
+
+    if (activitiesAdded > 0) {
+      changes.push(
+        `${activitiesAdded} ${activitiesAdded === 1 ? "activity" : "activities"} added`
+      );
+    }
+    if (activitiesRemoved > 0) {
+      changes.push(
+        `${activitiesRemoved} ${activitiesRemoved === 1 ? "activity" : "activities"} removed`
+      );
+    }
+
+    return changes.length > 0 ? changes : ["Minor edits"];
   };
 
   const confirmRestoreVersion = () => {
@@ -567,28 +651,8 @@ export function EditCustomizedBooking() {
     }
   }, [bookingDetailResponse?.data, id]);
 
-  useEffect(() => {
-    if (
-      initialBookingData &&
-      initialItineraryDays &&
-      !initialVersionCreated.current &&
-      id
-    ) {
-      const initialVersion: Version = {
-        id: generateId(),
-        timestamp: Date.now(),
-        author: currentUser,
-        bookingData: JSON.parse(JSON.stringify(initialBookingData)),
-        itineraryDays: JSON.parse(JSON.stringify(initialItineraryDays)),
-        label: "Initial Version",
-      };
-
-      const newVersions = [initialVersion];
-      setVersions(newVersions);
-      saveVersionToStorage(newVersions);
-      initialVersionCreated.current = true;
-    }
-  }, [initialBookingData, initialItineraryDays, id, currentUser]);
+  // Note: Initial version is created server-side when booking is first saved
+  // Version history is loaded from API via useBookingVersionHistory hook
 
   useEffect(() => {
     if (id && bookingStatus) {
@@ -932,8 +996,7 @@ export function EditCustomizedBooking() {
   const handleConfirmSave = () => {
     if (!id) return;
 
-    createVersionSnapshot();
-
+    // Prepare data for API update
     const updateData = {
       destination: bookingData.destination,
       startDate: bookingData.travelDateFrom
@@ -952,8 +1015,8 @@ export function EditCustomizedBooking() {
         activities: day.activities
           .sort((a, b) => a.order - b.order)
           .map((activity) => ({
-            time: activity.time,
-            title: activity.title,
+            time: activity.time || "",
+            title: activity.title || "",
             description: activity.description,
             location: activity.location,
             locationData: activity.locationData || null,
@@ -965,6 +1028,9 @@ export function EditCustomizedBooking() {
 
     updateBooking(updateData, {
       onSuccess: () => {
+        // Refresh version history from API (version is auto-created server-side)
+        refreshVersionHistory();
+
         toast.success("Booking Updated!", {
           description: "The customized booking has been successfully updated.",
         });
@@ -1207,7 +1273,7 @@ export function EditCustomizedBooking() {
       {/* Route Optimization Panel */}
       <RouteOptimizationPanel
         itineraryDays={itineraryDays}
-        selectedDayId={selectedDayForRoute}
+        selectedDayId={selectedDayForRoute ?? undefined}
         onAcceptOptimization={handleAcceptOptimization}
       />
 
@@ -1823,6 +1889,22 @@ export function EditCustomizedBooking() {
         confirmText="Yes, Remove Days"
         cancelText="Keep All Days"
         confirmVariant="destructive"
+      />
+
+      {/* Version History Modal */}
+      <VersionHistoryModal
+        open={versionHistoryOpen}
+        onOpenChange={setVersionHistoryOpen}
+        versions={versions}
+        selectedVersionId={selectedVersionId}
+        setSelectedVersionId={setSelectedVersionId}
+        currentUser={currentUser}
+        currentBookingData={bookingData}
+        currentItineraryDays={itineraryDays}
+        onRestoreVersion={handleRestoreVersion}
+        getChangesSummary={getChangesSummary}
+        getIconComponent={getIconComponent}
+        convertTo12Hour={convertTo12Hour}
       />
 
       {/* Restore Version Confirmation Modal */}

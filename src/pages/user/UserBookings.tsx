@@ -409,7 +409,7 @@ export function UserBookings() {
     return (
       <div className="space-y-6">
         {/* Booking Header Card */}
-        <div className="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
+        <div className="bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
           <div className="flex items-start justify-between mb-6">
             <div>
               <h1 className="text-3xl font-semibold mb-2">
@@ -467,9 +467,9 @@ export function UserBookings() {
           <div className="space-y-6">
             {/* Customer Information */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+              <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg">
                     <User className="w-5 h-5 text-white" />
                   </div>
                   <h3 className="font-semibold text-[#1A2B4F]">
@@ -556,7 +556,7 @@ export function UserBookings() {
           onClick={() => setSelectedStatus("all")}
           className={`px-5 h-11 text-sm transition-colors ${
             selectedStatus === "all"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-[2px]"
+              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
           }`}
         >
@@ -566,7 +566,7 @@ export function UserBookings() {
           onClick={() => setSelectedStatus("paid")}
           className={`px-5 h-11 text-sm transition-colors ${
             selectedStatus === "paid"
-              ? "font-semibold text-[#10B981] border-b-[3px] border-[#10B981] -mb-[2px]"
+              ? "font-semibold text-[#10B981] border-b-[3px] border-[#10B981] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#10B981] hover:bg-[rgba(16,185,129,0.05)]"
           }`}
         >
@@ -576,7 +576,7 @@ export function UserBookings() {
           onClick={() => setSelectedStatus("partial")}
           className={`px-5 h-11 text-sm transition-colors ${
             selectedStatus === "partial"
-              ? "font-semibold text-[#FF9800] border-b-[3px] border-[#FF9800] -mb-[2px]"
+              ? "font-semibold text-[#FF9800] border-b-[3px] border-[#FF9800] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#FF9800] hover:bg-[rgba(255,152,0,0.05)]"
           }`}
         >
@@ -586,7 +586,7 @@ export function UserBookings() {
           onClick={() => setSelectedStatus("unpaid")}
           className={`px-5 h-11 text-sm transition-colors ${
             selectedStatus === "unpaid"
-              ? "font-semibold text-[#FF6B6B] border-b-[3px] border-[#FF6B6B] -mb-[2px]"
+              ? "font-semibold text-[#FF6B6B] border-b-[3px] border-[#FF6B6B] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)]"
           }`}
         >
@@ -685,7 +685,7 @@ export function UserBookings() {
                 {/* Header - Responsive */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                       <span className="text-white text-lg">🎫</span>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -696,7 +696,7 @@ export function UserBookings() {
                         <div className="flex flex-wrap gap-1 mt-1 md:mt-0">
                           {booking.paymentStatus && (
                             <span
-                              className={`inline-flex items-center justify-center min-w-[60px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${getPaymentStatusColor(
+                              className={`inline-flex items-center justify-center min-w-15 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${getPaymentStatusColor(
                                 booking.paymentStatus
                               )}`}
                             >
@@ -705,7 +705,7 @@ export function UserBookings() {
                           )}
                           {booking.bookingType && (
                             <span
-                              className={`inline-flex items-center justify-center min-w-[70px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                              className={`inline-flex items-center justify-center min-w-17.5 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
                                 booking.bookingType === "CUSTOMIZED"
                                   ? "bg-[rgba(255,127,110,0.1)] text-[#FF7F6E] border-[rgba(255,127,110,0.2)]"
                                   : booking.bookingType === "STANDARD"
@@ -718,7 +718,7 @@ export function UserBookings() {
                           )}
                           {booking.tourType && (
                             <span
-                              className={`inline-flex items-center justify-center min-w-[50px] px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                              className={`inline-flex items-center justify-center min-w-12.5 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
                                 booking.tourType === "JOINER"
                                   ? "bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]"
                                   : "bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]"
@@ -824,7 +824,7 @@ export function UserBookings() {
                     <div className="grid grid-cols-2 gap-4">
                       {/* Row 1 */}
                       <div className="flex items-start gap-2">
-                        <MapPin className="w-4 h-4 text-[#0A7AFF] flex-shrink-0 mt-0.5" />
+                        <MapPin className="w-4 h-4 text-[#0A7AFF] shrink-0 mt-0.5" />
                         <div>
                           <p className="text-xs text-[#64748B]">Destination</p>
                           <p className="text-sm text-[#334155] font-medium line-clamp-1">
@@ -833,7 +833,7 @@ export function UserBookings() {
                         </div>
                       </div>
                       <div className="flex items-start gap-2">
-                        <Users className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                        <Users className="w-4 h-4 text-[#64748B] shrink-0 mt-0.5" />
                         <div>
                           <p className="text-xs text-[#64748B]">Travelers</p>
                           <p className="text-sm text-[#334155] font-medium">
@@ -845,18 +845,21 @@ export function UserBookings() {
 
                       {/* Row 2 - Dates on two lines */}
                       <div className="flex items-start gap-2 col-span-2">
-                        <Calendar className="w-4 h-4 text-[#14B8A6] flex-shrink-0 mt-0.5" />
+                        <Calendar className="w-4 h-4 text-[#14B8A6] shrink-0 mt-0.5" />
                         <div className="flex-1">
                           <p className="text-xs text-[#64748B]">Travel Dates</p>
                           <p className="text-sm text-[#334155] font-medium leading-tight">
-                            {formatDateRange(booking.startDate, booking.endDate)}
+                            {formatDateRange(
+                              booking.startDate,
+                              booking.endDate
+                            )}
                           </p>
                         </div>
                       </div>
 
                       {/* Row 3 - Booked date */}
                       <div className="flex items-start gap-2 col-span-2">
-                        <Clock className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                        <Clock className="w-4 h-4 text-[#64748B] shrink-0 mt-0.5" />
                         <div className="flex-1">
                           <p className="text-xs text-[#64748B]">Booked On</p>
                           <p className="text-sm text-[#334155] font-medium">
@@ -874,12 +877,14 @@ export function UserBookings() {
 
                       {/* Row 4 - Full width payment info */}
                       <div className="col-span-2">
-                        <div className="bg-gradient-to-r from-[#F8FAFB] to-[#F0F9FF] rounded-xl p-3">
+                        <div className="bg-linear-to-r from-[#F8FAFB] to-[#F0F9FF] rounded-xl p-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="text-[#10B981] text-lg">₱</span>
                               <div>
-                                <p className="text-xs text-[#64748B]">Payment</p>
+                                <p className="text-xs text-[#64748B]">
+                                  Payment
+                                </p>
                                 <p className="text-sm text-[#334155] font-medium">
                                   ₱{booking.paid.toLocaleString()} / ₱
                                   {booking.totalAmount.toLocaleString()}
@@ -902,7 +907,7 @@ export function UserBookings() {
                           <div className="mt-2">
                             <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] rounded-full"
+                                className="h-full bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] rounded-full"
                                 style={{
                                   width: `${Math.min(
                                     100,
@@ -912,10 +917,14 @@ export function UserBookings() {
                               />
                             </div>
                             <div className="flex justify-between text-xs text-[#64748B] mt-1">
-                              <span>Paid: ₱{booking.paid.toLocaleString()}</span>
+                              <span>
+                                Paid: ₱{booking.paid.toLocaleString()}
+                              </span>
                               <span>
                                 Balance: ₱
-                                {(booking.totalAmount - booking.paid).toLocaleString()}
+                                {(
+                                  booking.totalAmount - booking.paid
+                                ).toLocaleString()}
                               </span>
                             </div>
                           </div>
