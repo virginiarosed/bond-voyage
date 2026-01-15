@@ -529,7 +529,7 @@ export function SmartTrip() {
                   <option value="moderate">
                     Moderate - Balanced itinerary
                   </option>
-                  <option value="fast">Fast - See everything</option>
+                  <option value="packed">Packed - See everything</option>
                 </select>
               </div>
 
@@ -759,8 +759,21 @@ export function SmartTrip() {
                     Travel Dates
                   </p>
                   <p className="text-sm text-card-foreground font-medium">
-                    {generatedTrip.metadata.startDate} to{" "}
-                    {generatedTrip.metadata.endDate}
+                    {new Date(
+                      generatedTrip.metadata.startDate
+                    ).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}{" "}
+                    to{" "}
+                    {new Date(
+                      generatedTrip.metadata.endDate
+                    ).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}{" "}
                   </p>
                 </div>
                 <div className="p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
