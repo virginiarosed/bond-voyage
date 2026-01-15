@@ -1,5 +1,12 @@
 import { ScrollArea } from "./ui/scroll-area";
-import { History, RotateCcw, ChevronRight, MapPin, Calendar, Clock } from "lucide-react";
+import {
+  History,
+  RotateCcw,
+  ChevronRight,
+  MapPin,
+  Calendar,
+  Clock,
+} from "lucide-react";
 
 interface Activity {
   id: string;
@@ -44,7 +51,10 @@ interface VersionHistoryModalProps {
   currentBookingData: BookingFormData;
   currentItineraryDays: Day[];
   onRestoreVersion: (version: Version) => void;
-  getChangesSummary: (version: Version, previousVersion: Version | null) => string[];
+  getChangesSummary: (
+    version: Version,
+    previousVersion: Version | null
+  ) => string[];
   getIconComponent: (iconName: string) => any;
   convertTo12Hour: (time24h: string) => string;
 }
@@ -65,29 +75,31 @@ export function VersionHistoryModal({
 }: VersionHistoryModalProps) {
   if (!open) return null;
 
-  const displayData = selectedVersionId 
-    ? versions.find(v => v.id === selectedVersionId) 
+  const displayData = selectedVersionId
+    ? versions.find((v) => v.id === selectedVersionId)
     : { bookingData: currentBookingData, itineraryDays: currentItineraryDays };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-white/50 backdrop-blur"
         onClick={() => onOpenChange(false)}
       />
-      
+
       {/* Modal */}
-      <div className="relative w-[98vw] max-w-[1800px] h-[92vh] bg-background rounded-2xl shadow-2xl border-2 border-border overflow-hidden flex flex-col">
+      <div className="relative w-[98vw] max-w-450 h-[92vh] bg-background rounded-2xl shadow-2xl border-2 border-border overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-8 py-6 border-b border-border bg-muted/30 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8B5CF6] to-[#A78BFA] flex items-center justify-center shadow-lg shadow-[#8B5CF6]/20">
+              <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#8B5CF6] to-[#A78BFA] flex items-center justify-center shadow-lg shadow-[#8B5CF6]/20">
                 <History className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-card-foreground">Version History</h2>
+                <h2 className="text-2xl font-bold text-card-foreground">
+                  Version History
+                </h2>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   Browse and restore previous versions of your booking
                 </p>
@@ -97,8 +109,18 @@ export function VersionHistoryModal({
               onClick={() => onOpenChange(false)}
               className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center transition-colors group"
             >
-              <svg className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -107,11 +129,14 @@ export function VersionHistoryModal({
         {/* Content */}
         <div className="flex flex-1 min-h-0">
           {/* Left Sidebar - Version Timeline */}
-          <div className="w-[380px] border-r border-border bg-muted/20 flex flex-col shrink-0">
+          <div className="w-95 border-r border-border bg-muted/20 flex flex-col shrink-0">
             <div className="p-6 border-b border-border shrink-0">
-              <h3 className="font-semibold text-card-foreground mb-1 text-[19px]">Timeline</h3>
+              <h3 className="font-semibold text-card-foreground mb-1 text-[19px]">
+                Timeline
+              </h3>
               <p className="text-xs text-muted-foreground text-[14px]">
-                {versions.length} {versions.length === 1 ? 'version' : 'versions'} saved
+                {versions.length}{" "}
+                {versions.length === 1 ? "version" : "versions"} saved
               </p>
             </div>
 
@@ -133,17 +158,19 @@ export function VersionHistoryModal({
                     </span>
                   </div>
                   <div className="text-xs opacity-70 font-medium">
-                    {new Date().toLocaleString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric', 
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
+                    {new Date().toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </div>
                   <div className="text-xs opacity-70 mt-1.5 flex items-center gap-1.5">
                     <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-[10px] font-semibold">{currentUser.charAt(0)}</span>
+                      <span className="text-[10px] font-semibold">
+                        {currentUser.charAt(0)}
+                      </span>
                     </div>
                     By {currentUser}
                   </div>
@@ -162,9 +189,12 @@ export function VersionHistoryModal({
                   </div>
                 ) : (
                   [...versions].reverse().map((version, index) => {
-                    const previousVersion = index < versions.length - 1 ? versions[versions.length - 2 - index] : null;
+                    const previousVersion =
+                      index < versions.length - 1
+                        ? versions[versions.length - 2 - index]
+                        : null;
                     const changes = getChangesSummary(version, previousVersion);
-                    
+
                     return (
                       <button
                         key={version.id}
@@ -178,38 +208,52 @@ export function VersionHistoryModal({
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold mb-1.5">
-                              {version.label || `Version ${versions.length - index}`}
+                              {version.label ||
+                                `Version ${versions.length - index}`}
                             </div>
                             <div className="text-xs opacity-70 font-medium">
-                              {new Date(version.timestamp).toLocaleString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric', 
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
+                              {new Date(version.timestamp).toLocaleString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
                             </div>
                             <div className="text-xs opacity-70 mt-1.5 flex items-center gap-1.5">
                               <div className="w-5 h-5 rounded-full bg-current/20 flex items-center justify-center">
-                                <span className="text-[10px] font-semibold">{version.author.charAt(0)}</span>
+                                <span className="text-[10px] font-semibold">
+                                  {version.author.charAt(0)}
+                                </span>
                               </div>
                               By {version.author}
                             </div>
                           </div>
-                          <ChevronRight className={`w-4 h-4 transition-transform shrink-0 ml-2 ${
-                            selectedVersionId === version.id ? "rotate-90" : ""
-                          }`} />
+                          <ChevronRight
+                            className={`w-4 h-4 transition-transform shrink-0 ml-2 ${
+                              selectedVersionId === version.id
+                                ? "rotate-90"
+                                : ""
+                            }`}
+                          />
                         </div>
                         <div className="mt-3 pt-3 border-t border-current/10 space-y-1.5">
                           {changes.slice(0, 3).map((change, i) => (
-                            <div key={i} className="text-xs opacity-70 flex items-start gap-2">
+                            <div
+                              key={i}
+                              className="text-xs opacity-70 flex items-start gap-2"
+                            >
                               <span className="w-1.5 h-1.5 rounded-full bg-current mt-1.5 shrink-0" />
                               <span className="flex-1">{change}</span>
                             </div>
                           ))}
                           {changes.length > 3 && (
                             <div className="text-xs opacity-70 font-medium pl-3.5">
-                              +{changes.length - 3} more {changes.length - 3 === 1 ? 'change' : 'changes'}
+                              +{changes.length - 3} more{" "}
+                              {changes.length - 3 === 1 ? "change" : "changes"}
                             </div>
                           )}
                         </div>
@@ -229,19 +273,23 @@ export function VersionHistoryModal({
                   {selectedVersionId ? "Version Preview" : "Current Version"}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {selectedVersionId 
-                    ? `Viewing version from ${new Date(versions.find(v => v.id === selectedVersionId)?.timestamp || 0).toLocaleString()}`
-                    : "This is your current working version with unsaved changes"
-                  }
+                  {selectedVersionId
+                    ? `Viewing version from ${new Date(
+                        versions.find((v) => v.id === selectedVersionId)
+                          ?.timestamp || 0
+                      ).toLocaleString()}`
+                    : "This is your current working version with unsaved changes"}
                 </p>
               </div>
               {selectedVersionId && (
                 <button
                   onClick={() => {
-                    const version = versions.find(v => v.id === selectedVersionId);
+                    const version = versions.find(
+                      (v) => v.id === selectedVersionId
+                    );
                     if (version) onRestoreVersion(version);
                   }}
-                  className="h-11 px-8 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] hover:from-[#7C3AED] hover:to-[#9333EA] text-white flex items-center gap-2.5 font-semibold shadow-lg shadow-[#8B5CF6]/30 transition-all hover:scale-105"
+                  className="h-11 px-8 rounded-xl bg-linear-to-r from-[#8B5CF6] to-[#A78BFA] hover:from-[#7C3AED] hover:to-[#9333EA] text-white flex items-center gap-2.5 font-semibold shadow-lg shadow-[#8B5CF6]/30 transition-all hover:scale-105"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Restore This Version
@@ -253,39 +301,67 @@ export function VersionHistoryModal({
               {displayData && (
                 <div className="space-y-8 max-w-5xl">
                   {/* Travel Information */}
-                  <div className="p-8 rounded-2xl border-2 border-border bg-gradient-to-br from-[rgba(10,122,255,0.03)] to-[rgba(20,184,166,0.03)]">
+                  <div className="p-8 rounded-2xl border-2 border-border bg-linear-to-br from-[rgba(10,122,255,0.03)] to-[rgba(20,184,166,0.03)]">
                     <h4 className="text-base font-semibold text-card-foreground mb-6 flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#14B8A6] to-[#10B981] flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-xl bg-linear-to-br from-[#14B8A6] to-[#10B981] flex items-center justify-center">
                         <MapPin className="w-5 h-5 text-white" />
                       </div>
                       Travel Information
                     </h4>
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destination</span>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Destination
+                        </span>
                         <p className="text-base text-card-foreground font-semibold">
                           {displayData.bookingData.destination || "N/A"}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Travelers</span>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Travelers
+                        </span>
                         <p className="text-base text-card-foreground font-semibold">
-                          {displayData.bookingData.travelers || "1"} {parseInt(displayData.bookingData.travelers || "1") === 1 ? 'person' : 'people'}
+                          {displayData.bookingData.travelers || "1"}{" "}
+                          {parseInt(
+                            displayData.bookingData.travelers || "1"
+                          ) === 1
+                            ? "person"
+                            : "people"}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Travel Dates</span>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Travel Dates
+                        </span>
                         <p className="text-base text-card-foreground font-semibold">
-                          {displayData.bookingData.travelDateFrom && displayData.bookingData.travelDateTo 
-                            ? `${new Date(displayData.bookingData.travelDateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(displayData.bookingData.travelDateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                          {displayData.bookingData.travelDateFrom &&
+                          displayData.bookingData.travelDateTo
+                            ? `${new Date(
+                                displayData.bookingData.travelDateFrom
+                              ).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })} - ${new Date(
+                                displayData.bookingData.travelDateTo
+                              ).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}`
                             : "N/A"}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Budget</span>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Budget
+                        </span>
                         <p className="text-base text-card-foreground font-semibold">
-                          {displayData.bookingData.totalAmount 
-                            ? `₱${parseFloat(displayData.bookingData.totalAmount).toLocaleString()}` 
+                          {displayData.bookingData.totalAmount
+                            ? `₱${parseFloat(
+                                displayData.bookingData.totalAmount
+                              ).toLocaleString()}`
                             : "N/A"}
                         </p>
                       </div>
@@ -295,47 +371,69 @@ export function VersionHistoryModal({
                   {/* Itinerary Details */}
                   <div>
                     <h4 className="text-base font-semibold text-card-foreground mb-5 flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
                         <Calendar className="w-5 h-5 text-white" />
                       </div>
                       Itinerary Details
                       <span className="ml-2 px-3 py-1 bg-muted text-muted-foreground text-xs font-semibold rounded-full">
-                        {displayData.itineraryDays.length} {displayData.itineraryDays.length === 1 ? 'Day' : 'Days'}
+                        {displayData.itineraryDays.length}{" "}
+                        {displayData.itineraryDays.length === 1
+                          ? "Day"
+                          : "Days"}
                       </span>
                     </h4>
                     <div className="space-y-5">
                       {displayData.itineraryDays.map((day) => (
-                        <div key={day.id} className="p-7 rounded-2xl border-2 border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+                        <div
+                          key={day.id}
+                          className="p-7 rounded-2xl border-2 border-border bg-card shadow-sm hover:shadow-md transition-shadow"
+                        >
                           <div className="flex items-center gap-4 mb-5 pb-5 border-b border-border">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-primary/20">
-                              <span className="text-white font-bold">D{day.day}</span>
+                            <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-primary/20">
+                              <span className="text-white font-bold">
+                                D{day.day}
+                              </span>
                             </div>
                             <div className="flex-1">
-                              <h5 className="text-sm font-medium text-muted-foreground">Day {day.day}</h5>
-                              <p className="text-base font-semibold text-card-foreground mt-0.5">{day.title || "Untitled Day"}</p>
+                              <h5 className="text-sm font-medium text-muted-foreground">
+                                Day {day.day}
+                              </h5>
+                              <p className="text-base font-semibold text-card-foreground mt-0.5">
+                                {day.title || "Untitled Day"}
+                              </p>
                             </div>
                           </div>
                           <div className="space-y-5 pl-6 border-l-2 border-primary/20 ml-6">
                             {day.activities.length === 0 ? (
                               <div className="text-center py-8">
-                                <p className="text-sm text-muted-foreground italic">No activities added for this day yet</p>
+                                <p className="text-sm text-muted-foreground italic">
+                                  No activities added for this day yet
+                                </p>
                               </div>
                             ) : (
                               day.activities.map((activity) => {
-                                const IconComponent = getIconComponent(activity.icon);
+                                const IconComponent = getIconComponent(
+                                  activity.icon
+                                );
                                 return (
-                                  <div key={activity.id} className="flex items-start gap-4 pb-5 border-b border-border last:border-0 last:pb-0">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[rgba(10,122,255,0.15)] to-[rgba(20,184,166,0.15)] flex items-center justify-center flex-shrink-0 mt-1">
+                                  <div
+                                    key={activity.id}
+                                    className="flex items-start gap-4 pb-5 border-b border-border last:border-0 last:pb-0"
+                                  >
+                                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[rgba(10,122,255,0.15)] to-[rgba(20,184,166,0.15)] flex items-center justify-center shrink-0 mt-1">
                                       <IconComponent className="w-5 h-5 text-primary" />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-3 mb-2">
                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-lg">
                                           <Clock className="w-3.5 h-3.5" />
-                                          {activity.time ? convertTo12Hour(activity.time) : "No time set"}
+                                          {activity.time
+                                            ? convertTo12Hour(activity.time)
+                                            : "No time set"}
                                         </span>
                                         <span className="font-semibold text-card-foreground">
-                                          {activity.title || "Untitled Activity"}
+                                          {activity.title ||
+                                            "Untitled Activity"}
                                         </span>
                                       </div>
                                       {activity.description && (
