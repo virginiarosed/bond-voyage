@@ -286,7 +286,6 @@ export function EditRequestedItinerary() {
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
 
-  // Get passed data from route state
   const passedItineraryData = location.state?.itineraryData;
 
   const [formData, setFormData] = useState<RequestedBookingFormData>({
@@ -2391,12 +2390,10 @@ export function EditRequestedItinerary() {
               day.id === dayId
                 ? {
                     ...day,
-                    activities: optimizedActivities.map(
-                      (activity, index) => ({
-                        ...activity,
-                        order: index,
-                      })
-                    ),
+                    activities: optimizedActivities.map((activity, index) => ({
+                      ...activity,
+                      order: index,
+                    })),
                   }
                 : day
             )

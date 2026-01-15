@@ -1458,6 +1458,8 @@ export function Itinerary({
       }),
     };
 
+    console.log("Creating requested booking payload:", newBooking);
+
     createBooking(newBooking, {
       onSuccess: (response) => {
         setBookingFormData({

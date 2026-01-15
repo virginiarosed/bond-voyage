@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,6 +13,8 @@ import {
   MapPin,
   Search,
   Package,
+  Loader2,
+  Compass,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import { ImageUploadField } from "../components/ImageUploadField";
@@ -133,6 +135,21 @@ export function EditStandardItinerary() {
     null
   );
 
+  // NEW: Enrichment states
+  const [isEnrichingLocations, setIsEnrichingLocations] = useState(false);
+  const [enrichmentQueue, setEnrichmentQueue] = useState<
+    Array<{
+      dayId: string;
+      activityId: string;
+      location: string;
+    }>
+  >([]);
+  const [currentEnrichmentIndex, setCurrentEnrichmentIndex] = useState(0);
+  const enrichmentCompleted = useRef(false);
+  const enrichmentStarted = useRef(false);
+
+  const currentEnrichment = enrichmentQueue[currentEnrichmentIndex];
+
   const { data: placesData, isLoading: isLoadingPlaces } = usePlacesSearch(
     debouncedValue.length >= 2
       ? {
@@ -148,6 +165,23 @@ export function EditStandardItinerary() {
 
   const placesSuggestions = placesData?.data || [];
 
+  // NEW: Enrichment search query
+  const {
+    data: enrichmentPlacesData,
+    isLoading: isEnrichmentSearching,
+    isFetching: isEnrichmentFetching,
+  } = usePlacesSearch(
+    currentEnrichment
+      ? { text: currentEnrichment.location.split(",")[0].trim(), limit: 1 }
+      : undefined,
+    {
+      enabled: !!currentEnrichment && isEnrichingLocations,
+      queryKey: ["enrichment", currentEnrichment?.location],
+      staleTime: 0,
+      gcTime: 0,
+    }
+  );
+
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [activeLocationInput, setActiveLocationInput] = useState<{
     dayId: string;
@@ -157,6 +191,101 @@ export function EditStandardItinerary() {
 
   const generateId = () =>
     `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  // NEW: Handle enrichment process
+  useEffect(() => {
+    if (
+      !isEnrichingLocations ||
+      !currentEnrichment ||
+      isEnrichmentSearching ||
+      isEnrichmentFetching
+    ) {
+      return;
+    }
+
+    const place = enrichmentPlacesData?.data?.[0];
+
+    if (place) {
+      setItineraryDays((prev) =>
+        prev.map((day) =>
+          day.id === currentEnrichment.dayId
+            ? {
+                ...day,
+                activities: day.activities.map((activity) =>
+                  activity.id === currentEnrichment.activityId
+                    ? { ...activity, locationData: place }
+                    : activity
+                ),
+              }
+            : day
+        )
+      );
+    }
+
+    if (currentEnrichmentIndex < enrichmentQueue.length - 1) {
+      setTimeout(() => {
+        setCurrentEnrichmentIndex((prev) => prev + 1);
+      }, 300);
+    } else {
+      setIsEnrichingLocations(false);
+      enrichmentCompleted.current = true;
+      toast.success("Location Enrichment Complete", {
+        description: `Enhanced ${enrichmentQueue.length} activities with coordinates`,
+      });
+    }
+  }, [
+    enrichmentPlacesData,
+    isEnrichmentSearching,
+    isEnrichmentFetching,
+    currentEnrichment,
+    currentEnrichmentIndex,
+    enrichmentQueue.length,
+    isEnrichingLocations,
+  ]);
+
+  // NEW: Start enrichment when itinerary loads
+  useEffect(() => {
+    if (
+      !itineraryDays.length ||
+      enrichmentCompleted.current ||
+      enrichmentStarted.current ||
+      isEnrichingLocations
+    ) {
+      return;
+    }
+
+    const activitiesToEnrich: Array<{
+      dayId: string;
+      activityId: string;
+      location: string;
+    }> = [];
+
+    itineraryDays.forEach((day) => {
+      day.activities.forEach((activity) => {
+        if (activity.location && !activity.locationData) {
+          activitiesToEnrich.push({
+            dayId: day.id,
+            activityId: activity.id,
+            location: activity.location,
+          });
+        }
+      });
+    });
+
+    if (activitiesToEnrich.length > 0) {
+      enrichmentStarted.current = true;
+      setEnrichmentQueue(activitiesToEnrich);
+      setCurrentEnrichmentIndex(0);
+      setIsEnrichingLocations(true);
+
+      toast.info("Enriching Activity Locations", {
+        description: `Finding coordinates for ${activitiesToEnrich.length} activities...`,
+        duration: 3000,
+      });
+    } else {
+      enrichmentCompleted.current = true;
+    }
+  }, [itineraryDays, isEnrichingLocations]);
 
   // Load tour package data when fetched
   useEffect(() => {
@@ -197,6 +326,7 @@ export function EditStandardItinerary() {
                 title: activity.title || "",
                 description: activity.description || "",
                 location: activity.location || "",
+                locationData: activity.locationData || undefined,
                 order: activity.order !== undefined ? activity.order : actIdx,
               })
             ),
@@ -501,7 +631,7 @@ export function EditStandardItinerary() {
     );
     toast.success("Route Optimized", {
       description: `Activities for Day ${
-        dayId.split("-")[1]
+        itineraryDays.find((d) => d.id === dayId)?.day
       } have been reordered for optimal routing.`,
     });
     setHasUnsavedChanges(true);
@@ -582,6 +712,7 @@ export function EditStandardItinerary() {
             description: activity.description || "",
             icon: activity.icon || "Clock",
             location: activity.location || "",
+            locationData: activity.locationData || null,
           })),
       })),
     };
@@ -641,6 +772,45 @@ export function EditStandardItinerary() {
   return (
     <div>
       <div className="space-y-6" style={{ paddingBottom: 70 }}>
+        {/* NEW: Enrichment Progress Banner */}
+        {isEnrichingLocations && (
+          <ContentCard>
+            <div className="flex items-center gap-4">
+              <Loader2 className="w-6 h-6 animate-spin text-[#0A7AFF]" />
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-[#1A2B4F] mb-1">
+                  Enriching Activity Locations
+                </h3>
+                <p className="text-xs text-[#64748B]">
+                  Finding coordinates for activities...{" "}
+                  {currentEnrichmentIndex + 1} of {enrichmentQueue.length}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-32 h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] transition-all duration-300"
+                    style={{
+                      width: `${
+                        ((currentEnrichmentIndex + 1) /
+                          enrichmentQueue.length) *
+                        100
+                      }%`,
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-[#64748B] font-medium">
+                  {Math.round(
+                    ((currentEnrichmentIndex + 1) / enrichmentQueue.length) *
+                      100
+                  )}
+                  %
+                </span>
+              </div>
+            </div>
+          </ContentCard>
+        )}
+
         <ContentCard>
           <div className="flex items-center gap-4">
             <button
@@ -655,6 +825,12 @@ export function EditStandardItinerary() {
                 Update your standard itinerary details and day-by-day activities
               </p>
             </div>
+            {isEnrichingLocations && (
+              <div className="flex items-center gap-2 text-xs text-[#64748B]">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Enriching locations...</span>
+              </div>
+            )}
           </div>
         </ContentCard>
 
@@ -786,280 +962,349 @@ export function EditStandardItinerary() {
             </h2>
           </div>
           <div className="space-y-6">
-            {itineraryDays.map((day) => (
-              <div
-                key={day.id}
-                className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
-              >
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                    <span className="text-white font-bold">D{day.day}</span>
-                  </div>
-                  <div className="flex-1">
-                    <Label
-                      htmlFor={`day-${day.id}-title`}
-                      className="text-[#1A2B4F] mb-2 block text-sm font-medium"
-                    >
-                      Day {day.day} Title{" "}
-                      <span className="text-[#FF6B6B]">*</span>
-                    </Label>
-                    <Input
-                      id={`day-${day.id}-title`}
-                      placeholder="e.g., Arrival & Beach Sunset"
-                      value={day.title}
-                      onChange={(e) => updateDayTitle(day.id, e.target.value)}
-                      className="h-11 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] bg-white transition-all"
-                    />
-                  </div>
-                  <button
-                    onClick={() => addActivity(day.id)}
-                    className="h-11 px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Activity
-                  </button>
-                </div>
+            {itineraryDays.map((day) => {
+              const validActivities = day.activities.filter(
+                (a) =>
+                  a.location &&
+                  a.locationData &&
+                  typeof a.locationData.lat === "number" &&
+                  typeof a.locationData.lng === "number"
+              );
+              const canOptimize = validActivities.length >= 4;
 
-                <div className="space-y-4">
-                  {day.activities.length === 0 ? (
-                    <div className="py-10 text-center border-2 border-dashed border-[#E5E7EB] rounded-xl bg-white">
-                      <div className="w-14 h-14 rounded-xl bg-[#F8FAFB] flex items-center justify-center mx-auto mb-3">
-                        <Package className="w-7 h-7 text-[#CBD5E1]" />
-                      </div>
-                      <p className="text-sm text-[#64748B] mb-1">
-                        No activities yet for Day {day.day}
-                      </p>
-                      <p className="text-xs text-[#94A3B8]">
-                        Click "Add Activity" to start building this day
-                      </p>
+              return (
+                <div
+                  key={day.id}
+                  className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
+                >
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
+                      <span className="text-white font-bold">D{day.day}</span>
                     </div>
-                  ) : (
-                    day.activities.map((activity, activityIndex) => {
-                      const IconComponent = getIconComponent(activity.icon);
-                      return (
-                        <div
-                          key={activity.id}
-                          className="relative p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
-                        >
-                          <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
-                            {activityIndex + 1}
-                          </div>
+                    <div className="flex-1">
+                      <Label
+                        htmlFor={`day-${day.id}-title`}
+                        className="text-[#1A2B4F] mb-2 block text-sm font-medium"
+                      >
+                        Day {day.day} Title{" "}
+                        <span className="text-[#FF6B6B]">*</span>
+                      </Label>
+                      <Input
+                        id={`day-${day.id}-title`}
+                        placeholder="e.g., Arrival & Beach Sunset"
+                        value={day.title}
+                        onChange={(e) => updateDayTitle(day.id, e.target.value)}
+                        className="h-11 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] bg-white transition-all"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {canOptimize && (
+                        <div className="px-3 py-1 rounded-full bg-[#10B981]/10 border border-[#10B981]/20 flex items-center gap-1">
+                          <Compass className="w-3 h-3 text-[#10B981]" />
+                          <span className="text-xs text-[#10B981] font-medium">
+                            Route Ready
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => addActivity(day.id)}
+                        className="h-11 px-5 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center gap-2 text-sm font-medium shadow-lg shadow-[#0A7AFF]/20 hover:shadow-xl hover:shadow-[#0A7AFF]/30 transition-all"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Activity
+                      </button>
+                    </div>
+                  </div>
 
-                          <div className="flex items-start gap-4">
-                            <div className="flex flex-col gap-1 pt-2">
-                              <button
-                                onClick={() =>
-                                  moveActivityUp(day.id, activityIndex)
-                                }
-                                disabled={activityIndex === 0}
-                                className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                title="Move Up"
-                              >
-                                <GripVertical className="w-4 h-4 text-[#CBD5E1] rotate-90" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  moveActivityDown(day.id, activityIndex)
-                                }
-                                disabled={
-                                  activityIndex === day.activities.length - 1
-                                }
-                                className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                title="Move Down"
-                              >
-                                <GripVertical className="w-4 h-4 text-[#CBD5E1] -rotate-90" />
-                              </button>
+                  <div className="space-y-4">
+                    {day.activities.length === 0 ? (
+                      <div className="py-10 text-center border-2 border-dashed border-[#E5E7EB] rounded-xl bg-white">
+                        <div className="w-14 h-14 rounded-xl bg-[#F8FAFB] flex items-center justify-center mx-auto mb-3">
+                          <Package className="w-7 h-7 text-[#CBD5E1]" />
+                        </div>
+                        <p className="text-sm text-[#64748B] mb-1">
+                          No activities yet for Day {day.day}
+                        </p>
+                        <p className="text-xs text-[#94A3B8]">
+                          Click "Add Activity" to start building this day
+                        </p>
+                      </div>
+                    ) : (
+                      day.activities.map((activity, activityIndex) => {
+                        const IconComponent = getIconComponent(activity.icon);
+                        const hasCoordinates =
+                          activity.locationData &&
+                          typeof activity.locationData.lat === "number" &&
+                          typeof activity.locationData.lng === "number";
+
+                        return (
+                          <div
+                            key={activity.id}
+                            className="relative p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
+                          >
+                            <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
+                              {activityIndex + 1}
                             </div>
 
-                            {/* Activity Form Fields - Same as Create component */}
-                            <div className="flex-1 grid grid-cols-12 gap-4">
-                              <div className="col-span-2">
-                                <Label className="text-xs text-[#64748B] mb-1 block">
-                                  Time
-                                </Label>
-                                <Input
-                                  type="time"
-                                  value={activity.time}
-                                  onChange={(e) =>
-                                    updateActivity(
-                                      day.id,
-                                      activity.id,
-                                      "time",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="h-9 rounded-lg border-[#E5E7EB] text-sm"
-                                />
+                            {/* NEW: Coordinate Status Badge */}
+                            {activity.location && (
+                              <div className="absolute -right-3 -top-3">
+                                {hasCoordinates ? (
+                                  <div
+                                    className="w-7 h-7 rounded-lg bg-[#10B981] flex items-center justify-center shadow-md"
+                                    title="Coordinates found"
+                                  >
+                                    <MapPin className="w-4 h-4 text-white" />
+                                  </div>
+                                ) : isEnrichingLocations &&
+                                  currentEnrichment?.activityId ===
+                                    activity.id ? (
+                                  <div
+                                    className="w-7 h-7 rounded-lg bg-[#FF9800] flex items-center justify-center shadow-md"
+                                    title="Searching for coordinates"
+                                  >
+                                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                                  </div>
+                                ) : null}
                               </div>
+                            )}
 
-                              <div className="col-span-2">
-                                <Label className="text-xs text-[#64748B] mb-1 block">
-                                  Icon
-                                </Label>
+                            <div className="flex items-start gap-4">
+                              <div className="flex flex-col gap-1 pt-2">
                                 <button
                                   onClick={() =>
-                                    openIconPicker(day.id, activity.id)
+                                    moveActivityUp(day.id, activityIndex)
                                   }
-                                  className="w-full h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white flex items-center justify-center transition-all"
+                                  disabled={activityIndex === 0}
+                                  className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                  title="Move Up"
                                 >
-                                  <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
+                                  <GripVertical className="w-4 h-4 text-[#CBD5E1] rotate-90" />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    moveActivityDown(day.id, activityIndex)
+                                  }
+                                  disabled={
+                                    activityIndex === day.activities.length - 1
+                                  }
+                                  className="w-7 h-7 rounded-lg hover:bg-[rgba(10,122,255,0.1)] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                  title="Move Down"
+                                >
+                                  <GripVertical className="w-4 h-4 text-[#CBD5E1] -rotate-90" />
                                 </button>
                               </div>
 
-                              <div className="col-span-8">
-                                <Label className="text-xs text-[#64748B] mb-1 block">
-                                  Activity Title *
-                                </Label>
-                                <Input
-                                  placeholder="e.g., Arrival at the Hotel"
-                                  value={activity.title}
-                                  onChange={(e) =>
-                                    updateActivity(
-                                      day.id,
-                                      activity.id,
-                                      "title",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="h-9 rounded-lg border-[#E5E7EB] text-sm"
-                                />
-                              </div>
-
-                              <div className="col-span-12 relative">
-                                <Label className="text-xs text-[#64748B] mb-1 block">
-                                  Location
-                                </Label>
-                                <div className="relative">
-                                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                              {/* Activity Form Fields */}
+                              <div className="flex-1 grid grid-cols-12 gap-4">
+                                <div className="col-span-2">
+                                  <Label className="text-xs text-[#64748B] mb-1 block">
+                                    Time
+                                  </Label>
                                   <Input
-                                    placeholder="Search location..."
-                                    value={activity.location}
-                                    onChange={(e) => {
+                                    type="time"
+                                    value={activity.time}
+                                    onChange={(e) =>
                                       updateActivity(
                                         day.id,
                                         activity.id,
-                                        "location",
+                                        "time",
                                         e.target.value
-                                      );
-                                      handleLocationSearch(
-                                        e.target.value,
-                                        day.id,
-                                        activity.id
-                                      );
-                                    }}
-                                    onFocus={() => {
-                                      if (activity.location.length >= 2) {
-                                        handleLocationSearch(
-                                          activity.location,
-                                          day.id,
-                                          activity.id
-                                        );
-                                      }
-                                    }}
-                                    onBlur={() => {
-                                      setTimeout(() => {
-                                        setLocationSuggestions([]);
-                                        setActiveLocationInput(null);
-                                      }, 200);
-                                    }}
-                                    className="h-9 pl-9 rounded-lg border-[#E5E7EB] text-sm"
+                                      )
+                                    }
+                                    className="h-9 rounded-lg border-[#E5E7EB] text-sm"
                                   />
                                 </div>
 
-                                {activeLocationInput?.dayId === day.id &&
-                                  activeLocationInput?.activityId ===
-                                    activity.id &&
-                                  (placesSuggestions.length > 0 ||
-                                    locationSuggestions.length > 0) && (
-                                    <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-40 overflow-auto">
-                                      {placesSuggestions.length > 0
-                                        ? placesSuggestions.map(
-                                            (place: any, idx: number) => (
-                                              <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() =>
-                                                  selectLocationSuggestion(
-                                                    place,
-                                                    day.id,
-                                                    activity.id
-                                                  )
-                                                }
-                                                className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
-                                              >
-                                                <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
-                                                <span className="truncate">
-                                                  {place.name}
-                                                </span>
-                                              </button>
+                                <div className="col-span-2">
+                                  <Label className="text-xs text-[#64748B] mb-1 block">
+                                    Icon
+                                  </Label>
+                                  <button
+                                    onClick={() =>
+                                      openIconPicker(day.id, activity.id)
+                                    }
+                                    className="w-full h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#0A7AFF] bg-white flex items-center justify-center transition-all"
+                                  >
+                                    <IconComponent className="w-4 h-4 text-[#0A7AFF]" />
+                                  </button>
+                                </div>
+
+                                <div className="col-span-8">
+                                  <Label className="text-xs text-[#64748B] mb-1 block">
+                                    Activity Title *
+                                  </Label>
+                                  <Input
+                                    placeholder="e.g., Arrival at the Hotel"
+                                    value={activity.title}
+                                    onChange={(e) =>
+                                      updateActivity(
+                                        day.id,
+                                        activity.id,
+                                        "title",
+                                        e.target.value
+                                      )
+                                    }
+                                    className="h-9 rounded-lg border-[#E5E7EB] text-sm"
+                                  />
+                                </div>
+
+                                <div className="col-span-12 relative">
+                                  <Label className="text-xs text-[#64748B] mb-1 block">
+                                    Location
+                                    {hasCoordinates && (
+                                      <span className="ml-2 text-xs text-[#10B981]">
+                                        ✓ Coordinates found
+                                      </span>
+                                    )}
+                                  </Label>
+                                  <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none z-10" />
+                                    {isLoadingPlaces &&
+                                      activeLocationInput?.dayId === day.id &&
+                                      activeLocationInput?.activityId ===
+                                        activity.id && (
+                                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
+                                      )}
+                                    <Input
+                                      placeholder="Search location..."
+                                      value={activity.location}
+                                      onChange={(e) => {
+                                        updateActivity(
+                                          day.id,
+                                          activity.id,
+                                          "location",
+                                          e.target.value
+                                        );
+                                        handleLocationSearch(
+                                          e.target.value,
+                                          day.id,
+                                          activity.id
+                                        );
+                                      }}
+                                      onFocus={() => {
+                                        if (activity.location.length >= 2) {
+                                          handleLocationSearch(
+                                            activity.location,
+                                            day.id,
+                                            activity.id
+                                          );
+                                        }
+                                      }}
+                                      onBlur={() => {
+                                        setTimeout(() => {
+                                          setLocationSuggestions([]);
+                                          setActiveLocationInput(null);
+                                        }, 200);
+                                      }}
+                                      className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm"
+                                    />
+                                  </div>
+
+                                  {activeLocationInput?.dayId === day.id &&
+                                    activeLocationInput?.activityId ===
+                                      activity.id &&
+                                    (placesSuggestions.length > 0 ||
+                                      locationSuggestions.length > 0) && (
+                                      <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                                        {placesSuggestions.length > 0
+                                          ? placesSuggestions.map(
+                                              (place: any, idx: number) => (
+                                                <button
+                                                  key={idx}
+                                                  type="button"
+                                                  onClick={() =>
+                                                    selectLocationSuggestion(
+                                                      place,
+                                                      day.id,
+                                                      activity.id
+                                                    )
+                                                  }
+                                                  className="w-full px-4 py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
+                                                >
+                                                  <div className="flex items-start gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
+                                                      <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                      <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
+                                                        {place.name}
+                                                      </p>
+                                                      <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                                                        {place.address}
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                </button>
+                                              )
                                             )
-                                          )
-                                        : locationSuggestions.map(
-                                            (suggestion, idx) => (
-                                              <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() =>
-                                                  selectLocationSuggestion(
-                                                    suggestion,
-                                                    day.id,
-                                                    activity.id
-                                                  )
-                                                }
-                                                className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
-                                              >
-                                                <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
-                                                <span className="truncate">
-                                                  {suggestion}
-                                                </span>
-                                              </button>
-                                            )
-                                          )}
-                                    </div>
-                                  )}
+                                          : locationSuggestions.map(
+                                              (suggestion, idx) => (
+                                                <button
+                                                  key={idx}
+                                                  type="button"
+                                                  onClick={() =>
+                                                    selectLocationSuggestion(
+                                                      suggestion,
+                                                      day.id,
+                                                      activity.id
+                                                    )
+                                                  }
+                                                  className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
+                                                >
+                                                  <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
+                                                  <span className="truncate">
+                                                    {suggestion}
+                                                  </span>
+                                                </button>
+                                              )
+                                            )}
+                                      </div>
+                                    )}
+                                </div>
+
+                                <div className="col-span-12">
+                                  <Label className="text-xs text-[#64748B] mb-1 block">
+                                    Description
+                                  </Label>
+                                  <Textarea
+                                    placeholder="Add activity details..."
+                                    value={activity.description}
+                                    onChange={(e) =>
+                                      updateActivity(
+                                        day.id,
+                                        activity.id,
+                                        "description",
+                                        e.target.value
+                                      )
+                                    }
+                                    className="rounded-lg border-[#E5E7EB] text-sm resize-none"
+                                    rows={2}
+                                  />
+                                </div>
                               </div>
 
-                              <div className="col-span-12">
-                                <Label className="text-xs text-[#64748B] mb-1 block">
-                                  Description
-                                </Label>
-                                <Textarea
-                                  placeholder="Add activity details..."
-                                  value={activity.description}
-                                  onChange={(e) =>
-                                    updateActivity(
-                                      day.id,
-                                      activity.id,
-                                      "description",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="rounded-lg border-[#E5E7EB] text-sm resize-none"
-                                  rows={2}
-                                />
-                              </div>
+                              <button
+                                onClick={() =>
+                                  setDeleteActivityConfirm({
+                                    dayId: day.id,
+                                    activityId: activity.id,
+                                  })
+                                }
+                                className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 shrink-0"
+                                title="Delete Activity"
+                              >
+                                <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B] transition-colors" />
+                              </button>
                             </div>
-
-                            <button
-                              onClick={() =>
-                                setDeleteActivityConfirm({
-                                  dayId: day.id,
-                                  activityId: activity.id,
-                                })
-                              }
-                              className="w-9 h-9 rounded-lg border-2 border-[#E5E7EB] hover:border-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)] flex items-center justify-center transition-all group/delete mt-1 shrink-0"
-                              title="Delete Activity"
-                            >
-                              <Trash2 className="w-4 h-4 text-[#64748B] group-hover/delete:text-[#FF6B6B] transition-colors" />
-                            </button>
                           </div>
-                        </div>
-                      );
-                    })
-                  )}
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ContentCard>
       </div>
