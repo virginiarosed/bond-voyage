@@ -64,6 +64,7 @@ import { queryKeys } from "../utils/lib/queryKeys";
 import { capitalize } from "../utils/helpers/capitalize";
 import { BookingDetailView } from "../components/BookingDetailView";
 import { BookingListCard } from "../components/BookingListCard";
+import { Booking } from "../types/types";
 
 const transformBookingForCard = (booking: any): Booking => {
   return {
@@ -113,7 +114,7 @@ export function Bookings({
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
-    status: "DRAFT",
+    status: "CONFIRMED",
   });
 
   const {
@@ -318,6 +319,7 @@ export function Bookings({
     const params: any = {
       ...queryParams,
       page: 1,
+      status: "CONFIRMED",
     };
 
     if (searchQuery) {
@@ -603,7 +605,6 @@ export function Bookings({
     try {
       setSelectedBookingId(bookingToMoveToApprovals.id);
       await updateBooking.mutateAsync({
-        type: "CUSTOMIZED",
         status: "PENDING",
       });
 

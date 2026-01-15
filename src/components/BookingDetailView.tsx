@@ -161,7 +161,9 @@ export function BookingDetailView({
             </div>
             <div className="flex items-center gap-2 text-white/90">
               <MapPin className="w-4 h-4" />
-              <span className="text-base md:text-lg">{booking.destination}</span>
+              <span className="text-base md:text-lg">
+                {booking.destination}
+              </span>
             </div>
           </div>
           <div className="order-1 md:order-2 text-left md:text-right">
@@ -230,7 +232,8 @@ export function BookingDetailView({
                 <p className="text-white/80 text-xs">Travelers</p>
               </div>
               <p className="font-medium text-sm">
-                {booking.travelers} {booking.travelers > 1 ? "People" : "Person"}
+                {booking.travelers}{" "}
+                {booking.travelers > 1 ? "People" : "Person"}
               </p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
