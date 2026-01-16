@@ -116,32 +116,6 @@ import { useProfile } from "../../hooks/useAuth";
 import { getIconForActivity } from "../../utils/helpers/getIconForActivity";
 import { QueryClient } from "@tanstack/react-query";
 
-interface TransformedBooking {
-  id: string;
-  bookingCode: string;
-  itineraryId: string;
-  owner: string;
-  email: string;
-  mobile: string;
-  destination: string;
-  dates: string;
-  startDate: string;
-  endDate: string;
-  travelers: number;
-  budget: string;
-  bookedDate: string;
-  status: string;
-  bookingType: string;
-  tourType: string;
-  ownership: "owned" | "collaborated" | "requested";
-  resolutionStatus?: "solved" | "unsolved";
-  itinerary: any[];
-  // New fields
-  confirmStatus?: "confirmed" | "unconfirmed";
-  sentStatus?: "sent" | "unsent";
-  paymentStatus?: string;
-}
-
 // Icon mapping for the new API response
 const ICON_MAP: Record<string, any> = {
   relax: UtensilsCrossed,
@@ -206,8 +180,8 @@ export function UserTravels() {
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [selectedTab, setSelectedTab] = useState<
-    "booked" | "pending" | "rejected" | undefined
-  >(undefined);
+    "draft" | "booked" | "pending" | "rejected" | undefined
+  >("draft");
   const [selectedFilter, setSelectedFilter] = useState<
     "all" | "owned" | "collaborated" | "requested"
   >("all");
@@ -299,7 +273,6 @@ export function UserTravels() {
     refetch: refetchMyBookings,
   } = useMyBookings({
     status: selectedTab?.toUpperCase(),
-    type: bookingType,
   });
 
   const { data: sharedBookingsResponse, isLoading: isLoadingSharedBookings } =
@@ -309,7 +282,7 @@ export function UserTravels() {
 
   const { data: selectedBookingData, isLoading: isLoadingDetail } =
     useBookingDetail(selectedBookingId || "", {
-      enabled: !!selectedBookingId && viewMode === "detail",
+      enabled: false, // Disabled since we're using the booking from the list
       queryKey: [queryKeys.bookings.detail],
     });
 
@@ -368,116 +341,25 @@ export function UserTravels() {
       });
     },
   });
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    const parsedDate = new Date(dateString);
-    if (Number.isNaN(parsedDate.getTime())) return "";
-    return parsedDate.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  // Combine bookings from both endpoints without transformation
+  const bookings = useMemo(() => {
+    const ownedBookings = myBookingsResponse?.data || [];
+    const sharedBookings = sharedBookingsResponse?.data || [];
 
-  const mapBooking = (booking: any): TransformedBooking => {
-    // Use the ownership from the API response if available, otherwise calculate it
-    let ownership: "owned" | "collaborated" | "requested" = "owned";
-
-    if (booking.ownership) {
-      ownership = booking.ownership.toLowerCase() as
-        | "owned"
-        | "collaborated"
-        | "requested";
-    } else if (profileData.id) {
-      const isOwner = booking.userId === profileData.id;
-      const isCollaborator = booking.itinerary?.collaborators?.some(
-        (collab: any) => collab.userId === profileData.id
-      );
-
-      if (!isOwner && isCollaborator) {
-        ownership = "collaborated";
-      } else if (!isOwner && !isCollaborator) {
-        ownership = "requested";
-      }
-    }
-
-    const startDate = booking.startDate ? formatDate(booking.startDate) : "";
-    const endDate = booking.endDate ? formatDate(booking.endDate) : "";
-    const dates = startDate && endDate ? `${startDate} - ${endDate}` : "";
-
-    const bookedDate = booking.bookedDate
-      ? formatDate(booking.bookedDate)
-      : booking.createdAt
-      ? formatDate(booking.createdAt)
-      : "";
-
-    const budget = booking.totalPrice
-      ? `₱${booking.totalPrice.toLocaleString()}`
-      : "₱0";
-
-    let resolutionStatus: "solved" | "unsolved" | undefined;
-    if (booking.rejectionReason && !booking.isResolved) {
-      resolutionStatus = "unsolved";
-    } else if (booking.rejectionReason && booking.isResolved) {
-      resolutionStatus = "solved";
-    }
-
-    // Determine confirmation status for REQUESTED bookings
-    let confirmStatus: "confirmed" | "unconfirmed" | undefined;
-    if (booking.type === "REQUESTED") {
-      confirmStatus =
-        booking.status?.toLowerCase() === "confirmed"
-          ? "confirmed"
-          : "unconfirmed";
-    }
-
-    return {
-      id: booking.id,
-      bookingCode: booking.bookingCode,
-      itineraryId: booking.itineraryId,
-      owner: booking.customerName || "Unknown",
-      email: booking.customerEmail || "",
-      mobile: booking.customerMobile || "",
-      destination: booking.destination || "Unknown Destination",
-      dates,
-      startDate: booking.startDate || "",
-      endDate: booking.endDate || "",
-      travelers: booking.travelers || 0,
-      budget,
-      bookedDate,
-      status: booking.status?.toLowerCase() || "draft",
-      bookingType: booking.type || "CUSTOMIZED",
-      tourType: booking.tourType || "PRIVATE",
-      ownership,
-      resolutionStatus,
-      itinerary: booking.itinerary?.days || [],
-      // Add these new fields
-      confirmStatus,
-      sentStatus: booking.sentStatus?.toLowerCase() as
-        | "sent"
-        | "unsent"
-        | undefined,
-      paymentStatus: booking.paymentStatus,
-    };
-  };
-
-  const bookings: TransformedBooking[] = useMemo(() => {
-    const ownedBookings = (myBookingsResponse?.data || []).map(mapBooking);
-    const sharedBookings = (sharedBookingsResponse?.data || []).map(mapBooking);
-
-    const uniqueBookings = new Map<string, TransformedBooking>();
-    [...ownedBookings, ...sharedBookings].forEach((booking) => {
+    const uniqueBookings = new Map<string, any>();
+    [...ownedBookings, ...sharedBookings].forEach((booking: any) => {
       uniqueBookings.set(booking.id, booking);
     });
 
     return Array.from(uniqueBookings.values());
-  }, [myBookingsResponse?.data, sharedBookingsResponse?.data, profileData.id]);
+  }, [myBookingsResponse?.data, sharedBookingsResponse?.data]);
 
   const filteredTravels = useMemo(() => {
-    return bookings.filter((booking) => {
-      const statusMatch = booking.status === selectedTab;
+    return bookings.filter((booking: any) => {
+      const statusMatch = booking.status?.toLowerCase() === selectedTab;
       const ownershipMatch =
-        selectedFilter === "all" || booking.ownership === selectedFilter;
+        selectedFilter === "all" ||
+        booking.ownership?.toLowerCase() === selectedFilter;
 
       if (selectedFilter === "requested" && requestedSubTab !== "all") {
         // Handle requested sub-tabs
@@ -485,13 +367,13 @@ export function UserTravels() {
           return (
             statusMatch &&
             ownershipMatch &&
-            booking.confirmStatus === "confirmed"
+            booking.status?.toLowerCase() === "confirmed"
           );
         } else if (requestedSubTab === "unconfirmed") {
           return (
             statusMatch &&
             ownershipMatch &&
-            (booking.confirmStatus === "unconfirmed" || !booking.confirmStatus)
+            booking.status?.toLowerCase() !== "confirmed"
           );
         }
         return statusMatch && ownershipMatch;
@@ -503,14 +385,14 @@ export function UserTravels() {
 
   // Get the selected booking for detail view
   const selectedBooking = useMemo(() => {
-    return bookings.find((t) => t.id === selectedBookingId);
+    return bookings.find((t: any) => t.id === selectedBookingId);
   }, [bookings, selectedBookingId]);
 
   // Transform itinerary for display in detail view
   const transformedItinerary = useMemo(() => {
-    if (!selectedBooking?.itinerary) return [];
+    if (!selectedBooking?.itinerary?.days) return [];
 
-    return selectedBooking.itinerary.map((day: any) => ({
+    return selectedBooking.itinerary.days.map((day: any) => ({
       day: day.dayNumber,
       title: day.date
         ? `Day ${day.dayNumber} - ${new Date(day.date).toLocaleDateString(
@@ -530,7 +412,7 @@ export function UserTravels() {
           location: activity.location || "",
         })),
     }));
-  }, [selectedBooking?.itinerary]);
+  }, [selectedBooking?.itinerary?.days]);
 
   const handleViewDetails = (bookingId: string) => {
     setSelectedBookingId(bookingId);
@@ -590,13 +472,14 @@ export function UserTravels() {
       return;
     }
 
-    const serializableItinerary = selectedBooking.itinerary.map((day: any) => ({
-      ...day,
-      activities: day.activities.map((activity: any) => ({
-        ...activity,
-        icon: activity.icon || "Clock", // Default icon if none
-      })),
-    }));
+    const serializableItinerary =
+      selectedBooking.itinerary?.days?.map((day: any) => ({
+        ...day,
+        activities: day.activities.map((activity: any) => ({
+          ...activity,
+          icon: activity.icon || "Clock", // Default icon if none
+        })),
+      })) || [];
 
     navigate(`/user/travels/edit/${selectedBookingId}`, {
       state: {
@@ -849,10 +732,14 @@ export function UserTravels() {
     if (viewMode === "detail" && selectedBookingId) {
       const tabLabel =
         selectedTab === "draft"
-          ? "In Progress"
+          ? "Draft"
+          : selectedTab === "booked"
+          ? "Booked"
           : selectedTab === "pending"
           ? "Pending"
-          : "Rejected";
+          : selectedTab === "rejected"
+          ? "Rejected"
+          : "Bookings";
 
       setBreadcrumbs([
         { label: "Home", path: "/user/home" },
@@ -872,7 +759,7 @@ export function UserTravels() {
   ]);
 
   // Loading state for detail view
-  if (viewMode === "detail" && isLoadingDetail) {
+  if (viewMode === "detail" && !selectedBooking) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-[#0A7AFF]" />
@@ -881,16 +768,20 @@ export function UserTravels() {
   }
 
   // Detail view
-  if (viewMode === "detail" && selectedBookingId && selectedBookingData?.data) {
+  if (viewMode === "detail" && selectedBookingId && selectedBooking) {
     const tabLabel =
       selectedTab === "draft"
-        ? "In Progress"
+        ? "Draft"
+        : selectedTab === "booked"
+        ? "Booked"
         : selectedTab === "pending"
         ? "Pending"
-        : "Rejected Bookings";
+        : selectedTab === "rejected"
+        ? "Rejected"
+        : "Bookings";
 
-    const bookingDetail = selectedBookingData.data;
-    const isOwner = bookingDetail.ownership === "OWNED";
+    const bookingDetail = selectedBooking;
+    const isOwner = bookingDetail.ownership?.toUpperCase() === "OWNED";
 
     return (
       <>
@@ -954,7 +845,6 @@ export function UserTravels() {
             resolutionStatus: bookingDetail.isResolved
               ? "resolved"
               : "unresolved",
-            type: bookingDetail.type,
           }}
           itinerary={bookingDetail.itinerary}
           onBack={handleBackToList}
@@ -1247,7 +1137,7 @@ export function UserTravels() {
                 )}
 
                 {bookingDetail.type === "CUSTOMIZED" &&
-                  bookingDetail.ownership === "OWNED" && (
+                  bookingDetail.ownership?.toUpperCase() === "OWNED" && (
                     <>
                       <button
                         onClick={() => setShowBookConfirmModal(true)}
@@ -1282,7 +1172,7 @@ export function UserTravels() {
                     </>
                   )}
 
-                {bookingDetail.ownership === "COLLABORATED" && (
+                {bookingDetail.ownership?.toUpperCase() === "COLLABORATED" && (
                   <button
                     onClick={() =>
                       handleShareBooking(bookingDetail.itineraryId)
@@ -1466,11 +1356,31 @@ export function UserTravels() {
       {/* Tabs */}
       <div className="flex gap-1 border-b-2 border-border overflow-x-auto">
         <button
+          onClick={() => setSelectedTab("draft")}
+          className={`px-5 h-11 text-sm transition-colors whitespace-nowrap ${
+            selectedTab === "draft"
+              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
+              : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
+          }`}
+        >
+          Draft
+        </button>
+        <button
+          onClick={() => setSelectedTab("booked")}
+          className={`px-5 h-11 text-sm transition-colors whitespace-nowrap ${
+            selectedTab === "booked"
+              ? "font-semibold text-[#14B8A6] border-b-[3px] border-[#14B8A6] -mb-0.5"
+              : "font-medium text-[#64748B] hover:text-[#14B8A6] hover:bg-[rgba(20,184,166,0.05)]"
+          }`}
+        >
+          Booked
+        </button>
+        <button
           onClick={() => setSelectedTab("pending")}
           className={`px-5 h-11 text-sm transition-colors whitespace-nowrap ${
             selectedTab === "pending"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
-              : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
+              ? "font-semibold text-[#8B5CF6] border-b-[3px] border-[#8B5CF6] -mb-0.5"
+              : "font-medium text-[#64748B] hover:text-[#8B5CF6] hover:bg-[rgba(139,92,246,0.05)]"
           }`}
         >
           Pending
@@ -1483,7 +1393,7 @@ export function UserTravels() {
               : "font-medium text-[#64748B] hover:text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)]"
           }`}
         >
-          Rejected Bookings
+          Rejected
         </button>
       </div>
 
@@ -1491,10 +1401,14 @@ export function UserTravels() {
       <ContentCard
         title={`${
           selectedTab === "draft"
-            ? "In Progress"
+            ? "Draft"
+            : selectedTab === "booked"
+            ? "Booked"
             : selectedTab === "pending"
             ? "Pending"
-            : "Rejected Bookings"
+            : selectedTab === "rejected"
+            ? "Rejected"
+            : "Travel Bookings"
         } ${filteredTravels.length > 0 ? `(${filteredTravels.length})` : ""}`}
         icon={MapPin}
         action={
@@ -1588,15 +1502,30 @@ export function UserTravels() {
                 <MapPin className="w-10 h-10 text-primary opacity-50" />
               </div>
               <h3 className="text-lg text-card-foreground mb-2">
-                No {selectedTab === "draft" ? "in progress" : selectedTab}{" "}
+                No{" "}
+                {selectedTab === "draft"
+                  ? "draft"
+                  : selectedTab === "booked"
+                  ? "booked"
+                  : selectedTab === "pending"
+                  ? "pending"
+                  : selectedTab === "rejected"
+                  ? "rejected"
+                  : ""}{" "}
                 travel plans
               </h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
                 {selectedTab === "draft"
-                  ? "Start planning your first adventure!"
-                  : `You don't have any ${selectedTab} travel plans yet.`}
+                  ? "You don't have any draft travel plans."
+                  : selectedTab === "booked"
+                  ? "You don't have any booked travel plans."
+                  : selectedTab === "pending"
+                  ? "You don't have any pending travel plans."
+                  : selectedTab === "rejected"
+                  ? "You don't have any rejected travel plans."
+                  : "You don't have any travel plans."}
               </p>
-              {selectedTab === "draft" && (
+              {(selectedTab === "draft" || selectedTab === "pending") && (
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="px-6 py-2.5 rounded-xl transition-all duration-200 inline-flex items-center gap-2 shadow-md hover:shadow-lg bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
@@ -1608,37 +1537,70 @@ export function UserTravels() {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredTravels.map((travel) => (
+              {filteredTravels.map((travel: any) => (
                 <div
                   key={travel.id}
-                  ref={(el) => (bookingRefs.current[travel.id] = el)}
+                  ref={(el) => {
+                    if (el) bookingRefs.current[travel.id] = el;
+                  }}
                 >
                   <BookingListCard
                     showShare
                     booking={{
+                      customer: travel?.customerName,
+                      mobile: travel?.customerMobile,
+                      email: travel?.customerEmail,
                       id: travel.id,
-                      customer: travel.owner,
-                      email: travel.email,
-                      mobile: travel.mobile,
+                      bookingCode: travel.bookingCode,
+                      itineraryId: travel.itineraryId,
+                      userId: travel.userId,
                       destination: travel.destination,
                       startDate: travel.startDate,
                       endDate: travel.endDate,
                       travelers: travel.travelers,
-                      total: travel.budget,
-                      bookedDate: travel.bookedDate,
-                      bookingCode: travel.bookingCode,
-                      // Add these fields for the BookingListCard
-                      paymentStatus: travel.paymentStatus,
-                      bookingType: travel.bookingType,
+                      totalPrice: travel.totalPrice,
+                      ownership: travel.ownership,
+                      type: travel.type as
+                        | "STANDARD"
+                        | "CUSTOMIZED"
+                        | "REQUESTED",
+                      status: travel.status as
+                        | "DRAFT"
+                        | "PENDING"
+                        | "CONFIRMED"
+                        | "REJECTED"
+                        | "COMPLETED"
+                        | "CANCELLED",
                       tourType: travel.tourType,
-                      status: travel.status,
-                      sentStatus: travel.sentStatus,
+                      paymentStatus: travel.paymentStatus,
+                      paymentReceiptUrl: travel.paymentReceiptUrl,
+                      rejectionReason: travel.rejectionReason,
+                      rejectionResolution: travel.rejectionResolution,
+                      isResolved: travel.isResolved,
+                      customerName: travel.customerName,
+                      customerEmail: travel.customerEmail,
+                      customerMobile: travel.customerMobile,
+                      bookedDate: travel.bookedDate,
+                      createdAt: travel.createdAt,
+                      updatedAt: travel.updatedAt,
+                      itinerary: travel.itinerary,
                     }}
                     onViewDetails={handleViewDetails}
                     // Pass ownership and confirmation status
-                    ownership={travel.ownership}
-                    confirmStatus={travel.confirmStatus}
-                    sentStatus={travel.sentStatus}
+                    ownership={
+                      travel.ownership?.toLowerCase() as
+                        | "owned"
+                        | "collaborated"
+                        | "requested"
+                    }
+                    confirmStatus={
+                      travel.status?.toLowerCase() === "confirmed"
+                        ? "confirmed"
+                        : "unconfirmed"
+                    }
+                    sentStatus={
+                      travel.sentStatus?.toLowerCase() as "sent" | "unsent"
+                    }
                     onShare={(bookingCode, bookingId) => {
                       // Use booking code for QR code (e.g., BV-2025-001)
                       setShareToken(bookingCode);
@@ -1648,7 +1610,6 @@ export function UserTravels() {
                         generateQRCode(bookingCode);
                       }, 100);
                     }}
-                    userSide={true}
                   />
                 </div>
               ))}
