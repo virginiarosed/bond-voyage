@@ -371,7 +371,7 @@ export const useUpdateBookingWithId = () => {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const response = await apiClient.patch<ApiResponse<Booking>>(
+      const response = await apiClient.put<ApiResponse<Booking>>(
         `/bookings/${id}`,
         data
       );

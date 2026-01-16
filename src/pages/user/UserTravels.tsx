@@ -235,24 +235,22 @@ export function UserTravels() {
   const qrCodeCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { mutate: joinBooking, isPending: isAcceptingShare } =
-    useJoinBooking({
-      onSuccess: (data) => {
-        toast.success("Successfully Joined!", {
-          description:
-            data.message || "You are now a collaborator on this trip.",
-        });
-        setShowJoinTravelModal(false);
-        setJoinShareToken("");
-      },
-      onError: (error: any) => {
-        toast.error("Failed to join travel", {
-          description:
-            error.response?.data?.message ||
-            "Please check the Booking Code and try again",
-        });
-      },
-    });
+  const { mutate: joinBooking, isPending: isAcceptingShare } = useJoinBooking({
+    onSuccess: (data) => {
+      toast.success("Successfully Joined!", {
+        description: data.message || "You are now a collaborator on this trip.",
+      });
+      setShowJoinTravelModal(false);
+      setJoinShareToken("");
+    },
+    onError: (error: any) => {
+      toast.error("Failed to join travel", {
+        description:
+          error.response?.data?.message ||
+          "Please check the Booking Code and try again",
+      });
+    },
+  });
 
   const { data: profileResponse, isLoading: profileDataIsLoading } =
     useProfile();
@@ -982,8 +980,13 @@ export function UserTravels() {
                           <AlertTriangle className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-[#1A2B4F]">Need Assistance?</h3>
-                          <p className="text-xs text-[#64748B] mt-1">Questions or adjustments for your requested itinerary</p>
+                          <h3 className="font-semibold text-[#1A2B4F]">
+                            Need Assistance?
+                          </h3>
+                          <p className="text-xs text-[#64748B] mt-1">
+                            Questions or adjustments for your requested
+                            itinerary
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -991,54 +994,81 @@ export function UserTravels() {
                       <div className="space-y-4">
                         <div className="p-4 bg-gradient-to-r from-[#FFF7ED] to-[#FFEDD5] border border-[#FDBA74] rounded-xl">
                           <p className="text-sm text-[#92400E]">
-                            <span className="font-semibold">Note:</span> Should you have any requests, wish to make adjustments, or have any concerns regarding your itinerary, please do not hesitate to reach out to 4B's Travel and Tours. Our team will be more than happy to assist you.
+                            <span className="font-semibold">Note:</span> Should
+                            you have any requests, wish to make adjustments, or
+                            have any concerns regarding your itinerary, please
+                            do not hesitate to reach out to 4B's Travel and
+                            Tours. Our team will be more than happy to assist
+                            you.
                           </p>
                           <p className="text-sm text-[#92400E]">
-                            <br/>For a smooth and efficient process, we kindly ask that you include your <span className="font-semibold">Booking ID</span> in your message so we may address your concern promptly and seamlessly.
+                            <br />
+                            For a smooth and efficient process, we kindly ask
+                            that you include your{" "}
+                            <span className="font-semibold">Booking ID</span> in
+                            your message so we may address your concern promptly
+                            and seamlessly.
                           </p>
                         </div>
-                        
+
                         <div className="p-4 bg-gradient-to-r from-[#F0F9FF] to-[#E0F2FE] border border-[#7DD3FC] rounded-xl">
                           <div className="mb-3">
-                            <p className="text-sm font-medium text-[#0369A1] mb-2">Contact Options:</p>
+                            <p className="text-sm font-medium text-[#0369A1] mb-2">
+                              Contact Options:
+                            </p>
                             <div className="space-y-2 text-xs text-[#0C4A6E] bg-white/50 p-3 rounded-lg">
                               <div className="flex items-start gap-2">
-                                <span className="text-[#0A7AFF] font-medium">•</span>
+                                <span className="text-[#0A7AFF] font-medium">
+                                  •
+                                </span>
                                 <div>
                                   <p className="font-medium text-sm">Email</p>
-                                  <p className="text-[#0C4A6E]/80">4bstravelandtours2019@gmail.com</p>
+                                  <p className="text-[#0C4A6E]/80">
+                                    4bstravelandtours2019@gmail.com
+                                  </p>
                                 </div>
                               </div>
                               <div className="flex items-start gap-2">
-                                <span className="text-[#0A7AFF] font-medium">•</span>
+                                <span className="text-[#0A7AFF] font-medium">
+                                  •
+                                </span>
                                 <div>
                                   <p className="font-medium text-sm">Phone</p>
-                                  <p className="text-[#0C4A6E]/80">+63 123 456 7890</p>
+                                  <p className="text-[#0C4A6E]/80">
+                                    +63 123 456 7890
+                                  </p>
                                 </div>
                               </div>
                               <div className="flex items-start gap-2">
-                                <span className="text-[#0A7AFF] font-medium">•</span>
+                                <span className="text-[#0A7AFF] font-medium">
+                                  •
+                                </span>
                                 <div>
-                                  <p className="font-medium text-sm">Support Hours</p>
-                                  <p className="text-[#0C4A6E]/80">Mon-Sun, 8AM-8PM</p>
+                                  <p className="font-medium text-sm">
+                                    Support Hours
+                                  </p>
+                                  <p className="text-[#0C4A6E]/80">
+                                    Mon-Sun, 8AM-8PM
+                                  </p>
                                 </div>
                               </div>
                             </div>
                           </div>
-                          
+
                           <button
                             onClick={() => {
                               // Navigate to UserHome and scroll to the Contact section
                               navigate("/user/home", {
-                                state: { scrollToContact: true }
+                                state: { scrollToContact: true },
                               });
-                              
+
                               // Close the detail view
                               setViewMode("list");
                               setSelectedBookingId(null);
-                              
+
                               toast.success("Redirecting to Contact Section", {
-                                description: "You'll be redirected to the Home Page."
+                                description:
+                                  "You'll be redirected to the Home Page.",
                               });
                             }}
                             className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] hover:from-[#0970e6] hover:to-[#12a594] text-white text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
@@ -1047,9 +1077,10 @@ export function UserTravels() {
                             Go to Contact Section
                           </button>
                         </div>
-                        
+
                         <div className="text-xs text-[#64748B] italic text-center pt-2">
-                          You can attach travel documents or photos when contacting us.
+                          You can attach travel documents or photos when
+                          contacting us.
                         </div>
                       </div>
                     </div>
@@ -1253,7 +1284,9 @@ export function UserTravels() {
 
                 {bookingDetail.ownership === "COLLABORATED" && (
                   <button
-                    onClick={() => handleShareBooking(bookingDetail.itineraryId)}
+                    onClick={() =>
+                      handleShareBooking(bookingDetail.itineraryId)
+                    }
                     className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#8B5CF6] to-[#A78BFA] hover:from-[#7C3AED] hover:to-[#8B5CF6] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#8B5CF6]/20"
                   >
                     <Share2 className="w-4 h-4" />
@@ -1432,16 +1465,6 @@ export function UserTravels() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b-2 border-border overflow-x-auto">
-        <button
-          onClick={() => setSelectedTab("draft")}
-          className={`px-5 h-11 text-sm transition-colors whitespace-nowrap ${
-            selectedTab === "draft"
-              ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
-              : "font-medium text-[#64748B] hover:text-[#0A7AFF] hover:bg-[rgba(10,122,255,0.05)]"
-          }`}
-        >
-          In Progress
-        </button>
         <button
           onClick={() => setSelectedTab("pending")}
           className={`px-5 h-11 text-sm transition-colors whitespace-nowrap ${
@@ -1728,32 +1751,39 @@ export function UserTravels() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <p className="text-[#334155] dark:text-[#E5E7EB] text-sm">
-                      If you want a <span className="font-semibold text-[#0A7AFF] dark:text-[#2596be]">customized itinerary</span> but don't want to do it yourself, 4B's Travel and Tours offers personalized "Requested Itinerary" services.
+                      If you want a{" "}
+                      <span className="font-semibold text-[#0A7AFF] dark:text-[#2596be]">
+                        customized itinerary
+                      </span>{" "}
+                      but don't want to do it yourself, 4B's Travel and Tours
+                      offers personalized "Requested Itinerary" services.
                     </p>
-                    
+
                     {/* Contact Button */}
                     <button
                       onClick={() => {
                         setShowCreateModal(false);
-                        navigate('/user/home', { 
-                          state: { scrollToContact: true } 
+                        navigate("/user/home", {
+                          state: { scrollToContact: true },
                         });
                         toast.success("Redirecting to Contact Section", {
-                          description: "You'll be redirected to the Home Page."
+                          description: "You'll be redirected to the Home Page.",
                         });
                       }}
                       className="w-full group relative px-2 py-2.5 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl overflow-hidden shadow-lg"
                       style={{
-                        background: 'linear-gradient(135deg, var(--gradient-from), var(--gradient-to))',
-                        boxShadow: '0 8px 25px rgba(10, 122, 255, 0.25), 0 4px 10px rgba(10, 122, 255, 0.2)'
+                        background:
+                          "linear-gradient(135deg, var(--gradient-from), var(--gradient-to))",
+                        boxShadow:
+                          "0 8px 25px rgba(10, 122, 255, 0.25), 0 4px 10px rgba(10, 122, 255, 0.2)",
                       }}
                     >
                       {/* Hover effect background */}
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                      
+
                       <div className="relative flex items-center justify-center gap-2">
                         <Send className="w-4 h-4 text-white" />
                         <span className="text-white font-semibold text-sm">
@@ -1761,7 +1791,7 @@ export function UserTravels() {
                         </span>
                       </div>
                     </button>
-                    
+
                     <p className="text-xs text-[#64748B] dark:text-[#94A3B8] text-center">
                       You'll be redirected to the Home Page
                     </p>
