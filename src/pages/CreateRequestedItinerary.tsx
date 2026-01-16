@@ -2185,6 +2185,14 @@ export function CreateRequestedItinerary({
       <AITravelAssistant
         itineraryDays={itineraryDays}
         destination={formData.destination}
+        onItineraryUpdate={(updatedDays) => {
+          // Convert from shared Day type (dayNumber) to local Day type (day)
+          const convertedDays = updatedDays.map((d: any) => ({
+            ...d,
+            day: d.dayNumber ?? d.day,
+          }));
+          setItineraryDays(convertedDays);
+        }}
       />
     </div>
   );

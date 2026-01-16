@@ -1213,6 +1213,7 @@ export function CreateStandardItinerary() {
       <AITravelAssistant
         itineraryDays={itineraryDays}
         destination={formData.destination}
+        onItineraryUpdate={(updatedDays) => setItineraryDays(updatedDays)}
       />
     </>
   );
