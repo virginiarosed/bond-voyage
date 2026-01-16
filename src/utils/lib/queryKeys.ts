@@ -57,4 +57,5 @@ export const queryKeys = {
     all: ["places"] as const,
     search: (params?: any) => [...queryKeys.places.all, "search", params],
   },
+  paymentSettings: ["payment-settings"] as const,
 };

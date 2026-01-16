@@ -2,11 +2,13 @@ import {
   UseMutationOptions,
   useQueryClient,
   useMutation,
+  UseQueryOptions,
+  useQuery,
 } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { apiClient } from "../utils/axios/userAxios";
 import { queryKeys } from "../utils/lib/queryKeys";
-import { ApiResponse, Payment } from "../types/types";
+import { ApiResponse, Payment, PaymentSettings } from "../types/types";
 
 export const useSubmitPayment = (
   bookingId: string,
@@ -50,6 +52,24 @@ export const useUpdatePaymentStatus = (
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
+    },
+    ...options,
+  });
+};
+
+export const usePaymentSettings = (
+  options?: UseQueryOptions<
+    ApiResponse<{ settings: PaymentSettings }>,
+    AxiosError
+  >
+) => {
+  return useQuery({
+    queryKey: queryKeys.paymentSettings,
+    queryFn: async () => {
+      const response = await apiClient.get<
+        ApiResponse<{ settings: PaymentSettings }>
+      >("/payment-settings");
+      return response.data;
     },
     ...options,
   });
