@@ -110,7 +110,7 @@ export function AITravelAssistant({
     if (itineraryDays.length > 0) {
       const dayNumbers = itineraryDays
         .map((d) => d.dayNumber ?? (d as any).day ?? 1)
-        .filter((num): num is number => typeof num === 'number' && !isNaN(num))
+        .filter((num): num is number => typeof num === "number" && !isNaN(num))
         .sort((a, b) => a - b);
 
       if (dayNumbers.length > 0) {
@@ -247,6 +247,52 @@ export function AITravelAssistant({
 
   // Apply draft itinerary to parent component
   // Handles mapping between draft format and existing itinerary format
+  // Map ROAMAN iconKey to system icon names
+  const mapRoamanIconToSystemIcon = (iconKey: string): string => {
+    const iconMapping: Record<string, string> = {
+      // Culture & History
+      culture: "Landmark",
+      museum: "Landmark",
+      historical: "Castle",
+
+      // Food & Dining
+      food: "UtensilsCrossed",
+      restaurant: "UtensilsCrossed",
+      dining: "Utensils",
+      coffee: "Coffee",
+      dessert: "IceCream",
+
+      // Activities & Sightseeing
+      sightseeing: "Camera",
+      adventure: "Backpack",
+      beach: "Waves",
+      mountain: "Mountain",
+      hiking: "Mountain",
+      nature: "TreePine",
+
+      // Accommodation
+      hotel: "Hotel",
+      accommodation: "Hotel",
+      lodging: "Home",
+
+      // Transportation
+      transport: "Car",
+      flight: "Plane",
+      bus: "Bus",
+      train: "Train",
+
+      // Shopping & Entertainment
+      shopping: "ShoppingBag",
+      entertainment: "Music",
+      movie: "Film",
+
+      // Default
+      default: "MapPin",
+    };
+
+    return iconMapping[iconKey.toLowerCase()] || iconMapping.default;
+  };
+
   const applyDraftItinerary = () => {
     if (!pendingDraft || !pendingDraft.days || !onItineraryUpdate) return;
 
@@ -263,15 +309,25 @@ export function AITravelAssistant({
         dayNumber: draftDay.dayNumber,
         date: draftDay.date || null,
         title: draftDay.title || "",
-        activities: (draftDay.activities || []).map((activity, index) => ({
-          id: `activity-${draftDay.dayNumber}-${activity.order ?? index}`,
-          time: activity.time || "",
-          title: activity.title || "",
-          description: activity.description || "",
-          location: activity.location || "",
-          icon: (activity as any).iconKey || "",
-          order: activity.order ?? index,
-        })),
+        activities: (draftDay.activities || []).map((activity, index) => {
+          // Map locationName to location and iconKey to system icon name
+          const locationName =
+            (activity as any).locationName || (activity as any).location || "";
+          const iconKey = (activity as any).iconKey || "";
+          const systemIcon = mapRoamanIconToSystemIcon(iconKey);
+
+          return {
+            id: `activity-${draftDay.dayNumber}-${activity.order ?? index}`,
+            time: activity.time || "",
+            title: activity.title || "",
+            description: activity.description || "",
+            location: locationName,
+            locationData: undefined, // Preserve optional field structure
+            icon: systemIcon,
+            order: activity.order ?? index,
+            _needsLocationLookup: !!locationName, // Mark for auto-lookup in parent
+          };
+        }),
       };
 
       // If parent uses legacy 'day' property, add it for compatibility

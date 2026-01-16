@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -233,9 +233,9 @@ export function CreateNewTravel() {
   // Location autocomplete + route optimization state
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
   const debouncedValue = useDebounce(locationSearchQuery);
-  const [selectedDayForRoute, setSelectedDayForRoute] = useState<string | undefined>(
-    undefined
-  );
+  const [selectedDayForRoute, setSelectedDayForRoute] = useState<
+    string | undefined
+  >(undefined);
 
   const { data: placesData, isLoading: isLoadingPlaces } = usePlacesSearch(
     debouncedValue.length >= 2
@@ -251,6 +251,38 @@ export function CreateNewTravel() {
   );
 
   const placesSuggestions = placesData?.data || [];
+
+  // Location enrichment states
+  const [isEnrichingLocations, setIsEnrichingLocations] = useState(false);
+  const [enrichmentQueue, setEnrichmentQueue] = useState<
+    Array<{
+      dayId: string;
+      activityId: string;
+      location: string;
+    }>
+  >([]);
+  const [currentEnrichmentIndex, setCurrentEnrichmentIndex] = useState(0);
+  const enrichmentCompleted = useRef(false);
+  const enrichmentStarted = useRef(false);
+
+  const currentEnrichment = enrichmentQueue[currentEnrichmentIndex];
+
+  // Enrichment search query
+  const {
+    data: enrichmentPlacesData,
+    isLoading: isEnrichmentSearching,
+    isFetching: isEnrichmentFetching,
+  } = usePlacesSearch(
+    currentEnrichment
+      ? { text: currentEnrichment.location.split(",")[0].trim(), limit: 1 }
+      : undefined,
+    {
+      enabled: !!currentEnrichment && isEnrichingLocations,
+      queryKey: ["enrichment", currentEnrichment?.location],
+      staleTime: 0,
+      gcTime: 0,
+    }
+  );
 
   // API mutation for creating booking
   const createBookingMutation = useCreateBooking({
@@ -294,6 +326,106 @@ export function CreateNewTravel() {
     );
     setHasUnsavedChanges(hasData);
   }, [formData, itineraryDays]);
+
+  // Handle enrichment process
+  useEffect(() => {
+    if (
+      !isEnrichingLocations ||
+      !currentEnrichment ||
+      isEnrichmentSearching ||
+      isEnrichmentFetching
+    ) {
+      return;
+    }
+
+    const place = enrichmentPlacesData?.data?.[0];
+
+    if (place) {
+      setItineraryDays((prev) =>
+        prev.map((day) =>
+          day.id === currentEnrichment.dayId
+            ? {
+                ...day,
+                activities: day.activities.map((activity) =>
+                  activity.id === currentEnrichment.activityId
+                    ? { ...activity, locationData: place }
+                    : activity
+                ),
+              }
+            : day
+        )
+      );
+    }
+
+    if (currentEnrichmentIndex < enrichmentQueue.length - 1) {
+      setTimeout(() => {
+        setCurrentEnrichmentIndex((prev) => prev + 1);
+      }, 300);
+    } else {
+      setIsEnrichingLocations(false);
+      enrichmentCompleted.current = true;
+      if (enrichmentQueue.length > 0) {
+        toast.success("Location Enrichment Complete", {
+          description: `Enhanced ${enrichmentQueue.length} activities with coordinates`,
+        });
+      }
+    }
+  }, [
+    enrichmentPlacesData,
+    isEnrichmentSearching,
+    isEnrichmentFetching,
+    currentEnrichment,
+    currentEnrichmentIndex,
+    enrichmentQueue.length,
+    isEnrichingLocations,
+  ]);
+
+  // Start enrichment when itinerary loads
+  useEffect(() => {
+    if (
+      !itineraryDays.length ||
+      enrichmentCompleted.current ||
+      enrichmentStarted.current ||
+      isEnrichingLocations
+    ) {
+      return;
+    }
+
+    const activitiesToEnrich: Array<{
+      dayId: string;
+      activityId: string;
+      location: string;
+    }> = [];
+
+    itineraryDays.forEach((day) => {
+      day.activities.forEach((activity) => {
+        if (
+          (activity.location && !activity.locationData) ||
+          (activity as any)._needsLocationLookup
+        ) {
+          activitiesToEnrich.push({
+            dayId: day.id,
+            activityId: activity.id,
+            location: activity.location,
+          });
+        }
+      });
+    });
+
+    if (activitiesToEnrich.length > 0) {
+      enrichmentStarted.current = true;
+      setEnrichmentQueue(activitiesToEnrich);
+      setCurrentEnrichmentIndex(0);
+      setIsEnrichingLocations(true);
+
+      toast.info("Enriching Activity Locations", {
+        description: `Finding coordinates for ${activitiesToEnrich.length} activities...`,
+        duration: 3000,
+      });
+    } else {
+      enrichmentCompleted.current = true;
+    }
+  }, [itineraryDays, isEnrichingLocations]);
 
   // Recalculate days when dates change (now handled with confirmation)
   useEffect(() => {
@@ -915,9 +1047,41 @@ export function CreateNewTravel() {
       {/* Day-by-Day Itinerary */}
       <ContentCard>
         <div className="mb-6">
-          <h2 className="text-lg text-[#1A2B4F] font-semibold">
-            Day-by-Day Itinerary ({itineraryDays.length} Days)
-          </h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg text-[#1A2B4F] font-semibold">
+              Day-by-Day Itinerary ({itineraryDays.length} Days)
+            </h2>
+            {/* Enrichment Progress */}
+            {isEnrichingLocations && enrichmentQueue.length > 0 && (
+              <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-[rgba(255,165,0,0.1)] border border-[#FFA500]">
+                <div className="flex gap-1">
+                  {enrichmentQueue.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        idx < currentEnrichmentIndex
+                          ? "bg-[#10B981]"
+                          : idx === currentEnrichmentIndex
+                          ? "bg-[#FFA500] animate-pulse"
+                          : "bg-[#E5E7EB]"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs font-medium text-[#FFA500]">
+                  {currentEnrichmentIndex + 1} / {enrichmentQueue.length}
+                </span>
+              </div>
+            )}
+            {enrichmentCompleted.current && enrichmentQueue.length > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.1)] border border-[#10B981]">
+                <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
+                <span className="text-xs font-medium text-[#10B981]">
+                  All locations enriched
+                </span>
+              </div>
+            )}
+          </div>
           <p className="text-sm text-[#64748B] mt-1">
             Days are automatically calculated from travel dates
           </p>
@@ -1077,9 +1241,41 @@ export function CreateNewTravel() {
 
                             {/* Location */}
                             <div className="md:col-span-12 relative">
-                              <Label className="text-xs text-[#64748B] mb-1 block">
-                                Location
-                              </Label>
+                              <div className="flex items-center justify-between mb-1">
+                                <Label className="text-xs text-[#64748B] block">
+                                  Location
+                                </Label>
+                                {/* Enrichment Status Indicator */}
+                                {(() => {
+                                  const isBeingEnriched =
+                                    currentEnrichment?.dayId === day.id &&
+                                    currentEnrichment?.activityId ===
+                                      activity.id;
+                                  const isEnriched =
+                                    activity.location && activity.locationData;
+
+                                  if (isBeingEnriched && isEnrichingLocations) {
+                                    return (
+                                      <div className="flex items-center gap-1.5 text-xs">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#FFA500] animate-pulse" />
+                                        <span className="text-[#FFA500]">
+                                          Enriching...
+                                        </span>
+                                      </div>
+                                    );
+                                  } else if (isEnriched) {
+                                    return (
+                                      <div className="flex items-center gap-1.5 text-xs">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                                        <span className="text-[#10B981]">
+                                          Enriched
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
                               <div className="relative">
                                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
                                 <Input
@@ -1470,7 +1666,15 @@ export function CreateNewTravel() {
             ...d,
             dayNumber: d.dayNumber ?? d.day,
           }));
+
+          // Reset enrichment to reprocess new locations from ROAMAN
+          enrichmentCompleted.current = false;
+          enrichmentStarted.current = false;
+          setEnrichmentQueue([]);
+          setCurrentEnrichmentIndex(0);
+
           setItineraryDays(convertedDays);
+          setHasUnsavedChanges(true);
         }}
       />
     </div>
