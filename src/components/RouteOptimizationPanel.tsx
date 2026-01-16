@@ -13,6 +13,7 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Download,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { toast } from "sonner";
@@ -95,18 +96,18 @@ export function RouteOptimizationPanel({
   const [showOriginalRoute, setShowOriginalRoute] = useState(true);
   const [showOptimizedRoute, setShowOptimizedRoute] = useState(true);
   const [isMapLoading, setIsMapLoading] = useState(false);
+  const [isDownloadingMap, setIsDownloadingMap] = useState(false);
   const mapRef = useRef<MapInstance | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const optimizationTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const pendingOptimizationsRef = useRef<Set<string>>(new Set());
   const processedDaysRef = useRef<Map<string, string>>(new Map());
-  const appliedDaysRef = useRef<Map<string, string>>(new Map()); // tracks dayId -> fingerprint when applied
+  const appliedDaysRef = useRef<Map<string, string>>(new Map());
 
   const { mutate: optimizeRoute } = useOptimizeRoute();
   const { mutate: calculateRoute } = useCalculateRoute();
 
-  // Days with 4+ valid locations (required for optimization)
   const daysReadyForOptimization = useMemo(
     () =>
       itineraryDays.filter((d) => {
@@ -282,7 +283,6 @@ export function RouteOptimizationPanel({
         };
       }
 
-      // Fallback: return original order
       return {
         optimizedActivities: originalActivities,
         routeData: undefined,
@@ -348,7 +348,10 @@ export function RouteOptimizationPanel({
             const updated = new Map(prev);
             const current = updated.get(dayId);
             if (current) {
-              const kmSaved = Math.max(0, current.routeAnalysis.originalDistance - optimizedDistance);
+              const kmSaved = Math.max(
+                0,
+                current.routeAnalysis.originalDistance - optimizedDistance
+              );
 
               updated.set(dayId, {
                 ...current,
@@ -358,7 +361,9 @@ export function RouteOptimizationPanel({
                   optimizedDistance,
                   kmSaved,
                   routeGeometry: routeData?.geometry,
-                  originalGeometry: originalRouteGeometry || current.routeAnalysis.originalGeometry,
+                  originalGeometry:
+                    originalRouteGeometry ||
+                    current.routeAnalysis.originalGeometry,
                 },
                 isLoading: false,
               });
@@ -366,7 +371,6 @@ export function RouteOptimizationPanel({
             return updated;
           });
 
-          // Reset applied state since we have new optimization data
           appliedDaysRef.current.delete(dayId);
           processedDaysRef.current.set(dayId, activityFingerprint);
           pendingOptimizationsRef.current.delete(dayId);
@@ -521,7 +525,6 @@ export function RouteOptimizationPanel({
             typeof a.locationData.lng === "number"
         );
 
-        // Check if we have enough activities
         if (originalActivities.length < 4) {
           setDayAnalyses((prev) => {
             const updated = new Map(prev);
@@ -615,12 +618,10 @@ export function RouteOptimizationPanel({
     mapRef.current.originalMarkers?.forEach((marker: any) => marker.remove());
     mapRef.current.optimizedMarkers?.forEach((marker: any) => marker.remove());
 
-    // Remove all original polylines
     mapRef.current.originalPolylines?.forEach((polyline: any) => {
       if (polyline) polyline.remove();
     });
 
-    // Remove all optimized polylines
     mapRef.current.optimizedPolylines?.forEach((polyline: any) => {
       if (polyline) polyline.remove();
     });
@@ -680,7 +681,6 @@ export function RouteOptimizationPanel({
         newOriginalMarkers.push(marker);
       });
 
-      // Use originalGeometry from routing API for terrain-based path (not euclidean straight lines)
       if (analysis.routeAnalysis.originalGeometry?.coordinates) {
         const coords = analysis.routeAnalysis.originalGeometry.coordinates;
         if (Array.isArray(coords) && coords.length > 0) {
@@ -702,7 +702,6 @@ export function RouteOptimizationPanel({
           });
         }
       } else if (originalCoords.length > 1) {
-        // Fallback to straight lines only if no geometry available
         const polyline = L.polyline(originalCoords, {
           color: "#0A7AFF",
           weight: 4,
@@ -716,8 +715,8 @@ export function RouteOptimizationPanel({
       mapRef.current.originalMarkers = newOriginalMarkers;
     }
 
-    // Only show optimized route if there's a meaningful difference
-    const showOptimized = showOptimizedRoute && hasOptimizationAvailable(activeTab);
+    const showOptimized =
+      showOptimizedRoute && hasOptimizationAvailable(activeTab);
     if (showOptimized) {
       if (analysis.routeAnalysis.routeGeometry?.coordinates) {
         const coords = analysis.routeAnalysis.routeGeometry.coordinates;
@@ -805,6 +804,63 @@ export function RouteOptimizationPanel({
     }
   };
 
+  const downloadMapAsImage = useCallback(async () => {
+    if (!mapRef.current?.map || !mapContainerRef.current) {
+      toast.error("Map Not Ready", {
+        description: "Please wait for the map to load before downloading.",
+      });
+      return;
+    }
+
+    const analysis = dayAnalyses.get(activeTab);
+    if (!analysis) return;
+
+    setIsDownloadingMap(true);
+
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+
+      const canvas = await html2canvas(mapContainerRef.current, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#F8FAFB",
+        scale: 2,
+      });
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error("Download Failed", {
+            description: "Could not generate image.",
+          });
+          setIsDownloadingMap(false);
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `route-map-day-${
+          analysis.day.dayNumber
+        }-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast.success("Map Downloaded!", {
+          description: `Day ${analysis.day.dayNumber} route map saved successfully.`,
+        });
+        setIsDownloadingMap(false);
+      }, "image/png");
+    } catch (error) {
+      console.error("Map download error:", error);
+      toast.error("Download Failed", {
+        description: "Could not save map image. Please try again.",
+      });
+      setIsDownloadingMap(false);
+    }
+  }, [activeTab, dayAnalyses]);
+
   useEffect(() => {
     const initializeAnalyses = () => {
       if (daysReadyForOptimization.length === 0) {
@@ -836,7 +892,6 @@ export function RouteOptimizationPanel({
           isLoading: false,
         });
 
-        // CRITICAL FIX: Only optimize if not already processed
         if (!processedDaysRef.current.has(day.id)) {
           sendOptimizationRequest(day, day.id);
         }
@@ -920,7 +975,6 @@ export function RouteOptimizationPanel({
       analysis.optimizedActivities.length > 0 &&
       onAcceptOptimization
     ) {
-      // Get current fingerprint to track applied state
       const activityFingerprint = analysis.day.activities
         .filter(
           (a) =>
@@ -931,24 +985,26 @@ export function RouteOptimizationPanel({
         )
         .map((a) => `${a.id}-${a.location}-${a.order}`)
         .join("|");
-      
+
       appliedDaysRef.current.set(dayId, activityFingerprint);
       onAcceptOptimization(dayId, analysis.optimizedActivities);
       toast.success("Route Applied!", {
-        description: `Day ${analysis.day.dayNumber} reordered. You'll save ~${analysis.routeAnalysis.kmSaved.toFixed(1)} km!`,
+        description: `Day ${
+          analysis.day.dayNumber
+        } reordered. You'll save ~${analysis.routeAnalysis.kmSaved.toFixed(
+          1
+        )} km!`,
       });
     }
   };
 
-  // Helper to check if optimization is already applied for a day
   const isOptimizationApplied = (dayId: string): boolean => {
     const analysis = dayAnalyses.get(dayId);
     if (!analysis) return false;
-    
+
     const appliedFingerprint = appliedDaysRef.current.get(dayId);
     if (!appliedFingerprint) return false;
-    
-    // Check if current fingerprint matches applied fingerprint
+
     const currentFingerprint = analysis.day.activities
       .filter(
         (a) =>
@@ -959,15 +1015,14 @@ export function RouteOptimizationPanel({
       )
       .map((a) => `${a.id}-${a.location}-${a.order}`)
       .join("|");
-    
+
     return currentFingerprint === appliedFingerprint;
   };
 
-  // Helper to check if current route order matches optimized route order (same stops = already optimal)
   const isRouteAlreadyOptimal = (dayId: string): boolean => {
     const analysis = dayAnalyses.get(dayId);
     if (!analysis) return false;
-    
+
     const originalActivities = analysis.day.activities.filter(
       (a) =>
         isMeaningfulLocation(a.location) &&
@@ -975,38 +1030,32 @@ export function RouteOptimizationPanel({
         typeof a.locationData.lat === "number" &&
         typeof a.locationData.lng === "number"
     );
-    
+
     const optimizedActivities = analysis.optimizedActivities;
-    
-    // If lengths don't match, something went wrong
+
     if (originalActivities.length !== optimizedActivities.length) return false;
     if (originalActivities.length === 0) return true;
-    
-    // Compare activity IDs in order - if same order, route is already optimal
+
     for (let i = 0; i < originalActivities.length; i++) {
       if (originalActivities[i].id !== optimizedActivities[i].id) {
-        return false; // Different order = optimization available
+        return false;
       }
     }
-    
-    return true; // Same order = already optimal
-  };
 
-  // Helper to check if optimization should be shown (has meaningful savings)
-  const hasOptimizationAvailable = (dayId: string): boolean => {
-    const analysis = dayAnalyses.get(dayId);
-    if (!analysis) return false;
-    
-    // Check 1: If route order is same, no optimization needed
-    if (isRouteAlreadyOptimal(dayId)) return false;
-    
-    // Check 2: If km saved is negligible (< 0.1 km), don't show optimization
-    if (analysis.routeAnalysis.kmSaved < 0.1) return false;
-    
     return true;
   };
 
-  // Check if we have any days at all to show
+  const hasOptimizationAvailable = (dayId: string): boolean => {
+    const analysis = dayAnalyses.get(dayId);
+    if (!analysis) return false;
+
+    if (isRouteAlreadyOptimal(dayId)) return false;
+
+    if (analysis.routeAnalysis.kmSaved < 0.1) return false;
+
+    return true;
+  };
+
   const hasAnyDays = itineraryDays.length > 0;
 
   return (
@@ -1032,7 +1081,6 @@ export function RouteOptimizationPanel({
         </div>
       </div>
 
-      {/* Show placeholder when not enough valid locations for optimization (need 4+) */}
       {daysReadyForOptimization.length === 0 && (
         <div className="p-8">
           <div className="flex flex-col items-center text-center max-w-md mx-auto">
@@ -1103,239 +1151,205 @@ export function RouteOptimizationPanel({
                     <span className="text-sm text-[#64748B]">
                       Day {day.dayNumber}
                     </span>
-                  <ChevronRight className="w-4 h-4 text-[#94A3B8]" />
+                    <ChevronRight className="w-4 h-4 text-[#94A3B8]" />
+                  </div>
+                  <h4 className="text-lg text-[#1A2B4F]">
+                    {day.title || `Day ${day.dayNumber}`}
+                  </h4>
                 </div>
-                <h4 className="text-lg text-[#1A2B4F]">
-                  {day.title || `Day ${day.dayNumber}`}
-                </h4>
-              </div>
 
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <motion.div
-                  whileHover={{ y: -2 }}
-                  className="p-4 rounded-xl bg-linear-to-br from-[#E0F2FE] to-[#BAE6FD] border border-[#0A7AFF]/20 shadow-sm"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center">
-                      <Route className="w-4 h-4 text-[#0A7AFF]" />
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <motion.div
+                    whileHover={{ y: -2 }}
+                    className="p-4 rounded-xl bg-linear-to-br from-[#E0F2FE] to-[#BAE6FD] border border-[#0A7AFF]/20 shadow-sm"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center">
+                        <Route className="w-4 h-4 text-[#0A7AFF]" />
+                      </div>
+                      <span className="text-xs text-[#0369A1]">Original</span>
                     </div>
-                    <span className="text-xs text-[#0369A1]">Original</span>
-                  </div>
-                  <p className="text-xl text-[#0A7AFF]">
-                    {analysis.routeAnalysis.originalDistance > 0
-                      ? `${analysis.routeAnalysis.originalDistance.toFixed(
-                          1
-                        )} km`
-                      : "Calculating..."}
-                  </p>
-                </motion.div>
+                    <p className="text-xl text-[#0A7AFF]">
+                      {analysis.routeAnalysis.originalDistance > 0
+                        ? `${analysis.routeAnalysis.originalDistance.toFixed(
+                            1
+                          )} km`
+                        : "Calculating..."}
+                    </p>
+                  </motion.div>
 
-                <motion.div
-                  whileHover={{ y: -2 }}
-                  className="p-4 rounded-xl bg-linear-to-br from-[#D1FAE5] to-[#A7F3D0] border border-[#10B981]/20 shadow-sm"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 text-[#10B981]" />
+                  <motion.div
+                    whileHover={{ y: -2 }}
+                    className="p-4 rounded-xl bg-linear-to-br from-[#D1FAE5] to-[#A7F3D0] border border-[#10B981]/20 shadow-sm"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-[#10B981]" />
+                      </div>
+                      <span className="text-xs text-[#065F46]">Optimized</span>
                     </div>
-                    <span className="text-xs text-[#065F46]">Optimized</span>
-                  </div>
-                  <p className="text-xl text-[#10B981]">
-                    {analysis.routeAnalysis.optimizedDistance > 0
-                      ? `${analysis.routeAnalysis.optimizedDistance.toFixed(
-                          1
-                        )} km`
-                      : "Pending..."}
-                  </p>
-                </motion.div>
+                    <p className="text-xl text-[#10B981]">
+                      {analysis.routeAnalysis.optimizedDistance > 0
+                        ? `${analysis.routeAnalysis.optimizedDistance.toFixed(
+                            1
+                          )} km`
+                        : "Pending..."}
+                    </p>
+                  </motion.div>
 
-                <motion.div
-                  whileHover={{ y: -2 }}
-                  className={`p-4 rounded-xl ${
-                    hasOptimizationAvailable(day.id)
-                      ? "bg-linear-to-br from-[#FEF3C7] to-[#FDE68A] border border-[#FFB84D]/20"
-                      : "bg-linear-to-br from-[#F1F5F9] to-[#E2E8F0] border border-[#CBD5E1]/20"
-                  } shadow-sm`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center">
-                      {hasOptimizationAvailable(day.id) ? (
-                        <Zap className="w-4 h-4 text-[#FFB84D]" />
-                      ) : (
-                        <Route className="w-4 h-4 text-[#64748B]" />
-                      )}
-                    </div>
-                    <span className="text-xs text-[#78350F]">KM Saved</span>
-                  </div>
-                  <p
-                    className={`text-xl ${
+                  <motion.div
+                    whileHover={{ y: -2 }}
+                    className={`p-4 rounded-xl ${
                       hasOptimizationAvailable(day.id)
-                        ? "text-[#FFB84D]"
-                        : "text-[#64748B]"
+                        ? "bg-linear-to-br from-[#FEF3C7] to-[#FDE68A] border border-[#FFB84D]/20"
+                        : "bg-linear-to-br from-[#F1F5F9] to-[#E2E8F0] border border-[#CBD5E1]/20"
+                    } shadow-sm`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center">
+                        {hasOptimizationAvailable(day.id) ? (
+                          <Zap className="w-4 h-4 text-[#FFB84D]" />
+                        ) : (
+                          <Route className="w-4 h-4 text-[#64748B]" />
+                        )}
+                      </div>
+                      <span className="text-xs text-[#78350F]">KM Saved</span>
+                    </div>
+                    <p
+                      className={`text-xl ${
+                        hasOptimizationAvailable(day.id)
+                          ? "text-[#FFB84D]"
+                          : "text-[#64748B]"
+                      }`}
+                    >
+                      {hasOptimizationAvailable(day.id)
+                        ? `${analysis.routeAnalysis.kmSaved.toFixed(1)} km`
+                        : isRouteAlreadyOptimal(day.id)
+                        ? "0.0 km"
+                        : "Calculating..."}
+                    </p>
+                  </motion.div>
+                </div>
+
+                <div className="mb-6 flex items-center gap-2 p-1 rounded-xl bg-[#F8FAFB] border border-[#E5E7EB] w-fit flex-wrap">
+                  <button
+                    onClick={() => setMapView("list")}
+                    className={`px-4 py-2 rounded-lg text-sm transition-all ${
+                      mapView === "list"
+                        ? "bg-white text-[#0A7AFF] shadow-sm"
+                        : "text-[#64748B] hover:text-[#1A2B4F]"
                     }`}
                   >
-                    {hasOptimizationAvailable(day.id)
-                      ? `${analysis.routeAnalysis.kmSaved.toFixed(1)} km`
-                      : isRouteAlreadyOptimal(day.id) ? "0.0 km" : "Calculating..."}
-                  </p>
-                </motion.div>
-              </div>
-
-              <div className="mb-6 flex items-center gap-2 p-1 rounded-xl bg-[#F8FAFB] border border-[#E5E7EB] w-fit">
-                <button
-                  onClick={() => setMapView("list")}
-                  className={`px-4 py-2 rounded-lg text-sm transition-all ${
-                    mapView === "list"
-                      ? "bg-white text-[#0A7AFF] shadow-sm"
-                      : "text-[#64748B] hover:text-[#1A2B4F]"
-                  }`}
-                >
-                  <Route className="w-4 h-4 inline mr-2" />
-                  List View
-                </button>
-                <button
-                  onClick={() => setMapView("map")}
-                  className={`px-4 py-2 rounded-lg text-sm transition-all ${
-                    mapView === "map"
-                      ? "bg-white text-[#0A7AFF] shadow-sm"
-                      : "text-[#64748B] hover:text-[#1A2B4F]"
-                  }`}
-                >
-                  <MapIcon className="w-4 h-4 inline mr-2" />
-                  Map View
-                </button>
-              </div>
-
-              <div className="mb-6 p-5 rounded-xl bg-linear-to-br from-[#F8FAFB] to-white border border-[#E5E7EB]">
-                <div className="flex items-center justify-between mb-4">
-                  <h5 className="text-sm text-[#1A2B4F]">
-                    Route Visualization
-                  </h5>
-                  <div className="flex items-center gap-3">
-                    {mapView === "map" &&
-                      hasOptimizationAvailable(day.id) && (
-                        <>
-                          <button
-                            onClick={() =>
-                              setShowOriginalRoute(!showOriginalRoute)
-                            }
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
-                              showOriginalRoute
-                                ? "bg-[#0A7AFF] border-[#0A7AFF] text-white"
-                                : "bg-white border-[#E5E7EB] text-[#64748B] hover:border-[#0A7AFF]"
-                            }`}
-                          >
-                            {showOriginalRoute ? (
-                              <Eye className="w-3 h-3" />
-                            ) : (
-                              <EyeOff className="w-3 h-3" />
-                            )}
-                            <div className="w-3 h-3 rounded-full bg-[#0A7AFF] border-2 border-white"></div>
-                            <span className="text-xs">Original</span>
-                          </button>
-                          <button
-                            onClick={() =>
-                              setShowOptimizedRoute(!showOptimizedRoute)
-                            }
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
-                              showOptimizedRoute
-                                ? "bg-[#10B981] border-[#10B981] text-white"
-                                : "bg-white border-[#E5E7EB] text-[#64748B] hover:border-[#10B981]"
-                            }`}
-                          >
-                            {showOptimizedRoute ? (
-                              <Eye className="w-3 h-3" />
-                            ) : (
-                              <EyeOff className="w-3 h-3" />
-                            )}
-                            <div className="w-3 h-3 rounded-full bg-[#10B981] border-2 border-white"></div>
-                            <span className="text-xs">Optimized</span>
-                          </button>
-                        </>
+                    <Route className="w-4 h-4 inline mr-2" />
+                    List View
+                  </button>
+                  <button
+                    onClick={() => setMapView("map")}
+                    className={`px-4 py-2 rounded-lg text-sm transition-all ${
+                      mapView === "map"
+                        ? "bg-white text-[#0A7AFF] shadow-sm"
+                        : "text-[#64748B] hover:text-[#1A2B4F]"
+                    }`}
+                  >
+                    <MapIcon className="w-4 h-4 inline mr-2" />
+                    Map View
+                  </button>
+                  {mapView === "map" && mapRef.current?.map && (
+                    <button
+                      onClick={downloadMapAsImage}
+                      disabled={isDownloadingMap}
+                      className="px-4 py-2 rounded-lg text-sm transition-all text-[#64748B] hover:text-[#0A7AFF] hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Download map as image"
+                    >
+                      {isDownloadingMap ? (
+                        <Loader2 className="w-4 h-4 inline mr-2 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4 inline mr-2" />
                       )}
-                  </div>
+                      {isDownloadingMap ? "Saving..." : "Save Map"}
+                    </button>
+                  )}
                 </div>
 
-                {mapView === "list" && (
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl border-2 border-[#0A7AFF]/20 bg-linear-to-br from-[rgba(10,122,255,0.05)] to-transparent">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-[#0A7AFF] flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">
-                              A
-                            </span>
-                          </div>
-                          <span className="text-sm font-medium text-[#0A7AFF]">
-                            Current Route
-                          </span>
-                        </div>
-                        <span className="text-xs text-[#64748B]">
-                          {analysis.routeAnalysis.originalDistance > 0
-                            ? `${analysis.routeAnalysis.originalDistance.toFixed(
-                                1
-                              )} km`
-                            : "Calculating..."}
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        {day.activities
-                          .filter((a) => a.location && a.locationData)
-                          .map((activity, idx, arr) => (
-                            <div key={activity.id}>
-                              <div className="flex items-start gap-3 text-sm">
-                                <span className="shrink-0 w-6 h-6 rounded-full bg-[#0A7AFF] text-white flex items-center justify-center text-xs font-bold">
-                                  {idx + 1}
-                                </span>
-                                <div className="flex-1">
-                                  <p className="text-[#1A2B4F] font-medium">
-                                    {activity.title || "Untitled"}
-                                  </p>
-                                  <p className="text-xs text-[#64748B]">
-                                    {activity.location}
-                                  </p>
-                                </div>
-                              </div>
-                              {idx < arr.length - 1 && (
-                                <div className="flex items-center gap-2 py-1 px-8">
-                                  <ArrowRight className="w-4 h-4 text-[#94A3B8]" />
-                                  <span className="text-xs text-[#94A3B8]">
-                                    Next stop
-                                  </span>
-                                </div>
+                <div className="mb-6 p-5 rounded-xl bg-linear-to-br from-[#F8FAFB] to-white border border-[#E5E7EB]">
+                  <div className="flex items-center justify-between mb-4">
+                    <h5 className="text-sm text-[#1A2B4F]">
+                      Route Visualization
+                    </h5>
+                    <div className="flex items-center gap-3">
+                      {mapView === "map" &&
+                        hasOptimizationAvailable(day.id) && (
+                          <>
+                            <button
+                              onClick={() =>
+                                setShowOriginalRoute(!showOriginalRoute)
+                              }
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
+                                showOriginalRoute
+                                  ? "bg-[#0A7AFF] border-[#0A7AFF] text-white"
+                                  : "bg-white border-[#E5E7EB] text-[#64748B] hover:border-[#0A7AFF]"
+                              }`}
+                            >
+                              {showOriginalRoute ? (
+                                <Eye className="w-3 h-3" />
+                              ) : (
+                                <EyeOff className="w-3 h-3" />
                               )}
-                            </div>
-                          ))}
-                      </div>
+                              <div className="w-3 h-3 rounded-full bg-[#0A7AFF] border-2 border-white"></div>
+                              <span className="text-xs">Original</span>
+                            </button>
+                            <button
+                              onClick={() =>
+                                setShowOptimizedRoute(!showOptimizedRoute)
+                              }
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
+                                showOptimizedRoute
+                                  ? "bg-[#10B981] border-[#10B981] text-white"
+                                  : "bg-white border-[#E5E7EB] text-[#64748B] hover:border-[#10B981]"
+                              }`}
+                            >
+                              {showOptimizedRoute ? (
+                                <Eye className="w-3 h-3" />
+                              ) : (
+                                <EyeOff className="w-3 h-3" />
+                              )}
+                              <div className="w-3 h-3 rounded-full bg-[#10B981] border-2 border-white"></div>
+                              <span className="text-xs">Optimized</span>
+                            </button>
+                          </>
+                        )}
                     </div>
+                  </div>
 
-                    {hasOptimizationAvailable(day.id) && (
-                      <div className="p-4 rounded-xl border-2 border-[#10B981]/20 bg-linear-to-br from-[rgba(16,185,129,0.05)] to-transparent">
+                  {mapView === "list" && (
+                    <div className="space-y-4">
+                      <div className="p-4 rounded-xl border-2 border-[#0A7AFF]/20 bg-linear-to-br from-[rgba(10,122,255,0.05)] to-transparent">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-[#10B981] flex items-center justify-center">
-                              <Sparkles className="w-3 h-3 text-white" />
+                            <div className="w-6 h-6 rounded-full bg-[#0A7AFF] flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">
+                                A
+                              </span>
                             </div>
-                            <span className="text-sm font-medium text-[#10B981]">
-                              Suggested Route
-                            </span>
-                            <span className="px-2 py-0.5 rounded-full bg-[#10B981]/10 text-xs text-[#10B981] font-medium">
-                              -{analysis.routeAnalysis.kmSaved.toFixed(1)} km
+                            <span className="text-sm font-medium text-[#0A7AFF]">
+                              Current Route
                             </span>
                           </div>
                           <span className="text-xs text-[#64748B]">
-                            {analysis.routeAnalysis.optimizedDistance.toFixed(
-                              1
-                            )}{" "}
-                            km
+                            {analysis.routeAnalysis.originalDistance > 0
+                              ? `${analysis.routeAnalysis.originalDistance.toFixed(
+                                  1
+                                )} km`
+                              : "Calculating..."}
                           </span>
                         </div>
                         <div className="space-y-2">
-                          {analysis.optimizedActivities.map(
-                            (activity, idx, arr) => (
+                          {day.activities
+                            .filter((a) => a.location && a.locationData)
+                            .map((activity, idx, arr) => (
                               <div key={activity.id}>
                                 <div className="flex items-start gap-3 text-sm">
-                                  <span className="shrink-0 w-6 h-6 rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs font-bold">
+                                  <span className="shrink-0 w-6 h-6 rounded-full bg-[#0A7AFF] text-white flex items-center justify-center text-xs font-bold">
                                     {idx + 1}
                                   </span>
                                   <div className="flex-1">
@@ -1356,112 +1370,163 @@ export function RouteOptimizationPanel({
                                   </div>
                                 )}
                               </div>
-                            )
-                          )}
+                            ))}
                         </div>
                       </div>
-                    )}
 
-                    {(isRouteAlreadyOptimal(day.id) || analysis.routeAnalysis.kmSaved < 0.1) &&
-                      analysis.routeAnalysis.originalDistance > 0 && (
-                        <div className="p-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] text-center">
-                          <CheckCircle2 className="w-8 h-8 text-[#10B981] mx-auto mb-2" />
-                          <p className="text-sm text-[#1A2B4F] font-medium mb-1">
-                            Route Already Optimized!
-                          </p>
-                          <p className="text-xs text-[#64748B]">
-                            Your current route is the most efficient path.
-                          </p>
-                        </div>
-                      )}
-                  </div>
-                )}
-
-                {mapView === "map" && (
-                  <div className="relative">
-                    <div
-                      ref={mapContainerRef}
-                      className="w-full h-112.5 rounded-xl overflow-hidden border-2 border-[#E5E7EB]"
-                      style={{ background: "#F8FAFB" }}
-                    />
-                    {isMapLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-xl">
-                        <div className="text-center">
-                          <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center mx-auto mb-2 animate-pulse">
-                            <MapIcon className="w-6 h-6 text-white" />
-                          </div>
-                          <p className="text-sm text-[#64748B]">
-                            Loading map...
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {mapRef.current?.map &&
-                      hasOptimizationAvailable(day.id) && (
-                        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-[#E5E7EB] z-1000">
-                          <p className="text-xs text-[#64748B] mb-2">
-                            Route Comparison
-                          </p>
-                          {showOriginalRoute && (
-                            <div className="flex items-center gap-2 mb-1.5">
-                              <div className="w-4 h-0.5 bg-[#0A7AFF] border-dashed border-2 border-[#0A7AFF]"></div>
-                              <span className="text-xs text-[#1A2B4F]">
-                                Original (
-                                {analysis.routeAnalysis.originalDistance.toFixed(
-                                  1
-                                )}{" "}
-                                km)
-                              </span>
-                            </div>
-                          )}
-                          {showOptimizedRoute && (
+                      {hasOptimizationAvailable(day.id) && (
+                        <div className="p-4 rounded-xl border-2 border-[#10B981]/20 bg-linear-to-br from-[rgba(16,185,129,0.05)] to-transparent">
+                          <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
-                              <div className="w-4 h-1 bg-[#10B981] rounded"></div>
-                              <span className="text-xs text-[#1A2B4F]">
-                                Optimized (
-                                {analysis.routeAnalysis.optimizedDistance.toFixed(
-                                  1
-                                )}{" "}
-                                km)
+                              <div className="w-6 h-6 rounded-full bg-[#10B981] flex items-center justify-center">
+                                <Sparkles className="w-3 h-3 text-white" />
+                              </div>
+                              <span className="text-sm font-medium text-[#10B981]">
+                                Suggested Route
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full bg-[#10B981]/10 text-xs text-[#10B981] font-medium">
+                                -{analysis.routeAnalysis.kmSaved.toFixed(1)} km
                               </span>
                             </div>
-                          )}
+                            <span className="text-xs text-[#64748B]">
+                              {analysis.routeAnalysis.optimizedDistance.toFixed(
+                                1
+                              )}{" "}
+                              km
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {analysis.optimizedActivities.map(
+                              (activity, idx, arr) => (
+                                <div key={activity.id}>
+                                  <div className="flex items-start gap-3 text-sm">
+                                    <span className="shrink-0 w-6 h-6 rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs font-bold">
+                                      {idx + 1}
+                                    </span>
+                                    <div className="flex-1">
+                                      <p className="text-[#1A2B4F] font-medium">
+                                        {activity.title || "Untitled"}
+                                      </p>
+                                      <p className="text-xs text-[#64748B]">
+                                        {activity.location}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  {idx < arr.length - 1 && (
+                                    <div className="flex items-center gap-2 py-1 px-8">
+                                      <ArrowRight className="w-4 h-4 text-[#94A3B8]" />
+                                      <span className="text-xs text-[#94A3B8]">
+                                        Next stop
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            )}
+                          </div>
                         </div>
                       )}
-                  </div>
-                )}
-              </div>
 
-              {hasOptimizationAvailable(day.id) && (
-                isOptimizationApplied(day.id) ? (
-                  <div className="w-full h-11 px-4 rounded-xl bg-[#D1FAE5] border-2 border-[#10B981] text-[#065F46] flex items-center justify-center gap-2 font-medium">
-                    <CheckCircle2 className="w-5 h-5 text-[#10B981]" />
-                    Route Applied!
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handleAcceptOptimization(day.id)}
-                    disabled={isLoading}
-                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Optimizing...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-5 h-5" />
-                        Apply Optimized Route
-                      </>
-                    )}
-                  </button>
-                )
-              )}
-            </motion.div>
-          );
-        })}
+                      {(isRouteAlreadyOptimal(day.id) ||
+                        analysis.routeAnalysis.kmSaved < 0.1) &&
+                        analysis.routeAnalysis.originalDistance > 0 && (
+                          <div className="p-4 rounded-xl border-2 border-[#E5E7EB] bg-[#F8FAFB] text-center">
+                            <CheckCircle2 className="w-8 h-8 text-[#10B981] mx-auto mb-2" />
+                            <p className="text-sm text-[#1A2B4F] font-medium mb-1">
+                              Route Already Optimized!
+                            </p>
+                            <p className="text-xs text-[#64748B]">
+                              Your current route is the most efficient path.
+                            </p>
+                          </div>
+                        )}
+                    </div>
+                  )}
+
+                  {mapView === "map" && (
+                    <div className="relative">
+                      <div
+                        ref={mapContainerRef}
+                        className="w-full h-112.5 rounded-xl overflow-hidden border-2 border-[#E5E7EB]"
+                        style={{ background: "#F8FAFB", height: "450px" }}
+                      />
+                      {isMapLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-xl">
+                          <div className="text-center">
+                            <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center mx-auto mb-2 animate-pulse">
+                              <MapIcon className="w-6 h-6 text-white" />
+                            </div>
+                            <p className="text-sm text-[#64748B]">
+                              Loading map...
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {mapRef.current?.map &&
+                        hasOptimizationAvailable(day.id) && (
+                          <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-[#E5E7EB] z-1000">
+                            <p className="text-xs text-[#64748B] mb-2">
+                              Route Comparison
+                            </p>
+                            {showOriginalRoute && (
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <div className="w-4 h-0.5 bg-[#0A7AFF] border-dashed border-2 border-[#0A7AFF]"></div>
+                                <span className="text-xs text-[#1A2B4F]">
+                                  Original (
+                                  {analysis.routeAnalysis.originalDistance.toFixed(
+                                    1
+                                  )}{" "}
+                                  km)
+                                </span>
+                              </div>
+                            )}
+                            {showOptimizedRoute && (
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-1 bg-[#10B981] rounded"></div>
+                                <span className="text-xs text-[#1A2B4F]">
+                                  Optimized (
+                                  {analysis.routeAnalysis.optimizedDistance.toFixed(
+                                    1
+                                  )}{" "}
+                                  km)
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                    </div>
+                  )}
+                </div>
+
+                {hasOptimizationAvailable(day.id) &&
+                  (isOptimizationApplied(day.id) ? (
+                    <div className="w-full h-11 px-4 rounded-xl bg-[#D1FAE5] border-2 border-[#10B981] text-[#065F46] flex items-center justify-center gap-2 font-medium">
+                      <CheckCircle2 className="w-5 h-5 text-[#10B981]" />
+                      Route Applied!
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleAcceptOptimization(day.id)}
+                      disabled={isLoading}
+                      className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] hover:from-[#0EA574] hover:to-[#12A594] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#10B981]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Optimizing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-5 h-5" />
+                          Apply Optimized Route
+                        </>
+                      )}
+                    </button>
+                  ))}
+              </motion.div>
+            );
+          })}
         </div>
       )}
     </motion.div>

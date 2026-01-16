@@ -33,6 +33,7 @@ import { queryKeys } from "../../utils/lib/queryKeys";
 import { useNavigate } from "react-router-dom";
 import { UserPaymentSection } from "./UserPaymentSection";
 import { useMediaQuery } from "react-responsive";
+import { FAQAssistant } from "../../components/FAQAssistant";
 
 export function UserBookings() {
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
@@ -407,7 +408,7 @@ export function UserBookings() {
       calculatePaymentProgress(selectedBooking);
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 ">
         {/* Booking Header Card */}
         <div className="bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] rounded-2xl p-8 text-white shadow-lg">
           <div className="flex items-start justify-between mb-6">
@@ -551,6 +552,8 @@ export function UserBookings() {
   return (
     <div className="space-y-6">
       {/* Tabs */}
+      <FAQAssistant />
+
       <div className="flex items-center gap-1 mb-6 border-b-2 border-[#E5E7EB]">
         <button
           onClick={() => setSelectedStatus("all")}

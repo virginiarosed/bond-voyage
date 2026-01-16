@@ -7,6 +7,15 @@ import {
   GripVertical,
   Save,
   Clock,
+  Loader2,
+  Search,
+  MapPin,
+  Package,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  Calendar,
+  Users,
 } from "lucide-react";
 import { ContentCard } from "../../components/ContentCard";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
@@ -24,68 +33,13 @@ import {
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { toast } from "sonner";
 import { useCreateBooking } from "../../hooks/useBookings";
-// test
-import {
-  Plane,
-  Hotel,
-  Camera,
-  UtensilsCrossed,
-  Car,
-  Package,
-  MapPin,
-  Compass,
-  TreePine,
-  Building2,
-  Ship,
-  Train,
-  Coffee,
-  ShoppingBag,
-  Music,
-  Sunset,
-  AlertCircle,
-  Sparkles,
-  CheckCircle2,
-  FileText,
-  Calendar,
-  Users,
-  DollarSign,
-  Waves,
-  Mountain,
-  Palmtree,
-  Tent,
-  Bike,
-  Bus,
-  Anchor,
-  Film,
-  Ticket,
-  Wine,
-  IceCream,
-  Pizza,
-  Fish,
-  Salad,
-  Utensils,
-  Home,
-  Landmark,
-  Church,
-  Castle,
-  Globe,
-  Backpack,
-  Luggage,
-  Umbrella,
-  Sun,
-  Moon,
-  Star,
-  Heart,
-  Gift,
-  ShoppingCart,
-  Search,
-} from "lucide-react";
 import { useProfile } from "../../hooks/useAuth";
 import { useDebounce } from "../../hooks/useDebounce";
 import { usePlacesSearch } from "../../hooks/useLocations";
 import { Place } from "../../types/types";
 import { RouteOptimizationPanel } from "../../components/RouteOptimizationPanel";
 import { queryKeys } from "../../utils/lib/queryKeys";
+import { ICON_OPTIONS } from "../../utils/constants/constants";
 
 interface Activity {
   id: string;
@@ -113,66 +67,6 @@ interface TravelFormData {
   totalAmount: string;
 }
 
-const ICON_OPTIONS = [
-  // Transportation
-  { value: "Plane", label: "Plane / Flight", icon: Plane },
-  { value: "Car", label: "Car / Drive", icon: Car },
-  { value: "Bus", label: "Bus", icon: Bus },
-  { value: "Train", label: "Train", icon: Train },
-  { value: "Ship", label: "Ship / Ferry", icon: Ship },
-  { value: "Anchor", label: "Boat / Anchor", icon: Anchor },
-  { value: "Bike", label: "Bike / Cycling", icon: Bike },
-
-  // Accommodation
-  { value: "Hotel", label: "Hotel / Lodging", icon: Hotel },
-  { value: "Home", label: "Home / Villa", icon: Home },
-  { value: "Tent", label: "Camping / Tent", icon: Tent },
-
-  // Food & Dining
-  { value: "UtensilsCrossed", label: "Restaurant", icon: UtensilsCrossed },
-  { value: "Utensils", label: "Dining", icon: Utensils },
-  { value: "Coffee", label: "Coffee / Cafe", icon: Coffee },
-  { value: "Wine", label: "Wine / Bar", icon: Wine },
-  { value: "IceCream", label: "Dessert / Ice Cream", icon: IceCream },
-  { value: "Pizza", label: "Pizza / Fast Food", icon: Pizza },
-  { value: "Fish", label: "Seafood", icon: Fish },
-  { value: "Salad", label: "Healthy Food", icon: Salad },
-
-  // Activities & Attractions
-  { value: "Camera", label: "Photography / Sightseeing", icon: Camera },
-  { value: "Waves", label: "Beach / Swimming", icon: Waves },
-  { value: "Mountain", label: "Mountain / Hiking", icon: Mountain },
-  { value: "Palmtree", label: "Tropical / Island", icon: Palmtree },
-  { value: "TreePine", label: "Nature / Forest", icon: TreePine },
-  { value: "Landmark", label: "Landmark / Monument", icon: Landmark },
-  { value: "Church", label: "Church / Temple", icon: Church },
-  { value: "Castle", label: "Castle / Palace", icon: Castle },
-  { value: "Film", label: "Movies / Shows", icon: Film },
-  { value: "Music", label: "Music / Entertainment", icon: Music },
-  { value: "Ticket", label: "Event / Tickets", icon: Ticket },
-  { value: "ShoppingBag", label: "Shopping", icon: ShoppingBag },
-  { value: "ShoppingCart", label: "Market / Shopping", icon: ShoppingCart },
-
-  // Navigation & Travel
-  { value: "MapPin", label: "Location / Map Pin", icon: MapPin },
-  { value: "Compass", label: "Compass / Navigate", icon: Compass },
-  { value: "Globe", label: "World / Global", icon: Globe },
-  { value: "Backpack", label: "Backpacking / Adventure", icon: Backpack },
-  { value: "Luggage", label: "Luggage / Travel", icon: Luggage },
-
-  // Misc
-  { value: "Package", label: "Package / Tour", icon: Package },
-  { value: "Building2", label: "Building / City", icon: Building2 },
-  { value: "Sunset", label: "Sunset / Sunrise", icon: Sunset },
-  { value: "Sun", label: "Sun / Day", icon: Sun },
-  { value: "Moon", label: "Moon / Night", icon: Moon },
-  { value: "Star", label: "Star / Featured", icon: Star },
-  { value: "Umbrella", label: "Umbrella / Beach", icon: Umbrella },
-  { value: "Heart", label: "Love / Favorite", icon: Heart },
-  { value: "Gift", label: "Gift / Souvenir", icon: Gift },
-];
-
-// Philippine cities/destinations for autocomplete suggestions
 const getIconComponent = (iconName: string) => {
   const iconOption = ICON_OPTIONS.find((opt) => opt.value === iconName);
   return iconOption ? iconOption.icon : Clock;
@@ -221,7 +115,6 @@ export function CreateNewTravel() {
   } | null>(null);
 
   // Location autocomplete states
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [activeLocationInput, setActiveLocationInput] = useState<{
     dayId: string;
     activityId: string;
@@ -296,7 +189,6 @@ export function CreateNewTravel() {
       setSaveConfirmOpen(false);
       setHasUnsavedChanges(false);
 
-      // Navigate to UserTravels after a short delay
       setTimeout(() => {
         navigate("/user/travels", {
           state: {
@@ -427,7 +319,7 @@ export function CreateNewTravel() {
     }
   }, [itineraryDays, isEnrichingLocations]);
 
-  // Recalculate days when dates change (now handled with confirmation)
+  // Recalculate days when dates change
   useEffect(() => {
     if (
       formData.travelDateFrom &&
@@ -442,7 +334,6 @@ export function CreateNewTravel() {
 
       if (dayCount > 0 && dayCount !== itineraryDays.length) {
         if (dayCount > itineraryDays.length) {
-          // Add more days
           const newDays: Day[] = [];
           for (let i = itineraryDays.length + 1; i <= dayCount; i++) {
             newDays.push({
@@ -454,7 +345,6 @@ export function CreateNewTravel() {
           }
           setItineraryDays((prev) => [...prev, ...newDays]);
         }
-        // Reduction is now handled through confirmation modal
       }
     }
   }, [formData.travelDateFrom, formData.travelDateTo, pendingDateChange]);
@@ -470,7 +360,7 @@ export function CreateNewTravel() {
       setLocationSearchQuery(searchTerm);
       setActiveLocationInput({ dayId, activityId });
     } else {
-      setLocationSuggestions([]);
+      setLocationSearchQuery("");
       setActiveLocationInput(null);
     }
   };
@@ -493,36 +383,28 @@ export function CreateNewTravel() {
       )
     );
     toast.success("Route Optimized", {
-      description: `Activities for Day ${
-        dayId.split("-")[1]
-      } have been reordered for optimal routing.`,
+      description: `Activities have been reordered for optimal routing.`,
     });
     setHasUnsavedChanges(true);
   };
 
   // Select location suggestion
   const selectLocationSuggestion = (
-    locationOrPlace: string | Place,
+    place: Place,
     dayId: string,
     activityId: string
   ) => {
-    if (typeof locationOrPlace === "string") {
-      updateActivity(dayId, activityId, "location", locationOrPlace);
-    } else {
-      updateActivity(dayId, activityId, "location", locationOrPlace.name);
-      updateActivity(dayId, activityId, "locationData", locationOrPlace);
-    }
-    setLocationSuggestions([]);
+    updateActivity(dayId, activityId, "location", place.name);
+    updateActivity(dayId, activityId, "locationData", place);
+    setLocationSearchQuery("");
     setActiveLocationInput(null);
   };
 
   // Handle form data changes
   const handleFormChange = (field: keyof TravelFormData, value: string) => {
-    // Special handling for date changes
     if (field === "travelDateFrom" || field === "travelDateTo") {
       const tempData = { ...formData, [field]: value };
 
-      // Check if both dates are set
       if (tempData.travelDateFrom && tempData.travelDateTo) {
         const start = new Date(tempData.travelDateFrom);
         const end = new Date(tempData.travelDateTo);
@@ -531,16 +413,13 @@ export function CreateNewTravel() {
           1;
         const currentDayCount = itineraryDays.length;
 
-        // Check if days will be reduced
         if (newDayCount > 0 && newDayCount < currentDayCount) {
-          // Check if any of the days to be removed have content
           const daysToRemove = itineraryDays.slice(newDayCount);
           const hasContent = daysToRemove.some(
             (day) => day.title || day.activities.length > 0
           );
 
           if (hasContent) {
-            // Store the pending change and show confirmation
             setPendingDateChange({ field, value });
             setReduceDaysConfirm({
               newDayCount,
@@ -558,13 +437,11 @@ export function CreateNewTravel() {
   // Confirm reduce days
   const handleConfirmReduceDays = () => {
     if (reduceDaysConfirm && pendingDateChange) {
-      // Apply the pending date change
       setFormData((prev) => ({
         ...prev,
         [pendingDateChange.field]: pendingDateChange.value,
       }));
 
-      // Remove the extra days
       setItineraryDays((prev) => prev.slice(0, reduceDaysConfirm.newDayCount));
 
       toast.success("Travel Dates Updated", {
@@ -611,9 +488,7 @@ export function CreateNewTravel() {
       })
     );
 
-    toast.success("Activity Added", {
-      description: "A new activity slot has been created.",
-    });
+    toast.success("Activity Added");
   };
 
   // Remove activity from a day
@@ -630,16 +505,15 @@ export function CreateNewTravel() {
         day.id === dayId
           ? {
               ...day,
-              activities: day.activities.filter((a) => a.id !== activityId),
+              activities: day.activities
+                .filter((a) => a.id !== activityId)
+                .map((a, idx) => ({ ...a, order: idx })),
             }
           : day
       )
     );
 
-    toast.success("Activity Removed", {
-      description: "The activity has been deleted from your itinerary.",
-    });
-
+    toast.success("Activity Removed");
     setDeleteActivityConfirm(null);
   };
 
@@ -650,34 +524,18 @@ export function CreateNewTravel() {
     field: keyof Activity,
     value: string | Place
   ) => {
-    // Validate time overlap if updating time field
-    if (field === "time" && value) {
+    if (field === "time" && typeof value === "string" && value) {
       const day = itineraryDays.find((d) => d.id === dayId);
       if (day) {
-        // Check if this time already exists in other activities of the same day
         const timeExists = day.activities.some(
           (activity) => activity.id !== activityId && activity.time === value
         );
 
         if (timeExists) {
           toast.error("Time Overlap Detected", {
-            description: `The time ${value} is already used by another activity on Day ${day.dayNumber}. Please choose a different time.`,
+            description: `The time ${value} is already used by another activity.`,
           });
-          return; // Don't update if time overlaps
-        }
-
-        // Check if time is sequential (later than previous activity)
-        const activityIndex = day.activities.findIndex(
-          (a) => a.id === activityId
-        );
-        if (activityIndex > 0) {
-          const previousActivity = day.activities[activityIndex - 1];
-          if (previousActivity.time && value <= previousActivity.time) {
-            toast.error("Invalid Time Sequence", {
-              description: `Activity time must be later than the previous activity (${previousActivity.time}) on Day ${day.dayNumber}.`,
-            });
-            return; // Don't update if not sequential
-          }
+          return;
         }
       }
     }
@@ -730,7 +588,10 @@ export function CreateNewTravel() {
             newActivities[activityIndex - 1],
             newActivities[activityIndex],
           ];
-          return { ...day, activities: newActivities };
+          return {
+            ...day,
+            activities: newActivities.map((a, idx) => ({ ...a, order: idx })),
+          };
         }
         return day;
       })
@@ -747,7 +608,10 @@ export function CreateNewTravel() {
             newActivities[activityIndex + 1],
             newActivities[activityIndex],
           ];
-          return { ...day, activities: newActivities };
+          return {
+            ...day,
+            activities: newActivities.map((a, idx) => ({ ...a, order: idx })),
+          };
         }
         return day;
       })
@@ -782,7 +646,6 @@ export function CreateNewTravel() {
       return false;
     }
 
-    // Check if all days have titles and at least one activity
     for (const day of itineraryDays) {
       if (!day.title.trim()) {
         toast.error(`Day ${day.dayNumber} Incomplete`, {
@@ -797,7 +660,6 @@ export function CreateNewTravel() {
         return false;
       }
 
-      // Check if all activities have required fields
       for (const activity of day.activities) {
         if (!activity.title.trim()) {
           toast.error(`Activity Title Missing`, {
@@ -808,7 +670,6 @@ export function CreateNewTravel() {
       }
     }
 
-    // Check if user profile is loaded
     if (!userProfileResponse?.data?.user) {
       toast.error("Profile Not Loaded", {
         description: "Please wait while we load your profile information.",
@@ -851,7 +712,6 @@ export function CreateNewTravel() {
     });
 
     const userProfile = userProfileResponse?.data?.user;
-
     const itineraryTitle = `My Trip to ${formData.destination}`;
 
     const bookingData = {
@@ -929,7 +789,7 @@ export function CreateNewTravel() {
         </div>
       </ContentCard>
 
-      {/* Travel Information - MOVED ABOVE Route Optimization Panel */}
+      {/* Travel Information */}
       <ContentCard>
         <div className="mb-6">
           <h2 className="text-lg text-[#1A2B4F] font-semibold">
@@ -1037,7 +897,7 @@ export function CreateNewTravel() {
         </div>
       </ContentCard>
 
-      {/* Route Optimization Panel - NOW BELOW Travel Information */}
+      {/* Route Optimization Panel */}
       <RouteOptimizationPanel
         itineraryDays={itineraryDays}
         selectedDayId={selectedDayForRoute}
@@ -1087,12 +947,11 @@ export function CreateNewTravel() {
           </p>
         </div>
         <div className="space-y-6">
-          {itineraryDays.map((day, dayIndex) => (
+          {itineraryDays.map((day) => (
             <div
               key={day.id}
               className="p-6 rounded-2xl border-2 border-[#E5E7EB] bg-linear-to-br from-[rgba(10,122,255,0.02)] to-[rgba(20,184,166,0.02)] hover:border-[#0A7AFF]/30 transition-all"
             >
-              {/* Day Header */}
               <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
                 <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
                   <span className="text-white font-bold">D{day.dayNumber}</span>
@@ -1122,7 +981,6 @@ export function CreateNewTravel() {
                 </button>
               </div>
 
-              {/* Activities */}
               <div className="space-y-4">
                 {day.activities.length === 0 ? (
                   <div className="py-10 text-center border-2 border-dashed border-[#E5E7EB] rounded-xl bg-white">
@@ -1139,18 +997,22 @@ export function CreateNewTravel() {
                 ) : (
                   day.activities.map((activity, activityIndex) => {
                     const IconComponent = getIconComponent(activity.icon);
+                    const isBeingEnriched =
+                      currentEnrichment?.dayId === day.id &&
+                      currentEnrichment?.activityId === activity.id;
+                    const isEnriched =
+                      activity.location && activity.locationData;
+
                     return (
                       <div
                         key={activity.id}
                         className="relative p-4 rounded-xl border-2 border-[#E5E7EB] bg-white hover:border-[#0A7AFF] transition-all group"
                       >
-                        {/* Activity number badge */}
                         <div className="absolute -left-3 -top-3 w-7 h-7 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-md text-white text-xs font-bold">
                           {activityIndex + 1}
                         </div>
 
                         <div className="flex items-start gap-4">
-                          {/* Drag Handle */}
                           <div className="flex flex-col gap-1 pt-2">
                             <button
                               onClick={() =>
@@ -1176,9 +1038,7 @@ export function CreateNewTravel() {
                             </button>
                           </div>
 
-                          {/* Form Fields */}
                           <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4">
-                            {/* Time */}
                             <div className="md:col-span-2">
                               <Label className="text-xs text-[#64748B] mb-1 block">
                                 Time
@@ -1198,7 +1058,6 @@ export function CreateNewTravel() {
                               />
                             </div>
 
-                            {/* Icon */}
                             <div className="md:col-span-2">
                               <Label className="text-xs text-[#64748B] mb-1 block">
                                 Icon
@@ -1219,7 +1078,6 @@ export function CreateNewTravel() {
                               </button>
                             </div>
 
-                            {/* Title */}
                             <div className="md:col-span-8">
                               <Label className="text-xs text-[#64748B] mb-1 block">
                                 Activity Title *
@@ -1239,45 +1097,35 @@ export function CreateNewTravel() {
                               />
                             </div>
 
-                            {/* Location */}
                             <div className="md:col-span-12 relative">
                               <div className="flex items-center justify-between mb-1">
                                 <Label className="text-xs text-[#64748B] block">
                                   Location
                                 </Label>
-                                {/* Enrichment Status Indicator */}
-                                {(() => {
-                                  const isBeingEnriched =
-                                    currentEnrichment?.dayId === day.id &&
-                                    currentEnrichment?.activityId ===
-                                      activity.id;
-                                  const isEnriched =
-                                    activity.location && activity.locationData;
-
-                                  if (isBeingEnriched && isEnrichingLocations) {
-                                    return (
-                                      <div className="flex items-center gap-1.5 text-xs">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#FFA500] animate-pulse" />
-                                        <span className="text-[#FFA500]">
-                                          Enriching...
-                                        </span>
-                                      </div>
-                                    );
-                                  } else if (isEnriched) {
-                                    return (
-                                      <div className="flex items-center gap-1.5 text-xs">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-                                        <span className="text-[#10B981]">
-                                          Enriched
-                                        </span>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                })()}
+                                {isBeingEnriched && isEnrichingLocations ? (
+                                  <div className="flex items-center gap-1.5 text-xs">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FFA500] animate-pulse" />
+                                    <span className="text-[#FFA500]">
+                                      Enriching...
+                                    </span>
+                                  </div>
+                                ) : isEnriched ? (
+                                  <div className="flex items-center gap-1.5 text-xs">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                                    <span className="text-[#10B981]">
+                                      Enriched
+                                    </span>
+                                  </div>
+                                ) : null}
                               </div>
                               <div className="relative">
-                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none z-10" />
+                                {isLoadingPlaces &&
+                                  activeLocationInput?.dayId === day.id &&
+                                  activeLocationInput?.activityId ===
+                                    activity.id && (
+                                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A7AFF] animate-spin z-10" />
+                                  )}
                                 <Input
                                   placeholder="Search location..."
                                   value={activity.location}
@@ -1304,13 +1152,12 @@ export function CreateNewTravel() {
                                     }
                                   }}
                                   onBlur={() => {
-                                    // Delay hiding suggestions to allow click
                                     setTimeout(() => {
-                                      setLocationSuggestions([]);
+                                      setLocationSearchQuery("");
                                       setActiveLocationInput(null);
                                     }, 200);
                                   }}
-                                  className="h-9 pl-9 rounded-lg border-[#E5E7EB] text-sm w-full"
+                                  className="h-9 pl-9 pr-9 rounded-lg border-[#E5E7EB] text-sm w-full"
                                 />
                               </div>
 
@@ -1318,57 +1165,69 @@ export function CreateNewTravel() {
                               {activeLocationInput?.dayId === day.id &&
                                 activeLocationInput?.activityId ===
                                   activity.id &&
-                                (placesSuggestions.length > 0 ||
-                                  locationSuggestions.length > 0) && (
-                                  <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-40 overflow-auto">
-                                    {placesSuggestions.length > 0
-                                      ? placesSuggestions.map(
-                                          (place: any, idx: number) => (
-                                            <button
-                                              key={idx}
-                                              type="button"
-                                              onClick={() =>
-                                                selectLocationSuggestion(
-                                                  place,
-                                                  day.id,
-                                                  activity.id
-                                                )
-                                              }
-                                              className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
-                                            >
-                                              <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
-                                              <span className="truncate">
-                                                {place.name}
-                                              </span>
-                                            </button>
+                                placesSuggestions.length > 0 && (
+                                  <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
+                                    {placesSuggestions.map((place, idx) => (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() =>
+                                          selectLocationSuggestion(
+                                            place,
+                                            day.id,
+                                            activity.id
                                           )
-                                        )
-                                      : locationSuggestions.map(
-                                          (suggestion, idx) => (
-                                            <button
-                                              key={idx}
-                                              type="button"
-                                              onClick={() =>
-                                                selectLocationSuggestion(
-                                                  suggestion,
-                                                  day.id,
-                                                  activity.id
-                                                )
-                                              }
-                                              className="w-full px-4 py-2.5 text-left text-sm text-[#334155] hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors flex items-center gap-2 border-b border-[#F1F5F9] last:border-0"
-                                            >
-                                              <MapPin className="w-3.5 h-3.5 text-[#0A7AFF] shrink-0" />
-                                              <span className="truncate">
-                                                {suggestion}
+                                        }
+                                        className="w-full px-4 py-3 text-left hover:bg-[rgba(10,122,255,0.05)] hover:text-[#0A7AFF] transition-colors border-b border-[#F1F5F9] last:border-0 group"
+                                      >
+                                        <div className="flex items-start gap-3">
+                                          <div className="w-8 h-8 rounded-lg bg-[rgba(10,122,255,0.1)] flex items-center justify-center shrink-0 group-hover:bg-[rgba(10,122,255,0.15)] transition-colors">
+                                            <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-[#334155] group-hover:text-[#0A7AFF] transition-colors truncate">
+                                              {place.name}
+                                            </p>
+                                            <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                                              {place.address}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              <span className="text-xs px-2 py-0.5 rounded bg-[#F1F5F9] text-[#64748B] truncate">
+                                                {place.source}
                                               </span>
-                                            </button>
-                                          )
-                                        )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                              {/* No Results Found */}
+                              {activeLocationInput?.dayId === day.id &&
+                                activeLocationInput?.activityId ===
+                                  activity.id &&
+                                !isLoadingPlaces &&
+                                locationSearchQuery.length >= 2 &&
+                                placesSuggestions.length === 0 && (
+                                  <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#E5E7EB] rounded-lg shadow-lg p-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-lg bg-[#F8FAFB] flex items-center justify-center shrink-0">
+                                        <Search className="w-5 h-5 text-[#CBD5E1]" />
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-[#64748B]">
+                                          No locations found
+                                        </p>
+                                        <p className="text-xs text-[#94A3B8] mt-0.5">
+                                          Try a different search term
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                             </div>
 
-                            {/* Description */}
                             <div className="md:col-span-12">
                               <Label className="text-xs text-[#64748B] mb-1 block">
                                 Description
@@ -1390,7 +1249,6 @@ export function CreateNewTravel() {
                             </div>
                           </div>
 
-                          {/* Delete Button */}
                           <button
                             onClick={() =>
                               confirmDeleteActivity(day.id, activity.id)
@@ -1435,7 +1293,7 @@ export function CreateNewTravel() {
       {/* Icon Picker Dialog */}
       <Dialog
         open={iconPickerOpen}
-        onOpenChange={(open: any) => {
+        onOpenChange={(open) => {
           if (!open) {
             setIconPickerOpen(false);
             setIconSearchQuery("");
@@ -1455,7 +1313,6 @@ export function CreateNewTravel() {
             </DialogDescription>
           </DialogHeader>
 
-          {/* Search Bar */}
           <div className="px-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
@@ -1469,7 +1326,7 @@ export function CreateNewTravel() {
           </div>
 
           <ScrollArea className="max-h-100 px-6">
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 py-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 py-4">
               {filteredIcons.map((option) => {
                 const Icon = option.icon;
                 return (
@@ -1492,7 +1349,7 @@ export function CreateNewTravel() {
         </DialogContent>
       </Dialog>
 
-      {/* Save Confirmation Modal */}
+      {/* All Confirmation Modals */}
       <ConfirmationModal
         open={saveConfirmOpen}
         onOpenChange={setSaveConfirmOpen}
@@ -1537,7 +1394,6 @@ export function CreateNewTravel() {
         confirmVariant="default"
       />
 
-      {/* Unsaved Changes Modal */}
       <Dialog open={backConfirmOpen} onOpenChange={setBackConfirmOpen}>
         <DialogContent className="sm:max-w-130">
           <DialogHeader>
@@ -1574,7 +1430,6 @@ export function CreateNewTravel() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Activity Confirmation Modal */}
       <ConfirmationModal
         open={deleteActivityConfirm !== null}
         onOpenChange={(open) => !open && setDeleteActivityConfirm(null)}
@@ -1605,7 +1460,6 @@ export function CreateNewTravel() {
         confirmVariant="destructive"
       />
 
-      {/* Reduce Days Confirmation Modal */}
       <ConfirmationModal
         open={reduceDaysConfirm !== null}
         onOpenChange={(open) => !open && handleCancelReduceDays()}

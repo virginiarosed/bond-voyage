@@ -1012,6 +1012,15 @@ export function UserTravels() {
                   </button>
                 )}
 
+                <button
+                  onClick={handleEditBooking}
+                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0970E6] hover:to-[#0A7AFF] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#0A7AFF]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={updateBookingMutation.isPending}
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit Booking
+                </button>
+
                 {bookingDetail.type === "CUSTOMIZED" &&
                   bookingDetail.ownership?.toUpperCase() === "OWNED" && (
                     <>
@@ -1027,15 +1036,6 @@ export function UserTravels() {
                       </button>
 
                       <button
-                        onClick={handleEditBooking}
-                        className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0970E6] hover:to-[#0A7AFF] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#0A7AFF]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={updateBookingMutation.isPending}
-                      >
-                        <Edit className="w-4 h-4" />
-                        Edit Booking
-                      </button>
-
-                      <button
                         onClick={() => setShowDeleteConfirmModal(true)}
                         className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#FF6B6B] to-[#FF5252] hover:from-[#FF5757] hover:to-[#FF6B6B] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#FF6B6B]/20 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={deleteBookingMutation.isPending}
@@ -1047,18 +1047,6 @@ export function UserTravels() {
                       </button>
                     </>
                   )}
-
-                {bookingDetail.ownership?.toUpperCase() === "COLLABORATED" && (
-                  <button
-                    onClick={() =>
-                      handleShareBooking(bookingDetail.itineraryId)
-                    }
-                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#8B5CF6] to-[#A78BFA] hover:from-[#7C3AED] hover:to-[#8B5CF6] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#8B5CF6]/20"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    Share with Others
-                  </button>
-                )}
               </>
             )
           }

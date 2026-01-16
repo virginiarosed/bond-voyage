@@ -527,7 +527,29 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     },
   };
 
-  const config = pageConfig[location.pathname] || pageConfig["/"];
+  // Helper function to match dynamic routes
+  const matchRoute = (pathname: string): string => {
+    // Try exact match first
+    if (pageConfig[pathname]) {
+      return pathname;
+    }
+
+    // Try matching dynamic routes
+    const routes = Object.keys(pageConfig);
+    for (const route of routes) {
+      // Convert route pattern to regex (e.g., /itinerary/edit-requested/:id => /^\/itinerary\/edit-requested\/.*$/)
+      const routeRegex = new RegExp(`^${route.replace(/:[^/]+/g, "[^/]+")}$`);
+      if (routeRegex.test(pathname)) {
+        return route;
+      }
+    }
+
+    // Default to home if no match found
+    return "/";
+  };
+
+  const matchedRoute = matchRoute(location.pathname);
+  const config = pageConfig[matchedRoute];
 
   /**
    * @TODO change design of this overlay
