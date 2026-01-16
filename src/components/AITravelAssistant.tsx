@@ -33,6 +33,16 @@ interface Message {
   content: string;
   timestamp: Date;
   suggestions?: string[];
+
+  // Optional draft payload returned by ROAMAN
+  draft?: DraftItinerary;
+  // If present, this message can be applied directly from chat
+  applyKind?: "APPEND_ACTIVITIES";
+  applyMeta?: {
+    targetDay: number;
+    requestedActivitiesCount?: number;
+  };
+  applied?: boolean;
 }
 
 interface AITravelAssistantProps {
@@ -64,6 +74,15 @@ export function AITravelAssistant({
   const [pendingDraft, setPendingDraft] = useState<DraftItinerary | null>(null);
   const [showDraftPreview, setShowDraftPreview] = useState(false);
 
+  const [lastRoamanRequestMeta, setLastRoamanRequestMeta] = useState<
+    | {
+        mode: "FULL_ITINERARY" | "ADD_TO_DAY";
+        targetDay?: number;
+        requestedActivitiesCount?: number;
+      }
+    | null
+  >(null);
+
   // Handle chatbot API response
   const handleChatbotResponse = (response: RoamanResponse) => {
     setIsTyping(false);
@@ -73,18 +92,38 @@ export function AITravelAssistant({
       return;
     }
 
+    const draft = response.data.draft;
+    const meta = lastRoamanRequestMeta;
+    const isAddToDayMode =
+      meta?.mode === "ADD_TO_DAY" &&
+      !!draft &&
+      Array.isArray(draft.days) &&
+      draft.days.length === 1;
+
     const aiMessage: Message = {
       id: Date.now().toString(),
       type: "ai",
       content: response.data.message,
       timestamp: new Date(),
       suggestions: response.data.suggestions,
+      draft: isAddToDayMode ? draft : undefined,
+      applyKind: isAddToDayMode ? "APPEND_ACTIVITIES" : undefined,
+      applyMeta: isAddToDayMode
+        ? {
+            targetDay:
+              meta?.targetDay ??
+              draft?.days?.[0]?.dayNumber ??
+              selectedDay,
+            requestedActivitiesCount: meta?.requestedActivitiesCount,
+          }
+        : undefined,
+      applied: false,
     };
 
     setMessages((prev) => [...prev, aiMessage]);
 
-    const draft = response.data.draft;
-    if (draft) {
+    // For full itinerary drafts, show the preview dialog.
+    if (draft && !isAddToDayMode) {
       setPendingDraft(draft);
       setShowDraftPreview(true);
     }
@@ -95,6 +134,135 @@ export function AITravelAssistant({
     setIsTyping(false);
     toast.error("Failed to connect to ROAMAN. Please try again.");
     console.error("Chatbot error:", error);
+  };
+
+  const parseSingleDayAddRequest = (text: string):
+    | { targetDay: number; requestedActivitiesCount: number }
+    | null => {
+    const normalized = text.trim();
+    if (!normalized) return null;
+
+    const hasIntent = /(\badd\b|\brecommend\b|\bsuggest\b)/i.test(normalized);
+    const mentionsActivity = /\bactivity\b|\bactivities\b/i.test(normalized);
+    if (!hasIntent || !mentionsActivity) return null;
+
+    // Day extraction: "Day 11" or "11th day" / "for the 11th day"
+    const dayMatch =
+      normalized.match(/\bday\s*(\d{1,3})\b/i) ||
+      normalized.match(/\b(\d{1,3})(st|nd|rd|th)\s*day\b/i);
+
+    const targetDay = dayMatch ? Number(dayMatch[1]) : NaN;
+    if (!targetDay || Number.isNaN(targetDay) || targetDay < 1) return null;
+
+    // Count extraction: "add 3 activities" / default 1 for "an activity"
+    const countMatch = normalized.match(/\b(\d{1,2})\s*(activity|activities)\b/i);
+    const requestedActivitiesCount = countMatch
+      ? Number(countMatch[1])
+      : /\ban\s+activity\b/i.test(normalized)
+        ? 1
+        : 1;
+
+    return {
+      targetDay,
+      requestedActivitiesCount: Math.max(1, Math.min(10, requestedActivitiesCount || 1)),
+    };
+  };
+
+  const applyAdditionsFromMessage = (messageId: string) => {
+    if (!onItineraryUpdate) {
+      toast.error("Itinerary update handler is missing.");
+      return;
+    }
+
+    const message = messages.find((m) => m.id === messageId);
+    if (!message || !message.draft || !message.applyMeta) return;
+    if (message.applied) return;
+
+    const patchDay = message.draft.days?.[0];
+    const targetDay = message.applyMeta.targetDay;
+    if (!patchDay || !targetDay) return;
+
+    // Detect if parent uses 'day' or 'dayNumber' property
+    const usesLegacyDayProp =
+      itineraryDays.length > 0 &&
+      itineraryDays[0].dayNumber === undefined &&
+      (itineraryDays[0] as any).day !== undefined;
+
+    const existingDays = [...itineraryDays];
+    const existingIndex = existingDays.findIndex((d) => {
+      const existingDayNum = d.dayNumber ?? (d as any).day;
+      return existingDayNum === targetDay;
+    });
+
+    const existingActivities =
+      existingIndex >= 0 ? existingDays[existingIndex].activities || [] : [];
+    const existingMaxOrder = existingActivities.reduce(
+      (max, a) => Math.max(max, a.order ?? 0),
+      0
+    );
+
+    const additions = (patchDay.activities || []).map((activity: any, index: number) => {
+      const locationName =
+        (activity as any).locationName || (activity as any).location || "";
+      const iconKey = (activity as any).iconKey || "";
+      const systemIcon = mapRoamanIconToSystemIcon(iconKey);
+
+      return {
+        id: `activity-${targetDay}-${Date.now()}-${index}`,
+        time: activity.time || "",
+        title: activity.title || "",
+        description: activity.description || "",
+        location: locationName,
+        locationData: undefined,
+        icon: systemIcon,
+        order: existingMaxOrder + index + 1,
+        _needsLocationLookup: !!locationName,
+      };
+    });
+
+    if (existingIndex >= 0) {
+      const existingDay = existingDays[existingIndex];
+      existingDays[existingIndex] = {
+        ...existingDay,
+        activities: [...existingActivities, ...additions],
+      };
+    } else {
+      const newDay: any = {
+        id: `day-${targetDay}`,
+        dayNumber: targetDay,
+        date: patchDay.date || null,
+        title: patchDay.title || `Day ${targetDay}`,
+        activities: additions.map((a, idx) => ({ ...a, order: idx + 1 })),
+      };
+
+      if (usesLegacyDayProp) {
+        newDay.day = targetDay;
+      }
+      existingDays.push(newDay);
+    }
+
+    existingDays.sort((a, b) => {
+      const aNum = a.dayNumber ?? (a as any).day ?? 0;
+      const bNum = b.dayNumber ?? (b as any).day ?? 0;
+      return aNum - bNum;
+    });
+
+    onItineraryUpdate(existingDays);
+    toast.success(`Added ${additions.length} activity(ies) to Day ${targetDay}.`);
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId ? { ...m, applied: true } : m
+      )
+    );
+
+    const confirmMessage: Message = {
+      id: `${Date.now()}-applied`,
+      type: "system",
+      content: `✅ Applied ${additions.length} new activity(ies) to Day ${targetDay}.`,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, confirmMessage]);
   };
 
   // Initialize chatbot hook with callbacks
@@ -412,17 +580,40 @@ export function AITravelAssistant({
     setInputValue("");
     setIsTyping(true);
 
-    // Get current day activities for context
-    const currentDayData = getCurrentDayActivities();
+    // Detect single-day add requests (e.g., "add 1 activity for day 11")
+    const addRequest = parseSingleDayAddRequest(messageToSend);
+    const effectiveDay = addRequest?.targetDay ?? selectedDay;
+
+    // Get current day activities for context (use the day being operated on)
+    const currentDayData = getCurrentDayActivities(effectiveDay);
+
+    // Track request meta so the response handler knows whether to show an in-chat apply button
+    setLastRoamanRequestMeta(
+      addRequest
+        ? {
+            mode: "ADD_TO_DAY",
+            targetDay: addRequest.targetDay,
+            requestedActivitiesCount: addRequest.requestedActivitiesCount,
+          }
+        : { mode: "FULL_ITINERARY" }
+    );
+
+    const promptToSend = addRequest
+      ? `User request: ${messageToSend}\n\nIMPORTANT: Only add ${addRequest.requestedActivitiesCount} NEW activity/activities to Day ${addRequest.targetDay}. Do NOT regenerate other days. Return draft.days with EXACTLY one day (dayNumber=${addRequest.targetDay}) and draft.days[0].activities containing ONLY the new activities. The assistant message must list ONLY the new activities.`
+      : messageToSend;
 
     // Prepare API request
     const chatRequest: RoamanRequest = {
-      prompt: messageToSend,
+      prompt: promptToSend,
       preferences: {
-        selectedDay,
+        selectedDay: effectiveDay,
         destination,
         currentDayActivities: currentDayData.activities,
         totalDays: visibleDays.length,
+
+        roamanMode: addRequest ? "ADD_TO_DAY" : "FULL_ITINERARY",
+        targetDay: addRequest?.targetDay,
+        requestedActivitiesCount: addRequest?.requestedActivitiesCount,
       },
     };
 
@@ -872,6 +1063,28 @@ export function AITravelAssistant({
                             {renderMessageContent(message.content)}
                           </p>
                         </motion.div>
+
+                        {message.type === "ai" &&
+                          message.applyKind === "APPEND_ACTIVITIES" &&
+                          message.draft &&
+                          message.applyMeta && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <Button
+                                onClick={() => applyAdditionsFromMessage(message.id)}
+                                disabled={!onItineraryUpdate || message.applied}
+                                className="h-9 rounded-xl text-white px-4"
+                                style={{
+                                  background:
+                                    "linear-gradient(to right, #10B981, #0A7AFF)",
+                                }}
+                              >
+                                {message.applied ? "Applied" : "Apply"}
+                              </Button>
+                              <span className="text-[11px] text-[#64748B]">
+                                Adds to Day {message.applyMeta.targetDay}
+                              </span>
+                            </div>
+                          )}
 
                         {message.suggestions &&
                           message.suggestions.length > 0 && (
