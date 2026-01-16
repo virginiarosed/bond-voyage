@@ -5,84 +5,89 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
-import { Mail, Phone, MapPin, Send, Plane, Sparkles } from "lucide-react";
+import { Mail, Phone, MapPin, Send, Plane } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useSendSystemContact } from "../../../hooks/useContact";
+import { toast } from "sonner";
 
 
 export function Contact() {
   const [messageValue, setMessageValue] = useState("");
-  const [showEasterEgg, setShowEasterEgg] = useState(false);
-  const [easterEggMessage, setEasterEggMessage] = useState("");
+  const [nameValue, setNameValue] = useState("");
+  const [emailValue, setEmailValue] = useState("");
   const [showPlaneAnimation, setShowPlaneAnimation] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const greetingResponses: { [key: string]: string } = {
-    'hello': 'Well hello there! 👋',
-    'hi': 'Hey! How\'s it going? 😊',
-    'hey': 'Hey there! What can we help with? 👋',
-    'good morning': 'Good morning! What\'s new? ☀️',
-    'good afternoon': 'Good afternoon! How\'s your day? 🌤️',
-    'good evening': 'Good evening! Hope you\'re well! 🌙',
-    'greetings': 'Greetings, friend! 🙌',
-    'howdy': 'Howdy, partner! 🤠',
-    'hiya': 'Hiya! Great to hear from you! 👋'
-  };
+  // Contact form mutation
+  const sendSystemContactMutation = useSendSystemContact();
 
-  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setMessageValue(value);
-    
-    // Easter egg: detect various greetings (case insensitive)
-    const lowerValue = value.toLowerCase();
-    
-    // Check for greetings in order of length (longest first to match "good morning" before "good")
-    const greetings = Object.keys(greetingResponses).sort((a, b) => b.length - a.length);
-    const foundGreeting = greetings.find(greeting => lowerValue.includes(greeting));
-    
-    if (foundGreeting && !showEasterEgg) {
-      setEasterEggMessage(greetingResponses[foundGreeting]);
-      setShowEasterEgg(true);
-      // Reset after animation
-      setTimeout(() => setShowEasterEgg(false), 3000);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Trigger paper airplane animation
-    setShowPlaneAnimation(true);
-    setFormSubmitted(true);
-    
-    // Play a whoosh sound effect (paper plane flying)
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      // Create a whoosh sound by sweeping frequency
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.4);
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.4);
-    } catch (error) {
-      // Silently fail if audio doesn't play
+
+    if (!nameValue.trim() || !emailValue.trim() || !messageValue.trim()) {
+      toast.error("Please fill in all fields");
+      return;
     }
-    
-    // Reset animations
-    setTimeout(() => {
+
+    setIsSubmitting(true);
+
+    try {
+      await sendSystemContactMutation.mutateAsync({
+        name: nameValue.trim(),
+        email: emailValue.trim(),
+        message: messageValue.trim(),
+      });
+
+      // Trigger paper airplane animation on success
+      setShowPlaneAnimation(true);
+      setFormSubmitted(true);
+
+      // Play a whoosh sound effect (paper plane flying)
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // Create a whoosh sound by sweeping frequency
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.4);
+
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.4);
+      } catch (audioError) {
+        // Silently fail if audio doesn't play
+      }
+
+      toast.success("Message sent successfully!", {
+        description: "We'll get back to you as soon as possible.",
+      });
+
+      // Reset animations and form
+      setTimeout(() => {
+        setShowPlaneAnimation(false);
+        setFormSubmitted(false);
+        setMessageValue("");
+        setNameValue("");
+        setEmailValue("");
+      }, 2000);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Failed to send message. Please try again.";
+      toast.error("Error", {
+        description: errorMessage,
+      });
       setShowPlaneAnimation(false);
       setFormSubmitted(false);
-      setMessageValue("");
-    }, 2000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const contactInfo = [
@@ -181,8 +186,11 @@ export function Contact() {
                   <Input
                     id="name"
                     placeholder="Enter your name"
+                    value={nameValue}
+                    onChange={(e) => setNameValue(e.target.value)}
                     className="mt-2 h-12 rounded-xl border-[var(--silver)] bg-[var(--cloud-gray)] focus:bg-white focus:border-[var(--ocean-blue)] focus:ring-2 focus:ring-[var(--ocean-blue)] focus:ring-opacity-20 transition-all duration-200"
                     style={{ fontSize: "16px" }}
+                    disabled={isSubmitting}
                     required
                   />
                 </div>
@@ -194,55 +202,47 @@ export function Contact() {
                     id="email"
                     type="email"
                     placeholder="you@example.com"
+                    value={emailValue}
+                    onChange={(e) => setEmailValue(e.target.value)}
                     className="mt-2 h-12 rounded-xl border-[var(--silver)] bg-[var(--cloud-gray)] focus:bg-white focus:border-[var(--ocean-blue)] focus:ring-2 focus:ring-[var(--ocean-blue)] focus:ring-opacity-20 transition-all duration-200"
                     style={{ fontSize: "16px" }}
+                    disabled={isSubmitting}
                     required
                   />
                 </div>
-                <div className="relative">
+                <div>
                   <Label htmlFor="message" style={{ fontSize: "14px", fontWeight: 500, color: 'var(--deep-navy)' }}>
                     Your Message
                   </Label>
-                  
-                  {/* Easter Egg Animation - positioned near textarea */}
-                  <AnimatePresence>
-                    {showEasterEgg && (
-                      <motion.div
-                        className="absolute -top-2 left-0 right-0 z-10 flex justify-center"
-                        initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                        animate={{ opacity: 1, y: -8, scale: 1 }}
-                        exit={{ opacity: 0, y: -15, scale: 0.8 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <div className="bg-gradient-to-r from-[var(--ocean-blue)] to-[var(--tropical-teal)] text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2">
-                          <Sparkles className="w-5 h-5 animate-pulse" />
-                          <span style={{ fontSize: "14px", fontWeight: 500 }}>
-                            {easterEggMessage}
-                          </span>
-                          <Sparkles className="w-5 h-5 animate-pulse" />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  
                   <Textarea
                     id="message"
-                    placeholder="Tell us what you're thinking... (Try typing a greeting! 😉)"
+                    placeholder="Tell us what you're thinking..."
                     value={messageValue}
-                    onChange={handleMessageChange}
+                    onChange={(e) => setMessageValue(e.target.value)}
                     className="mt-2 min-h-[160px] rounded-xl resize-none border-[var(--silver)] bg-[var(--cloud-gray)] focus:bg-white focus:border-[var(--ocean-blue)] focus:ring-2 focus:ring-[var(--ocean-blue)] focus:ring-opacity-20 transition-all duration-200"
                     style={{ fontSize: "16px" }}
+                    disabled={isSubmitting}
                     required
                   />
                 </div>
                 <div className="relative">
                   <Button
                     type="submit"
-                    className="w-full h-12 rounded-xl bg-[var(--ocean-blue)] hover:bg-[var(--sky-blue)] text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                    disabled={isSubmitting}
+                    className="w-full h-12 rounded-xl bg-[var(--ocean-blue)] hover:bg-[var(--sky-blue)] text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     style={{ fontSize: "16px", fontWeight: 500 }}
                   >
-                    Send Message
-                    <Send className="ml-2 w-4 h-4" />
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        Send Message
+                        <Send className="ml-2 w-4 h-4" />
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>

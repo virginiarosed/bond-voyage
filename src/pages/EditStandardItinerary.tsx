@@ -316,7 +316,7 @@ export function EditStandardItinerary() {
         const convertedDays: Day[] = pkg.days.map(
           (day: any, index: number) => ({
             id: generateId(),
-            day: day.day || index + 1,
+            day: day.dayNumber || index + 1,
             title: day.title || "",
             activities: (day.activities || []).map(
               (activity: any, actIdx: number) => ({
