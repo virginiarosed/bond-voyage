@@ -58,6 +58,10 @@ import { useMediaQuery } from "react-responsive";
 import { Booking } from "../types/types";
 
 const transformBookingForCard = (booking: any) => {
+  // Ensure consistent resolution status handling
+  const isResolved = Boolean(booking.isResolved);
+  const resolutionStatus = isResolved ? "resolved" : "unresolved";
+
   return {
     id: booking.id,
     bookingCode: booking.bookingCode,
@@ -78,10 +82,12 @@ const transformBookingForCard = (booking: any) => {
     tourType: booking.tourType,
     rejectionReason: booking.rejectionReason,
     rejectionResolution: booking.rejectionResolution,
-    resolutionStatus: booking.resolutionStatus,
+    isResolved: isResolved,
+    resolutionStatus: resolutionStatus,
     sentStatus: booking.sentStatus,
   };
 };
+
 interface ApprovalsProps {
   onApprovalsCountChange?: (count: number) => void;
 }
@@ -142,7 +148,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
   const { data: bookingDetailData, isLoading: isLoadingDetail } =
     useBookingDetail(selectedBookingId || "", {
       enabled: !!selectedBookingId && viewMode === "detail",
-      queryKey: [queryKeys.bookings.detail],
+      queryKey: queryKeys.bookings.detail(selectedBookingId!),
     });
 
   // Mutations
@@ -200,13 +206,15 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
 
   const transformBooking = (apiBooking: any) => {
     const totalAmount = parseFloat(apiBooking.totalPrice) || 0;
-
     const startDate = apiBooking.startDate || apiBooking.itinerary?.startDate;
     const endDate = apiBooking.endDate || apiBooking.itinerary?.endDate;
-
     const customerName = apiBooking.customerName || "Unknown Customer";
     const customerEmail = apiBooking.customerEmail || "";
     const customerMobile = apiBooking.customerMobile || "N/A";
+
+    // Properly handle resolution status - prioritize isResolved boolean
+    const isResolved = Boolean(apiBooking.isResolved);
+    const resolutionStatus = isResolved ? "resolved" : "unresolved";
 
     return {
       id: apiBooking.id,
@@ -231,7 +239,8 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
         apiBooking.tourType || apiBooking.itinerary?.tourType || "PRIVATE",
       rejectionReason: apiBooking.rejectionReason,
       rejectionResolution: apiBooking.rejectionResolution,
-      resolutionStatus: apiBooking.isResolved ? "resolved" : "unresolved",
+      isResolved: isResolved,
+      resolutionStatus: resolutionStatus,
       paymentHistory: [],
       bookingSource: apiBooking.type,
       itineraryDetails: [],
@@ -341,7 +350,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
     setActionError(null);
 
     try {
-      await updateBookingStatus.mutateAsync({
+      await updateBooking.mutateAsync({
         status: "REJECTED",
         rejectionReason: rejectionReason.trim(),
         rejectionResolution: rejectionResolution.trim(),
@@ -404,12 +413,14 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
   };
 
   const handleMarkAsResolved = async (bookingId: string) => {
+    setSelectedBookingId(bookingId);
     setIsMarkingResolved(true);
     setActionError(null);
 
     try {
-      setSelectedBookingId(bookingId);
-      await updateBooking.mutateAsync({ isResolved: true });
+      await updateBooking.mutateAsync({
+        isResolved: true,
+      });
       toast.success("Marked as resolved");
       await refetch();
     } catch (error: any) {
@@ -773,7 +784,6 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                   </div>
                 </div>
               )}
-
               {/* Total Amount Edit Section */}
               <div className="bg-linear-to-br from-[#F8FAFB] to-white rounded-xl p-4 border border-[#E5E7EB]">
                 <div className="flex items-center justify-between mb-2">
@@ -848,7 +858,6 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                   </p>
                 )}
               </div>
-
               {/* Rejection Info for Rejected Tab */}
               {activeTab === "rejected" &&
                 selectedBooking.rejectionReason &&
@@ -881,7 +890,9 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                         <p className="text-xs font-semibold text-[#64748B]">
                           Client Action Status:
                         </p>
-                        {selectedBooking.resolutionStatus === "resolved" ? (
+                        {/* FIX: Properly check resolution status */}
+                        {selectedBooking.resolutionStatus === "resolved" ||
+                        selectedBooking.isResolved === true ? (
                           <button
                             onClick={() =>
                               handleMarkAsUnresolvedClick(selectedBooking)
@@ -909,64 +920,53 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
                             ) : (
                               <AlertTriangle className="w-3 h-3 inline mr-1" />
                             )}
-                            {isMarkingResolved ? "Updating..." : "Unresolved"}
+                            {isMarkingResolved
+                              ? "Marking..."
+                              : "Mark as Resolved"}
                           </button>
                         )}
                       </div>
                     </div>
                   </div>
                 )}
-
-              {/* Action Buttons Based on Tab */}
-              {activeTab !== "rejected" ? (
-                // Pending Approvals Actions
-                <>
-                  <button
-                    onClick={() => handleApproveClick(selectedBooking)}
-                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                    disabled={isApproving || isLoadingDetail}
-                  >
-                    {isApproving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4" />
-                    )}
-                    {isApproving ? "Approving..." : "Approve Booking"}
-                  </button>
-                  <button
-                    onClick={() => handleRejectClick(selectedBooking)}
-                    className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white flex items-center justify-center gap-2 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isRejecting || isLoadingDetail}
-                  >
-                    {isRejecting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <XCircle className="w-4 h-4" />
-                    )}
-                    {isRejecting ? "Rejecting..." : "Reject Booking"}
-                  </button>
-                </>
-              ) : (
-                // Rejected Bookings Actions
-                selectedBooking.resolutionStatus === "resolved" && (
-                  <button
-                    onClick={() =>
-                      handleReviewForApprovalClick(selectedBooking)
-                    }
-                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                    disabled={isReconsidering || isLoadingDetail}
-                  >
-                    {isReconsidering ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <RotateCcw className="w-4 h-4" />
-                    )}
-                    {isReconsidering ? "Moving..." : "Review for Approval"}
-                  </button>
-                )
-              )}
-
-              {/* Back to List Button */}
+              <>
+                <button
+                  onClick={() => handleApproveClick(selectedBooking)}
+                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#10B981] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#10B981]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  disabled={isApproving || isLoadingDetail}
+                >
+                  {isApproving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
+                  {isApproving ? "Approving..." : "Approve Booking"}
+                </button>
+                <button
+                  onClick={() => handleRejectClick(selectedBooking)}
+                  className="w-full h-11 px-4 rounded-xl border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white flex items-center justify-center gap-2 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isRejecting || isLoadingDetail}
+                >
+                  {isRejecting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <XCircle className="w-4 h-4" />
+                  )}
+                  {isRejecting ? "Rejecting..." : "Reject Booking"}
+                </button>
+              </>
+              <button
+                onClick={() => handleReviewForApprovalClick(selectedBooking)}
+                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                disabled={isReconsidering || isLoadingDetail}
+              >
+                {isReconsidering ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4" />
+                )}
+                {isReconsidering ? "Moving..." : "Review for Approval"}
+              </button>
               <button
                 onClick={handleBackToList}
                 className="w-full h-11 px-4 rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] hover:bg-[#F8FAFB] flex items-center justify-center gap-2 text-[#334155] font-medium transition-all"
