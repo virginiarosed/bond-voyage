@@ -65,17 +65,17 @@ BondVoyage is a **full-stack web application** that serves as a travel managemen
 
 ### Core Capabilities
 
-| Feature | Description |
-|---------|-------------|
-| **Booking Management** | Track, approve, and process customer bookings |
-| **Itinerary Creation** | Create standard and customized travel itineraries |
-| **Payment Processing** | Verify and process booking payments (Cash/GCash) |
-| **Route Optimization** | AI-powered route planning and optimization |
-| **AI Assistant** | ChatBot for travel advice and suggestions |
-| **Notifications** | Real-time alerts for bookings, payments, updates |
-| **Activity Logging** | Complete audit trail of system actions |
-| **Feedback Management** | Collect and manage customer reviews/ratings |
-| **Weather Forecast** | 7-day weather forecasts for destinations |
+| Feature                 | Description                                       |
+| ----------------------- | ------------------------------------------------- |
+| **Booking Management**  | Track, approve, and process customer bookings     |
+| **Itinerary Creation**  | Create standard and customized travel itineraries |
+| **Payment Processing**  | Verify and process booking payments (Cash/GCash)  |
+| **Route Optimization**  | AI-powered route planning and optimization        |
+| **AI Assistant**        | ChatBot for travel advice and suggestions         |
+| **Notifications**       | Real-time alerts for bookings, payments, updates  |
+| **Activity Logging**    | Complete audit trail of system actions            |
+| **Feedback Management** | Collect and manage customer reviews/ratings       |
+| **Weather Forecast**    | 7-day weather forecasts for destinations          |
 
 ---
 
@@ -165,6 +165,7 @@ BondVoyage is a **full-stack web application** that serves as a travel managemen
 ### 1. Authentication & Authorization
 
 **Flow:**
+
 ```
 User Input Credentials
         ↓
@@ -178,6 +179,7 @@ User Authenticated & Role-Based Access Granted
 ```
 
 **Token Management:**
+
 - **Access Token**: Short-lived, for API requests
 - **Refresh Token**: Long-lived, for obtaining new access tokens
 - **Storage**: `localStorage` (accessToken, refreshToken)
@@ -186,6 +188,7 @@ User Authenticated & Role-Based Access Granted
 ### 2. User Management
 
 **Admin Capabilities:**
+
 - View all registered users
 - Filter by active/inactive status
 - Search by name/email
@@ -193,6 +196,7 @@ User Authenticated & Role-Based Access Granted
 - View user activity
 
 **User Operations:**
+
 - Register new account
 - Edit profile (name, contact, avatar)
 - Change password
@@ -202,6 +206,7 @@ User Authenticated & Role-Based Access Granted
 ### 3. Booking System
 
 **Booking Types:**
+
 ```
 ┌──────────────────────┐
 │   Booking Types      │
@@ -213,6 +218,7 @@ User Authenticated & Role-Based Access Granted
 ```
 
 **Booking Status Flow:**
+
 ```
 DRAFT
   ↓
@@ -232,20 +238,24 @@ PENDING (Awaiting approval)
 ### 4. Payment Processing
 
 **Payment Methods:**
+
 - GCash (Digital)
 - Cash (Physical)
 
 **Payment Types:**
+
 - Full Payment
 - Partial Payment
 
 **Payment Status:**
+
 ```
 PENDING → VERIFIED → PAID
          ↘ REJECTED
 ```
 
 **Verification Process:**
+
 ```
 User submits proof of payment
         ↓
@@ -261,18 +271,21 @@ Admin reviews payment proof
 **Two Types of Itineraries:**
 
 #### Standard Itinerary (Template-Based)
+
 - Pre-designed travel packages
 - Reusable across multiple bookings
 - Contains fixed price per pax
 - Example: "5-day Boracay Beach Resort Package"
 
 #### Requested Itinerary (Custom)
+
 - Created per customer request
 - Day-by-day custom activities
 - Flexible modifications
 - Generated from booking requests
 
 **Itinerary Structure:**
+
 ```
 Itinerary
 ├─ Basic Info
@@ -298,6 +311,7 @@ Itinerary
 ### 6. Route Optimization
 
 **Features:**
+
 - AI-powered route analysis
 - Distance calculation between locations
 - Time-saving recommendations
@@ -310,6 +324,7 @@ Itinerary
 ### 7. AI Travel Assistant
 
 **Capabilities:**
+
 - Chat-based trip planning
 - Itinerary suggestions
 - Activity recommendations
@@ -320,6 +335,7 @@ Itinerary
 ### 8. Notification System
 
 **Notification Types:**
+
 ```
 1. BOOKING    - Booking status changes
 2. PAYMENT    - Payment updates
@@ -329,6 +345,7 @@ Itinerary
 ```
 
 **Notification Features:**
+
 - Real-time updates
 - Mark as read/unread
 - Filter by type
@@ -349,11 +366,11 @@ interface User {
   middleName?: string;
   lastName: string;
   mobile: string;
-  role: "admin" | "user";        // Role-based access
+  role: "admin" | "user"; // Role-based access
   isActive: boolean;
   avatarUrl?: string;
   birthday?: string;
-  companyName?: string;          // For admin users
+  companyName?: string; // For admin users
   employeeId?: string;
   customerRating?: number;
   createdAt: string;
@@ -367,7 +384,7 @@ interface User {
 ```typescript
 interface Booking {
   id: string;
-  bookingCode: string;           // Unique booking identifier
+  bookingCode: string; // Unique booking identifier
   itineraryId: string;
   userId: string;
   destination: string;
@@ -376,29 +393,34 @@ interface Booking {
   travelers: number;
   totalPrice: number;
   type: "STANDARD" | "CUSTOMIZED" | "REQUESTED";
-  status: "DRAFT" | "PENDING" | "CONFIRMED" | 
-          "REJECTED" | "COMPLETED" | "CANCELLED";
+  status:
+    | "DRAFT"
+    | "PENDING"
+    | "CONFIRMED"
+    | "REJECTED"
+    | "COMPLETED"
+    | "CANCELLED";
   tourType: "PRIVATE" | "GROUP";
-  
+
   // Payment Info
   paymentStatus: "PENDING" | "PAID" | "FAILED" | "REFUNDED";
   totalPaid: number;
-  
+
   // Customer Info
   customerName: string;
   customerEmail: string;
   customerMobile: string;
-  
+
   // Rejection/Resolution
   rejectionReason?: string;
   rejectionResolution?: string;
   isResolved: boolean;
-  
+
   // Timestamps
   bookedDate: string;
   createdAt: string;
   updatedAt: string;
-  
+
   // Relations
   itinerary: Itinerary;
   payments: Payment[];
@@ -421,19 +443,19 @@ interface Itinerary {
   type: "STANDARD" | "CUSTOMIZED" | "REQUESTED";
   status: string;
   tourType: "PRIVATE" | "GROUP";
-  
+
   // Sent & Confirmation Status
   sentStatus?: "sent" | "unsent";
   sentAt?: string;
   confirmedAt?: string;
-  
+
   // Rejection Info
   rejectionReason?: string;
   rejectionResolution?: string;
   isResolved: boolean;
-  
+
   // Relations
-  days: Day[];                   // Daily activities
+  days: Day[]; // Daily activities
   collaborators: Collaborator[];
   createdAt: string;
   updatedAt: string;
@@ -453,12 +475,12 @@ interface Day {
 
 interface Activity {
   id: string;
-  time: string;                 // e.g., "08:00 AM"
+  time: string; // e.g., "08:00 AM"
   title: string;
   description: string;
   location: string;
-  icon: string;                 // Icon name
-  order: number;               // Display order
+  icon: string; // Icon name
+  order: number; // Display order
   locationData?: {
     source: string;
     name: string;
@@ -475,15 +497,15 @@ interface Activity {
 interface Payment {
   id: string;
   bookingId: string;
-  amount: string;               // Amount in currency
+  amount: string; // Amount in currency
   method: "GCASH" | "CASH";
   type: "PARTIAL" | "FULL";
   status: "PENDING" | "VERIFIED" | "REJECTED";
-  
+
   // Transaction Details
   transactionId?: string;
-  proofImage?: string;          // Base64 or URL
-  
+  proofImage?: string; // Base64 or URL
+
   // Submitter Info
   submittedById: string;
   submittedBy?: {
@@ -492,12 +514,12 @@ interface Payment {
     lastName: string;
     email: string;
   };
-  
+
   // Verification Details
   verifiedBy?: string;
   verifiedAt?: string;
   rejectionReason?: string;
-  
+
   createdAt: string;
   updatedAt: string;
 }
@@ -513,13 +535,13 @@ interface INotification {
   title: string;
   message: string;
   isRead: boolean;
-  
+
   // Optional Relations
   bookingId?: string;
   paymentId?: string;
   inquiryId?: string;
   feedbackId?: string;
-  
+
   createdAt: string;
   updatedAt: string;
 }
@@ -532,13 +554,13 @@ interface TourPackage {
   id: string;
   title: string;
   destination: string;
-  price: number;                 // Price per pax
-  duration: number;              // Days
+  price: number; // Price per pax
+  duration: number; // Days
   isActive: boolean;
   description?: string;
-  category: string;              // e.g., "Beach", "Mountain"
+  category: string; // e.g., "Beach", "Mountain"
   imageUrl?: string;
-  
+
   // Itinerary Details
   days: Day[];
   createdAt: string;
@@ -641,21 +663,21 @@ Step 6: Payment Processing
 
 ### Admin API Operations
 
-| Operation | Endpoint | Method | Purpose |
-|-----------|----------|--------|---------|
-| View Bookings | `/bookings` | GET | List all bookings |
-| Get Booking Detail | `/bookings/{id}` | GET | View single booking |
-| Approve Booking | `/bookings/{id}/approve` | PUT | Approve pending booking |
-| Reject Booking | `/bookings/{id}/reject` | PUT | Reject with reason |
-| Update Status | `/bookings/{id}/status` | PUT | Change booking status |
-| View Users | `/users` | GET | List all users |
-| Create Standard | `/tour-packages` | POST | Create standard itinerary |
-| Edit Standard | `/tour-packages/{id}` | PUT | Modify itinerary |
-| Delete Standard | `/tour-packages/{id}` | DELETE | Remove itinerary |
-| Verify Payment | `/payments/{id}/verify` | PUT | Approve payment |
-| Reject Payment | `/payments/{id}/reject` | PUT | Decline payment |
-| Create Itinerary | `/itineraries` | POST | Create requested itinerary |
-| Submit Booking | `/bookings/{id}/submit` | POST | Send itinerary to client |
+| Operation          | Endpoint                 | Method | Purpose                    |
+| ------------------ | ------------------------ | ------ | -------------------------- |
+| View Bookings      | `/bookings`              | GET    | List all bookings          |
+| Get Booking Detail | `/bookings/{id}`         | GET    | View single booking        |
+| Approve Booking    | `/bookings/{id}/approve` | PUT    | Approve pending booking    |
+| Reject Booking     | `/bookings/{id}/reject`  | PUT    | Reject with reason         |
+| Update Status      | `/bookings/{id}/status`  | PUT    | Change booking status      |
+| View Users         | `/users`                 | GET    | List all users             |
+| Create Standard    | `/tour-packages`         | POST   | Create standard itinerary  |
+| Edit Standard      | `/tour-packages/{id}`    | PUT    | Modify itinerary           |
+| Delete Standard    | `/tour-packages/{id}`    | DELETE | Remove itinerary           |
+| Verify Payment     | `/payments/{id}/verify`  | PUT    | Approve payment            |
+| Reject Payment     | `/payments/{id}/reject`  | PUT    | Decline payment            |
+| Create Itinerary   | `/itineraries`           | POST   | Create requested itinerary |
+| Submit Booking     | `/bookings/{id}/submit`  | POST   | Send itinerary to client   |
 
 ---
 
@@ -829,20 +851,20 @@ Step 4: Add to Travels
 
 ### User API Operations
 
-| Operation | Endpoint | Method | Purpose |
-|-----------|----------|--------|---------|
-| Get Profile | `/auth/profile` | GET | Current user info |
-| Update Profile | `/users/{id}` | PUT | Edit profile |
-| Get Travels | `/bookings/my-bookings` | GET | All user travels |
-| Create Booking | `/bookings` | POST | Create new booking |
-| Get Booking | `/bookings/{id}` | GET | View booking details |
-| Get Packages | `/tour-packages` | GET | Browse standard itineraries |
-| Create Itinerary | `/itineraries` | POST | Create custom itinerary |
-| Submit Payment | `/payments` | POST | Upload payment proof |
-| Get Notifications | `/notifications` | GET | Retrieve notifications |
-| Mark Read | `/notifications/{id}/read` | PUT | Mark as read |
-| Submit Feedback | `/feedbacks` | POST | Leave review/feedback |
-| Create Inquiry | `/inquiries` | POST | Ask a question |
+| Operation         | Endpoint                   | Method | Purpose                     |
+| ----------------- | -------------------------- | ------ | --------------------------- |
+| Get Profile       | `/auth/profile`            | GET    | Current user info           |
+| Update Profile    | `/users/{id}`              | PUT    | Edit profile                |
+| Get Travels       | `/bookings/my-bookings`    | GET    | All user travels            |
+| Create Booking    | `/bookings`                | POST   | Create new booking          |
+| Get Booking       | `/bookings/{id}`           | GET    | View booking details        |
+| Get Packages      | `/tour-packages`           | GET    | Browse standard itineraries |
+| Create Itinerary  | `/itineraries`             | POST   | Create custom itinerary     |
+| Submit Payment    | `/payments`                | POST   | Upload payment proof        |
+| Get Notifications | `/notifications`           | GET    | Retrieve notifications      |
+| Mark Read         | `/notifications/{id}/read` | PUT    | Mark as read                |
+| Submit Feedback   | `/feedbacks`               | POST   | Leave review/feedback       |
+| Create Inquiry    | `/inquiries`               | POST   | Ask a question              |
 
 ---
 
@@ -893,6 +915,7 @@ Step 4: Add to Travels
 ### Data Synchronization Points
 
 1. **Booking Status Changes**
+
    ```
    Admin Action: Status Update
    ↓
@@ -902,6 +925,7 @@ Step 4: Add to Travels
    ```
 
 2. **Payment Verification**
+
    ```
    User Submits Proof
    ↓
@@ -913,6 +937,7 @@ Step 4: Add to Travels
    ```
 
 3. **Rejection & Resolution**
+
    ```
    Admin Rejects with Reason
    ↓
@@ -1077,14 +1102,14 @@ Booking
 
 ### Booking Status Reference
 
-| Status | Meaning | Next Actions |
-|--------|---------|--------------|
-| **DRAFT** | Not submitted | Submit to admin / Edit / Delete |
-| **PENDING** | Awaiting admin review | Admin approves/rejects |
-| **CONFIRMED** | Approved by admin | Submit payment / Cancel |
-| **REJECTED** | Denied by admin | Submit resolution / Cancel |
-| **COMPLETED** | Trip finished | Provide feedback / Archive |
-| **CANCELLED** | Booking cancelled | View in history |
+| Status        | Meaning               | Next Actions                    |
+| ------------- | --------------------- | ------------------------------- |
+| **DRAFT**     | Not submitted         | Submit to admin / Edit / Delete |
+| **PENDING**   | Awaiting admin review | Admin approves/rejects          |
+| **CONFIRMED** | Approved by admin     | Submit payment / Cancel         |
+| **REJECTED**  | Denied by admin       | Submit resolution / Cancel      |
+| **COMPLETED** | Trip finished         | Provide feedback / Archive      |
+| **CANCELLED** | Booking cancelled     | View in history                 |
 
 ---
 
@@ -1137,10 +1162,12 @@ User Fills Payment Info
 ### Payment Proof Submission
 
 **Supported Payment Methods:**
+
 - GCash (Digital transfer)
 - Cash (Manual transfer)
 
 **Payment Types:**
+
 - Full Payment (100% of booking amount)
 - Partial Payment (Installment)
 
@@ -1219,6 +1246,7 @@ Admin Payment Review Dashboard
 #### 1. Standard Itinerary (Template)
 
 **Characteristics:**
+
 - Pre-designed travel packages
 - Fixed price per person
 - Reusable across multiple bookings
@@ -1226,6 +1254,7 @@ Admin Payment Review Dashboard
 - Example: "5-Day Boracay Beach Experience"
 
 **Creation Process:**
+
 ```
 Admin Interface
      │
@@ -1256,6 +1285,7 @@ Create Standard Itinerary
 ```
 
 **Booking a Standard Package:**
+
 ```
 User Interface
      │
@@ -1285,12 +1315,14 @@ Browse Packages
 #### 2. Requested/Customized Itinerary
 
 **Characteristics:**
+
 - User creates custom itinerary
 - Day-by-day planning
 - Flexible modifications
 - Created per request
 
 **Creation Process:**
+
 ```
 User Interface
      │
@@ -1328,6 +1360,7 @@ Convert to Booking:
 ### Itinerary Editing & Sharing
 
 **Admin Can:**
+
 - Create standard itineraries
 - Create requested itineraries
 - Edit any itinerary
@@ -1335,6 +1368,7 @@ Convert to Booking:
 - Delete itineraries
 
 **User Can:**
+
 - Create custom itineraries
 - Edit own itineraries
 - Share with collaborators
@@ -1503,28 +1537,28 @@ Admin Reviews Feedback
   "React": "18+",
   "TypeScript": "5+",
   "Vite": "Latest",
-  
+
   "UI Libraries": {
     "@radix-ui/*": "Multiple components",
     "lucide-react": "Icons",
     "motion": "Animations"
   },
-  
+
   "State Management": {
     "@tanstack/react-query": "Data fetching & caching",
     "react-hook-form": "Form management"
   },
-  
+
   "Styling": {
     "tailwindcss": "Utility-first CSS",
     "class-variance-authority": "Component variants"
   },
-  
+
   "HTTP": {
     "axios": "API requests",
     "jwt-decode": "Token decoding"
   },
-  
+
   "Features": {
     "leaflet": "Maps & routing",
     "jsQR": "QR code scanning",
@@ -1735,6 +1769,7 @@ Session Expiry
 ### Dashboard & Analytics
 
 **Admin Dashboard:**
+
 - Total bookings count
 - Revenue metrics
 - Booking status distribution (pie chart)
@@ -1743,6 +1778,7 @@ Session Expiry
 - Quick action cards
 
 **User Dashboard:**
+
 - Profile information
 - Quick statistics (Travels, Bookings)
 - Recent activities
@@ -1751,6 +1787,7 @@ Session Expiry
 ### Search & Filtering
 
 **Capabilities:**
+
 - Full-text search
 - Filter by status
 - Filter by type
@@ -1761,6 +1798,7 @@ Session Expiry
 ### Export Functions
 
 **Supported Formats:**
+
 - PDF export
 - Excel export
 - Data includes filtered results
@@ -1826,6 +1864,7 @@ Session Expiry
 ### Itinerary Creation Workflow
 
 ### Standard (Admin-Created)
+
 ```
 1. Admin Creates Standard Itinerary
 2. Admin Adds Days & Activities
@@ -1836,6 +1875,7 @@ Session Expiry
 ```
 
 ### Customized (User-Created)
+
 ```
 1. User Creates Customized Itinerary
 2. User Adds Days & Activities
