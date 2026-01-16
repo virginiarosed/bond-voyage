@@ -564,6 +564,7 @@ export function Itinerary({
     refetch: refetchBookings,
   } = useAdminBookings({
     ...queryParams,
+    status: "DRAFT",
     type: "REQUESTED",
   });
 
