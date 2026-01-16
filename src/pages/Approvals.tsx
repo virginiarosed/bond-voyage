@@ -345,6 +345,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
         status: "REJECTED",
         rejectionReason: rejectionReason.trim(),
         rejectionResolution: rejectionResolution.trim(),
+        isResolved: false,
       });
       toast.success("Booking rejected successfully");
       setIsRejectDialogOpen(false);
