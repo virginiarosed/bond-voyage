@@ -137,6 +137,10 @@ interface TransformedBooking {
   ownership: "owned" | "collaborated" | "requested";
   resolutionStatus?: "solved" | "unsolved";
   itinerary: any[];
+  // New fields
+  confirmStatus?: "confirmed" | "unconfirmed";
+  sentStatus?: "sent" | "unsent";
+  paymentStatus?: string;
 }
 
 // Icon mapping for the new API response
@@ -436,6 +440,14 @@ export function UserTravels() {
       resolutionStatus = "solved";
     }
 
+    // Determine confirmation status for REQUESTED bookings
+    let confirmStatus: "confirmed" | "unconfirmed" | undefined;
+    if (booking.type === "REQUESTED") {
+      confirmStatus = booking.status?.toLowerCase() === "confirmed" 
+        ? "confirmed" 
+        : "unconfirmed";
+    }
+
     return {
       id: booking.id,
       bookingCode: booking.bookingCode,
@@ -456,6 +468,10 @@ export function UserTravels() {
       ownership,
       resolutionStatus,
       itinerary: booking.itinerary?.days || [],
+      // Add these new fields
+      confirmStatus,
+      sentStatus: booking.sentStatus?.toLowerCase() as "sent" | "unsent" | undefined,
+      paymentStatus: booking.paymentStatus,
     };
   };
 
@@ -478,7 +494,12 @@ export function UserTravels() {
         selectedFilter === "all" || booking.ownership === selectedFilter;
 
       if (selectedFilter === "requested" && requestedSubTab !== "all") {
-        // Handle requested sub-tabs if needed
+        // Handle requested sub-tabs
+        if (requestedSubTab === "confirmed") {
+          return statusMatch && ownershipMatch && booking.confirmStatus === "confirmed";
+        } else if (requestedSubTab === "unconfirmed") {
+          return statusMatch && ownershipMatch && (booking.confirmStatus === "unconfirmed" || !booking.confirmStatus);
+        }
         return statusMatch && ownershipMatch;
       }
 
@@ -1459,68 +1480,34 @@ export function UserTravels() {
                     showShare
                     booking={{
                       id: travel.id,
-                      customerName: travel.owner,
-                      customerEmail: travel.email,
-                      customerMobile: travel.mobile,
+                      customer: travel.owner,
+                      email: travel.email,
+                      mobile: travel.mobile,
                       destination: travel.destination,
                       startDate: travel.startDate,
                       endDate: travel.endDate,
                       travelers: travel.travelers,
-                      totalPrice: travel.budget,
+                      total: travel.budget,
                       bookedDate: travel.bookedDate,
-                      resolutionStatus: travel.resolutionStatus as any,
                       bookingCode: travel.bookingCode,
+                      // Add these fields for the BookingListCard
+                      paymentStatus: travel.paymentStatus,
+                      bookingType: travel.bookingType,
+                      tourType: travel.tourType,
+                      status: travel.status,
+                      sentStatus: travel.sentStatus,
                     }}
                     onViewDetails={handleViewDetails}
-                    variant={
-                      travel.status === "rejected" ? "rejected" : "default"
-                    }
+                    // Pass ownership and confirmation status
+                    ownership={travel.ownership}
+                    confirmStatus={travel.confirmStatus}
+                    sentStatus={travel.sentStatus}
                     onShare={(bookingCode, bookingId) => {
                       setShareToken(bookingCode);
                       setSelectedBookingId(bookingId);
                       setShowShareQRModal(true);
                     }}
                     userSide={true}
-                    additionalBadges={
-                      <>
-                        {/* Booking Type Badge */}
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                          {capitalize(travel.bookingType)}
-                        </span>
-                        {/* Tour Type Badge */}
-                        {travel.tourType && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
-                            {capitalize(travel.tourType)}
-                          </span>
-                        )}
-                        {/* Ownership Badge */}
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                            travel.ownership === "owned"
-                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
-                              : travel.ownership === "collaborated"
-                              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
-                              : "bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20"
-                          }`}
-                        >
-                          {travel.ownership === "owned"
-                            ? "Owned"
-                            : travel.ownership === "collaborated"
-                            ? "Collaborated"
-                            : "Requested"}
-                        </span>
-                      </>
-                    }
-                    pendingStatusMessage={
-                      travel.status === "pending" && (
-                        <div className="w-full p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center">
-                          <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                            Waiting for admin review. You'll be notified once
-                            reviewed.
-                          </p>
-                        </div>
-                      )
-                    }
                   />
                 </div>
               ))}

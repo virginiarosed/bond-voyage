@@ -13,6 +13,11 @@ interface BookingListCardProps {
   activeTab?: "all" | "byDate" | "rejected";
   showViewDetailsButton?: boolean;
   highlightOnClick?: boolean;
+  // Add these new optional props
+  ownership?: "owned" | "collaborated" | "requested";
+  confirmStatus?: "confirmed" | "unconfirmed";
+  // Add optional prop for displaying sent status for REQUESTED bookings
+  sentStatus?: "sent" | "unsent";
 }
 
 export function BookingListCard({
@@ -24,6 +29,9 @@ export function BookingListCard({
   activeTab,
   showViewDetailsButton = true,
   highlightOnClick = true,
+  ownership,
+  confirmStatus,
+  sentStatus,
 }: BookingListCardProps) {
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -45,59 +53,103 @@ export function BookingListCard({
     return booking.bookingType?.toUpperCase() === "REQUESTED";
   };
 
-  const getStatusBadge = () => {
-    // For REQUESTED bookings, only show sentStatus and confirmStatus badges
-    if (isRequestedBooking()) {
-      const sentBadge =
-        booking.sentStatus?.toLowerCase() === "sent" ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)]">
-            <CheckCircle className="w-3 h-3" />
-            Sent
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)]">
-            <AlertTriangle className="w-3 h-3" />
-            Unsent
+  // Get Ownership Badge
+  const getOwnershipBadge = () => {
+    if (!ownership) return null;
+    
+    // Don't show ownership badge for REQUESTED bookings to avoid redundancy
+    if (isRequestedBooking()) return null;
+
+    const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
+
+    switch (ownership) {
+      case "owned":
+        return (
+          <span className={`${baseClasses} bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[rgba(10,122,255,0.2)]`}>
+            Owned
           </span>
         );
+      case "collaborated":
+        return (
+          <span className={`${baseClasses} bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border-[rgba(139,92,246,0.2)]`}>
+            Collaborated
+          </span>
+        );
+      case "requested":
+        // We won't show this for REQUESTED booking type
+        return null;
+      default:
+        return null;
+    }
+  };
 
-      // Confirmed/Unconfirmed badge - requires BOTH status === "CONFIRMED" AND sentStatus === "Sent"
-      const confirmedBadge =
-        booking.status?.toUpperCase() === "CONFIRMED" &&
-        booking.sentStatus?.toLowerCase() === "sent" ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] text-xs font-medium border border-[rgba(139,92,246,0.2)]">
+  // Get Confirmation Status Badge (only for REQUESTED bookings)
+  const getConfirmationBadge = () => {
+    // Only show confirmation badge for REQUESTED bookings
+    if (!isRequestedBooking()) return null;
+
+    const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
+
+    // Use confirmStatus prop if available, otherwise fall back to booking status
+    const statusToUse = confirmStatus || 
+      (booking.status?.toUpperCase() === "CONFIRMED" ? "confirmed" : "unconfirmed");
+
+    switch (statusToUse) {
+      case "confirmed":
+        return (
+          <span className={`${baseClasses} bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]`}>
             <CheckCircle className="w-3 h-3" />
             Confirmed
           </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(100,116,139,0.1)] text-[#64748B] text-xs font-medium border border-[rgba(100,116,139,0.2)]">
-            <XCircle className="w-3 h-3" />
+        );
+      case "unconfirmed":
+        return (
+          <span className={`${baseClasses} bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]`}>
+            <AlertTriangle className="w-3 h-3" />
             Unconfirmed
           </span>
         );
-
-      return (
-        <>
-          {sentBadge}
-          {confirmedBadge}
-        </>
-      );
+      default:
+        return null;
     }
+  };
 
-    // For non-REQUESTED bookings, show booking type and tour type badges
-    return (
-      <>
-        {getBookingTypeBadge()}
-        {getTourTypeBadge()}
-      </>
-    );
+  // Get Sent Status Badge (only for REQUESTED bookings)
+  const getSentStatusBadge = () => {
+    // Only show sent status badge for REQUESTED bookings
+    if (!isRequestedBooking()) return null;
+
+    const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
+
+    // Use sentStatus prop if available, otherwise fall back to booking.sentStatus
+    const statusToUse = sentStatus || booking.sentStatus?.toLowerCase() as "sent" | "unsent" | undefined;
+
+    if (!statusToUse) return null;
+
+    switch (statusToUse) {
+      case "sent":
+        return (
+          <span className={`${baseClasses} bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]`}>
+            <CheckCircle className="w-3 h-3" />
+            Sent
+          </span>
+        );
+      case "unsent":
+        return (
+          <span className={`${baseClasses} bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[rgba(255,107,107,0.2)]`}>
+            <XCircle className="w-3 h-3" />
+            Unsent
+          </span>
+        );
+      default:
+        return null;
+    }
   };
 
   const getBookingTypeBadge = () => {
     if (!booking.bookingType) return null;
 
-    const baseClasses =
-      "inline-flex px-2.5 py-1 rounded-full text-xs font-medium border";
+    const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
 
     switch (booking.bookingType.toUpperCase()) {
       case "CUSTOMIZED":
@@ -117,44 +169,20 @@ export function BookingListCard({
           </span>
         );
       case "REQUESTED":
-        // Return null - we don't want to show booking type badge for REQUESTED
-        return null;
+        // Show REQUESTED booking type badge
+        return (
+          <span
+            className={`${baseClasses} bg-[rgba(20,184,166,0.1)] text-[#14B8A6] border-[rgba(20,184,166,0.2)]`}
+          >
+            {capitalize(booking.bookingType)}
+          </span>
+        );
       default:
         return (
           <span
             className={`${baseClasses} bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]`}
           >
             {capitalize(booking.bookingType)}
-          </span>
-        );
-    }
-  };
-
-  const getTourTypeBadge = () => {
-    if (!booking.tourType) return null;
-    
-    // Don't show tour type badge for REQUESTED bookings
-    if (isRequestedBooking()) return null;
-
-    const baseClasses =
-      "inline-flex px-2.5 py-1 rounded-full text-xs font-medium border";
-
-    switch (booking.tourType.toUpperCase()) {
-      case "JOINER":
-        return (
-          <span
-            className={`${baseClasses} bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]`}
-          >
-            {capitalize(booking.tourType)}
-          </span>
-        );
-      case "PRIVATE":
-      default:
-        return (
-          <span
-            className={`${baseClasses} bg-[rgba(167,139,250,0.1)] text-[#A78BFA] border-[rgba(167,139,250,0.2)]`}
-          >
-            {capitalize(booking.tourType)}
           </span>
         );
     }
@@ -174,13 +202,22 @@ export function BookingListCard({
             <span className="text-white text-lg">🎫</span>
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h3 className="text-lg text-[#1A2B4F] font-semibold">
                 Booking {booking.bookingCode}
               </h3>
               
-              {/* Show badges conditionally - only status badges for REQUESTED */}
-              {getStatusBadge()}
+              {/* Show ownership badge (not for REQUESTED bookings) */}
+              {getOwnershipBadge()}
+              
+              {/* Show booking type badge for all bookings */}
+              {getBookingTypeBadge()}
+              
+              {/* Show confirmation badge for REQUESTED bookings */}
+              {getConfirmationBadge()}
+              
+              {/* Show sent status badge for REQUESTED bookings */}
+              {getSentStatusBadge()}
             </div>
             <div className="flex items-center gap-2 text-sm text-[#64748B]">
               <span className="font-medium text-[#334155]">
