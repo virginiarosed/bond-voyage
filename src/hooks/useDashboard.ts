@@ -24,6 +24,8 @@ export const useDashboardStats = (
       );
       return response.data;
     },
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
     staleTime: 1000 * 60 * 5,
     ...options,
   });
@@ -45,6 +47,8 @@ export const useUserDashboardStats = (
       );
       return response.data;
     },
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
     staleTime: 1000 * 60 * 5,
     ...options,
   });
