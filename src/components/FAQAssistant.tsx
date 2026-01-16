@@ -661,7 +661,7 @@ How can I assist you today?`,
                           </p>
 
                           {/* Sources (Similar FAQs) */}
-                          {message.sources && message.sources.length > 0 && (
+                          {/* {message.sources && message.sources.length > 0 && (
                             <div className="mt-3 pt-3 border-t border-gray-100">
                               <p className="text-xs font-medium text-gray-600 mb-2">
                                 📚 Related Sources:
@@ -702,7 +702,7 @@ How can I assist you today?`,
                                 ))}
                               </div>
                             </div>
-                          )}
+                          )} */}
                         </motion.div>
 
                         {/* Suggestions */}
