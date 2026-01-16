@@ -60,8 +60,8 @@ export function LoginModal({
 
         setTimeout(() => {
           setShowToast(null);
-          if (role === "admin") navigate("/");
-          else navigate("/user/home");
+          if (role === "admin") navigate("/", { replace: true });
+          else navigate("/user/home", { replace: true });
           onClose();
         }, 2000);
       }
