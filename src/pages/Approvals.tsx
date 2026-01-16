@@ -127,6 +127,7 @@ export function Approvals({ onApprovalsCountChange }: ApprovalsProps) {
     page: 1,
     limit: 10,
     status: activeTab === "rejected" ? "REJECTED" : "PENDING",
+    sortOrder: "createdAt:desc",
   });
 
   // Fetch bookings

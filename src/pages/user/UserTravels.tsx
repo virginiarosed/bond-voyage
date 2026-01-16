@@ -267,6 +267,10 @@ export function UserTravels() {
     "CUSTOMIZED"
   );
 
+  const [sortOrder, setSortOrder] = useState<
+    "createdAt:desc" | "createdAt:asc"
+  >("createdAt:desc");
+
   const {
     data: myBookingsResponse,
     isLoading: isLoadingMyBookings,
@@ -341,7 +345,7 @@ export function UserTravels() {
       });
     },
   });
-  // Combine bookings from both endpoints without transformation
+
   const bookings = useMemo(() => {
     const ownedBookings = myBookingsResponse?.data || [];
     const sharedBookings = sharedBookingsResponse?.data || [];
@@ -351,10 +355,29 @@ export function UserTravels() {
       uniqueBookings.set(booking.id, booking);
     });
 
-    return Array.from(uniqueBookings.values());
-  }, [myBookingsResponse?.data, sharedBookingsResponse?.data]);
+    const mergedArray = Array.from(uniqueBookings.values());
 
+    // Apply sorting
+    if (sortOrder === "createdAt:desc") {
+      mergedArray.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.bookedDate).getTime();
+        const dateB = new Date(b.createdAt || b.bookedDate).getTime();
+        return dateB - dateA; // Newest first
+      });
+    } else if (sortOrder === "createdAt:asc") {
+      mergedArray.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.bookedDate).getTime();
+        const dateB = new Date(b.createdAt || b.bookedDate).getTime();
+        return dateA - dateB; // Oldest first
+      });
+    }
+
+    return mergedArray;
+  }, [myBookingsResponse?.data, sharedBookingsResponse?.data, sortOrder]);
+
+  // Update the filteredTravels useMemo to maintain sort order
   const filteredTravels = useMemo(() => {
+    // Filter logic remains the same, but the input 'bookings' is already sorted
     return bookings.filter((booking: any) => {
       const statusMatch = booking.status?.toLowerCase() === selectedTab;
       const ownershipMatch =
@@ -362,7 +385,6 @@ export function UserTravels() {
         booking.ownership?.toLowerCase() === selectedFilter;
 
       if (selectedFilter === "requested" && requestedSubTab !== "all") {
-        // Handle requested sub-tabs
         if (requestedSubTab === "confirmed") {
           return (
             statusMatch &&
@@ -462,7 +484,7 @@ export function UserTravels() {
 
   const handleConfirmRequestedBooking = () => {
     if (selectedBookingId) {
-      updateBookingMutation.mutate({ status: "CONFIRMED" });
+      updateBookingMutation.mutate({ status: "PENDING" });
     }
   };
 
@@ -972,152 +994,6 @@ export function UserTravels() {
                           You can attach travel documents or photos when
                           contacting us.
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Conversation Section for REQUESTED bookings */}
-                {bookingDetail.type === "REQUESTED" && (
-                  <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden mb-3">
-                    <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                          <Send className="w-5 h-5 text-white" />
-                        </div>
-                        <h3 className="font-semibold text-[#1A2B4F]">
-                          Conversation
-                        </h3>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="space-y-3 p-4 bg-accent/50 rounded-xl max-h-64 overflow-y-auto mb-4">
-                        {(conversations[bookingDetail.id] || []).length ===
-                        0 ? (
-                          <div className="text-center py-8 text-muted-foreground text-sm">
-                            No messages yet. Start the conversation!
-                          </div>
-                        ) : (
-                          (conversations[bookingDetail.id] || []).map(
-                            (msg, index) => (
-                              <div
-                                key={index}
-                                className={`flex ${
-                                  msg.sender === "user"
-                                    ? "justify-end"
-                                    : "justify-start"
-                                }`}
-                              >
-                                <div
-                                  className={`max-w-[75%] p-4 rounded-xl shadow-sm ${
-                                    msg.sender === "user"
-                                      ? "bg-primary text-primary-foreground"
-                                      : "bg-card border border-border"
-                                  }`}
-                                >
-                                  <p className="text-sm leading-relaxed">
-                                    {msg.message}
-                                  </p>
-                                  <p
-                                    className={`text-xs mt-2 ${
-                                      msg.sender === "user"
-                                        ? "text-primary-foreground/70"
-                                        : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {msg.time}
-                                  </p>
-                                </div>
-                              </div>
-                            )
-                          )
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Type your message..."
-                          value={currentMessage[bookingDetail.id] || ""}
-                          onChange={(e) =>
-                            setCurrentMessage({
-                              ...currentMessage,
-                              [bookingDetail.id]: e.target.value,
-                            })
-                          }
-                          onKeyPress={(e) => {
-                            if (
-                              e.key === "Enter" &&
-                              currentMessage[bookingDetail.id]?.trim()
-                            ) {
-                              const newMsg = {
-                                sender: "user" as const,
-                                message:
-                                  currentMessage[bookingDetail.id].trim(),
-                                time: new Date().toLocaleString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                }),
-                              };
-                              setConversations({
-                                ...conversations,
-                                [bookingDetail.id]: [
-                                  ...(conversations[bookingDetail.id] || []),
-                                  newMsg,
-                                ],
-                              });
-                              setCurrentMessage({
-                                ...currentMessage,
-                                [bookingDetail.id]: "",
-                              });
-                              toast.success("Message sent!", {
-                                description:
-                                  "Your message has been sent to the admin.",
-                              });
-                            }
-                          }}
-                          className="flex-1 px-4 py-3 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                        />
-                        <button
-                          onClick={() => {
-                            if (currentMessage[bookingDetail.id]?.trim()) {
-                              const newMsg = {
-                                sender: "user" as const,
-                                message:
-                                  currentMessage[bookingDetail.id].trim(),
-                                time: new Date().toLocaleString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                }),
-                              };
-                              setConversations({
-                                ...conversations,
-                                [bookingDetail.id]: [
-                                  ...(conversations[bookingDetail.id] || []),
-                                  newMsg,
-                                ],
-                              });
-                              setCurrentMessage({
-                                ...currentMessage,
-                                [bookingDetail.id]: "",
-                              });
-                              toast.success("Message sent!", {
-                                description:
-                                  "Your message has been sent to the admin.",
-                              });
-                            }
-                          }}
-                          className="px-5 py-3 rounded-xl transition-all shadow-md hover:shadow-lg bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white"
-                        >
-                          <Send className="w-5 h-5" strokeWidth={2} />
-                        </button>
                       </div>
                     </div>
                   </div>
