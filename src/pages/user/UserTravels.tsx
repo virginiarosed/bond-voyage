@@ -1012,14 +1012,16 @@ export function UserTravels() {
                   </button>
                 )}
 
-                <button
-                  onClick={handleEditBooking}
-                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0970E6] hover:to-[#0A7AFF] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#0A7AFF]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={updateBookingMutation.isPending}
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit Booking
-                </button>
+                {selectedBooking.type !== "REQUESTED" && (
+                  <button
+                    onClick={handleEditBooking}
+                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0970E6] hover:to-[#0A7AFF] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#0A7AFF]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={updateBookingMutation.isPending}
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Booking
+                  </button>
+                )}
 
                 {bookingDetail.type === "CUSTOMIZED" &&
                   bookingDetail.ownership?.toUpperCase() === "OWNED" && (
@@ -1299,36 +1301,7 @@ export function UserTravels() {
         }
       >
         <div className="space-y-4">
-          {/* Filter Buttons - Responsive */}
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            <button
-              onClick={() => {
-                setBookingType("CUSTOMIZED");
-                setSelectedTab(undefined);
-              }}
-              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
-                bookingType === "CUSTOMIZED"
-                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
-                  : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
-              }`}
-            >
-              Customized
-            </button>
-
-            <button
-              onClick={() => {
-                setBookingType("REQUESTED");
-                setSelectedTab(undefined);
-              }}
-              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
-                bookingType === "REQUESTED"
-                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
-                  : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
-              }`}
-            >
-              {isMobile ? "Req" : "Requested"}
-            </button>
-          </div>
+        
           {/* Dropdown for Requested filter */}
           {selectedFilter === "requested" && (
             <div className="pt-3 pb-2">
