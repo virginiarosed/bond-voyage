@@ -1012,14 +1012,16 @@ export function UserTravels() {
                   </button>
                 )}
 
-                <button
-                  onClick={handleEditBooking}
-                  className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0970E6] hover:to-[#0A7AFF] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#0A7AFF]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={updateBookingMutation.isPending}
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit Booking
-                </button>
+                {selectedBooking.type !== "REQUESTED" && (
+                  <button
+                    onClick={handleEditBooking}
+                    className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#3B9EFF] hover:from-[#0970E6] hover:to-[#0A7AFF] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#0A7AFF]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={updateBookingMutation.isPending}
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Booking
+                  </button>
+                )}
 
                 {bookingDetail.type === "CUSTOMIZED" &&
                   bookingDetail.ownership?.toUpperCase() === "OWNED" && (
