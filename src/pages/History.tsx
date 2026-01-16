@@ -22,6 +22,7 @@ import {
   Phone,
   User,
   Download,
+  Eye,
 } from "lucide-react";
 import { ContentCard } from "../components/ContentCard";
 import {
@@ -45,6 +46,7 @@ import { capitalize } from "../utils/helpers/capitalize";
 import { toast } from "sonner";
 import { useBreadcrumbs } from "../components/BreadcrumbContext";
 import { Itinerary, Booking } from "../types/types";
+import { useMediaQuery } from "react-responsive";
 
 interface HistoryProps {
   onHistoryCountChange?: (count: number) => void;
@@ -84,6 +86,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [activeTab, setActiveTab] = useState<"completed" | "cancelled">(
     "completed"
@@ -496,80 +499,82 @@ export function History({ onHistoryCountChange }: HistoryProps) {
 
     return (
       <div className="space-y-6">
-        {/* Header */}
+        {/* Header - Responsive */}
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={handleBackToList}
-            className="w-10 h-10 rounded-xl bg-white border-2 border-[#E5E7EB] hover:border-[#0A7AFF] flex items-center justify-center transition-all"
+            className={`flex-shrink-0 rounded-xl bg-white border-2 border-[#E5E7EB] hover:border-[#0A7AFF] flex items-center justify-center transition-all ${
+              isMobile ? "w-8 h-8" : "w-10 h-10"
+            }`}
           >
-            <ChevronLeft className="w-5 h-5 text-[#64748B]" />
+            <ChevronLeft className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} text-[#64748B]`} />
           </button>
-          <div>
-            <h2 className="text-[#1A2B4F] font-semibold">
+          <div className="flex-1 min-w-0">
+            <h2 className={`text-[#1A2B4F] font-semibold ${isMobile ? "text-base" : ""}`}>
               {selectedBooking.destination}
             </h2>
-            <p className="text-sm text-[#64748B]">
+            <p className={`text-[#64748B] ${isMobile ? "text-xs" : "text-sm"}`}>
               {isCompleted ? "Completed Booking" : "Cancelled Booking"}
             </p>
           </div>
         </div>
 
-        {/* Booking Header Card */}
+        {/* Booking Header Card - Responsive */}
         <div
-          className={`rounded-2xl p-8 text-white shadow-lg ${
+          className={`rounded-2xl p-4 md:p-8 text-white shadow-lg ${
             isCompleted
-              ? "bg-linear-to-br from-[#10B981] to-[#14B8A6]"
-              : "bg-linear-to-br from-[#FF6B6B] to-[#FF8C8C]"
+              ? "bg-gradient-to-br from-[#10B981] to-[#14B8A6]"
+              : "bg-gradient-to-br from-[#FF6B6B] to-[#FF8C8C]"
           }`}
         >
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-semibold mb-2">
+          <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 md:mb-6">
+            <div className="mb-4 md:mb-0">
+              <h1 className={`font-semibold mb-2 ${isMobile ? "text-xl" : "text-3xl"}`}>
                 {selectedBooking.destination}
               </h1>
               <div className="flex items-center gap-2 text-white/90">
-                <MapPin className="w-4 h-4" />
-                <span className="text-lg">{selectedBooking.destination}</span>
+                <MapPin className={isMobile ? "w-3 h-3" : "w-4 h-4"} />
+                <span className={isMobile ? "text-sm" : "text-lg"}>{selectedBooking.destination}</span>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-white/80 text-sm mb-1">Booking Code</p>
-              <p className="text-2xl font-semibold">
+            <div className="text-left md:text-right">
+              <p className={`text-white/80 ${isMobile ? "text-xs" : "text-sm"} mb-1`}>Booking Code</p>
+              <p className={`font-semibold ${isMobile ? "text-lg" : "text-2xl"}`}>
                 {selectedBooking.bookingCode}
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <Calendar className="w-5 h-5 mb-2 text-white/80" />
-              <p className="text-white/80 text-xs mb-1">Travel Dates</p>
-              <p className="font-medium">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
+              <Calendar className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} mb-2 text-white/80`} />
+              <p className={`text-white/80 ${isMobile ? "text-xs" : "text-xs"} mb-1`}>Travel Dates</p>
+              <p className={`font-medium ${isMobile ? "text-sm" : ""}`}>
                 {formatDateRange(
                   selectedBooking.startDate!,
                   selectedBooking.endDate!
                 )}
               </p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <Users className="w-5 h-5 mb-2 text-white/80" />
-              <p className="text-white/80 text-xs mb-1">Travelers</p>
-              <p className="font-medium">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
+              <Users className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} mb-2 text-white/80`} />
+              <p className={`text-white/80 ${isMobile ? "text-xs" : "text-xs"} mb-1`}>Travelers</p>
+              <p className={`font-medium ${isMobile ? "text-sm" : ""}`}>
                 {selectedBooking.travelers}{" "}
                 {selectedBooking.travelers > 1 ? "People" : "Person"}
               </p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <CreditCard className="w-5 h-5 mb-2 text-white/80" />
-              <p className="text-white/80 text-xs mb-1">Total Amount</p>
-              <p className="font-medium">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
+              <CreditCard className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} mb-2 text-white/80`} />
+              <p className={`text-white/80 ${isMobile ? "text-xs" : "text-xs"} mb-1`}>Total Amount</p>
+              <p className={`font-medium ${isMobile ? "text-sm" : ""}`}>
                 ₱{selectedBooking.totalAmount.toLocaleString()}
               </p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <Clock className="w-5 h-5 mb-2 text-white/80" />
-              <p className="text-white/80 text-xs mb-1">Booked On</p>
-              <p className="font-medium">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
+              <Clock className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} mb-2 text-white/80`} />
+              <p className={`text-white/80 ${isMobile ? "text-xs" : "text-xs"} mb-1`}>Booked On</p>
+              <p className={`font-medium ${isMobile ? "text-sm" : ""}`}>
                 {selectedBooking.bookedDateObj.toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "short",
@@ -580,40 +585,40 @@ export function History({ onHistoryCountChange }: HistoryProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="space-y-6">
             {/* Customer Information */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
+              <div className="p-4 md:p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg">
-                    <User className="w-5 h-5 text-white" />
+                  <div className={`${isMobile ? "w-8 h-8" : "w-10 h-10"} rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg`}>
+                    <User className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} text-white`} />
                   </div>
-                  <h3 className="font-semibold text-[#1A2B4F]">
+                  <h3 className={`font-semibold text-[#1A2B4F] ${isMobile ? "text-sm" : ""}`}>
                     Customer Information
                   </h3>
                 </div>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 md:p-6 space-y-4">
                 <div>
-                  <p className="text-xs text-[#64748B] mb-1">Full Name</p>
-                  <p className="text-[#1A2B4F] font-medium">
+                  <p className={`text-[#64748B] mb-1 ${isMobile ? "text-xs" : "text-xs"}`}>Full Name</p>
+                  <p className={`text-[#1A2B4F] font-medium ${isMobile ? "text-sm" : ""}`}>
                     {selectedBooking.customer}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#64748B] mb-1">Email Address</p>
+                  <p className={`text-[#64748B] mb-1 ${isMobile ? "text-xs" : "text-xs"}`}>Email Address</p>
                   <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-[#0A7AFF]" />
-                    <p className="text-[#334155]">{selectedBooking.email}</p>
+                    <Mail className={`${isMobile ? "w-3 h-3" : "w-4 h-4"} text-[#0A7AFF]`} />
+                    <p className={`text-[#334155] ${isMobile ? "text-sm" : ""}`}>{selectedBooking.email}</p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-[#64748B] mb-1">Mobile Number</p>
+                  <p className={`text-[#64748B] mb-1 ${isMobile ? "text-xs" : "text-xs"}`}>Mobile Number</p>
                   <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-[#14B8A6]" />
-                    <p className="text-[#334155]">{selectedBooking.mobile}</p>
+                    <Phone className={`${isMobile ? "w-3 h-3" : "w-4 h-4"} text-[#14B8A6]`} />
+                    <p className={`text-[#334155] ${isMobile ? "text-sm" : ""}`}>{selectedBooking.mobile}</p>
                   </div>
                 </div>
               </div>
@@ -621,25 +626,25 @@ export function History({ onHistoryCountChange }: HistoryProps) {
 
             {/* Status Information */}
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
+              <div className="p-4 md:p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
+                    className={`${isMobile ? "w-8 h-8" : "w-10 h-10"} rounded-xl flex items-center justify-center shadow-lg ${
                       isCompleted
-                        ? "bg-linear-to-br from-[#10B981] to-[#14B8A6]"
-                        : "bg-linear-to-br from-[#FF6B6B] to-[#FF8C8C]"
+                        ? "bg-gradient-to-br from-[#10B981] to-[#14B8A6]"
+                        : "bg-gradient-to-br from-[#FF6B6B] to-[#FF8C8C]"
                     }`}
                   >
-                    <span className="text-white text-lg">
+                    <span className={`text-white ${isMobile ? "text-base" : "text-lg"}`}>
                       {isCompleted ? "✓" : "✗"}
                     </span>
                   </div>
-                  <h3 className="font-semibold text-[#1A2B4F]">
+                  <h3 className={`font-semibold text-[#1A2B4F] ${isMobile ? "text-sm" : ""}`}>
                     Booking Status
                   </h3>
                 </div>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 md:p-6 space-y-4">
                 <div
                   className={`p-4 rounded-xl border ${
                     isCompleted
@@ -648,9 +653,11 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-[#64748B]">Status</span>
+                    <span className={`text-[#64748B] ${isMobile ? "text-xs" : "text-xs"}`}>Status</span>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      className={`px-2 py-1 rounded-full font-medium ${
+                        isMobile ? "text-xs" : "text-xs"
+                      } ${
                         isCompleted
                           ? "bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]"
                           : "bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border border-[rgba(255,107,107,0.2)]"
@@ -660,10 +667,10 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#64748B]">
+                    <span className={`text-[#64748B] ${isMobile ? "text-xs" : "text-xs"}`}>
                       {isCompleted ? "Last Updated" : "Cancelled On"}
                     </span>
-                    <span className="text-xs font-medium text-[#334155]">
+                    <span className={`font-medium text-[#334155] ${isMobile ? "text-xs" : "text-xs"}`}>
                       {selectedBooking.updatedAtDisplay ||
                         selectedBooking.bookedDateObj.toLocaleDateString(
                           "en-US",
@@ -678,10 +685,10 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                 </div>
                 {!isCompleted && selectedBooking.itinerary?.rejectionReason && (
                   <div className="p-4 rounded-xl border border-[rgba(255,107,107,0.2)] bg-[rgba(255,107,107,0.05)]">
-                    <p className="text-xs text-[#64748B] mb-2">
+                    <p className={`text-[#64748B] mb-2 ${isMobile ? "text-xs" : "text-xs"}`}>
                       Cancellation Reason
                     </p>
-                    <p className="text-sm text-[#334155] leading-relaxed">
+                    <p className={`text-[#334155] leading-relaxed ${isMobile ? "text-sm" : "text-sm"}`}>
                       {selectedBooking.itinerary.rejectionReason}
                     </p>
                   </div>
@@ -690,7 +697,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
             </div>
 
             {/* Actions */}
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-6 space-y-3">
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-4 md:p-6 space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
@@ -762,19 +769,19 @@ export function History({ onHistoryCountChange }: HistoryProps) {
           </div>
 
           {/* Right Column - Itinerary */}
-          <div className="col-span-2">
+          <div className="col-span-1 md:col-span-2">
             {selectedBooking.itineraryDetails &&
             selectedBooking.itineraryDetails.length > 0 ? (
               <ItineraryDetailDisplay
                 itinerary={selectedBooking.itineraryDetails}
               />
             ) : (
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 text-center">
-                <MapPin className="w-12 h-12 text-[#64748B] mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-[#1A2B4F] mb-2">
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 md:p-8 text-center">
+                <MapPin className="w-10 h-10 md:w-12 md:h-12 text-[#64748B] mx-auto mb-4" />
+                <h3 className={`font-semibold text-[#1A2B4F] mb-2 ${isMobile ? "text-base" : "text-lg"}`}>
                   No Itinerary Available
                 </h3>
-                <p className="text-sm text-[#64748B]">
+                <p className={`text-[#64748B] ${isMobile ? "text-sm" : "text-sm"}`}>
                   The itinerary details for this booking are not yet available.
                 </p>
               </div>
@@ -788,31 +795,32 @@ export function History({ onHistoryCountChange }: HistoryProps) {
   // List view
   return (
     <div>
+      {/* Tabs - Responsive */}
       <div className="flex items-center gap-1 mb-6 border-b-2 border-[#E5E7EB]">
         <button
           onClick={() => handleTabChange("completed")}
-          className={`px-5 h-11 text-sm transition-colors ${
+          className={`px-4 md:px-5 h-10 md:h-11 text-sm transition-colors ${
             activeTab === "completed"
               ? "font-semibold text-[#10B981] border-b-[3px] border-[#10B981] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#10B981] hover:bg-[rgba(16,185,129,0.05)]"
           }`}
         >
-          Completed
+          {isMobile ? "Complete" : "Completed"}
         </button>
         <button
           onClick={() => handleTabChange("cancelled")}
-          className={`px-5 h-11 text-sm transition-colors ${
+          className={`px-4 md:px-5 h-10 md:h-11 text-sm transition-colors ${
             activeTab === "cancelled"
               ? "font-semibold text-[#FF6B6B] border-b-[3px] border-[#FF6B6B] -mb-0.5"
               : "font-medium text-[#64748B] hover:text-[#FF6B6B] hover:bg-[rgba(255,107,107,0.05)]"
           }`}
         >
-          Cancelled
+          {isMobile ? "Cancel" : "Cancelled"}
         </button>
       </div>
 
-      {/* Booking Type Stats */}
-      <div className="grid grid-cols-4 gap-6 mb-6">
+      {/* Booking Type Stats - Responsive */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6">
         <div
           onClick={() => handleStatCardClick(null)}
           className="cursor-pointer"
@@ -820,7 +828,11 @@ export function History({ onHistoryCountChange }: HistoryProps) {
           <StatCard
             icon={BookOpen}
             label={
-              activeTab === "completed"
+              isMobile
+                ? activeTab === "completed"
+                  ? "Complete"
+                  : "Cancel"
+                : activeTab === "completed"
                 ? "Completed Bookings"
                 : "Cancelled Bookings"
             }
@@ -836,7 +848,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
         >
           <StatCard
             icon={Briefcase}
-            label="Customized"
+            label={isMobile ? "Custom" : "Customized"}
             value={customizedCount}
             gradientFrom="#0A7AFF"
             gradientTo="#3B9EFF"
@@ -849,7 +861,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
         >
           <StatCard
             icon={FileCheck}
-            label="Standard"
+            label={isMobile ? "Standard" : "Standard"}
             value={standardCount}
             gradientFrom="#10B981"
             gradientTo="#14B8A6"
@@ -862,7 +874,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
         >
           <StatCard
             icon={ClipboardList}
-            label="Requested"
+            label={isMobile ? "Requested" : "Requested"}
             value={requestedCount}
             gradientFrom="#FFB84D"
             gradientTo="#FF9800"
@@ -1015,134 +1027,236 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                 key={booking.id}
                 id={`booking-${booking.id}`}
                 onClick={() => handleViewDetails(booking.id)}
-                className="p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)] cursor-pointer"
+                className="p-4 md:p-6 rounded-2xl border-2 border-[#E5E7EB] hover:border-[#0A7AFF] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(10,122,255,0.1)] cursor-pointer"
               >
-                {/* Header */}
+                {/* Header - Responsive */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      className={`flex items-center justify-center ${
+                        isMobile
+                          ? "w-10 h-10"
+                          : "w-12 h-12"
+                      } rounded-xl ${
                         booking.status === "COMPLETED"
-                          ? "bg-linear-to-br from-[#10B981] to-[#14B8A6]"
-                          : "bg-linear-to-br from-[#FF6B6B] to-[#FF8C8C]"
+                          ? "bg-gradient-to-br from-[#10B981] to-[#14B8A6]"
+                          : "bg-gradient-to-br from-[#FF6B6B] to-[#FF8C8C]"
                       }`}
                     >
-                      <span className="text-white text-lg">
+                      <span className={`text-white ${isMobile ? "text-base" : "text-lg"}`}>
                         {booking.status === "COMPLETED" ? "✓" : "✗"}
                       </span>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg text-[#1A2B4F] font-semibold">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+                        <h3 className={`text-[#1A2B4F] font-semibold ${isMobile ? "text-base" : "text-lg"} truncate`}>
                           {booking.bookingCode}
                         </h3>
-                        <span
-                          className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                            booking.status
-                          )}`}
-                        >
-                          {getStatusIcon(booking.status)}{" "}
-                          {booking.status === "COMPLETED"
-                            ? "Completed"
-                            : "Cancelled"}
-                        </span>
-                        {booking.bookingType && (
+                        <div className="flex flex-wrap gap-1 mt-1 md:mt-0">
                           <span
-                            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${
-                              booking.bookingType === "CUSTOMIZED"
-                                ? "bg-[rgba(255,127,110,0.1)] text-[#FF7F6E] border-[rgba(255,127,110,0.2)]"
-                                : booking.bookingType === "STANDARD"
-                                ? "bg-[rgba(139,125,107,0.1)] text-[#8B7D6B] border-[rgba(139,125,107,0.2)]"
-                                : "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]"
-                            }`}
+                            className={`inline-flex px-2 py-1 rounded-full font-medium border whitespace-nowrap ${getStatusColor(
+                              booking.status
+                            )} ${isMobile ? "text-xs" : "text-xs"}`}
                           >
-                            {capitalize(booking.bookingType)}
+                            {getStatusIcon(booking.status)}{" "}
+                            {booking.status === "COMPLETED"
+                              ? "Completed"
+                              : "Cancelled"}
                           </span>
-                        )}
+                          {booking.bookingType && (
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-full font-medium border whitespace-nowrap ${
+                                isMobile ? "text-xs" : "text-xs"
+                              } ${
+                                booking.bookingType === "CUSTOMIZED"
+                                  ? "bg-[rgba(255,127,110,0.1)] text-[#FF7F6E] border-[rgba(255,127,110,0.2)]"
+                                  : booking.bookingType === "STANDARD"
+                                  ? "bg-[rgba(139,125,107,0.1)] text-[#8B7D6B] border-[rgba(139,125,107,0.2)]"
+                                  : "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]"
+                              }`}
+                            >
+                              {isMobile ? booking.bookingType.charAt(0) + booking.bookingType.slice(1).toLowerCase() : capitalize(booking.bookingType)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewDetails(booking.id);
-                    }}
-                    className="h-9 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] flex items-center gap-2 text-sm font-medium transition-all"
-                  >
-                    View Details
-                  </button>
+                  {/* View Details Button - Desktop only */}
+                  {!isMobile && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetails(booking.id);
+                      }}
+                      className="h-9 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFB] hover:border-[#0A7AFF] text-[#334155] flex items-center gap-2 text-sm font-medium transition-all"
+                    >
+                      View Details
+                    </button>
+                  )}
                 </div>
 
-                {/* Customer Info */}
+                {/* Customer Info - Responsive */}
                 <div className="mb-4 pb-4 border-b border-[#E5E7EB]">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Users className="w-4 h-4 text-[#64748B]" />
-                    <span className="text-sm text-[#334155] font-medium">
-                      {booking.customer}
-                    </span>
-                    <span className="text-sm text-[#64748B]">•</span>
-                    <span className="text-sm text-[#64748B]">
+                  <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2">
+                      <Users className={`${isMobile ? "w-3 h-3" : "w-4 h-4"} text-[#64748B]`} />
+                      <span className={`text-[#334155] font-medium ${isMobile ? "text-sm" : "text-sm"}`}>
+                        {booking.customer}
+                      </span>
+                    </div>
+                    <span className="hidden md:inline text-sm text-[#64748B]">•</span>
+                    <span className={`text-[#64748B] ${isMobile ? "text-xs" : "text-sm"} md:inline truncate`}>
                       {booking.email}
                     </span>
-                    <span className="text-sm text-[#64748B]">•</span>
-                    <span className="text-sm text-[#64748B]">
+                    <span className="hidden md:inline text-sm text-[#64748B]">•</span>
+                    <span className={`text-[#64748B] ${isMobile ? "text-xs" : "text-sm"} md:inline`}>
                       {booking.mobile}
                     </span>
                   </div>
+                  {/* Mobile contact info */}
+                  {isMobile && (
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="flex items-center gap-1">
+                        <Mail className="w-3 h-3 text-[#64748B]" />
+                        <span className="text-xs text-[#64748B] truncate">{booking.email}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-[#64748B]" />
+                        <span className="text-xs text-[#64748B]">{booking.mobile}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Trip Details */}
-                <div className="grid grid-cols-5 gap-4">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#0A7AFF]" />
-                    <div>
-                      <p className="text-xs text-[#64748B]">Destination</p>
-                      <p className="text-sm text-[#334155] font-medium">
-                        {booking.destination}
-                      </p>
+                {/* Trip Details - Responsive */}
+                <div className="space-y-4 md:space-y-0">
+                  {/* Mobile layout */}
+                  {isMobile ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 text-[#0A7AFF] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-[#64748B]">Destination</p>
+                            <p className="text-sm text-[#334155] font-medium line-clamp-1">
+                              {booking.destination}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Users className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-[#64748B]">Travelers</p>
+                            <p className="text-sm text-[#334155] font-medium">
+                              {booking.travelers} {booking.travelers > 1 ? "Pax" : "Pax"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-2">
+                        <Calendar className="w-4 h-4 text-[#14B8A6] flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-xs text-[#64748B]">Travel Dates</p>
+                          <p className="text-sm text-[#334155] font-medium leading-tight">
+                            {formatDateRange(booking.startDate!, booking.endDate!)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-start gap-2">
+                          <span className="text-[#10B981] text-lg">₱</span>
+                          <div>
+                            <p className="text-xs text-[#64748B]">Total Amount</p>
+                            <p className="text-sm text-[#334155] font-medium">
+                              ₱{booking.totalAmount.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Clock className="w-4 h-4 text-[#64748B] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-[#64748B]">Booked On</p>
+                            <p className="text-sm text-[#334155] font-medium truncate">
+                              {booking.bookedDateObj.toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mobile View Details Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetails(booking.id);
+                        }}
+                        className="w-full h-11 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#3B9EFF] text-white font-medium flex items-center justify-center gap-2"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View Details
+                      </button>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#14B8A6]" />
-                    <div>
-                      <p className="text-xs text-[#64748B]">Travel Dates</p>
-                      <p className="text-sm text-[#334155] font-medium">
-                        {formatDateRange(booking.startDate!, booking.endDate!)}
-                      </p>
+                  ) : (
+                    /* Desktop layout */
+                    <div className="grid grid-cols-5 gap-4">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-[#0A7AFF]" />
+                        <div>
+                          <p className="text-xs text-[#64748B]">Destination</p>
+                          <p className="text-sm text-[#334155] font-medium">
+                            {booking.destination}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-[#14B8A6]" />
+                        <div>
+                          <p className="text-xs text-[#64748B]">Travel Dates</p>
+                          <p className="text-sm text-[#334155] font-medium">
+                            {formatDateRange(booking.startDate!, booking.endDate!)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-[#64748B]" />
+                        <div>
+                          <p className="text-xs text-[#64748B]">Travelers</p>
+                          <p className="text-sm text-[#334155] font-medium">
+                            {booking.travelers}{" "}
+                            {booking.travelers > 1 ? "People" : "Person"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#10B981] text-lg">₱</span>
+                        <div>
+                          <p className="text-xs text-[#64748B]">Total Amount</p>
+                          <p className="text-sm text-[#334155] font-medium">
+                            ₱{booking.totalAmount.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-[#64748B]" />
+                        <div>
+                          <p className="text-xs text-[#64748B]">Booked On</p>
+                          <p className="text-sm text-[#334155] font-medium">
+                            {booking.bookedDateObj.toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#64748B]" />
-                    <div>
-                      <p className="text-xs text-[#64748B]">Travelers</p>
-                      <p className="text-sm text-[#334155] font-medium">
-                        {booking.travelers}{" "}
-                        {booking.travelers > 1 ? "People" : "Person"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#10B981] text-lg">₱</span>
-                    <div>
-                      <p className="text-xs text-[#64748B]">Total Amount</p>
-                      <p className="text-sm text-[#334155] font-medium">
-                        ₱{booking.totalAmount.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-[#64748B]" />
-                    <div>
-                      <p className="text-xs text-[#64748B]">Booked On</p>
-                      <p className="text-sm text-[#334155] font-medium">
-                        {booking.bookedDateObj.toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             ))
