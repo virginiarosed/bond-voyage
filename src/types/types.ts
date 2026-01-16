@@ -360,6 +360,10 @@ export interface RoamanRequest {
     destination?: string;
     currentDayActivities?: IActivity[];
     totalDays?: number;
+
+    roamanMode?: "FULL_ITINERARY" | "ADD_TO_DAY";
+    targetDay?: number;
+    requestedActivitiesCount?: number;
   };
 }
 
