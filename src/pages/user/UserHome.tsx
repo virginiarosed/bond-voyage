@@ -1,5 +1,4 @@
 import {
-  Calendar,
   MapPin,
   TrendingUp,
   Plane,
@@ -35,12 +34,10 @@ import {
   Eye,
   ExternalLink,
   XCircle,
-  Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/StatCard";
 import { ContentCard } from "../../components/ContentCard";
-import { BookingListCard } from "../../components/BookingListCard";
 
 import { AdventureAvatar } from "../../components/AdventureAvatar";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -53,13 +50,9 @@ import EmojiPicker, {
   Theme,
 } from "emoji-picker-react";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
-import { useActivityLogs } from "../../hooks/useActivityLogs";
 import { useProfile } from "../../hooks/useAuth";
-import { queryKeys } from "../../utils/lib/queryKeys";
-import {
-  getDefaultActivities,
-  transformActivityLogs,
-} from "../../utils/helpers/transformActivityLogs";
+import { useSendTravelAgencyContact } from "../../hooks/useContact";
+import { useUserDashboardStats } from "../../hooks/useDashboard";
 import { useWeather } from "../../hooks/useWeather";
 import {
   Coordinates,
@@ -95,24 +88,29 @@ export function UserHome() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: authProfileResponse } = useProfile();
-  const { data: activityLogsResponse } = useActivityLogs(
-    {
-      actorId: authProfileResponse?.data?.user?.id,
-      limit: 7,
-    },
-    {
-      enabled: !!authProfileResponse?.data?.user?.id,
-      queryKey: [queryKeys.activityLogs.all],
-    }
+
+  // Fetch user dashboard stats for stat cards
+  const { data: userStatsResponse, isLoading: statsLoading } = useUserDashboardStats(
+    undefined,
+    { enabled: !!authProfileResponse?.data?.user }
   );
 
-  const recentActivities = useMemo(() => {
-    if (!activityLogsResponse?.data) {
-      return getDefaultActivities();
+  // Extract card data from user stats
+  const statsCards = useMemo(() => {
+    const data = userStatsResponse?.data?.cards;
+    if (!data) {
+      return {
+        travelPlans: 0,
+        pending: 0,
+        activeBookings: 0,
+        completedTrips: 0,
+      };
     }
+    return data;
+  }, [userStatsResponse?.data?.cards]);
 
-    return transformActivityLogs(activityLogsResponse.data);
-  }, [activityLogsResponse?.data]);
+  // Contact form mutation
+  const sendTravelAgencyContactMutation = useSendTravelAgencyContact();
 
   const userProfileData = useMemo(() => {
     return authProfileResponse?.data?.user || null;
@@ -840,7 +838,7 @@ export function UserHome() {
     }
   };
 
-  // Send email directly (simulated for demo)
+  // Send email to 4B's Travel and Tours via API
   const handleSendEmail = async () => {
     if (!contactSubject.trim()) {
       toast.error("Please enter a subject");
@@ -855,16 +853,13 @@ export function UserHome() {
     setIsSending(true);
 
     try {
-      // Simulate API call to send email
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      const emailData = {
-        to: "4bstravelandtours.bondvoyage@gmail.com",
-        from: `${userProfile.firstName} ${userProfile.lastName} <${userProfile.email}>`,
+      await sendTravelAgencyContactMutation.mutateAsync({
         subject: contactSubject,
         message: contactMessage,
-        attachments: attachedFiles.length,
-      };
+        senderName: `${userProfile.firstName} ${userProfile.lastName}`,
+        senderEmail: userProfile.email,
+        attachments: attachedFiles.length > 0 ? attachedFiles : undefined,
+      });
 
       // Show success message
       toast.success("Email sent successfully!", {
@@ -885,10 +880,10 @@ export function UserHome() {
         messageRef.current.innerHTML = "";
         messageRef.current.style.textAlign = "left";
       }
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Please try again or contact support if the issue persists";
       toast.error("Failed to send email", {
-        description:
-          "Please try again or contact support if the issue persists",
+        description: errorMessage,
       });
     } finally {
       setIsSending(false);
@@ -1055,41 +1050,44 @@ export function UserHome() {
   <StatCard
     icon={FileText}
     label="Travel Plans"
-    value="0"
+    value={statsCards.travelPlans || 0}
     gradientFrom="#F472B6"
     gradientTo="#38BDF8"
     className="h-full"
+    isLoading={statsLoading}
   />
   <StatCard
     icon={Clock}
     label="Pending"
-    value="0"
+    value={statsCards.pending || 0}
     gradientFrom="#F97316"
     gradientTo="#EF4444"
     className="h-full"
+    isLoading={statsLoading}
   />
   <StatCard
     icon={Plane}
     label="Active Bookings"
-    value="0"
+    value={statsCards.activeBookings || 0}
     gradientFrom="#14B8A6"
     gradientTo="#0A7AFF"
     className="h-full"
+    isLoading={statsLoading}
   />
   <StatCard
     icon={Award}
     label="Completed Trips"
-    value="0"
+    value={statsCards.completedTrips || 0}
     gradientFrom="#22C55E"
     gradientTo="#16A34A"
     className="h-full"
+    isLoading={statsLoading}
   />
 </div>
 
-      {/* Recent Activity & Weather Widget */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Weather Widget - Right Half */}
-        {/* Weather Widget - Right Half */}
+      {/* Weather Widget - Full Width (Activity Logs exclusive to Admin) */}
+      <div className="grid grid-cols-1 gap-6">
+        {/* Weather Widget - Full Width */}
         <ContentCard title="Weather">
           <div className="space-y-4">
             {/* Search Bar */}
@@ -1353,95 +1351,6 @@ export function UserHome() {
               View Full Forecast
               <ChevronRight className="w-4 h-4" />
             </button>
-          </div>
-        </ContentCard>
-
-        {/* Recent Activity - Left Half */}
-        <ContentCard
-          title="Recent Activity"
-          footer={
-            <div className="flex justify-center">
-              <button
-                onClick={() => navigate("/user/activity")}
-                className="text-sm text-primary hover:underline cursor-pointer"
-              >
-                View Activity Log
-              </button>
-            </div>
-          }
-        >
-          <div className="space-y-3 pt-2">
-            {recentActivities.map((activity) => {
-              let iconBgColor = "bg-blue-50";
-              let iconColor = "text-blue-600";
-              let IconComponent = CheckCircle;
-
-              if (activity.icon === "clock") {
-                iconBgColor = "bg-yellow-50";
-                iconColor = "text-yellow-600";
-                IconComponent = Clock;
-              } else if (activity.icon === "cancel") {
-                iconBgColor = "bg-red-50";
-                iconColor = "text-red-600";
-                IconComponent = XCircle;
-              } else if (activity.icon === "itinerary") {
-                iconBgColor = "bg-purple-50";
-                iconColor = "text-purple-600";
-                IconComponent = MapPin;
-              } else if (activity.icon === "user") {
-                iconBgColor = "bg-green-50";
-                iconColor = "text-green-600";
-                IconComponent = Users;
-              } else if (activity.icon === "payment") {
-                iconBgColor = "bg-emerald-50";
-                iconColor = "text-emerald-600";
-                IconComponent = TrendingUp;
-              }
-
-              return (
-                <div
-                  key={activity.id}
-                  className="group rounded-xl border border-[#E5E7EB] hover:border-[#0A7AFF] bg-white hover:shadow-md transition-all duration-200 p-3 cursor-pointer"
-                  onClick={() => navigate("/user/activity")}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Icon */}
-                    <div
-                      className={`flex-shrink-0 w-8 h-8 rounded-lg ${iconBgColor} flex items-center justify-center`}
-                    >
-                      <IconComponent className={`w-4 h-4 ${iconColor}`} />
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 mb-0.5">
-                        {activity.text}
-                      </p>
-                      {activity.timeAgo && (
-                        <p className="text-xs text-gray-500">
-                          {activity.timeAgo}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Empty state if no activities */}
-            {recentActivities.length === 0 && (
-              <div className="text-center py-6">
-                <div className="w-12 h-12 mx-auto rounded-xl bg-[#F8FAFB] flex items-center justify-center mb-3">
-                  <Clock className="w-6 h-6 text-[#94A3B8]" />
-                </div>
-                <p className="text-sm text-[#64748B] mb-2">
-                  No recent activity
-                </p>
-                <p className="text-xs text-[#94A3B8]">
-                  Activity will appear here
-                </p>
-              </div>
-            )}
           </div>
         </ContentCard>
       </div>

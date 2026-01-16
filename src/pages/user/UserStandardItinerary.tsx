@@ -50,6 +50,7 @@ import { useCreateBooking, useSubmitBooking } from "../../hooks/useBookings"; //
 import { queryKeys } from "../../utils/lib/queryKeys";
 import { useProfile } from "../../hooks/useAuth";
 import { User } from "../../types/types";
+import { userInfo } from "os";
 
 interface ItineraryActivity {
   time: string;
@@ -324,6 +325,7 @@ export function UserStandardItinerary() {
       customerName: bookingFormData.customerName,
       customerEmail: bookingFormData.email,
       customerMobile: bookingFormData.mobile,
+      userId: profileData.id,
     };
 
     // Call the API mutation
