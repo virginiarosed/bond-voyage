@@ -342,23 +342,24 @@ export const useBookingVersionHistory = (
   });
 };
 
-export const useUpdateBookingWithId = () => {
+export const useJoinBooking = (
+  options?: UseMutationOptions<ApiResponse, AxiosError, string>
+) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const response = await apiClient.put<ApiResponse<Booking>>(
-        `/bookings/${id}`,
-        data
+    mutationFn: async (bookingCode: string) => {
+      const response = await apiClient.post<ApiResponse>(
+        `/bookings/join/${bookingCode}`
       );
       return response.data;
     },
-    onSuccess: (_, variables) => {
-      const { id } = variables;
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.myBookings() });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.bookings.detail(id),
+        queryKey: queryKeys.bookings.sharedBookings(),
       });
-      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
     },
+    ...options,
   });
 };
