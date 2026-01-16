@@ -117,12 +117,51 @@ export function Bookings({
     status: "BOOKED",
   });
 
+  const [queryParams2, setQueryParams2] = useState({
+    page: 1,
+    limit: 10,
+    status: "CONFIRMED",
+  });
+
   const {
     data: bookingsData,
     isLoading: isLoadingBookings,
     isError: isBookingsError,
     refetch: refetchBookings,
   } = useAdminBookings(queryParams);
+
+  const {
+    data: bookingsData2,
+    isLoading: isLoadingBookings2,
+    isError: isBookingsError2,
+    refetch: refetchBookings2,
+  } = useAdminBookings(queryParams2);
+
+  const mergedBookingsData = useMemo(() => {
+    const bookedData = bookingsData?.data || [];
+    const confirmedData = bookingsData2?.data || [];
+
+    const uniqueBookings = new Map();
+
+    bookedData.forEach((booking: any) => {
+      uniqueBookings.set(booking.id, booking);
+    });
+
+    confirmedData.forEach((booking: any) => {
+      if (!uniqueBookings.has(booking.id)) {
+        uniqueBookings.set(booking.id, booking);
+      }
+    });
+
+    return Array.from(uniqueBookings.values());
+  }, [bookingsData?.data, bookingsData2?.data]);
+
+  const isLoadingMergedBookings = isLoadingBookings || isLoadingBookings2;
+  const isMergedBookingsError = isBookingsError || isBookingsError2;
+
+  const refetchAllBookings = async () => {
+    await Promise.all([refetchBookings(), refetchBookings2()]);
+  };
 
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -290,7 +329,7 @@ export function Bookings({
     };
   };
 
-  const bookings = bookingsData?.data?.map(transformBooking) || [];
+  const bookings = mergedBookingsData.map(transformBooking);
   const selectedBooking = useMemo(() => {
     return bookingDetailData?.data
       ? transformBooking(bookingDetailData.data)
@@ -502,7 +541,7 @@ export function Bookings({
         endDate: "",
         travelers: "1",
       });
-      await refetchBookings();
+      await refetchAllBookings();
       if (selectedBookingId) {
         await refetchDetail();
       }
@@ -538,7 +577,7 @@ export function Bookings({
       setCompleteDialogOpen(false);
       setBookingToComplete(null);
 
-      await refetchBookings();
+      await refetchAllBookings();
       if (viewMode === "detail") {
         handleBackToList();
       }
@@ -782,7 +821,7 @@ export function Bookings({
   };
 
   // Main loading states
-  if (isLoadingBookings) {
+  if (isLoadingMergedBookings) {
     return (
       <div className="flex flex-col items-center justify-center min-h-100 space-y-4">
         <Loader2 className="w-12 h-12 animate-spin text-[#0A7AFF]" />
@@ -797,7 +836,7 @@ export function Bookings({
     );
   }
 
-  if (isBookingsError) {
+  if (isMergedBookingsError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-100 text-center p-6">
         <div className="w-20 h-20 rounded-full bg-[rgba(255,107,107,0.1)] flex items-center justify-center mb-4">
@@ -1651,7 +1690,7 @@ export function Bookings({
               setSelectedStatus(status);
               handleFilterChange();
             }}
-            disabled={isLoadingBookings}
+            disabled={isLoadingMergedBookings}
             className={`px-5 h-11 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               selectedStatus === status
                 ? "font-semibold text-[#0A7AFF] border-b-[3px] border-[#0A7AFF] -mb-0.5"
@@ -1670,7 +1709,7 @@ export function Bookings({
       </div>
 
       {/* Booking Type Stats - Show skeleton while loading */}
-      {isLoadingBookings ? (
+      {isLoadingMergedBookings ? (
         <div className="grid grid-cols-4 gap-6 mb-6">
           {[...Array(4)].map((_, i) => (
             <div
@@ -1868,7 +1907,7 @@ export function Bookings({
 
         {/* Bookings List */}
         <div className="space-y-4">
-          {isLoadingBookings ? (
+          {isLoadingMergedBookings ? (
             // Skeleton loading for bookings list
             [...Array(3)].map((_, i) => (
               <div
