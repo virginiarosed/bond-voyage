@@ -390,9 +390,7 @@ export function Feedback() {
                           {item.customer}
                         </span>
                         <span className="text-sm text-[#64748B]">•</span>
-                        <span className="text-sm text-[#64748B]">
-                          Booking #{item.bookingId}
-                        </span>
+
                         {renderStars(item.rating)}
                       </div>
                       <p className="text-sm text-[#64748B]">{item.trip}</p>

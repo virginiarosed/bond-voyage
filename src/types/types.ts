@@ -34,6 +34,12 @@ export interface QueryParams {
   role?: string;
 }
 
+export interface PaymentSettings {
+  accountName: string;
+  gcashMobile: string;
+  gcashQrCodeUrl: string;
+}
+
 export type User = {
   id: string;
   email: string;
