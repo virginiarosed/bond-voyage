@@ -221,34 +221,7 @@ export function WeatherForecast() {
       {/* Search */}
       <ContentCard title="Search Location" icon={Search}>
         <div className="space-y-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
-                strokeWidth={2}
-              />
-              <input
-                type="text"
-                placeholder="Search for a location..."
-                value={searchLocation}
-                onChange={(e) => setSearchLocation(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                className="w-full pl-10 pr-4 py-3 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-              />
-            </div>
-            <button
-              onClick={handleSearch}
-              className="px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg whitespace-nowrap"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--gradient-from), var(--gradient-to))",
-                color: "white",
-              }}
-            >
-              Search
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm text-muted-foreground">Popular:</span>
             {popularLocations.map((loc) => (
               <button
