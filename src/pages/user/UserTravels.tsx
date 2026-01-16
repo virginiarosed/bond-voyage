@@ -208,8 +208,8 @@ export function UserTravels() {
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [selectedTab, setSelectedTab] = useState<
-    "booked" | "pending" | "rejected"
-  >("booked");
+    "booked" | "pending" | "rejected" | undefined
+  >(undefined);
   const [selectedFilter, setSelectedFilter] = useState<
     "all" | "owned" | "collaborated" | "requested"
   >("all");
@@ -313,17 +313,22 @@ export function UserTravels() {
     {}
   );
 
+  const [bookingType, setBookingType] = useState<"REQUESTED" | "CUSTOMIZED">(
+    "CUSTOMIZED"
+  );
+
   const {
     data: myBookingsResponse,
     isLoading: isLoadingMyBookings,
     refetch: refetchMyBookings,
   } = useMyBookings({
-    status: selectedTab.toUpperCase(),
+    status: selectedTab?.toUpperCase(),
+    type: bookingType,
   });
 
   const { data: sharedBookingsResponse, isLoading: isLoadingSharedBookings } =
     useSharedBookings({
-      status: selectedTab.toUpperCase(),
+      status: selectedTab?.toUpperCase(),
     });
 
   const { data: selectedBookingData, isLoading: isLoadingDetail } =
@@ -444,9 +449,10 @@ export function UserTravels() {
     // Determine confirmation status for REQUESTED bookings
     let confirmStatus: "confirmed" | "unconfirmed" | undefined;
     if (booking.type === "REQUESTED") {
-      confirmStatus = booking.status?.toLowerCase() === "confirmed" 
-        ? "confirmed" 
-        : "unconfirmed";
+      confirmStatus =
+        booking.status?.toLowerCase() === "confirmed"
+          ? "confirmed"
+          : "unconfirmed";
     }
 
     return {
@@ -471,7 +477,10 @@ export function UserTravels() {
       itinerary: booking.itinerary?.days || [],
       // Add these new fields
       confirmStatus,
-      sentStatus: booking.sentStatus?.toLowerCase() as "sent" | "unsent" | undefined,
+      sentStatus: booking.sentStatus?.toLowerCase() as
+        | "sent"
+        | "unsent"
+        | undefined,
       paymentStatus: booking.paymentStatus,
     };
   };
@@ -497,9 +506,17 @@ export function UserTravels() {
       if (selectedFilter === "requested" && requestedSubTab !== "all") {
         // Handle requested sub-tabs
         if (requestedSubTab === "confirmed") {
-          return statusMatch && ownershipMatch && booking.confirmStatus === "confirmed";
+          return (
+            statusMatch &&
+            ownershipMatch &&
+            booking.confirmStatus === "confirmed"
+          );
         } else if (requestedSubTab === "unconfirmed") {
-          return statusMatch && ownershipMatch && (booking.confirmStatus === "unconfirmed" || !booking.confirmStatus);
+          return (
+            statusMatch &&
+            ownershipMatch &&
+            (booking.confirmStatus === "unconfirmed" || !booking.confirmStatus)
+          );
         }
         return statusMatch && ownershipMatch;
       }
@@ -1499,6 +1516,36 @@ export function UserTravels() {
         }
       >
         <div className="space-y-4">
+          {/* Filter Buttons - Responsive */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <button
+              onClick={() => {
+                setBookingType("CUSTOMIZED");
+                setSelectedTab(undefined);
+              }}
+              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
+                bookingType === "CUSTOMIZED"
+                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
+                  : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
+              }`}
+            >
+              Customized
+            </button>
+
+            <button
+              onClick={() => {
+                setBookingType("REQUESTED");
+                setSelectedTab(undefined);
+              }}
+              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
+                bookingType === "REQUESTED"
+                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
+                  : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
+              }`}
+            >
+              {isMobile ? "Req" : "Requested"}
+            </button>
+          </div>
           {/* Dropdown for Requested filter */}
           {selectedFilter === "requested" && (
             <div className="pt-3 pb-2">
