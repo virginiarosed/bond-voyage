@@ -40,39 +40,55 @@ export function BookingListCard({
     onShare?.(booking.bookingCode, booking.id);
   };
 
+  // Helper to determine if this is a REQUESTED booking
+  const isRequestedBooking = () => {
+    return booking.bookingType?.toUpperCase() === "REQUESTED";
+  };
+
   const getStatusBadge = () => {
-    const sentBadge =
-      booking.sentStatus?.toLowerCase() === "sent" ? (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)]">
-          <CheckCircle className="w-3 h-3" />
-          Sent
-        </span>
-      ) : (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)]">
-          <AlertTriangle className="w-3 h-3" />
-          Unsent
-        </span>
-      );
+    // For REQUESTED bookings, only show sentStatus and confirmStatus badges
+    if (isRequestedBooking()) {
+      const sentBadge =
+        booking.sentStatus?.toLowerCase() === "sent" ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] text-xs font-medium border border-[rgba(16,185,129,0.2)]">
+            <CheckCircle className="w-3 h-3" />
+            Sent
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(255,152,0,0.1)] text-[#FF9800] text-xs font-medium border border-[rgba(255,152,0,0.2)]">
+            <AlertTriangle className="w-3 h-3" />
+            Unsent
+          </span>
+        );
 
-    // Confirmed/Unconfirmed badge - requires BOTH status === "CONFIRMED" AND sentStatus === "Sent"
-    const confirmedBadge =
-      booking.status?.toUpperCase() === "CONFIRMED" &&
-      booking.sentStatus?.toLowerCase() === "sent" ? (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] text-xs font-medium border border-[rgba(139,92,246,0.2)]">
-          <CheckCircle className="w-3 h-3" />
-          Confirmed
-        </span>
-      ) : (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(100,116,139,0.1)] text-[#64748B] text-xs font-medium border border-[rgba(100,116,139,0.2)]">
-          <XCircle className="w-3 h-3" />
-          Unconfirmed
-        </span>
-      );
+      // Confirmed/Unconfirmed badge - requires BOTH status === "CONFIRMED" AND sentStatus === "Sent"
+      const confirmedBadge =
+        booking.status?.toUpperCase() === "CONFIRMED" &&
+        booking.sentStatus?.toLowerCase() === "sent" ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] text-xs font-medium border border-[rgba(139,92,246,0.2)]">
+            <CheckCircle className="w-3 h-3" />
+            Confirmed
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(100,116,139,0.1)] text-[#64748B] text-xs font-medium border border-[rgba(100,116,139,0.2)]">
+            <XCircle className="w-3 h-3" />
+            Unconfirmed
+          </span>
+        );
 
+      return (
+        <>
+          {sentBadge}
+          {confirmedBadge}
+        </>
+      );
+    }
+
+    // For non-REQUESTED bookings, show booking type and tour type badges
     return (
       <>
-        {sentBadge}
-        {confirmedBadge}
+        {getBookingTypeBadge()}
+        {getTourTypeBadge()}
       </>
     );
   };
@@ -100,6 +116,9 @@ export function BookingListCard({
             {capitalize(booking.bookingType)}
           </span>
         );
+      case "REQUESTED":
+        // Return null - we don't want to show booking type badge for REQUESTED
+        return null;
       default:
         return (
           <span
@@ -113,6 +132,9 @@ export function BookingListCard({
 
   const getTourTypeBadge = () => {
     if (!booking.tourType) return null;
+    
+    // Don't show tour type badge for REQUESTED bookings
+    if (isRequestedBooking()) return null;
 
     const baseClasses =
       "inline-flex px-2.5 py-1 rounded-full text-xs font-medium border";
@@ -156,9 +178,9 @@ export function BookingListCard({
               <h3 className="text-lg text-[#1A2B4F] font-semibold">
                 Booking {booking.bookingCode}
               </h3>
+              
+              {/* Show badges conditionally - only status badges for REQUESTED */}
               {getStatusBadge()}
-              {getBookingTypeBadge()}
-              {getTourTypeBadge()}
             </div>
             <div className="flex items-center gap-2 text-sm text-[#64748B]">
               <span className="font-medium text-[#334155]">
