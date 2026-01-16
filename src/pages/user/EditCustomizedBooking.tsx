@@ -1656,6 +1656,7 @@ export function EditCustomizedBooking() {
       <AITravelAssistant
         itineraryDays={itineraryDays}
         destination={bookingData.destination}
+        onItineraryUpdate={(updatedDays) => setItineraryDays(updatedDays)}
       />
 
       {/* Sticky Bottom Bar */}

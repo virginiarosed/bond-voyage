@@ -98,7 +98,7 @@ export function TravelingAvatar() {
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 min-h-[300px] p-4">
+    <div className="relative w-full h-full flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 min-h-75 p-4">
       {/* Floating Background Elements */}
       <motion.div
         className="absolute top-8 left-8 w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm hidden lg:block"
@@ -1676,14 +1676,16 @@ export function TravelingAvatar() {
                             delay: i * 0.3,
                           }}
                         />
-                        
+
                         {/* Question Mark Icon */}
                         <motion.path
-                          d={`M ${
-                            80 + i * 2
-                          } ${104 + i * 18} a 1.5 1.5 0 0 1 0 3 a 1.5 1.5 0 0 1 0 -3 M ${
+                          d={`M ${80 + i * 2} ${
+                            104 + i * 18
+                          } a 1.5 1.5 0 0 1 0 3 a 1.5 1.5 0 0 1 0 -3 M ${
                             78 + i * 2
-                          } ${98 + i * 18} a 3 3 0 0 1 6 0 a 3 3 0 0 1 -3 3 v 3`}
+                          } ${
+                            98 + i * 18
+                          } a 3 3 0 0 1 6 0 a 3 3 0 0 1 -3 3 v 3`}
                           stroke={currentActivity.color}
                           strokeWidth="1.5"
                           fill="none"
@@ -1698,7 +1700,7 @@ export function TravelingAvatar() {
                             delay: i * 0.2,
                           }}
                         />
-                        
+
                         {/* Question Text */}
                         <rect
                           x="88"
@@ -1718,7 +1720,7 @@ export function TravelingAvatar() {
                           fill="#9CA3AF"
                           opacity="0.5"
                         />
-                        
+
                         {/* Answer Indicator */}
                         <motion.circle
                           cx="140"

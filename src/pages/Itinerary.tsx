@@ -106,6 +106,8 @@ import {
   useUpdateBookingStatus,
   useBookingPayments,
   useDeleteBooking,
+  useUpdateBooking,
+  useUpdateBookingWithId,
 } from "../hooks/useBookings";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUsers } from "../hooks/useUsers";
@@ -542,7 +544,9 @@ export function Itinerary({
   const [selectedCategory, setSelectedCategory] = useState<
     "Standard" | "Requested"
   >("Standard");
+  const [updateId, setUpdatedId] = useState<string>("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const updateBookingMutation = useUpdateBookingWithId();
 
   const [queryParams, setQueryParams] = useState({
     page: 1,
@@ -1318,7 +1322,6 @@ export function Itinerary({
       ? standard.pricePerPax * travelers
       : 0;
 
-    // Transform itinerary details to match expected format
     let itineraryDays: any[] = [];
 
     if (selectedBookingPackageDetail?.data?.days) {
@@ -1349,7 +1352,6 @@ export function Itinerary({
       ...(bookingFormData.travelDateTo && {
         endDate: bookingFormData.travelDateTo,
       }),
-      // Include itinerary data if available
       ...(itineraryDays.length > 0 && {
         itinerary: {
           title:
@@ -1361,28 +1363,53 @@ export function Itinerary({
           days: itineraryDays,
         },
       }),
+      status: "BOOKED",
     };
 
     createBooking(newBooking, {
       onSuccess: (response) => {
-        setBookingFormData({
-          customerName: "",
-          customerId: "",
-          email: "",
-          mobile: "",
-          travelDateFrom: "",
-          travelDateTo: "",
-          travelers: "1",
-          tourType: "Private" as any,
-        });
-        setCreateBookingConfirmOpen(false);
-        setStandardBookingModalOpen(false);
-        setSelectedStandardForBooking(null);
+        const bookingId = response.data?.id;
 
-        toast.success("Standard Booking Created!", {
-          description: `Booking for ${bookingFormData.customerName} has been successfully created.`,
-        });
-        navigate("/bookings");
+        if (bookingId) {
+          // Update booking status if needed (optional)
+          updateBookingMutation.mutate(
+            {
+              id: bookingId,
+              data: { status: "BOOKED" },
+            },
+            {
+              onSuccess: () => {
+                toast.success("Booking Updated!", {
+                  description: "Booking status has been updated.",
+                });
+              },
+              onError: (error: any) => {
+                console.error("Status update error:", error);
+              },
+            }
+          );
+
+          // Reset form state
+          setBookingFormData({
+            customerName: "",
+            customerId: "",
+            email: "",
+            mobile: "",
+            travelDateFrom: "",
+            travelDateTo: "",
+            travelers: "1",
+            tourType: "Private" as any,
+          });
+          setCreateBookingConfirmOpen(false);
+          setStandardBookingModalOpen(false);
+          setSelectedStandardForBooking(null);
+
+          toast.success("Standard Booking Created!", {
+            description: `Booking for ${bookingFormData.customerName} has been successfully created.`,
+          });
+
+          navigate("/bookings");
+        }
       },
       onError: (error: any) => {
         console.error("Booking creation error:", error);
@@ -1396,11 +1423,43 @@ export function Itinerary({
     });
   };
 
+  // Get the booking ID for updating status
+  const bookingId = selectedRequestedForBooking;
+
   const handleCreateBookingFromRequested = () => {
     if (!selectedRequestedForBooking || !bookingFormData.customerName) {
       toast.error("Missing required information");
       return;
     }
+
+    updateBookingMutation.mutate(
+      {
+        id: bookingId,
+        data: { status: "BOOKED" },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Booking Updated!", {
+            description: "Original booking status has been updated to BOOKED.",
+          });
+
+          // Also update the itinerary status if it exists
+          if (bookingDetail?.itineraryId) {
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.itineraries.detail(bookingDetail.itineraryId),
+            });
+          }
+        },
+        onError: (error: any) => {
+          console.error("Status update error:", error);
+          // Don't fail the entire flow if status update fails
+          toast.warning("Booking created but status update failed", {
+            description:
+              "The booking was created successfully, but the original booking status could not be updated.",
+          });
+        },
+      }
+    );
 
     const requestedBooking = requestedBookings.find(
       (b) => b.id === selectedRequestedForBooking
@@ -1411,11 +1470,6 @@ export function Itinerary({
       return;
     }
 
-    // Extract numeric value from the formatted string
-    const totalAmount = parseFloat(
-      requestedBooking?.totalAmount?.replace(/[^0-9.]/g, "")
-    );
-
     // Get the detailed booking data to extract itinerary information
     const bookingDetail =
       bookingDetailData?.data || requestedBooking.rawBooking;
@@ -1424,7 +1478,9 @@ export function Itinerary({
     const newBooking = {
       destination: requestedBooking.destination,
       travelers: parseInt(bookingFormData.travelers),
-      totalPrice: totalAmount,
+      totalPrice: parseFloat(
+        requestedBooking?.totalAmount?.replace(/[^0-9.]/g, "")
+      ),
       type: "REQUESTED",
       tourType: bookingFormData.tourType.toUpperCase(),
       customerName: bookingFormData.customerName,
@@ -1458,10 +1514,13 @@ export function Itinerary({
       }),
     };
 
-    console.log("Creating requested booking payload:", newBooking);
-
     createBooking(newBooking, {
       onSuccess: (response) => {
+        // Update the original booking status to "BOOKED" using the hook
+        if (bookingId) {
+        }
+
+        // Reset form state
         setBookingFormData({
           customerName: "",
           customerId: "",
@@ -1479,6 +1538,14 @@ export function Itinerary({
           description: `Booking for ${bookingFormData.customerName} has been created from the requested itinerary.`,
         });
 
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.all,
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.bookings.adminBookings(queryParams),
+        });
+
         navigate("/bookings");
       },
       onError: (error: any) => {
@@ -1492,7 +1559,6 @@ export function Itinerary({
       },
     });
   };
-
   const renderStandardGridView = () => {
     if (isLoadingPackages) {
       return (
@@ -1908,17 +1974,17 @@ export function Itinerary({
                       )}
                     </button>
                   )}
-
                   {/* Book This Trip Button */}
                   {bookingDetailData.data.status === "CONFIRMED" && (
                     <button
                       onClick={() => {
+                        // Just open a confirmation modal
                         setSelectedRequestedForBooking(
-                          bookingDetailData.data?.id!
+                          bookingDetailData.data.id
                         );
                         setRequestedBookingModalOpen(true);
                       }}
-                      className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
+                      className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#10B981] hover:from-[#12A594] hover:to-[#0EA574] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#14B8A6]/20"
                     >
                       <BookOpen className="w-5 h-5" />
                       Book This Trip
@@ -2597,317 +2663,116 @@ export function Itinerary({
         confirmVariant="success"
       />
 
-      {/* Requested Itinerary Booking Modal */}
+      {/* Requested Itinerary Booking Confirmation Modal */}
       <ConfirmationModal
         open={requestedBookingModalOpen}
         onOpenChange={setRequestedBookingModalOpen}
-        title="Create Booking from Requested Itinerary"
-        description="Convert this requested itinerary into an actual booking by providing customer details."
+        title="Confirm Booking"
+        description="Are you sure you want to book this trip? This will change the booking status to BOOKED."
         icon={<BookOpen className="w-5 h-5 text-white" />}
-        iconGradient="bg-gradient-to-br from-[#0A7AFF] to-[#14B8A6]"
-        iconShadow="shadow-[#0A7AFF]/20"
-        contentGradient="bg-gradient-to-br from-[rgba(10,122,255,0.05)] to-[rgba(20,184,166,0.05)]"
-        contentBorder="border-[rgba(10,122,255,0.2)]"
+        iconGradient="bg-gradient-to-br from-[#14B8A6] to-[#10B981]"
+        iconShadow="shadow-[#14B8A6]/20"
+        contentGradient="bg-gradient-to-br from-[rgba(20,184,166,0.05)] to-[rgba(16,185,129,0.05)]"
+        contentBorder="border-[rgba(20,184,166,0.2)]"
         content={
-          <div className="space-y-4">
-            <div>
-              <Label
-                htmlFor="customerName"
-                className="text-[#1A2B4F] mb-2 block"
-              >
-                Customer Name <span className="text-[#FF6B6B]">*</span>
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
-                <Input
-                  id="customerName"
-                  value={bookingFormData.customerName}
-                  onChange={(e) => handleUserNameInput(e.target.value)}
-                  placeholder="Search existing customer or enter new"
-                  className="h-11 pl-10 pr-10 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
-                />
-
-                {isSearchingUsers && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="w-4 h-4 border-2 border-[#0A7AFF] border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                )}
-
-                {bookingFormData.customerId && !isSearchingUsers && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBookingFormData((prev) => ({
-                        ...prev,
-                        customerName: "",
-                        customerId: "",
-                        email: "",
-                        mobile: "",
-                      }));
-                      setUserSearchParams((prev) => ({
-                        ...prev,
-                        q: undefined,
-                      }));
-                    }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] transition-colors"
-                    title="Clear selection"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                )}
+          selectedRequestedForBooking && bookingDetailData?.data ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-[#64748B]">Booking Code:</span>
+                <span className="text-sm font-medium text-[#1A2B4F]">
+                  {bookingDetailData.data.bookingCode}
+                </span>
               </div>
-
-              {isUserSearching && userSuggestions.length > 0 && (
-                <div className="absolute z-50 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-60 overflow-auto">
-                  <div className="sticky top-0 bg-white border-b border-[#F1F5F9] px-3 py-2">
-                    <span className="text-xs font-medium text-[#64748B]">
-                      Found {userSuggestions.length} user
-                      {userSuggestions.length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-
-                  {userSuggestions.map((user) => (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => selectUserSuggestion(user)}
-                      className="w-full px-3 py-2 text-left hover:bg-[rgba(10,122,255,0.05)] border-b border-[#F1F5F9] last:border-0"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center">
-                          <span className="text-white text-xs font-medium">
-                            {user.firstName?.charAt(0)}
-                            {user.lastName?.charAt(0)}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[#1A2B4F] truncate">
-                            {user.firstName} {user.lastName}
-                          </p>
-                          <p className="text-xs text-[#64748B] truncate">
-                            {user.email}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="email" className="text-[#1A2B4F] mb-2 block">
-                Email Address <span className="text-[#FF6B6B]">*</span>
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={bookingFormData.email}
-                  onChange={(e) =>
-                    setBookingFormData({
-                      ...bookingFormData,
-                      email: e.target.value,
-                    })
-                  }
-                  placeholder="customer@email.com"
-                  className={`h-11 pl-10 ${
-                    bookingFormData.customerId
-                      ? "bg-[#F8FAFB] text-[#94A3B8]"
-                      : ""
-                  } border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10`}
-                  disabled={!!bookingFormData.customerId}
-                />
-                {bookingFormData.customerId && (
-                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#94A3B8]" />
-                )}
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-[#64748B]">Customer:</span>
+                <span className="text-sm font-medium text-[#1A2B4F]">
+                  {bookingDetailData.data.customerName}
+                </span>
               </div>
-              {bookingFormData.customerId && (
-                <p className="text-xs text-[#94A3B8] mt-1">
-                  Linked to existing customer profile
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-[#64748B]">Destination:</span>
+                <span className="text-sm font-medium text-[#1A2B4F]">
+                  {bookingDetailData.data.destination}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-[#64748B]">Travelers:</span>
+                <span className="text-sm font-medium text-[#1A2B4F]">
+                  {bookingDetailData.data.travelers}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2 pt-3 border-t border-[rgba(20,184,166,0.3)]">
+                <span className="font-semibold text-[#1A2B4F]">
+                  Total Amount:
+                </span>
+                <span className="font-semibold text-[#14B8A6]">
+                  ₱
+                  {parseFloat(
+                    bookingDetailData.data.totalPrice.toString()
+                  ).toLocaleString()}
+                </span>
+              </div>
+              <div className="mt-4 p-3 bg-[rgba(20,184,166,0.1)] border border-[rgba(20,184,166,0.2)] rounded-lg">
+                <p className="text-xs text-[#065F46]">
+                  This will update the booking status from{" "}
+                  <strong>CONFIRMED</strong> to <strong>BOOKED</strong>.
                 </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="mobile" className="text-[#1A2B4F] mb-2 block">
-                Mobile Number <span className="text-[#FF6B6B]">*</span>
-              </Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
-                <Input
-                  id="mobile"
-                  type="tel"
-                  value={bookingFormData.mobile}
-                  onChange={(e) =>
-                    setBookingFormData({
-                      ...bookingFormData,
-                      mobile: e.target.value,
-                    })
-                  }
-                  placeholder="+63 9XX XXX XXXX"
-                  className={`h-11 pl-10 ${
-                    bookingFormData.customerId
-                      ? "bg-[#F8FAFB] text-[#94A3B8]"
-                      : ""
-                  } border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10`}
-                  disabled={!!bookingFormData.customerId}
-                />
-                {bookingFormData.customerId && (
-                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#94A3B8]" />
-                )}
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label
-                  htmlFor="travelDateFrom"
-                  className="text-[#1A2B4F] mb-2 block"
-                >
-                  Travel Start Date <span className="text-[#FF6B6B]">*</span>
-                </Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
-                  <Input
-                    id="travelDateFrom"
-                    type="date"
-                    value={bookingFormData.travelDateFrom}
-                    onChange={(e) =>
-                      setBookingFormData({
-                        ...bookingFormData,
-                        travelDateFrom: e.target.value,
-                      })
-                    }
-                    className="h-11 pl-10 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label
-                  htmlFor="travelDateTo"
-                  className="text-[#1A2B4F] mb-2 block"
-                >
-                  Travel End Date <span className="text-[#FF6B6B]">*</span>
-                </Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
-                  <Input
-                    id="travelDateTo"
-                    type="date"
-                    value={bookingFormData.travelDateTo}
-                    onChange={(e) =>
-                      setBookingFormData({
-                        ...bookingFormData,
-                        travelDateTo: e.target.value,
-                      })
-                    }
-                    className="h-11 pl-10 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="tourType" className="text-[#1A2B4F] mb-2 block">
-                  Tour Type <span className="text-[#FF6B6B]">*</span>
-                </Label>
-                <Select
-                  value={bookingFormData.tourType}
-                  onValueChange={(value: "Joiner" | "Private") =>
-                    setBookingFormData({ ...bookingFormData, tourType: value })
-                  }
-                >
-                  <SelectTrigger className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10">
-                    <SelectValue placeholder="Choose Tour Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Joiner">Joiner</SelectItem>
-                    <SelectItem value="Private">Private Tour</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label
-                  htmlFor="travelers"
-                  className="text-[#1A2B4F] mb-2 block"
-                >
-                  Travelers <span className="text-[#FF6B6B]">*</span>
-                </Label>
-                <Input
-                  id="travelers"
-                  type="number"
-                  min="1"
-                  value={bookingFormData.travelers}
-                  onChange={(e) =>
-                    setBookingFormData({
-                      ...bookingFormData,
-                      travelers: e.target.value,
-                    })
-                  }
-                  className="h-11 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-[#0A7AFF]/10"
-                />
-              </div>
-            </div>
-
-            {selectedRequestedForBooking && selectedRequested && (
-              <div className="pt-4 border-t border-[rgba(10,122,255,0.3)]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-[#64748B]">Total Amount:</span>
-                  <span className="text-sm font-medium text-[#1A2B4F]">
-                    {selectedRequested.totalAmount}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-[#64748B]">
-                    Number of Travelers:
-                  </span>
-                  <span className="text-sm font-medium text-[#1A2B4F]">
-                    {bookingFormData.travelers || 1}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-[rgba(10,122,255,0.3)]">
-                  <span className="font-semibold text-[#1A2B4F]">
-                    Final Total:
-                  </span>
-                  <span className="font-semibold text-[#0A7AFF]">
-                    {selectedRequested.totalAmount}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
+          ) : null
         }
         onConfirm={() => {
-          if (
-            !bookingFormData.customerName ||
-            !bookingFormData.email ||
-            !bookingFormData.mobile
-          ) {
-            toast.error("Please fill in all required fields");
-            return;
-          }
-          handleCreateBookingFromRequested();
+          if (!selectedRequestedForBooking) return;
+
+          updateBookingMutation.mutate(
+            {
+              id: selectedRequestedForBooking,
+              data: { status: "BOOKED" },
+            },
+            {
+              onSuccess: () => {
+                toast.success("Booking Confirmed!", {
+                  description: "The booking status has been updated to BOOKED.",
+                });
+
+                // Invalidate queries to refresh data
+                queryClient.invalidateQueries({
+                  queryKey: queryKeys.bookings.detail(
+                    selectedRequestedForBooking
+                  ),
+                });
+                queryClient.invalidateQueries({
+                  queryKey: queryKeys.bookings.adminBookings(queryParams),
+                });
+
+                // Close modal and reset state
+                setRequestedBookingModalOpen(false);
+                setSelectedRequestedForBooking(null);
+
+                // Optionally navigate to bookings page
+                // navigate("/bookings");
+              },
+              onError: (error: any) => {
+                console.error("Booking update error:", error);
+                toast.error("Failed to Book Trip", {
+                  description:
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Please try again.",
+                });
+              },
+            }
+          );
         }}
         onCancel={() => {
           setRequestedBookingModalOpen(false);
           setSelectedRequestedForBooking(null);
-          setBookingFormData({
-            customerName: "",
-            customerId: "",
-            email: "",
-            mobile: "",
-            travelDateFrom: "",
-            travelDateTo: "",
-            travelers: "1",
-            tourType: "Private" as any,
-          });
         }}
-        confirmText="Create Booking"
+        confirmText={
+          updateBookingMutation.isPending ? "Booking..." : "Yes, Book This Trip"
+        }
         cancelText="Cancel"
-        confirmVariant="default"
+        confirmVariant="success"
       />
 
       {/* Confirmation Modal for Creating Booking */}

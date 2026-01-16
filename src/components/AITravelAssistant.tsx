@@ -105,17 +105,26 @@ export function AITravelAssistant({
     });
 
   // Initialize days based on itinerary
+  // Support both 'dayNumber' (standard) and 'day' (legacy) property names
   useEffect(() => {
     if (itineraryDays.length > 0) {
       const dayNumbers = itineraryDays
-        .map((day) => day.dayNumber)
+        .map((d) => d.dayNumber ?? (d as any).day ?? 1)
+        .filter((num): num is number => typeof num === 'number' && !isNaN(num))
         .sort((a, b) => a - b);
-      setVisibleDays(dayNumbers);
-      setSelectedDay(dayNumbers[0]);
+
+      if (dayNumbers.length > 0) {
+        setVisibleDays(dayNumbers);
+        setSelectedDay(dayNumbers[0]);
+      } else {
+        setVisibleDays([1]);
+        setSelectedDay(1);
+      }
       setCurrentBatch(0);
     } else {
       const defaultDays = [1, 2, 3, 4];
       setVisibleDays(defaultDays);
+      setSelectedDay(1);
       setCurrentBatch(0);
     }
   }, [itineraryDays]);
@@ -219,8 +228,11 @@ export function AITravelAssistant({
   }, [isOpen]);
 
   // Get current day's activities
-  const getCurrentDayActivities = (dayNumber: number = selectedDay) => {
-    const day = itineraryDays.find((d) => d.dayNumber === dayNumber);
+  // Support both 'dayNumber' (standard) and 'day' (legacy) property names
+  const getCurrentDayActivities = (targetDay: number = selectedDay) => {
+    const day = itineraryDays.find(
+      (d) => (d.dayNumber ?? (d as any).day) === targetDay
+    );
     return {
       day: day,
       activities: day?.activities || [],
@@ -234,52 +246,79 @@ export function AITravelAssistant({
   };
 
   // Apply draft itinerary to parent component
+  // Handles mapping between draft format and existing itinerary format
   const applyDraftItinerary = () => {
     if (!pendingDraft || !pendingDraft.days || !onItineraryUpdate) return;
 
-    // Convert draft format to Day format
-    const updatedDays: Day[] = pendingDraft.days.map((day) => ({
-      id: `day-${day.dayNumber}`,
-      dayNumber: day.dayNumber,
-      date: null, // You might want to set this based on your logic
-      activities: (day.activities || []).map((activity, index) => ({
-        id: `activity-${day.dayNumber}-${activity.order ?? index}`,
-        time: activity.time,
-        title: activity.title,
-        description: activity.description || null,
-        location: activity.location || null,
-        icon: null, // Set default or from activity data
-        order: activity.order ?? index,
-      })),
-    }));
+    // Detect if parent uses 'day' or 'dayNumber' property
+    const usesLegacyDayProp =
+      itineraryDays.length > 0 &&
+      itineraryDays[0].dayNumber === undefined &&
+      (itineraryDays[0] as any).day !== undefined;
+
+    // Convert draft format to Day format, adapting to parent's property naming
+    const updatedDays: Day[] = pendingDraft.days.map((draftDay) => {
+      const dayData: any = {
+        id: `day-${draftDay.dayNumber}`,
+        dayNumber: draftDay.dayNumber,
+        date: draftDay.date || null,
+        title: draftDay.title || "",
+        activities: (draftDay.activities || []).map((activity, index) => ({
+          id: `activity-${draftDay.dayNumber}-${activity.order ?? index}`,
+          time: activity.time || "",
+          title: activity.title || "",
+          description: activity.description || "",
+          location: activity.location || "",
+          icon: (activity as any).iconKey || "",
+          order: activity.order ?? index,
+        })),
+      };
+
+      // If parent uses legacy 'day' property, add it for compatibility
+      if (usesLegacyDayProp) {
+        dayData.day = draftDay.dayNumber;
+      }
+
+      return dayData as Day;
+    });
 
     // Merge with existing days
     const mergedDays = [...itineraryDays];
     updatedDays.forEach((draftDay) => {
-      const existingIndex = mergedDays.findIndex(
-        (d) => d.dayNumber === draftDay.dayNumber
-      );
+      const draftDayNum = draftDay.dayNumber ?? (draftDay as any).day;
+      const existingIndex = mergedDays.findIndex((d) => {
+        const existingDayNum = d.dayNumber ?? (d as any).day;
+        return existingDayNum === draftDayNum;
+      });
+
       if (existingIndex >= 0) {
-        mergedDays[existingIndex] = draftDay;
+        // Preserve existing ID if available
+        const existingId = mergedDays[existingIndex].id;
+        mergedDays[existingIndex] = { ...draftDay, id: existingId };
       } else {
         mergedDays.push(draftDay);
       }
     });
 
     // Sort by day number
-    mergedDays.sort((a, b) => a.dayNumber - b.dayNumber);
+    mergedDays.sort((a, b) => {
+      const aNum = a.dayNumber ?? (a as any).day ?? 0;
+      const bNum = b.dayNumber ?? (b as any).day ?? 0;
+      return aNum - bNum;
+    });
 
     onItineraryUpdate(mergedDays);
     setShowDraftPreview(false);
     setPendingDraft(null);
 
+    const appliedDays = pendingDraft.days.map((d) => d.dayNumber).join(", ");
     toast.success("Itinerary updated successfully!");
 
     // Add confirmation message
     const confirmMessage: Message = {
       id: Date.now().toString(),
       type: "system",
-      content: `✅ Your Day ${selectedDay} itinerary has been updated! Check your main itinerary to see the changes.`,
+      content: `✅ Day ${appliedDays} itinerary has been updated! Check your main itinerary to see the changes.`,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, confirmMessage]);
@@ -376,7 +415,7 @@ export function AITravelAssistant({
             >
               {/* Header */}
               <div
-                className="p-6 rounded-t-2xl"
+                className="p-6 rounded-t-2xl shrink-0"
                 style={{
                   background: "linear-gradient(to right, #10B981, #0A7AFF)",
                 }}
@@ -401,8 +440,8 @@ export function AITravelAssistant({
               </div>
 
               {/* Content */}
-              <ScrollArea className="flex-1 p-6">
-                <div className="space-y-4">
+              <ScrollArea className="flex-1 max-h-[60vh] overflow-y-auto">
+                <div className="p-6 space-y-4">
                   {/* Destination Info */}
                   <div className="p-4 rounded-lg bg-linear-to-br from-[#F0FDF4] to-[#DBEAFE] border border-[#10B981]/20">
                     <div className="flex items-center gap-2 mb-2">
@@ -464,7 +503,7 @@ export function AITravelAssistant({
               </ScrollArea>
 
               {/* Footer */}
-              <div className="p-6 border-t-2 border-[#E5E7EB] flex gap-3">
+              <div className="p-6 border-t-2 border-[#E5E7EB] flex gap-3 shrink-0">
                 <Button
                   onClick={() => setShowDraftPreview(false)}
                   variant="outline"

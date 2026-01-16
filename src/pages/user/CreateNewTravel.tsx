@@ -95,11 +95,12 @@ interface Activity {
   description: string;
   location: string;
   locationData?: Place;
+  order: number;
 }
 
 interface Day {
   id: string;
-  day: number;
+  dayNumber: number;
   title: string;
   activities: Activity[];
 }
@@ -190,7 +191,7 @@ export function CreateNewTravel() {
   const [itineraryDays, setItineraryDays] = useState<Day[]>([
     {
       id: `day-${Date.now()}-1`,
-      day: 1,
+      dayNumber: 1,
       title: "",
       activities: [],
     },
@@ -232,8 +233,8 @@ export function CreateNewTravel() {
   // Location autocomplete + route optimization state
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
   const debouncedValue = useDebounce(locationSearchQuery);
-  const [selectedDayForRoute, setSelectedDayForRoute] = useState<string | null>(
-    null
+  const [selectedDayForRoute, setSelectedDayForRoute] = useState<string | undefined>(
+    undefined
   );
 
   const { data: placesData, isLoading: isLoadingPlaces } = usePlacesSearch(
@@ -286,10 +287,11 @@ export function CreateNewTravel() {
 
   // Track changes
   useEffect(() => {
-    const hasData =
+    const hasData = !!(
       formData.destination ||
       formData.totalAmount ||
-      itineraryDays.some((day) => day.title || day.activities.length > 0);
+      itineraryDays.some((day) => day.title || day.activities.length > 0)
+    );
     setHasUnsavedChanges(hasData);
   }, [formData, itineraryDays]);
 
@@ -313,7 +315,7 @@ export function CreateNewTravel() {
           for (let i = itineraryDays.length + 1; i <= dayCount; i++) {
             newDays.push({
               id: generateId(),
-              day: i,
+              dayNumber: i,
               title: "",
               activities: [],
             });
@@ -459,21 +461,22 @@ export function CreateNewTravel() {
 
   // Add activity to a day
   const addActivity = (dayId: string) => {
-    const newActivity: Activity = {
-      id: generateId(),
-      time: "",
-      icon: "",
-      title: "",
-      description: "",
-      location: "",
-    };
-
     setItineraryDays((prev) =>
-      prev.map((day) =>
-        day.id === dayId
-          ? { ...day, activities: [...day.activities, newActivity] }
-          : day
-      )
+      prev.map((day) => {
+        if (day.id === dayId) {
+          const newActivity: Activity = {
+            id: generateId(),
+            time: "",
+            icon: "",
+            title: "",
+            description: "",
+            location: "",
+            order: day.activities.length,
+          };
+          return { ...day, activities: [...day.activities, newActivity] };
+        }
+        return day;
+      })
     );
 
     toast.success("Activity Added", {
@@ -526,7 +529,7 @@ export function CreateNewTravel() {
 
         if (timeExists) {
           toast.error("Time Overlap Detected", {
-            description: `The time ${value} is already used by another activity on Day ${day.day}. Please choose a different time.`,
+            description: `The time ${value} is already used by another activity on Day ${day.dayNumber}. Please choose a different time.`,
           });
           return; // Don't update if time overlaps
         }
@@ -539,7 +542,7 @@ export function CreateNewTravel() {
           const previousActivity = day.activities[activityIndex - 1];
           if (previousActivity.time && value <= previousActivity.time) {
             toast.error("Invalid Time Sequence", {
-              description: `Activity time must be later than the previous activity (${previousActivity.time}) on Day ${day.day}.`,
+              description: `Activity time must be later than the previous activity (${previousActivity.time}) on Day ${day.dayNumber}.`,
             });
             return; // Don't update if not sequential
           }
@@ -650,14 +653,14 @@ export function CreateNewTravel() {
     // Check if all days have titles and at least one activity
     for (const day of itineraryDays) {
       if (!day.title.trim()) {
-        toast.error(`Day ${day.day} Incomplete`, {
-          description: `Please enter a title for Day ${day.day}.`,
+        toast.error(`Day ${day.dayNumber} Incomplete`, {
+          description: `Please enter a title for Day ${day.dayNumber}.`,
         });
         return false;
       }
       if (day.activities.length === 0) {
-        toast.error(`Day ${day.day} Empty`, {
-          description: `Please add at least one activity for Day ${day.day}.`,
+        toast.error(`Day ${day.dayNumber} Empty`, {
+          description: `Please add at least one activity for Day ${day.dayNumber}.`,
         });
         return false;
       }
@@ -666,7 +669,7 @@ export function CreateNewTravel() {
       for (const activity of day.activities) {
         if (!activity.title.trim()) {
           toast.error(`Activity Title Missing`, {
-            description: `Please enter a title for all activities on Day ${day.day}.`,
+            description: `Please enter a title for all activities on Day ${day.dayNumber}.`,
           });
           return false;
         }
@@ -700,7 +703,7 @@ export function CreateNewTravel() {
       }
 
       return {
-        dayNumber: day.day,
+        dayNumber: day.dayNumber,
         date: formData.travelDateFrom
           ? dayDate.toISOString().split("T")[0]
           : null,
@@ -794,14 +797,7 @@ export function CreateNewTravel() {
         </div>
       </ContentCard>
 
-      {/* Route Optimization Panel */}
-      <RouteOptimizationPanel
-        itineraryDays={itineraryDays}
-        selectedDayId={selectedDayForRoute}
-        onAcceptOptimization={handleAcceptOptimization}
-      />
-
-      {/* Travel Information */}
+      {/* Travel Information - MOVED ABOVE Route Optimization Panel */}
       <ContentCard>
         <div className="mb-6">
           <h2 className="text-lg text-[#1A2B4F] font-semibold">
@@ -909,6 +905,13 @@ export function CreateNewTravel() {
         </div>
       </ContentCard>
 
+      {/* Route Optimization Panel - NOW BELOW Travel Information */}
+      <RouteOptimizationPanel
+        itineraryDays={itineraryDays}
+        selectedDayId={selectedDayForRoute}
+        onAcceptOptimization={handleAcceptOptimization}
+      />
+
       {/* Day-by-Day Itinerary */}
       <ContentCard>
         <div className="mb-6">
@@ -928,14 +931,14 @@ export function CreateNewTravel() {
               {/* Day Header */}
               <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
                 <div className="w-14 h-14 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#14B8A6] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/20">
-                  <span className="text-white font-bold">D{day.day}</span>
+                  <span className="text-white font-bold">D{day.dayNumber}</span>
                 </div>
                 <div className="flex-1">
                   <Label
                     htmlFor={`day-${day.id}-title`}
                     className="text-[#1A2B4F] mb-2 block text-sm font-medium"
                   >
-                    Day {day.day} Title{" "}
+                    Day {day.dayNumber} Title{" "}
                     <span className="text-[#FF6B6B]">*</span>
                   </Label>
                   <Input
@@ -963,7 +966,7 @@ export function CreateNewTravel() {
                       <Package className="w-7 h-7 text-[#CBD5E1]" />
                     </div>
                     <p className="text-sm text-[#64748B] mb-1">
-                      No activities yet for Day {day.day}
+                      No activities yet for Day {day.dayNumber}
                     </p>
                     <p className="text-xs text-[#94A3B8]">
                       Click "Add Activity" to start building this day
@@ -1461,6 +1464,14 @@ export function CreateNewTravel() {
       <AITravelAssistant
         itineraryDays={itineraryDays}
         destination={formData.destination}
+        onItineraryUpdate={(updatedDays) => {
+          // Ensure dayNumber is set from either dayNumber or legacy day property
+          const convertedDays = updatedDays.map((d: any) => ({
+            ...d,
+            dayNumber: d.dayNumber ?? d.day,
+          }));
+          setItineraryDays(convertedDays);
+        }}
       />
     </div>
   );
