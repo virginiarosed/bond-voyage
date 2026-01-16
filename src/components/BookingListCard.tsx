@@ -1,4 +1,4 @@
-import { MapPin, Calendar, Users, Clock, Eye, Share2 } from "lucide-react";
+import { MapPin, Calendar, Users, Clock, Eye, Share2, CreditCard } from "lucide-react";
 import { capitalize } from "../utils/helpers/capitalize";
 import { formatDateRange } from "../App";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
@@ -51,6 +51,98 @@ export function BookingListCard({
   // Helper to determine if this is a REQUESTED booking
   const isRequestedBooking = () => {
     return booking.bookingType?.toUpperCase() === "REQUESTED";
+  };
+
+  // Get Payment Status Badge (NEW)
+const getPaymentStatusBadge = () => {
+  if (!booking.paymentStatus) return null;
+
+  const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
+  const status = booking.paymentStatus.toLowerCase();
+
+  switch (status) {
+    case "paid":
+    case "verified": // Some APIs might use "verified" instead of "paid"
+      return (
+        <span className={`${baseClasses} bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]`}>
+          <CreditCard className="w-3 h-3" />
+          Paid
+        </span>
+      );
+    case "partial":
+    case "partial_payment":
+      return (
+        <span className={`${baseClasses} bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]`}>
+          <CreditCard className="w-3 h-3" />
+          Partial
+        </span>
+      );
+    case "pending":
+    case "processing":
+      return (
+        <span className={`${baseClasses} bg-[rgba(255,184,77,0.1)] text-[#FFB84D] border-[rgba(255,184,77,0.2)]`}>
+          <CreditCard className="w-3 h-3" />
+          Pending
+        </span>
+      );
+    case "unpaid":
+      return (
+        <span className={`${baseClasses} bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[rgba(255,107,107,0.2)]`}>
+          <CreditCard className="w-3 h-3" />
+          Unpaid
+        </span>
+      );
+    case "rejected":
+    case "failed":
+      return (
+        <span className={`${baseClasses} bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[rgba(255,107,107,0.2)]`}>
+          <CreditCard className="w-3 h-3" />
+          Rejected
+        </span>
+      );
+    default:
+      return (
+        <span className={`${baseClasses} bg-[rgba(100,116,139,0.1)] text-[#64748B] border-[rgba(100,116,139,0.2)]`}>
+          <CreditCard className="w-3 h-3" />
+          {capitalize(booking.paymentStatus)}
+        </span>
+      );
+  }
+};
+
+  // Get Tour Type Badge (NEW)
+  const getTourTypeBadge = () => {
+    if (!booking.tourType) return null;
+
+    const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
+    const type = booking.tourType.toLowerCase();
+
+    switch (type) {
+      case "private":
+        return (
+          <span className={`${baseClasses} bg-[rgba(168,85,247,0.1)] text-[#A855F7] border-[rgba(168,85,247,0.2)]`}>
+            Private
+          </span>
+        );
+      case "group":
+        return (
+          <span className={`${baseClasses} bg-[rgba(59,130,246,0.1)] text-[#3B82F6] border-[rgba(59,130,246,0.2)]`}>
+            Group
+          </span>
+        );
+      case "standard":
+        return (
+          <span className={`${baseClasses} bg-[rgba(14,165,233,0.1)] text-[#0EA5E9] border-[rgba(14,165,233,0.2)]`}>
+            Standard
+          </span>
+        );
+      default:
+        return (
+          <span className={`${baseClasses} bg-[rgba(100,116,139,0.1)] text-[#64748B] border-[rgba(100,116,139,0.2)]`}>
+            {capitalize(booking.tourType)}
+          </span>
+        );
+    }
   };
 
   // Get Ownership Badge
@@ -207,11 +299,17 @@ export function BookingListCard({
                 Booking {booking.bookingCode}
               </h3>
               
+              {/* Show payment status badge first (NEW) */}
+              {getPaymentStatusBadge()}
+              
+              {/* Show booking type badge */}
+              {getBookingTypeBadge()}
+              
+              {/* Show tour type badge (NEW) */}
+              {getTourTypeBadge()}
+              
               {/* Show ownership badge (not for REQUESTED bookings) */}
               {getOwnershipBadge()}
-              
-              {/* Show booking type badge for all bookings */}
-              {getBookingTypeBadge()}
               
               {/* Show confirmation badge for REQUESTED bookings */}
               {getConfirmationBadge()}
