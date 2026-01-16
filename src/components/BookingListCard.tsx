@@ -56,22 +56,27 @@ export function BookingListCard({
   // Get Ownership Badge
   const getOwnershipBadge = () => {
     if (!ownership) return null;
-    
+
     // Don't show ownership badge for REQUESTED bookings to avoid redundancy
     if (isRequestedBooking()) return null;
 
-    const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
+    const baseClasses =
+      "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
 
     switch (ownership) {
       case "owned":
         return (
-          <span className={`${baseClasses} bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[rgba(10,122,255,0.2)]`}>
+          <span
+            className={`${baseClasses} bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border-[rgba(10,122,255,0.2)]`}
+          >
             Owned
           </span>
         );
       case "collaborated":
         return (
-          <span className={`${baseClasses} bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border-[rgba(139,92,246,0.2)]`}>
+          <span
+            className={`${baseClasses} bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border-[rgba(139,92,246,0.2)]`}
+          >
             Collaborated
           </span>
         );
@@ -88,23 +93,31 @@ export function BookingListCard({
     // Only show confirmation badge for REQUESTED bookings
     if (!isRequestedBooking()) return null;
 
-    const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
+    const baseClasses =
+      "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
 
     // Use confirmStatus prop if available, otherwise fall back to booking status
-    const statusToUse = confirmStatus || 
-      (booking.status?.toUpperCase() === "CONFIRMED" ? "confirmed" : "unconfirmed");
+    const statusToUse =
+      confirmStatus ||
+      (booking.status?.toUpperCase() === "CONFIRMED"
+        ? "confirmed"
+        : "unconfirmed");
 
     switch (statusToUse) {
       case "confirmed":
         return (
-          <span className={`${baseClasses} bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]`}>
+          <span
+            className={`${baseClasses} bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]`}
+          >
             <CheckCircle className="w-3 h-3" />
             Confirmed
           </span>
         );
       case "unconfirmed":
         return (
-          <span className={`${baseClasses} bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]`}>
+          <span
+            className={`${baseClasses} bg-[rgba(255,152,0,0.1)] text-[#FF9800] border-[rgba(255,152,0,0.2)]`}
+          >
             <AlertTriangle className="w-3 h-3" />
             Unconfirmed
           </span>
@@ -119,24 +132,31 @@ export function BookingListCard({
     // Only show sent status badge for REQUESTED bookings
     if (!isRequestedBooking()) return null;
 
-    const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
+    const baseClasses =
+      "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
 
     // Use sentStatus prop if available, otherwise fall back to booking.sentStatus
-    const statusToUse = sentStatus || booking.sentStatus?.toLowerCase() as "sent" | "unsent" | undefined;
+    const statusToUse =
+      sentStatus ||
+      (booking.sentStatus?.toLowerCase() as "sent" | "unsent" | undefined);
 
     if (!statusToUse) return null;
 
     switch (statusToUse) {
       case "sent":
         return (
-          <span className={`${baseClasses} bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]`}>
+          <span
+            className={`${baseClasses} bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]`}
+          >
             <CheckCircle className="w-3 h-3" />
             Sent
           </span>
         );
       case "unsent":
         return (
-          <span className={`${baseClasses} bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[rgba(255,107,107,0.2)]`}>
+          <span
+            className={`${baseClasses} bg-[rgba(255,107,107,0.1)] text-[#FF6B6B] border-[rgba(255,107,107,0.2)]`}
+          >
             <XCircle className="w-3 h-3" />
             Unsent
           </span>
@@ -149,7 +169,8 @@ export function BookingListCard({
   const getBookingTypeBadge = () => {
     if (!booking.bookingType) return null;
 
-    const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
+    const baseClasses =
+      "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border";
 
     switch (booking.bookingType.toUpperCase()) {
       case "CUSTOMIZED":
@@ -206,16 +227,16 @@ export function BookingListCard({
               <h3 className="text-lg text-[#1A2B4F] font-semibold">
                 Booking {booking.bookingCode}
               </h3>
-              
+
               {/* Show ownership badge (not for REQUESTED bookings) */}
               {getOwnershipBadge()}
-              
+
               {/* Show booking type badge for all bookings */}
               {getBookingTypeBadge()}
-              
+
               {/* Show confirmation badge for REQUESTED bookings */}
               {getConfirmationBadge()}
-              
+
               {/* Show sent status badge for REQUESTED bookings */}
               {getSentStatusBadge()}
             </div>
@@ -304,7 +325,7 @@ export function BookingListCard({
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-[#64748B]" />
           <div>
-            <p className="text-xs text-[#64748B]">Booked On</p>
+            <p className="text-xs text-[#64748B]">Created on</p>
             <p className="text-sm text-[#334155] font-medium">
               {booking.bookedDate}
             </p>

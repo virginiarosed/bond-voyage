@@ -864,9 +864,9 @@ export function UserTravels() {
                 {/* Notice Feature for Requested Bookings */}
                 {bookingDetail.type === "REQUESTED" && (
                   <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden mb-3">
-                    <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+                    <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
                           <AlertTriangle className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -882,7 +882,7 @@ export function UserTravels() {
                     </div>
                     <div className="p-6">
                       <div className="space-y-4">
-                        <div className="p-4 bg-gradient-to-r from-[#FFF7ED] to-[#FFEDD5] border border-[#FDBA74] rounded-xl">
+                        <div className="p-4 bg-linear-to-r from-[#FFF7ED] to-[#FFEDD5] border border-[#FDBA74] rounded-xl">
                           <p className="text-sm text-[#92400E]">
                             <span className="font-semibold">Note:</span> Should
                             you have any requests, wish to make adjustments, or
@@ -901,7 +901,7 @@ export function UserTravels() {
                           </p>
                         </div>
 
-                        <div className="p-4 bg-gradient-to-r from-[#F0F9FF] to-[#E0F2FE] border border-[#7DD3FC] rounded-xl">
+                        <div className="p-4 bg-linear-to-r from-[#F0F9FF] to-[#E0F2FE] border border-[#7DD3FC] rounded-xl">
                           <div className="mb-3">
                             <p className="text-sm font-medium text-[#0369A1] mb-2">
                               Contact Options:
@@ -961,7 +961,7 @@ export function UserTravels() {
                                   "You'll be redirected to the Home Page.",
                               });
                             }}
-                            className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] hover:from-[#0970e6] hover:to-[#12a594] text-white text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                            className="w-full px-4 py-3 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] hover:from-[#0970e6] hover:to-[#12a594] text-white text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                           >
                             <MessageSquare className="w-4 h-4" />
                             Go to Contact Section
@@ -1580,10 +1580,11 @@ export function UserTravels() {
                       customerName: travel.customerName,
                       customerEmail: travel.customerEmail,
                       customerMobile: travel.customerMobile,
-                      bookedDate: travel.bookedDate,
+                      bookedDate: travel.bookedDateDisplay,
                       createdAt: travel.createdAt,
                       updatedAt: travel.updatedAt,
                       itinerary: travel.itinerary,
+                      total: travel.totalPrice,
                     }}
                     onViewDetails={handleViewDetails}
                     // Pass ownership and confirmation status
@@ -1690,17 +1691,17 @@ export function UserTravels() {
               </button>
 
               {/* Notice Feature for Custom Itinerary Request */}
-              <div className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-gradient-to-br from-[#0A7AFF]/10 via-[#14B8A6]/8 to-[#0A7AFF]/15 dark:from-[#2596be]/15 dark:via-[#25bce0]/12 dark:to-[#2596be]/20 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+              <div className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-linear-to-br from-[#0A7AFF]/10 via-[#14B8A6]/8 to-[#0A7AFF]/15 dark:from-[#2596be]/15 dark:via-[#25bce0]/12 dark:to-[#2596be]/20 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
                 {/* Decorative Background Elements */}
                 <div className="absolute inset-0 rounded-2xl overflow-hidden">
-                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#0A7AFF]/20 to-[#14B8A6]/15 dark:from-[#2596be]/25 dark:to-[#25bce0]/20 rounded-full blur-2xl -translate-y-24 translate-x-24" />
-                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-[#14B8A6]/15 to-[#0A7AFF]/20 dark:from-[#25bce0]/20 dark:to-[#2596be]/25 rounded-full blur-2xl translate-y-16 -translate-x-16" />
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-gray-900/30 mix-blend-overlay" />
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-linear-to-br from-[#0A7AFF]/20 to-[#14B8A6]/15 dark:from-[#2596be]/25 dark:to-[#25bce0]/20 rounded-full blur-2xl -translate-y-24 translate-x-24" />
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-linear-to-tr from-[#14B8A6]/15 to-[#0A7AFF]/20 dark:from-[#25bce0]/20 dark:to-[#2596be]/25 rounded-full blur-2xl translate-y-16 -translate-x-16" />
+                  <div className="absolute inset-0 bg-linear-to-br from-white/40 to-transparent dark:from-gray-900/30 mix-blend-overlay" />
                 </div>
 
                 <div className="relative">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/40 ring-2 ring-white/20 dark:ring-white/10">
+                    <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/40 ring-2 ring-white/20 dark:ring-white/10">
                       <Sparkles className="w-6 h-6 text-white" />
                     </div>
                     <div>
@@ -1743,7 +1744,7 @@ export function UserTravels() {
                       }}
                     >
                       {/* Hover effect background */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                      <div className="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
 
                       <div className="relative flex items-center justify-center gap-2">
                         <Send className="w-4 h-4 text-white" />
