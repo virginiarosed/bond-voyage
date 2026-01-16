@@ -46,7 +46,11 @@ import {
   useTourPackages,
   useTourPackageDetail,
 } from "../../hooks/useTourPackages"; // Import your hooks
-import { useCreateBooking, useSubmitBooking } from "../../hooks/useBookings"; // Import booking mutations
+import {
+  useCreateBooking,
+  useSubmitBooking,
+  useUpdateBookingWithId,
+} from "../../hooks/useBookings"; // Import booking mutations
 import { queryKeys } from "../../utils/lib/queryKeys";
 import { useProfile } from "../../hooks/useAuth";
 import { User } from "../../types/types";
@@ -109,6 +113,8 @@ export function UserStandardItinerary() {
   const { data: profileResponse, isLoading: profileDataIsLoading } =
     useProfile();
 
+  const updateBookingMutation = useUpdateBookingWithId();
+
   // Initialize submit booking mutation (conditional based on created booking ID)
   const submitBookingMutation = useSubmitBooking(createdBookingId || "", {
     onSuccess: (response) => {
@@ -149,11 +155,22 @@ export function UserStandardItinerary() {
   // Initialize create booking mutation
   const createBookingMutation = useCreateBooking({
     onSuccess: (response) => {
-      // Store the created booking ID
-      setCreatedBookingId(response.data?.id);
-
-      // Automatically submit the booking after creation
-      submitBookingMutation.mutate(undefined as any);
+      updateBookingMutation.mutate(
+        {
+          id: response.data?.id,
+          data: { status: "BOOKED" },
+        },
+        {
+          onSuccess: () => {
+            toast.success("Booking Updated!", {
+              description: "Booking status has been updated.",
+            });
+          },
+          onError: (error: any) => {
+            console.error("Status update error:", error);
+          },
+        }
+      );
     },
     onError: (error: any) => {
       toast.error("Booking Creation Failed", {
