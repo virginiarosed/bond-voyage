@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   Mail,
   Phone,
+  MessageSquare,
   // Import all icon options from your CreateNewTravel component
   Waves,
   Mountain,
@@ -207,8 +208,8 @@ export function UserTravels() {
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [selectedTab, setSelectedTab] = useState<
-    "booked" | "pending" | "rejected"
-  >("booked");
+    "booked" | "pending" | "rejected" | undefined
+  >(undefined);
   const [selectedFilter, setSelectedFilter] = useState<
     "all" | "owned" | "collaborated" | "requested"
   >("all");
@@ -312,17 +313,22 @@ export function UserTravels() {
     {}
   );
 
+  const [bookingType, setBookingType] = useState<"REQUESTED" | "CUSTOMIZED">(
+    "CUSTOMIZED"
+  );
+
   const {
     data: myBookingsResponse,
     isLoading: isLoadingMyBookings,
     refetch: refetchMyBookings,
   } = useMyBookings({
-    status: selectedTab.toUpperCase(),
+    status: selectedTab?.toUpperCase(),
+    type: bookingType,
   });
 
   const { data: sharedBookingsResponse, isLoading: isLoadingSharedBookings } =
     useSharedBookings({
-      status: selectedTab.toUpperCase(),
+      status: selectedTab?.toUpperCase(),
     });
 
   const { data: selectedBookingData, isLoading: isLoadingDetail } =
@@ -443,9 +449,10 @@ export function UserTravels() {
     // Determine confirmation status for REQUESTED bookings
     let confirmStatus: "confirmed" | "unconfirmed" | undefined;
     if (booking.type === "REQUESTED") {
-      confirmStatus = booking.status?.toLowerCase() === "confirmed" 
-        ? "confirmed" 
-        : "unconfirmed";
+      confirmStatus =
+        booking.status?.toLowerCase() === "confirmed"
+          ? "confirmed"
+          : "unconfirmed";
     }
 
     return {
@@ -470,7 +477,10 @@ export function UserTravels() {
       itinerary: booking.itinerary?.days || [],
       // Add these new fields
       confirmStatus,
-      sentStatus: booking.sentStatus?.toLowerCase() as "sent" | "unsent" | undefined,
+      sentStatus: booking.sentStatus?.toLowerCase() as
+        | "sent"
+        | "unsent"
+        | undefined,
       paymentStatus: booking.paymentStatus,
     };
   };
@@ -496,9 +506,17 @@ export function UserTravels() {
       if (selectedFilter === "requested" && requestedSubTab !== "all") {
         // Handle requested sub-tabs
         if (requestedSubTab === "confirmed") {
-          return statusMatch && ownershipMatch && booking.confirmStatus === "confirmed";
+          return (
+            statusMatch &&
+            ownershipMatch &&
+            booking.confirmStatus === "confirmed"
+          );
         } else if (requestedSubTab === "unconfirmed") {
-          return statusMatch && ownershipMatch && (booking.confirmStatus === "unconfirmed" || !booking.confirmStatus);
+          return (
+            statusMatch &&
+            ownershipMatch &&
+            (booking.confirmStatus === "unconfirmed" || !booking.confirmStatus)
+          );
         }
         return statusMatch && ownershipMatch;
       }
@@ -969,11 +987,95 @@ export function UserTravels() {
               : "default"
           }
           isRequestedItinerary={bookingDetail.type === "REQUESTED"}
-          // Replace the entire actionButtons prop section with this updated version
+          // Updated actionButtons prop with Notice Feature
           actionButtons={
             selectedTab === "pending" ? undefined : (
               <>
-                {bookingDetail.ownership === "REQUESTED" && (
+                {/* Notice Feature for Requested Bookings */}
+                {bookingDetail.type === "REQUESTED" && (
+                  <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden mb-3">
+                    <div className="p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] flex items-center justify-center shadow-lg shadow-[#FF6B6B]/20">
+                          <AlertTriangle className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-[#1A2B4F]">Need Assistance?</h3>
+                          <p className="text-xs text-[#64748B] mt-1">Questions or adjustments for your requested itinerary</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <div className="space-y-4">
+                        <div className="p-4 bg-gradient-to-r from-[#FFF7ED] to-[#FFEDD5] border border-[#FDBA74] rounded-xl">
+                          <p className="text-sm text-[#92400E]">
+                            <span className="font-semibold">Note:</span> Should you have any requests, wish to make adjustments, or have any concerns regarding your itinerary, please do not hesitate to reach out to 4B's Travel and Tours. Our team will be more than happy to assist you.
+                          </p>
+                          <p className="text-sm text-[#92400E]">
+                            <br/>For a smooth and efficient process, we kindly ask that you include your <span className="font-semibold">Booking ID</span> in your message so we may address your concern promptly and seamlessly.
+                          </p>
+                        </div>
+                        
+                        <div className="p-4 bg-gradient-to-r from-[#F0F9FF] to-[#E0F2FE] border border-[#7DD3FC] rounded-xl">
+                          <div className="mb-3">
+                            <p className="text-sm font-medium text-[#0369A1] mb-2">Contact Options:</p>
+                            <div className="space-y-2 text-xs text-[#0C4A6E] bg-white/50 p-3 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <span className="text-[#0A7AFF] font-medium">•</span>
+                                <div>
+                                  <p className="font-medium text-sm">Email</p>
+                                  <p className="text-[#0C4A6E]/80">4bstravelandtours2019@gmail.com</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <span className="text-[#0A7AFF] font-medium">•</span>
+                                <div>
+                                  <p className="font-medium text-sm">Phone</p>
+                                  <p className="text-[#0C4A6E]/80">+63 123 456 7890</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <span className="text-[#0A7AFF] font-medium">•</span>
+                                <div>
+                                  <p className="font-medium text-sm">Support Hours</p>
+                                  <p className="text-[#0C4A6E]/80">Mon-Sun, 8AM-8PM</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={() => {
+                              // Navigate to UserHome and scroll to the Contact section
+                              navigate("/user/home", {
+                                state: { scrollToContact: true }
+                              });
+                              
+                              // Close the detail view
+                              setViewMode("list");
+                              setSelectedBookingId(null);
+                              
+                              toast.success("Redirecting to Contact Section", {
+                                description: "You'll be redirected to the Home Page."
+                              });
+                            }}
+                            className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-[#0A7AFF] to-[#14B8A6] hover:from-[#0970e6] hover:to-[#12a594] text-white text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            Go to Contact Section
+                          </button>
+                        </div>
+                        
+                        <div className="text-xs text-[#64748B] italic text-center pt-2">
+                          You can attach travel documents or photos when contacting us.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Conversation Section for REQUESTED bookings */}
+                {bookingDetail.type === "REQUESTED" && (
                   <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden mb-3">
                     <div className="p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
                       <div className="flex items-center gap-3">
@@ -1169,7 +1271,7 @@ export function UserTravels() {
 
                 {bookingDetail.ownership === "COLLABORATED" && (
                   <button
-                    onClick={() => setShowShareQRModal(true)}
+                    onClick={() => handleShareBooking(bookingDetail.itineraryId)}
                     className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#8B5CF6] to-[#A78BFA] hover:from-[#7C3AED] hover:to-[#8B5CF6] text-white flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-[#8B5CF6]/20"
                   >
                     <Share2 className="w-4 h-4" />
@@ -1414,6 +1516,36 @@ export function UserTravels() {
         }
       >
         <div className="space-y-4">
+          {/* Filter Buttons - Responsive */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <button
+              onClick={() => {
+                setBookingType("CUSTOMIZED");
+                setSelectedTab(undefined);
+              }}
+              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
+                bookingType === "CUSTOMIZED"
+                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
+                  : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
+              }`}
+            >
+              Customized
+            </button>
+
+            <button
+              onClick={() => {
+                setBookingType("REQUESTED");
+                setSelectedTab(undefined);
+              }}
+              className={`px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm whitespace-nowrap transition-all duration-200 ${
+                bookingType === "REQUESTED"
+                  ? "bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white shadow-md"
+                  : "bg-card border border-border text-card-foreground hover:bg-accent hover:border-primary/50"
+              }`}
+            >
+              {isMobile ? "Req" : "Requested"}
+            </button>
+          </div>
           {/* Dropdown for Requested filter */}
           {selectedFilter === "requested" && (
             <div className="pt-3 pb-2">
@@ -1548,6 +1680,14 @@ export function UserTravels() {
                       Use our Smart Trip Generator to create a personalized
                       travel itinerary.
                     </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(10,122,255,0.1)] text-[#0A7AFF] border border-[rgba(10,122,255,0.2)]">
+                        Customizable
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border border-[rgba(139,92,246,0.2)]">
+                        Flexible
+                      </span>
+                    </div>
                   </div>
                 </div>
               </button>
@@ -1567,9 +1707,81 @@ export function UserTravels() {
                     <p className="text-sm text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
                       Collaborate with others on their travel plans.
                     </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] border border-[rgba(139,92,246,0.2)]">
+                        Collaborative
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]">
+                        Join Group
+                      </span>
+                    </div>
                   </div>
                 </div>
               </button>
+
+              {/* Notice Feature for Custom Itinerary Request */}
+              <div className="w-full p-6 rounded-2xl border-2 border-[#E5E7EB] dark:border-[#2A3441] bg-gradient-to-br from-[#0A7AFF]/10 via-[#14B8A6]/8 to-[#0A7AFF]/15 dark:from-[#2596be]/15 dark:via-[#25bce0]/12 dark:to-[#2596be]/20 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                {/* Decorative Background Elements */}
+                <div className="absolute inset-0 rounded-2xl overflow-hidden">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#0A7AFF]/20 to-[#14B8A6]/15 dark:from-[#2596be]/25 dark:to-[#25bce0]/20 rounded-full blur-2xl -translate-y-24 translate-x-24" />
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-[#14B8A6]/15 to-[#0A7AFF]/20 dark:from-[#25bce0]/20 dark:to-[#2596be]/25 rounded-full blur-2xl translate-y-16 -translate-x-16" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-gray-900/30 mix-blend-overlay" />
+                </div>
+
+                <div className="relative">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] dark:from-[#2596be] dark:to-[#25bce0] flex items-center justify-center shadow-lg shadow-[#0A7AFF]/30 dark:shadow-[#2596be]/40 ring-2 ring-white/20 dark:ring-white/10">
+                      <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-[#1A2B4F] dark:text-white">
+                        Need a Custom Itinerary?
+                      </h3>
+                      <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                        4B's Travel and Tours has got your back!
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <p className="text-[#334155] dark:text-[#E5E7EB] text-sm">
+                      If you want a <span className="font-semibold text-[#0A7AFF] dark:text-[#2596be]">customized itinerary</span> but don't want to do it yourself, 4B's Travel and Tours offers personalized "Requested Itinerary" services.
+                    </p>
+                    
+                    {/* Contact Button */}
+                    <button
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        navigate('/user/home', { 
+                          state: { scrollToContact: true } 
+                        });
+                        toast.success("Redirecting to Contact Section", {
+                          description: "You'll be redirected to the Home Page."
+                        });
+                      }}
+                      className="w-full group relative px-2 py-2.5 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl overflow-hidden shadow-lg"
+                      style={{
+                        background: 'linear-gradient(135deg, var(--gradient-from), var(--gradient-to))',
+                        boxShadow: '0 8px 25px rgba(10, 122, 255, 0.25), 0 4px 10px rgba(10, 122, 255, 0.2)'
+                      }}
+                    >
+                      {/* Hover effect background */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                      
+                      <div className="relative flex items-center justify-center gap-2">
+                        <Send className="w-4 h-4 text-white" />
+                        <span className="text-white font-semibold text-sm">
+                          Contact 4B's Travel and Tours
+                        </span>
+                      </div>
+                    </button>
+                    
+                    <p className="text-xs text-[#64748B] dark:text-[#94A3B8] text-center">
+                      You'll be redirected to the Home Page
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </ScrollArea>
         </DialogContent>
@@ -1661,21 +1873,98 @@ export function UserTravels() {
                     }
                   }}
                 />
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg mt-3">
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    💡 Tip: Ask the travel owner for their share token to join
+                    their travel plan as a collaborator.
+                  </p>
+                </div>
               </div>
             )}
 
-            {/* ... rest of the content remains the same ... */}
+            {/* QR Code Scanner */}
+            {joinMethod === "scan" && (
+              <div>
+                <div className="relative w-full aspect-square bg-black rounded-xl overflow-hidden">
+                  {isScanning ? (
+                    <>
+                      <video
+                        ref={videoRef}
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        playsInline
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-64 h-64 border-4 border-primary rounded-2xl"></div>
+                      </div>
+                      <button
+                        onClick={stopScanning}
+                        className="absolute top-4 right-4 w-10 h-10 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-all"
+                      >
+                        <X className="w-5 h-5 text-white" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-center">
+                        <QrCode className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-sm text-muted-foreground">
+                          Camera will activate
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {scannedQRData && (
+                  <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg mt-3">
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      ✓ QR code scanned: {scannedQRData}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Upload QR Code */}
+            {joinMethod === "upload" && (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full px-4 py-8 border-2 border-dashed border-border hover:border-primary rounded-xl bg-muted/50 hover:bg-muted transition-all"
+                >
+                  <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-card-foreground font-medium">
+                    Click to upload QR code image
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    PNG, JPG up to 10MB
+                  </p>
+                </button>
+                {scannedQRData && (
+                  <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg mt-3">
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      ✓ QR code read: {scannedQRData}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         }
         onConfirm={handleConfirmJoinTravel}
         onCancel={() => {
-          if (!isAcceptingShare) {
-            setShowJoinTravelModal(false);
-            setJoinMethod("manual");
-            setJoinShareToken("");
-            setScannedQRData("");
-            stopScanning();
-          }
+          setShowJoinTravelModal(false);
+          setJoinMethod("manual");
+          setJoinShareToken("");
+          setScannedQRData("");
+          stopScanning();
         }}
         confirmText={isAcceptingShare ? "Joining..." : "Join Travel"}
         cancelText="Cancel"

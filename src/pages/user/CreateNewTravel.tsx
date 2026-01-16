@@ -794,14 +794,7 @@ export function CreateNewTravel() {
         </div>
       </ContentCard>
 
-      {/* Route Optimization Panel */}
-      <RouteOptimizationPanel
-        itineraryDays={itineraryDays}
-        selectedDayId={selectedDayForRoute}
-        onAcceptOptimization={handleAcceptOptimization}
-      />
-
-      {/* Travel Information */}
+      {/* Travel Information - MOVED ABOVE Route Optimization Panel */}
       <ContentCard>
         <div className="mb-6">
           <h2 className="text-lg text-[#1A2B4F] font-semibold">
@@ -908,6 +901,13 @@ export function CreateNewTravel() {
           </div>
         </div>
       </ContentCard>
+
+      {/* Route Optimization Panel - NOW BELOW Travel Information */}
+      <RouteOptimizationPanel
+        itineraryDays={itineraryDays}
+        selectedDayId={selectedDayForRoute}
+        onAcceptOptimization={handleAcceptOptimization}
+      />
 
       {/* Day-by-Day Itinerary */}
       <ContentCard>
