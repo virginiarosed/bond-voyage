@@ -1438,47 +1438,18 @@ export function Bookings({
               </button>
             </div>
 
-            {/* Edit/Move Buttons */}
-            {false ? (
-              <button
-                onClick={() => handleEditBooking(selectedBooking)}
-                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                disabled={isLoadingDetail}
-              >
-                {isSavingEdit ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Edit className="w-4 h-4" />
-                )}
-                {isSavingEdit ? "Saving..." : "Edit Booking"}
-              </button>
-            ) : true ? (
-              <button
-                onClick={() => handleMoveToRequestedClick(selectedBooking)}
-                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                disabled={isLoadingDetail || isMovingToRequested}
-              >
-                {isMovingToRequested ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Package className="w-4 h-4" />
-                )}
-                {isMovingToRequested ? "Moving..." : "Move to Requested"}
-              </button>
-            ) : (
-              <button
-                onClick={() => handleMoveToApprovalsClick(selectedBooking)}
-                className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                disabled={isLoadingDetail || isMovingToApprovals}
-              >
-                {isMovingToApprovals ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RotateCcw className="w-4 h-4" />
-                )}
-                {isMovingToApprovals ? "Moving..." : "Move to Approvals"}
-              </button>
-            )}
+            <button
+              onClick={() => handleEditBooking(selectedBooking)}
+              className="w-full h-11 px-4 rounded-xl bg-linear-to-r from-[#0A7AFF] to-[#14B8A6] text-white flex items-center justify-center gap-2 font-medium shadow-lg shadow-[#0A7AFF]/25 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              disabled={isLoadingDetail}
+            >
+              {isSavingEdit ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Edit className="w-4 h-4" />
+              )}
+              {isSavingEdit ? "Saving..." : "Edit Booking"}
+            </button>
 
             {/* Complete Button */}
             {selectedBooking.status !== "COMPLETED" && (

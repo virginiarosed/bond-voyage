@@ -1412,7 +1412,7 @@ export function CreateNewTravel() {
       </ContentCard>
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 md:left-20 right-0 h-16 bg-white border-t-2 border-[#E5E7EB] z-40">
+      <div className="fixed -bottom-6 left-0 md:left-20 right-0 h-16 bg-white border-t-2 border-[#E5E7EB] z-40">
         <div className="h-full max-w-350 mx-auto px-4 md:px-8 flex items-center justify-end gap-3">
           <button
             onClick={handleBackClick}

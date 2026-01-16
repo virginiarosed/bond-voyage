@@ -35,10 +35,7 @@ import {
 import { toast } from "sonner";
 import { useProfile } from "../../components/ProfileContext";
 import { FAQAssistant } from "../../components/FAQAssistant";
-import {
-  useMyFeedback,
-  useSubmitFeedback,
-} from "../../hooks/useFeedbackList";
+import { useMyFeedback, useSubmitFeedback } from "../../hooks/useFeedbackList";
 import { useMyBookings } from "../../hooks/useBookings";
 import { useMediaQuery } from "react-responsive";
 
@@ -285,7 +282,7 @@ export function UserFeedback() {
             gradientTo="#14B8A6"
           />
         </div>
-        
+
         {/* Mobile: Second row - Avg Rating full width */}
         <div className="sm:hidden">
           <StatCard
@@ -296,7 +293,7 @@ export function UserFeedback() {
             gradientTo="#FF9A3D"
           />
         </div>
-        
+
         {/* Desktop: All three cards in one row */}
         <div className="hidden sm:block">
           <StatCard
@@ -484,16 +481,12 @@ export function UserFeedback() {
                         <span className="text-sm text-[#1A2B4F] font-semibold truncate">
                           {item.customer}
                         </span>
-                        <span className="hidden sm:inline text-sm text-[#64748B]">•</span>
-                        <span className="text-sm text-[#64748B] truncate">
-                          Booking #{item.bookingId}
+                        <span className="hidden sm:inline text-sm text-[#64748B]">
+                          •
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mb-1 sm:mb-0">
                         {renderStars(item.rating)}
-                        <span className="sm:hidden text-xs text-[#64748B]">
-                          • Booking #{item.bookingId}
-                        </span>
                       </div>
                       <p className="text-sm text-[#64748B] line-clamp-1">
                         {item.trip}
