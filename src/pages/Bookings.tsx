@@ -111,16 +111,22 @@ export function Bookings({
 }: BookingsProps) {
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
 
+  const [sortOrder, setSortOrder] = useState<
+    "createdAt:desc" | "createdAt:asc"
+  >("createdAt:desc");
+
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
     status: "BOOKED",
+    sort: sortOrder,
   });
 
   const [queryParams2, setQueryParams2] = useState({
     page: 1,
     limit: 10,
     status: "CONFIRMED",
+    sort: sortOrder,
   });
 
   const {
@@ -153,8 +159,24 @@ export function Bookings({
       }
     });
 
-    return Array.from(uniqueBookings.values());
-  }, [bookingsData?.data, bookingsData2?.data]);
+    const mergedArray = Array.from(uniqueBookings.values());
+
+    if (sortOrder === "createdAt:desc") {
+      mergedArray.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.bookedDate).getTime();
+        const dateB = new Date(b.createdAt || b.bookedDate).getTime();
+        return dateB - dateA; // Newest first
+      });
+    } else if (sortOrder === "createdAt:asc") {
+      mergedArray.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.bookedDate).getTime();
+        const dateB = new Date(b.createdAt || b.bookedDate).getTime();
+        return dateA - dateB; // Oldest first
+      });
+    }
+
+    return mergedArray;
+  }, [bookingsData?.data, bookingsData2?.data, sortOrder]);
 
   const isLoadingMergedBookings = isLoadingBookings || isLoadingBookings2;
   const isMergedBookingsError = isBookingsError || isBookingsError2;
@@ -165,7 +187,6 @@ export function Bookings({
 
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("none");
   const [viewMode, setViewMode] = useState<"list" | "detail">("list");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null
@@ -381,9 +402,9 @@ export function Bookings({
       delete params.dateTo;
     }
 
-    if (sortOrder === "newest") {
+    if (sortOrder === "createdAt:desc") {
       params.sort = "createdAt:desc";
-    } else if (sortOrder === "oldest") {
+    } else if (sortOrder === "createdAt:asc") {
       params.sort = "createdAt:asc";
     } else {
       delete params.sort;

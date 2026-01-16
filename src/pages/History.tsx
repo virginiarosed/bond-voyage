@@ -101,6 +101,7 @@ export function History({ onHistoryCountChange }: HistoryProps) {
     page: 1,
     limit: 10,
     status: "COMPLETED" as "COMPLETED" | "CANCELLED",
+    sortOrder: "createdAt:desc",
   });
 
   // Fetch bookings with server-side filtering
@@ -507,10 +508,16 @@ export function History({ onHistoryCountChange }: HistoryProps) {
               isMobile ? "w-8 h-8" : "w-10 h-10"
             }`}
           >
-            <ChevronLeft className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} text-[#64748B]`} />
+            <ChevronLeft
+              className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} text-[#64748B]`}
+            />
           </button>
           <div className="flex-1 min-w-0">
-            <h2 className={`text-[#1A2B4F] font-semibold ${isMobile ? "text-base" : ""}`}>
+            <h2
+              className={`text-[#1A2B4F] font-semibold ${
+                isMobile ? "text-base" : ""
+              }`}
+            >
               {selectedBooking.destination}
             </h2>
             <p className={`text-[#64748B] ${isMobile ? "text-xs" : "text-sm"}`}>
@@ -529,17 +536,31 @@ export function History({ onHistoryCountChange }: HistoryProps) {
         >
           <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 md:mb-6">
             <div className="mb-4 md:mb-0">
-              <h1 className={`font-semibold mb-2 ${isMobile ? "text-xl" : "text-3xl"}`}>
+              <h1
+                className={`font-semibold mb-2 ${
+                  isMobile ? "text-xl" : "text-3xl"
+                }`}
+              >
                 {selectedBooking.destination}
               </h1>
               <div className="flex items-center gap-2 text-white/90">
                 <MapPin className={isMobile ? "w-3 h-3" : "w-4 h-4"} />
-                <span className={isMobile ? "text-sm" : "text-lg"}>{selectedBooking.destination}</span>
+                <span className={isMobile ? "text-sm" : "text-lg"}>
+                  {selectedBooking.destination}
+                </span>
               </div>
             </div>
             <div className="text-left md:text-right">
-              <p className={`text-white/80 ${isMobile ? "text-xs" : "text-sm"} mb-1`}>Booking Code</p>
-              <p className={`font-semibold ${isMobile ? "text-lg" : "text-2xl"}`}>
+              <p
+                className={`text-white/80 ${
+                  isMobile ? "text-xs" : "text-sm"
+                } mb-1`}
+              >
+                Booking Code
+              </p>
+              <p
+                className={`font-semibold ${isMobile ? "text-lg" : "text-2xl"}`}
+              >
                 {selectedBooking.bookingCode}
               </p>
             </div>
@@ -547,8 +568,18 @@ export function History({ onHistoryCountChange }: HistoryProps) {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
-              <Calendar className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} mb-2 text-white/80`} />
-              <p className={`text-white/80 ${isMobile ? "text-xs" : "text-xs"} mb-1`}>Travel Dates</p>
+              <Calendar
+                className={`${
+                  isMobile ? "w-4 h-4" : "w-5 h-5"
+                } mb-2 text-white/80`}
+              />
+              <p
+                className={`text-white/80 ${
+                  isMobile ? "text-xs" : "text-xs"
+                } mb-1`}
+              >
+                Travel Dates
+              </p>
               <p className={`font-medium ${isMobile ? "text-sm" : ""}`}>
                 {formatDateRange(
                   selectedBooking.startDate!,
@@ -557,23 +588,53 @@ export function History({ onHistoryCountChange }: HistoryProps) {
               </p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
-              <Users className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} mb-2 text-white/80`} />
-              <p className={`text-white/80 ${isMobile ? "text-xs" : "text-xs"} mb-1`}>Travelers</p>
+              <Users
+                className={`${
+                  isMobile ? "w-4 h-4" : "w-5 h-5"
+                } mb-2 text-white/80`}
+              />
+              <p
+                className={`text-white/80 ${
+                  isMobile ? "text-xs" : "text-xs"
+                } mb-1`}
+              >
+                Travelers
+              </p>
               <p className={`font-medium ${isMobile ? "text-sm" : ""}`}>
                 {selectedBooking.travelers}{" "}
                 {selectedBooking.travelers > 1 ? "People" : "Person"}
               </p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
-              <CreditCard className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} mb-2 text-white/80`} />
-              <p className={`text-white/80 ${isMobile ? "text-xs" : "text-xs"} mb-1`}>Total Amount</p>
+              <CreditCard
+                className={`${
+                  isMobile ? "w-4 h-4" : "w-5 h-5"
+                } mb-2 text-white/80`}
+              />
+              <p
+                className={`text-white/80 ${
+                  isMobile ? "text-xs" : "text-xs"
+                } mb-1`}
+              >
+                Total Amount
+              </p>
               <p className={`font-medium ${isMobile ? "text-sm" : ""}`}>
                 ₱{selectedBooking.totalAmount.toLocaleString()}
               </p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
-              <Clock className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} mb-2 text-white/80`} />
-              <p className={`text-white/80 ${isMobile ? "text-xs" : "text-xs"} mb-1`}>Booked On</p>
+              <Clock
+                className={`${
+                  isMobile ? "w-4 h-4" : "w-5 h-5"
+                } mb-2 text-white/80`}
+              />
+              <p
+                className={`text-white/80 ${
+                  isMobile ? "text-xs" : "text-xs"
+                } mb-1`}
+              >
+                Booked On
+              </p>
               <p className={`font-medium ${isMobile ? "text-sm" : ""}`}>
                 {selectedBooking.bookedDateObj.toLocaleDateString("en-US", {
                   year: "numeric",
@@ -592,33 +653,83 @@ export function History({ onHistoryCountChange }: HistoryProps) {
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
               <div className="p-4 md:p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
                 <div className="flex items-center gap-3">
-                  <div className={`${isMobile ? "w-8 h-8" : "w-10 h-10"} rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg`}>
-                    <User className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} text-white`} />
+                  <div
+                    className={`${
+                      isMobile ? "w-8 h-8" : "w-10 h-10"
+                    } rounded-xl bg-gradient-to-br from-[#0A7AFF] to-[#3B9EFF] flex items-center justify-center shadow-lg`}
+                  >
+                    <User
+                      className={`${
+                        isMobile ? "w-4 h-4" : "w-5 h-5"
+                      } text-white`}
+                    />
                   </div>
-                  <h3 className={`font-semibold text-[#1A2B4F] ${isMobile ? "text-sm" : ""}`}>
+                  <h3
+                    className={`font-semibold text-[#1A2B4F] ${
+                      isMobile ? "text-sm" : ""
+                    }`}
+                  >
                     Customer Information
                   </h3>
                 </div>
               </div>
               <div className="p-4 md:p-6 space-y-4">
                 <div>
-                  <p className={`text-[#64748B] mb-1 ${isMobile ? "text-xs" : "text-xs"}`}>Full Name</p>
-                  <p className={`text-[#1A2B4F] font-medium ${isMobile ? "text-sm" : ""}`}>
+                  <p
+                    className={`text-[#64748B] mb-1 ${
+                      isMobile ? "text-xs" : "text-xs"
+                    }`}
+                  >
+                    Full Name
+                  </p>
+                  <p
+                    className={`text-[#1A2B4F] font-medium ${
+                      isMobile ? "text-sm" : ""
+                    }`}
+                  >
                     {selectedBooking.customer}
                   </p>
                 </div>
                 <div>
-                  <p className={`text-[#64748B] mb-1 ${isMobile ? "text-xs" : "text-xs"}`}>Email Address</p>
+                  <p
+                    className={`text-[#64748B] mb-1 ${
+                      isMobile ? "text-xs" : "text-xs"
+                    }`}
+                  >
+                    Email Address
+                  </p>
                   <div className="flex items-center gap-2">
-                    <Mail className={`${isMobile ? "w-3 h-3" : "w-4 h-4"} text-[#0A7AFF]`} />
-                    <p className={`text-[#334155] ${isMobile ? "text-sm" : ""}`}>{selectedBooking.email}</p>
+                    <Mail
+                      className={`${
+                        isMobile ? "w-3 h-3" : "w-4 h-4"
+                      } text-[#0A7AFF]`}
+                    />
+                    <p
+                      className={`text-[#334155] ${isMobile ? "text-sm" : ""}`}
+                    >
+                      {selectedBooking.email}
+                    </p>
                   </div>
                 </div>
                 <div>
-                  <p className={`text-[#64748B] mb-1 ${isMobile ? "text-xs" : "text-xs"}`}>Mobile Number</p>
+                  <p
+                    className={`text-[#64748B] mb-1 ${
+                      isMobile ? "text-xs" : "text-xs"
+                    }`}
+                  >
+                    Mobile Number
+                  </p>
                   <div className="flex items-center gap-2">
-                    <Phone className={`${isMobile ? "w-3 h-3" : "w-4 h-4"} text-[#14B8A6]`} />
-                    <p className={`text-[#334155] ${isMobile ? "text-sm" : ""}`}>{selectedBooking.mobile}</p>
+                    <Phone
+                      className={`${
+                        isMobile ? "w-3 h-3" : "w-4 h-4"
+                      } text-[#14B8A6]`}
+                    />
+                    <p
+                      className={`text-[#334155] ${isMobile ? "text-sm" : ""}`}
+                    >
+                      {selectedBooking.mobile}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -629,17 +740,27 @@ export function History({ onHistoryCountChange }: HistoryProps) {
               <div className="p-4 md:p-6 border-b border-[#E5E7EB] bg-gradient-to-br from-[#F8FAFB] to-white">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`${isMobile ? "w-8 h-8" : "w-10 h-10"} rounded-xl flex items-center justify-center shadow-lg ${
+                    className={`${
+                      isMobile ? "w-8 h-8" : "w-10 h-10"
+                    } rounded-xl flex items-center justify-center shadow-lg ${
                       isCompleted
                         ? "bg-gradient-to-br from-[#10B981] to-[#14B8A6]"
                         : "bg-gradient-to-br from-[#FF6B6B] to-[#FF8C8C]"
                     }`}
                   >
-                    <span className={`text-white ${isMobile ? "text-base" : "text-lg"}`}>
+                    <span
+                      className={`text-white ${
+                        isMobile ? "text-base" : "text-lg"
+                      }`}
+                    >
                       {isCompleted ? "✓" : "✗"}
                     </span>
                   </div>
-                  <h3 className={`font-semibold text-[#1A2B4F] ${isMobile ? "text-sm" : ""}`}>
+                  <h3
+                    className={`font-semibold text-[#1A2B4F] ${
+                      isMobile ? "text-sm" : ""
+                    }`}
+                  >
                     Booking Status
                   </h3>
                 </div>
@@ -653,7 +774,13 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`text-[#64748B] ${isMobile ? "text-xs" : "text-xs"}`}>Status</span>
+                    <span
+                      className={`text-[#64748B] ${
+                        isMobile ? "text-xs" : "text-xs"
+                      }`}
+                    >
+                      Status
+                    </span>
                     <span
                       className={`px-2 py-1 rounded-full font-medium ${
                         isMobile ? "text-xs" : "text-xs"
@@ -667,10 +794,18 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className={`text-[#64748B] ${isMobile ? "text-xs" : "text-xs"}`}>
+                    <span
+                      className={`text-[#64748B] ${
+                        isMobile ? "text-xs" : "text-xs"
+                      }`}
+                    >
                       {isCompleted ? "Last Updated" : "Cancelled On"}
                     </span>
-                    <span className={`font-medium text-[#334155] ${isMobile ? "text-xs" : "text-xs"}`}>
+                    <span
+                      className={`font-medium text-[#334155] ${
+                        isMobile ? "text-xs" : "text-xs"
+                      }`}
+                    >
                       {selectedBooking.updatedAtDisplay ||
                         selectedBooking.bookedDateObj.toLocaleDateString(
                           "en-US",
@@ -685,10 +820,18 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                 </div>
                 {!isCompleted && selectedBooking.itinerary?.rejectionReason && (
                   <div className="p-4 rounded-xl border border-[rgba(255,107,107,0.2)] bg-[rgba(255,107,107,0.05)]">
-                    <p className={`text-[#64748B] mb-2 ${isMobile ? "text-xs" : "text-xs"}`}>
+                    <p
+                      className={`text-[#64748B] mb-2 ${
+                        isMobile ? "text-xs" : "text-xs"
+                      }`}
+                    >
                       Cancellation Reason
                     </p>
-                    <p className={`text-[#334155] leading-relaxed ${isMobile ? "text-sm" : "text-sm"}`}>
+                    <p
+                      className={`text-[#334155] leading-relaxed ${
+                        isMobile ? "text-sm" : "text-sm"
+                      }`}
+                    >
                       {selectedBooking.itinerary.rejectionReason}
                     </p>
                   </div>
@@ -778,10 +921,18 @@ export function History({ onHistoryCountChange }: HistoryProps) {
             ) : (
               <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 md:p-8 text-center">
                 <MapPin className="w-10 h-10 md:w-12 md:h-12 text-[#64748B] mx-auto mb-4" />
-                <h3 className={`font-semibold text-[#1A2B4F] mb-2 ${isMobile ? "text-base" : "text-lg"}`}>
+                <h3
+                  className={`font-semibold text-[#1A2B4F] mb-2 ${
+                    isMobile ? "text-base" : "text-lg"
+                  }`}
+                >
                   No Itinerary Available
                 </h3>
-                <p className={`text-[#64748B] ${isMobile ? "text-sm" : "text-sm"}`}>
+                <p
+                  className={`text-[#64748B] ${
+                    isMobile ? "text-sm" : "text-sm"
+                  }`}
+                >
                   The itinerary details for this booking are not yet available.
                 </p>
               </div>
@@ -1034,22 +1185,28 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                   <div className="flex items-center gap-3">
                     <div
                       className={`flex items-center justify-center ${
-                        isMobile
-                          ? "w-10 h-10"
-                          : "w-12 h-12"
+                        isMobile ? "w-10 h-10" : "w-12 h-12"
                       } rounded-xl ${
                         booking.status === "COMPLETED"
                           ? "bg-gradient-to-br from-[#10B981] to-[#14B8A6]"
                           : "bg-gradient-to-br from-[#FF6B6B] to-[#FF8C8C]"
                       }`}
                     >
-                      <span className={`text-white ${isMobile ? "text-base" : "text-lg"}`}>
+                      <span
+                        className={`text-white ${
+                          isMobile ? "text-base" : "text-lg"
+                        }`}
+                      >
                         {booking.status === "COMPLETED" ? "✓" : "✗"}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col md:flex-row md:items-center md:gap-2">
-                        <h3 className={`text-[#1A2B4F] font-semibold ${isMobile ? "text-base" : "text-lg"} truncate`}>
+                        <h3
+                          className={`text-[#1A2B4F] font-semibold ${
+                            isMobile ? "text-base" : "text-lg"
+                          } truncate`}
+                        >
                           {booking.bookingCode}
                         </h3>
                         <div className="flex flex-wrap gap-1 mt-1 md:mt-0">
@@ -1075,7 +1232,10 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                                   : "bg-[rgba(236,72,153,0.1)] text-[#EC4899] border-[rgba(236,72,153,0.2)]"
                               }`}
                             >
-                              {isMobile ? booking.bookingType.charAt(0) + booking.bookingType.slice(1).toLowerCase() : capitalize(booking.bookingType)}
+                              {isMobile
+                                ? booking.bookingType.charAt(0) +
+                                  booking.bookingType.slice(1).toLowerCase()
+                                : capitalize(booking.bookingType)}
                             </span>
                           )}
                         </div>
@@ -1100,17 +1260,37 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                 <div className="mb-4 pb-4 border-b border-[#E5E7EB]">
                   <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
                     <div className="flex items-center gap-2">
-                      <Users className={`${isMobile ? "w-3 h-3" : "w-4 h-4"} text-[#64748B]`} />
-                      <span className={`text-[#334155] font-medium ${isMobile ? "text-sm" : "text-sm"}`}>
+                      <Users
+                        className={`${
+                          isMobile ? "w-3 h-3" : "w-4 h-4"
+                        } text-[#64748B]`}
+                      />
+                      <span
+                        className={`text-[#334155] font-medium ${
+                          isMobile ? "text-sm" : "text-sm"
+                        }`}
+                      >
                         {booking.customer}
                       </span>
                     </div>
-                    <span className="hidden md:inline text-sm text-[#64748B]">•</span>
-                    <span className={`text-[#64748B] ${isMobile ? "text-xs" : "text-sm"} md:inline truncate`}>
+                    <span className="hidden md:inline text-sm text-[#64748B]">
+                      •
+                    </span>
+                    <span
+                      className={`text-[#64748B] ${
+                        isMobile ? "text-xs" : "text-sm"
+                      } md:inline truncate`}
+                    >
                       {booking.email}
                     </span>
-                    <span className="hidden md:inline text-sm text-[#64748B]">•</span>
-                    <span className={`text-[#64748B] ${isMobile ? "text-xs" : "text-sm"} md:inline`}>
+                    <span className="hidden md:inline text-sm text-[#64748B]">
+                      •
+                    </span>
+                    <span
+                      className={`text-[#64748B] ${
+                        isMobile ? "text-xs" : "text-sm"
+                      } md:inline`}
+                    >
                       {booking.mobile}
                     </span>
                   </div>
@@ -1119,11 +1299,15 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                     <div className="flex items-center gap-4 mt-2">
                       <div className="flex items-center gap-1">
                         <Mail className="w-3 h-3 text-[#64748B]" />
-                        <span className="text-xs text-[#64748B] truncate">{booking.email}</span>
+                        <span className="text-xs text-[#64748B] truncate">
+                          {booking.email}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Phone className="w-3 h-3 text-[#64748B]" />
-                        <span className="text-xs text-[#64748B]">{booking.mobile}</span>
+                        <span className="text-xs text-[#64748B]">
+                          {booking.mobile}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1138,7 +1322,9 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                         <div className="flex items-start gap-2">
                           <MapPin className="w-4 h-4 text-[#0A7AFF] flex-shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-xs text-[#64748B]">Destination</p>
+                            <p className="text-xs text-[#64748B]">
+                              Destination
+                            </p>
                             <p className="text-sm text-[#334155] font-medium line-clamp-1">
                               {booking.destination}
                             </p>
@@ -1149,18 +1335,22 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                           <div>
                             <p className="text-xs text-[#64748B]">Travelers</p>
                             <p className="text-sm text-[#334155] font-medium">
-                              {booking.travelers} {booking.travelers > 1 ? "Pax" : "Pax"}
+                              {booking.travelers}{" "}
+                              {booking.travelers > 1 ? "Pax" : "Pax"}
                             </p>
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-start gap-2">
                         <Calendar className="w-4 h-4 text-[#14B8A6] flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
                           <p className="text-xs text-[#64748B]">Travel Dates</p>
                           <p className="text-sm text-[#334155] font-medium leading-tight">
-                            {formatDateRange(booking.startDate!, booking.endDate!)}
+                            {formatDateRange(
+                              booking.startDate!,
+                              booking.endDate!
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1169,7 +1359,9 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                         <div className="flex items-start gap-2">
                           <span className="text-[#10B981] text-lg">₱</span>
                           <div>
-                            <p className="text-xs text-[#64748B]">Total Amount</p>
+                            <p className="text-xs text-[#64748B]">
+                              Total Amount
+                            </p>
                             <p className="text-sm text-[#334155] font-medium">
                               ₱{booking.totalAmount.toLocaleString()}
                             </p>
@@ -1180,11 +1372,14 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                           <div>
                             <p className="text-xs text-[#64748B]">Booked On</p>
                             <p className="text-sm text-[#334155] font-medium truncate">
-                              {booking.bookedDateObj.toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              })}
+                              {booking.bookedDateObj.toLocaleDateString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )}
                             </p>
                           </div>
                         </div>
@@ -1219,7 +1414,10 @@ export function History({ onHistoryCountChange }: HistoryProps) {
                         <div>
                           <p className="text-xs text-[#64748B]">Travel Dates</p>
                           <p className="text-sm text-[#334155] font-medium">
-                            {formatDateRange(booking.startDate!, booking.endDate!)}
+                            {formatDateRange(
+                              booking.startDate!,
+                              booking.endDate!
+                            )}
                           </p>
                         </div>
                       </div>

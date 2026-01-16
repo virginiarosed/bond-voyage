@@ -325,7 +325,7 @@ export function BookingListCard({
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-[#64748B]" />
           <div>
-            <p className="text-xs text-[#64748B]">Created on</p>
+            <p className="text-xs text-[#64748B]">Booked on</p>
             <p className="text-sm text-[#334155] font-medium">
               {booking.bookedDate}
             </p>
