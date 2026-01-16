@@ -164,14 +164,14 @@ export const useVerifyOTP = (
 };
 
 export const useResetPassword = (
-  options?: UseMutationOptions<ApiResponse, AxiosError, any>
+  options?: UseMutationOptions<
+    ApiResponse,
+    AxiosError,
+    { email: string; newPassword: string }
+  >
 ) => {
   return useMutation({
-    mutationFn: async (data: {
-      email: string;
-      otp: string;
-      newPassword: string;
-    }) => {
+    mutationFn: async (data: { email: string; newPassword: string }) => {
       const response = await apiClient.post<ApiResponse>(
         "/auth/reset-password",
         data
