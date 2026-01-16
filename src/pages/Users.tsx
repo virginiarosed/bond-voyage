@@ -27,7 +27,7 @@ import {
 } from "../components/ui/select";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
-import { exportToPDF, exportToExcel } from "../utils/exportUtils";
+import { useExportUsers } from "../hooks/useExports";
 import {
   useUsers,
   useUpdateUser,
@@ -443,42 +443,21 @@ export function Users() {
     (u) => u.status === "Deactivated"
   );
 
+  const exportUsers = useExportUsers({
+    onSuccess: () => {
+      toast.success("Users exported successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to export users");
+    },
+  });
+
   const handleExportPDF = () => {
-    const exportData = users.map((user) => ({
-      name: user.name,
-      email: user.email,
-      mobile: user.mobile,
-      usersince: user.userSince,
-      status: user.status,
-      role: user.role,
-    }));
-    exportToPDF(exportData, "Users Report", [
-      "Name",
-      "Email",
-      "Mobile",
-      "User Since",
-      "Status",
-      "Role",
-    ]);
+    exportUsers.mutate({ format: "pdf" });
   };
 
   const handleExportExcel = () => {
-    const exportData = users.map((user) => ({
-      name: user.name,
-      email: user.email,
-      mobile: user.mobile,
-      usersince: user.userSince,
-      status: user.status,
-      role: user.role,
-    }));
-    exportToExcel(exportData, "Users Report", [
-      "Name",
-      "Email",
-      "Mobile",
-      "User Since",
-      "Status",
-      "Role",
-    ]);
+    exportUsers.mutate({ format: "csv" });
   };
 
   if (isLoading) {

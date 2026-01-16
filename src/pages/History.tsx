@@ -36,11 +36,10 @@ import { ItineraryDetailDisplay } from "../components/ItineraryDetailDisplay";
 import { useAdminBookings, useBookingDetail } from "../hooks/useBookings";
 import { queryKeys } from "../utils/lib/queryKeys";
 import {
-  exportToPDF,
-  exportToExcel,
   exportBookingDetailToPDF,
   exportBookingDetailToExcel,
 } from "../utils/exportUtils";
+import { useExportHistory } from "../hooks/useExports";
 import { formatDateRange } from "../App";
 import { capitalize } from "../utils/helpers/capitalize";
 import { toast } from "sonner";
@@ -87,6 +86,16 @@ export function History({ onHistoryCountChange }: HistoryProps) {
   const location = useLocation();
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
   const isMobile = useMediaQuery({ maxWidth: 768 });
+
+  // Export hook
+  const exportHistory = useExportHistory({
+    onSuccess: () => {
+      toast.success("History exported successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to export history");
+    },
+  });
 
   const [activeTab, setActiveTab] = useState<"completed" | "cancelled">(
     "completed"
@@ -1083,84 +1092,12 @@ export function History({ onHistoryCountChange }: HistoryProps) {
             />
           }
           onExportPDF={() => {
-            const exportData = filteredBookings.map((booking) => ({
-              id: booking.id,
-              customer: booking.customer,
-              email: booking.email,
-              mobile: booking.mobile,
-              destination: booking.destination,
-              startdate: booking.startDate
-                ? new Date(booking.startDate).toLocaleDateString()
-                : "N/A",
-              enddate: booking.endDate
-                ? new Date(booking.endDate).toLocaleDateString()
-                : "N/A",
-              travelers: `${booking.travelers} pax`,
-              totalamount: `₱${booking.totalAmount.toLocaleString()}`,
-              bookingtype: booking.bookingType || "N/A",
-              status: booking.status,
-              completeddate:
-                booking.status === "COMPLETED" ? "Completed" : "Cancelled",
-            }));
-            const titleSuffix =
-              activeTab === "completed"
-                ? "Completed Bookings"
-                : "Cancelled Bookings";
-            exportToPDF(exportData, `History - ${titleSuffix}`, [
-              "ID",
-              "Customer",
-              "Email",
-              "Mobile",
-              "Destination",
-              "Start Date",
-              "End Date",
-              "Travelers",
-              "Total Amount",
-              "Booking Type",
-              "Status",
-              "Completed Date",
-            ]);
-            toast.success(`Exporting ${activeTab} bookings as PDF...`);
+            const status = activeTab === "completed" ? "COMPLETED" : "CANCELLED";
+            exportHistory.mutate({ format: "pdf", status });
           }}
           onExportExcel={() => {
-            const exportData = filteredBookings.map((booking) => ({
-              id: booking.id,
-              customer: booking.customer,
-              email: booking.email,
-              mobile: booking.mobile,
-              destination: booking.destination,
-              startdate: booking.startDate
-                ? new Date(booking.startDate).toLocaleDateString()
-                : "N/A",
-              enddate: booking.endDate
-                ? new Date(booking.endDate).toLocaleDateString()
-                : "N/A",
-              travelers: `${booking.travelers} pax`,
-              totalamount: `₱${booking.totalAmount.toLocaleString()}`,
-              bookingtype: booking.bookingType || "N/A",
-              status: booking.status,
-              completeddate:
-                booking.status === "COMPLETED" ? "Completed" : "Cancelled",
-            }));
-            const titleSuffix =
-              activeTab === "completed"
-                ? "Completed Bookings"
-                : "Cancelled Bookings";
-            exportToExcel(exportData, `History - ${titleSuffix}`, [
-              "ID",
-              "Customer",
-              "Email",
-              "Mobile",
-              "Destination",
-              "Start Date",
-              "End Date",
-              "Travelers",
-              "Total Amount",
-              "Booking Type",
-              "Status",
-              "Completed Date",
-            ]);
-            toast.success(`Exporting ${activeTab} bookings as Excel...`);
+            const status = activeTab === "completed" ? "COMPLETED" : "CANCELLED";
+            exportHistory.mutate({ format: "csv", status });
           }}
         />
 

@@ -37,6 +37,7 @@ import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
 import { usePaginatedActivityLogs } from "../hooks/useActivityLogs";
+import { useExportActivityLogs } from "../hooks/useExports";
 
 interface ActivityLogEntry {
   id: string;
@@ -91,6 +92,16 @@ const categoryToActionFilter: Record<string, string | undefined> = {
 
 export function ActivityLog() {
   const navigate = useNavigate();
+
+  // Export hook
+  const exportActivityLogs = useExportActivityLogs({
+    onSuccess: () => {
+      toast.success("Activity logs exported successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to export activity logs");
+    },
+  });
 
   // Pagination state - server-side
   const [currentPage, setCurrentPage] = useState(1);
@@ -252,11 +263,21 @@ export function ActivityLog() {
   };
 
   const handleExportPDF = () => {
-    toast.success("Exporting Activity Log as PDF...");
+    exportActivityLogs.mutate({
+      format: "pdf",
+      action: categoryToActionFilter[selectedCategory],
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+    });
   };
 
   const handleExportExcel = () => {
-    toast.success("Exporting Activity Log as Excel...");
+    exportActivityLogs.mutate({
+      format: "csv",
+      action: categoryToActionFilter[selectedCategory],
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+    });
   };
 
   const handleSortChange = (order: SortOrder) => {

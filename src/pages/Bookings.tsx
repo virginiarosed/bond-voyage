@@ -47,11 +47,10 @@ import { Pagination } from "../components/Pagination";
 import { toast } from "sonner";
 import { useBreadcrumbs } from "../components/BreadcrumbContext";
 import {
-  exportToPDF,
-  exportToExcel,
   exportBookingDetailToPDF,
   exportBookingDetailToExcel,
 } from "../utils/exportUtils";
+import { useExportBookings } from "../hooks/useExports";
 import {
   useAdminBookings,
   useBookingDetail,
@@ -111,22 +110,27 @@ export function Bookings({
 }: BookingsProps) {
   const { setBreadcrumbs, resetBreadcrumbs } = useBreadcrumbs();
 
-  const [sortOrder, setSortOrder] = useState<
-    "createdAt:desc" | "createdAt:asc"
-  >("createdAt:desc");
+  // UI sort state ("none" | "newest" | "oldest")
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+
+  // Map UI sort order to backend sort parameter
+  const getBackendSort = (uiSort: SortOrder): "createdAt:desc" | "createdAt:asc" => {
+    if (uiSort === "oldest") return "createdAt:asc";
+    return "createdAt:desc"; // "newest" or "none" defaults to desc
+  };
 
   const [queryParams, setQueryParams] = useState({
     page: 1,
     limit: 10,
     status: "BOOKED",
-    sort: sortOrder,
+    sort: getBackendSort("newest"),
   });
 
   const [queryParams2, setQueryParams2] = useState({
     page: 1,
     limit: 10,
     status: "CONFIRMED",
-    sort: sortOrder,
+    sort: getBackendSort("newest"),
   });
 
   const {
@@ -142,6 +146,15 @@ export function Bookings({
     isError: isBookingsError2,
     refetch: refetchBookings2,
   } = useAdminBookings(queryParams2);
+
+  const exportBookings = useExportBookings({
+    onSuccess: () => {
+      toast.success("Export started. Your download will begin shortly.");
+    },
+    onError: () => {
+      toast.error("Export failed. Please try again.");
+    },
+  });
 
   const mergedBookingsData = useMemo(() => {
     const bookedData = bookingsData?.data || [];
@@ -161,13 +174,13 @@ export function Bookings({
 
     const mergedArray = Array.from(uniqueBookings.values());
 
-    if (sortOrder === "createdAt:desc") {
+    if (sortOrder === "newest") {
       mergedArray.sort((a, b) => {
         const dateA = new Date(a.createdAt || a.bookedDate).getTime();
         const dateB = new Date(b.createdAt || b.bookedDate).getTime();
         return dateB - dateA; // Newest first
       });
-    } else if (sortOrder === "createdAt:asc") {
+    } else if (sortOrder === "oldest") {
       mergedArray.sort((a, b) => {
         const dateA = new Date(a.createdAt || a.bookedDate).getTime();
         const dateB = new Date(b.createdAt || b.bookedDate).getTime();
@@ -402,13 +415,8 @@ export function Bookings({
       delete params.dateTo;
     }
 
-    if (sortOrder === "createdAt:desc") {
-      params.sort = "createdAt:desc";
-    } else if (sortOrder === "createdAt:asc") {
-      params.sort = "createdAt:asc";
-    } else {
-      delete params.sort;
-    }
+    // Map UI sort order to backend sort parameter
+    params.sort = getBackendSort(sortOrder);
 
     setQueryParams(params);
   }, [searchQuery, selectedTypeFilter, dateFrom, dateTo, sortOrder]);
@@ -1652,66 +1660,10 @@ export function Bookings({
             />
           }
           onExportPDF={() => {
-            const exportData = filteredBookings.map((booking) => ({
-              id: booking.id,
-              customer: booking.customer,
-              email: booking.email,
-              mobile: booking.mobile,
-              destination: booking.destination,
-              startdate: new Date(booking.startDate).toLocaleDateString(),
-              enddate: new Date(booking.endDate).toLocaleDateString(),
-              travelers: `${booking.travelers} pax`,
-              totalamount: `₱${booking.totalAmount.toLocaleString()}`,
-              paymentstatus: booking.paymentStatus,
-              bookingtype: booking.bookingType || "N/A",
-              status: booking.status,
-            }));
-            exportToPDF(exportData, "Bookings Report", [
-              "ID",
-              "Customer",
-              "Email",
-              "Mobile",
-              "Destination",
-              "Start Date",
-              "End Date",
-              "Travelers",
-              "Total Amount",
-              "Payment Status",
-              "Booking Type",
-              "Status",
-            ]);
-            toast.success("Exporting bookings as PDF...");
+            exportBookings.mutate({ format: "pdf" });
           }}
           onExportExcel={() => {
-            const exportData = filteredBookings.map((booking) => ({
-              id: booking.id,
-              customer: booking.customer,
-              email: booking.email,
-              mobile: booking.mobile,
-              destination: booking.destination,
-              startdate: new Date(booking.startDate).toLocaleDateString(),
-              enddate: new Date(booking.endDate).toLocaleDateString(),
-              travelers: `${booking.travelers} pax`,
-              totalamount: `₱${booking.totalAmount.toLocaleString()}`,
-              paymentstatus: booking.paymentStatus,
-              bookingtype: booking.bookingType || "N/A",
-              status: booking.status,
-            }));
-            exportToExcel(exportData, "Bookings Report", [
-              "ID",
-              "Customer",
-              "Email",
-              "Mobile",
-              "Destination",
-              "Start Date",
-              "End Date",
-              "Travelers",
-              "Total Amount",
-              "Payment Status",
-              "Booking Type",
-              "Status",
-            ]);
-            toast.success("Exporting bookings as Excel...");
+            exportBookings.mutate({ format: "csv" });
           }}
         />
 

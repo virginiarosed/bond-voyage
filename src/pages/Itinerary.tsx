@@ -97,6 +97,7 @@ import {
 import { toast } from "sonner";
 import { Booking, TourPackage } from "../types/types";
 import { queryKeys } from "../utils/lib/queryKeys";
+import { useExportItineraries } from "../hooks/useExports";
 import {
   useBookingDetail,
   useCreateBooking,
@@ -539,6 +540,17 @@ export function Itinerary({
   const queryClient = useQueryClient();
   const standardRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const requestedRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  // Export hook
+  const exportItineraries = useExportItineraries({
+    onSuccess: () => {
+      toast.success("Itineraries exported successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to export itineraries");
+    },
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("none");
   const [selectedCategory, setSelectedCategory] = useState<
@@ -1224,11 +1236,11 @@ export function Itinerary({
   };
 
   const handleExportPDF = () => {
-    toast.info("PDF export functionality coming soon");
+    exportItineraries.mutate({ format: "pdf" });
   };
 
   const handleExportExcel = () => {
-    toast.info("Excel export functionality coming soon");
+    exportItineraries.mutate({ format: "csv" });
   };
 
   const getFilteredAndSortedTemplates = () => {

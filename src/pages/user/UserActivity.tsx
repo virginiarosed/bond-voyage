@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { useProfile } from "../../components/ProfileContext";
 import { FAQAssistant } from "../../components/FAQAssistant";
 import { useActivityLogs } from "../../hooks/useActivityLogs";
+import { useExportActivityLogs } from "../../hooks/useExports";
 
 interface ActivityLogEntry {
   id: string;
@@ -88,6 +89,16 @@ export function UserActivity() {
   const { userProfileData } = useProfile();
   const { data: activityLogsResponse, isLoading } = useActivityLogs();
   const userName = `${userProfileData.firstName} ${userProfileData.lastName}`;
+
+  // Export hook
+  const exportActivityLogs = useExportActivityLogs({
+    onSuccess: () => {
+      toast.success("Activity logs exported successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to export activity logs");
+    },
+  });
 
   const [activities, setActivities] = useState<ActivityLogEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -301,11 +312,11 @@ export function UserActivity() {
   };
 
   const handleExportPDF = () => {
-    toast.success("Exporting Activity Log as PDF...");
+    exportActivityLogs.mutate({ format: "pdf" });
   };
 
   const handleExportExcel = () => {
-    toast.success("Exporting Activity Log as Excel...");
+    exportActivityLogs.mutate({ format: "csv" });
   };
 
   const handleSortChange = (order: SortOrder) => {

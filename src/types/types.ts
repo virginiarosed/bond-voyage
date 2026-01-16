@@ -128,35 +128,47 @@ export interface Itinerary {
 export interface Booking {
   id: string;
   bookingCode: string;
-  itineraryId: string;
-  userId: string;
-  destination: string;
-  startDate: string | null;
-  endDate: string | null;
-  travelers: number;
-  totalPrice: number;
-  ownership: string;
-  type: "STANDARD" | "CUSTOMIZED" | "REQUESTED";
-  status:
+  itineraryId?: string;
+  userId?: string;
+  destination?: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  travelers?: number;
+  totalPrice?: number;
+  ownership?: string;
+  type?: "STANDARD" | "CUSTOMIZED" | "REQUESTED";
+  status?:
     | "DRAFT"
     | "PENDING"
     | "CONFIRMED"
     | "REJECTED"
     | "COMPLETED"
-    | "CANCELLED";
-  tourType: "PRIVATE" | "GROUP" | string;
-  paymentStatus: "PENDING" | "PAID" | "FAILED" | "REFUNDED" | string;
-  paymentReceiptUrl: string | null;
-  rejectionReason: string | null;
-  rejectionResolution: string | null;
-  isResolved: boolean;
-  customerName: string | null;
-  customerEmail: string | null;
-  customerMobile: string | null;
-  bookedDate: string;
-  createdAt: string;
-  updatedAt: string;
-  itinerary: Itinerary;
+    | "CANCELLED"
+    | "BOOKED";
+  tourType?: "PRIVATE" | "GROUP" | string;
+  paymentStatus?: "PENDING" | "PAID" | "FAILED" | "REFUNDED" | string;
+  paymentReceiptUrl?: string | null;
+  rejectionReason?: string | null;
+  rejectionResolution?: string | null;
+  isResolved?: boolean;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerMobile?: string | null;
+  bookedDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  updatedAtDisplay?: string;
+  itinerary?: Itinerary;
+  // UI-specific display properties (used in frontend components)
+  customer?: string;
+  email?: string;
+  mobile?: string;
+  total?: string;
+  totalAmount?: number;
+  paid?: number;
+  bookingType?: string;
+  resolutionStatus?: string;
+  sentStatus?: string;
 }
 
 export interface TourPackage {
