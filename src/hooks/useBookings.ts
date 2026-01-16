@@ -355,11 +355,35 @@ export const useJoinBooking = (
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.myBookings() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.bookings.myBookings(),
+      });
       queryClient.invalidateQueries({
         queryKey: queryKeys.bookings.sharedBookings(),
       });
     },
     ...options,
+  });
+};
+
+export const useUpdateBookingWithId = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiClient.patch<ApiResponse<Booking>>(
+        `/bookings/${id}`,
+        data
+      );
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.bookings.detail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.bookings.all,
+      });
+    },
   });
 };
