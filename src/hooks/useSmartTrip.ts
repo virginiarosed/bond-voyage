@@ -12,9 +12,8 @@ export interface SmartTripPayload {
   endDate: string;
   travelers: number;
   budget: number;
-  preference: string[];
-  accomodationType: string;
-  travelPace: "drive" | "walk";
+  preferences: string[];
+  travelPace: "relaxed" | "moderate" | "packed" | "own_pace";
 }
 
 export interface SmartTripData {

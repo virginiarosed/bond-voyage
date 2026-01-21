@@ -203,9 +203,8 @@ export function SmartTrip() {
       endDate: formData.endDate,
       travelers: parseInt(formData.travelers),
       budget: parseInt(formData.budget) || 0,
-      preference: formData.preferences,
-      accomodationType: formData.accommodationType,
-      travelPace: formData.travelPace as "drive" | "walk",
+      preferences: formData.preferences,
+      travelPace: formData.travelPace as "relaxed" | "moderate" | "packed" | "own_pace",
     };
 
     generateSmartTrip(payload);
