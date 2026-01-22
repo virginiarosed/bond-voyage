@@ -192,6 +192,39 @@ export interface Inquiry {
   createdAt: string;
 }
 
+export interface ChatAttachment {
+  originalName: string;
+  mimeType: string;
+  size: number;
+  storagePath: string;
+  publicUrl?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  bookingId: string;
+  senderUserId: string | null;
+  sender: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    role: string;
+  } | null;
+  kind: "USER" | "ADMIN" | "AI_SUGGESTION" | "SYSTEM";
+  content: string;
+  attachments: ChatAttachment[];
+  isRead: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChatMessagesResponse {
+  items: ChatMessage[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 type NotificationType =
   | "BOOKING"
   | "PAYMENT"

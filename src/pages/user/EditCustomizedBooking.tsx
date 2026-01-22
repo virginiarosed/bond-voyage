@@ -192,6 +192,12 @@ export function EditCustomizedBooking() {
     totalPrice: "",
   });
 
+  const todayISO = (() => {
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - tzOffset).toISOString().split("T")[0];
+  })();
+
   const [itineraryDays, setItineraryDays] = useState<Day[]>([]);
   const [initialBookingData, setInitialBookingData] =
     useState<BookingFormData | null>(null);
@@ -1209,6 +1215,7 @@ export function EditCustomizedBooking() {
                 onChange={(e) =>
                   handleBookingChange("travelDateFrom", e.target.value)
                 }
+                min={todayISO}
                 className="h-11 pl-10 rounded-xl border-2 border-[#E5E7EB] focus:border-[#14B8A6] transition-all"
               />
             </div>
@@ -1230,6 +1237,7 @@ export function EditCustomizedBooking() {
                 onChange={(e) =>
                   handleBookingChange("travelDateTo", e.target.value)
                 }
+                min={bookingData.travelDateFrom || todayISO}
                 className="h-11 pl-10 rounded-xl border-2 border-[#E5E7EB] focus:border-[#14B8A6] transition-all"
               />
             </div>

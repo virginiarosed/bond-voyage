@@ -23,6 +23,7 @@ import { FAQAssistant } from "../../components/FAQAssistant";
 import { useBookingDetail } from "../../hooks/useBookings";
 import { useProfile } from "../../hooks/useAuth";
 import { UserPaymentSection } from "./UserPaymentSection";
+import { BookingChatPanel } from "../../components/booking/chat";
 
 export function UserBookingDetail() {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +43,8 @@ export function UserBookingDetail() {
 
   // Calculate payment totals - will be handled by UserPaymentSection
   const totalAmount = booking ? parseFloat(booking.totalPrice.toString()) : 0;
+
+  const statusLabel = booking?.status === "REJECTED" ? "REFINEMENT" : booking?.status;
 
   const handleBack = () => {
     navigate("/user/bookings");
@@ -157,7 +160,7 @@ export function UserBookingDetail() {
                     : "bg-[#EF4444] text-white"
                 }`}
               >
-                {booking.status}
+                {statusLabel}
               </div>
             </div>
             <div className="flex items-center gap-2 text-white/90">
@@ -276,6 +279,8 @@ export function UserBookingDetail() {
               </div>
             </div>
           </div>
+
+          <BookingChatPanel bookingId={booking.id} bookingCode={booking.bookingCode} />
 
           {/* Use UserPaymentSection component */}
           <UserPaymentSection
@@ -427,6 +432,8 @@ export function UserBookingDetail() {
             </div>
           </div>
         </div>
+
+        <BookingChatPanel bookingId={booking.id} bookingCode={booking.bookingCode} />
 
         {/* Itinerary Details - Second on mobile */}
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">

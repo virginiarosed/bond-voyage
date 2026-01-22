@@ -24,6 +24,7 @@ import {
 import { ItineraryDetailDisplay } from "./ItineraryDetailDisplay";
 import { Itinerary } from "../types/types";
 import { PaymentSection } from "./PaymentSection";
+import { BookingChatPanel } from "./booking/chat";
 
 type ItineraryDay = {
   dayNumber: number;
@@ -289,6 +290,12 @@ export function BookingDetailView({
             </div>
           </div>
 
+            {/* Refinement Discussion Chat */}
+            <BookingChatPanel
+              bookingId={booking.id}
+              bookingCode={booking.bookingCode}
+            />
+
           {/* Payment Information */}
           <PaymentSection booking={booking} />
 
@@ -342,6 +349,12 @@ export function BookingDetailView({
           </div>
         </div>
 
+        {/* Refinement Discussion Chat */}
+        <BookingChatPanel
+          bookingId={booking.id}
+          bookingCode={booking.bookingCode}
+        />
+
         {/* Itinerary Details - Second on mobile */}
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
           <div className="p-4 md:p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
@@ -363,7 +376,7 @@ export function BookingDetailView({
         )}
       </div>
 
-      {/* Rejection Info for Rejected Bookings - Visible on both mobile and desktop */}
+      {/* Refinement Info for Rejected Bookings - Visible on both mobile and desktop */}
       {booking.rejectionReason && booking.rejectionResolution && (
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
           <div className="p-4 md:p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[rgba(255,107,107,0.05)] to-white">
@@ -372,14 +385,14 @@ export function BookingDetailView({
                 <AlertTriangle className="w-5 h-5 text-white" />
               </div>
               <h3 className="font-semibold text-[#FF6B6B]">
-                Rejection Details
+                Refinement Details
               </h3>
             </div>
           </div>
           <div className="p-4 md:p-6 space-y-4">
             <div>
               <p className="text-xs font-semibold text-[#FF6B6B] mb-1">
-                Rejection Reason:
+                Refinement Reason:
               </p>
               <p className="text-sm text-[#334155]">
                 {booking.rejectionReason}
@@ -387,7 +400,7 @@ export function BookingDetailView({
             </div>
             <div>
               <p className="text-xs font-semibold text-[#FF6B6B] mb-1">
-                Required Action:
+                Requested Updates:
               </p>
               <p className="text-sm text-[#334155]">
                 {booking.rejectionResolution}
