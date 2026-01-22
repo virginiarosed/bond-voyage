@@ -43,6 +43,17 @@ export interface SmartTripData {
     travelPace: string;
     preferences: string[];
   };
+  suggestedBudget?: {
+    total: number;
+    breakdown: {
+      transport: number;
+      meals: number;
+      activities: number;
+      accommodation: number;
+      misc: number;
+    };
+    note?: string;
+  };
 }
 
 export const useSmartTrip = (

@@ -373,6 +373,12 @@ const formatDateISO = (dateString: string | Date | null): string => {
   }
 };
 
+const getTodayISO = (): string => {
+  const now = new Date();
+  const tzOffset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - tzOffset).toISOString().split("T")[0];
+};
+
 const getStatusBadge = (
   status: string,
   isResolved?: boolean
@@ -2537,6 +2543,7 @@ export function Itinerary({
                         travelDateFrom: e.target.value,
                       })
                     }
+                    min={getTodayISO()}
                     className="h-11 pl-10 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
                   />
                 </div>
@@ -2560,6 +2567,7 @@ export function Itinerary({
                         travelDateTo: e.target.value,
                       })
                     }
+                    min={bookingFormData.travelDateFrom || getTodayISO()}
                     className="h-11 pl-10 border-[#E5E7EB] focus:border-[#14B8A6] focus:ring-[#14B8A6]/10"
                   />
                 </div>

@@ -303,6 +303,11 @@ export function EditRequestedItinerary() {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
+  const todayISO = (() => {
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - tzOffset).toISOString().split("T")[0];
+  })();
 
   const passedItineraryData = location.state?.itineraryData;
 
@@ -1900,6 +1905,7 @@ export function EditRequestedItinerary() {
                 onChange={(e) =>
                   handleFormChange("travelDateFrom", e.target.value)
                 }
+                min={todayISO}
                 className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
               />
             </div>
@@ -1918,6 +1924,7 @@ export function EditRequestedItinerary() {
                 onChange={(e) =>
                   handleFormChange("travelDateTo", e.target.value)
                 }
+                min={formData.travelDateFrom || todayISO}
                 className="h-12 pl-12 rounded-xl border-2 border-[#E5E7EB] focus:border-[#0A7AFF] focus:ring-4 focus:ring-[rgba(10,122,255,0.1)] transition-all"
               />
             </div>
