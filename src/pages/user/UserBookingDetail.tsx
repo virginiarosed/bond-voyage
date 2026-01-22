@@ -280,6 +280,8 @@ export function UserBookingDetail() {
             </div>
           </div>
 
+          <BookingChatPanel bookingId={booking.id} bookingCode={booking.bookingCode} />
+
           {/* Use UserPaymentSection component */}
           <UserPaymentSection
             booking={{
@@ -431,6 +433,8 @@ export function UserBookingDetail() {
           </div>
         </div>
 
+        <BookingChatPanel bookingId={booking.id} bookingCode={booking.bookingCode} />
+
         {/* Itinerary Details - Second on mobile */}
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden">
           <div className="p-4 md:p-6 border-b border-[#E5E7EB] bg-linear-to-br from-[#F8FAFB] to-white">
@@ -548,10 +552,6 @@ export function UserBookingDetail() {
             Back to List
           </button>
         </div>
-      </div>
-
-      <div className="space-y-4">
-        <BookingChatPanel bookingId={booking.id} bookingCode={booking.bookingCode} />
       </div>
 
       <FAQAssistant />

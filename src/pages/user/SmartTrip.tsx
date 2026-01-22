@@ -90,6 +90,51 @@ export function SmartTrip() {
     { id: "relaxation", label: "Relaxation & Spa", icon: Heart },
   ];
 
+  const todayISO = (() => {
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - tzOffset).toISOString().split("T")[0];
+  })();
+
+  const formatDate = (value?: string) => {
+    if (!value) return "—";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "—";
+    return parsed.toLocaleDateString("en-PH", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const formatDateRange = (start?: string, end?: string) => {
+    if (!start || !end) return "—";
+    return `${formatDate(start)} to ${formatDate(end)}`;
+  };
+
+  const formatBudget = (value?: string | number) => {
+    const numeric = typeof value === "string" ? Number(value) : value;
+    if (!numeric || Number.isNaN(numeric)) return "₱0";
+    return `₱${numeric.toLocaleString()}`;
+  };
+
+  const formatPace = (value?: string) => {
+    if (!value) return "—";
+    return value.replace(/_/g, " ");
+  };
+
+  const formatPreferences = (prefs?: string[]) => {
+    if (!prefs || prefs.length === 0) return "None";
+    const labelMap = preferenceOptions.reduce<Record<string, string>>(
+      (acc, option) => {
+        acc[option.id] = option.label;
+        return acc;
+      },
+      {}
+    );
+    return prefs.map((pref) => labelMap[pref] || pref).join(", ");
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -229,6 +274,39 @@ export function SmartTrip() {
     }
 
     setShowSaveConfirmModal(true);
+  };
+
+  const handleAcceptGeneratedChanges = () => {
+    if (!generatedTrip?.metadata) return;
+
+    const acceptedBudget =
+      generatedTrip.suggestedBudget?.total ?? generatedTrip.metadata.budget;
+
+    setFormData((prev) => ({
+      ...prev,
+      destination: generatedTrip.metadata.destination || prev.destination,
+      startDate: generatedTrip.metadata.startDate || prev.startDate,
+      endDate: generatedTrip.metadata.endDate || prev.endDate,
+      travelers: String(generatedTrip.metadata.travelers || prev.travelers),
+      budget: String(acceptedBudget ?? prev.budget),
+      preferences: generatedTrip.metadata.preferences || prev.preferences,
+      travelPace: generatedTrip.metadata.travelPace || prev.travelPace,
+    }));
+
+    setGeneratedTrip((prev: any) => {
+      if (!prev?.metadata) return prev;
+      return {
+        ...prev,
+        metadata: {
+          ...prev.metadata,
+          budget: acceptedBudget ?? prev.metadata.budget,
+        },
+      };
+    });
+
+    toast.success("Trip details updated", {
+      description: "Your inputs were replaced with the AI-generated details.",
+    });
   };
 
   const confirmSaveToTravels = () => {
@@ -461,6 +539,7 @@ export function SmartTrip() {
                     onChange={(e) =>
                       setFormData({ ...formData, startDate: e.target.value })
                     }
+                    min={todayISO}
                     className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     required
                   />
@@ -483,6 +562,7 @@ export function SmartTrip() {
                     onChange={(e) =>
                       setFormData({ ...formData, endDate: e.target.value })
                     }
+                    min={formData.startDate || todayISO}
                     className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     required
                   />
@@ -684,6 +764,95 @@ export function SmartTrip() {
             </div>
           </div>
 
+          {generatedTrip.metadata && (
+            <ContentCard title="Generated vs Your Input" icon={CheckCircle2}>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl border border-border bg-accent/30">
+                    <p className="text-xs text-muted-foreground mb-1">Your Input</p>
+                    <div className="space-y-2 text-sm text-card-foreground">
+                      <p><span className="text-muted-foreground">Destination:</span> {formData.destination || "—"}</p>
+                      <p><span className="text-muted-foreground">Dates:</span> {formatDateRange(formData.startDate, formData.endDate)}</p>
+                      <p><span className="text-muted-foreground">Travelers:</span> {formData.travelers || "—"}</p>
+                      <p><span className="text-muted-foreground">Budget:</span> {formatBudget(formData.budget)}</p>
+                      <p><span className="text-muted-foreground">Pace:</span> {formatPace(formData.travelPace)}</p>
+                      <p><span className="text-muted-foreground">Preferences:</span> {formatPreferences(formData.preferences)}</p>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl border border-[#C7EFD1] bg-[#ECFDF3]">
+                    <p className="text-xs text-muted-foreground mb-1">AI Generated</p>
+                    <div className="space-y-2 text-sm text-card-foreground">
+                      <p><span className="text-muted-foreground">Destination:</span> {generatedTrip.metadata.destination}</p>
+                      <p><span className="text-muted-foreground">Dates:</span> {formatDateRange(generatedTrip.metadata.startDate, generatedTrip.metadata.endDate)}</p>
+                      <p><span className="text-muted-foreground">Travelers:</span> {generatedTrip.metadata.travelers}</p>
+                      <p><span className="text-muted-foreground">Budget:</span> {formatBudget(generatedTrip.suggestedBudget?.total ?? generatedTrip.metadata.budget)}</p>
+                      <p><span className="text-muted-foreground">Pace:</span> {formatPace(generatedTrip.metadata.travelPace)}</p>
+                      <p><span className="text-muted-foreground">Preferences:</span> {formatPreferences(generatedTrip.metadata.preferences)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleAcceptGeneratedChanges}
+                    className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    Accept Changes
+                  </button>
+                </div>
+              </div>
+            </ContentCard>
+          )}
+
+          {generatedTrip.suggestedBudget && (
+            <ContentCard title="AI Budget Breakdown" icon={CheckCircle2}>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                  <div className="p-3 rounded-lg border border-[#C7EFD1] bg-[#ECFDF3]">
+                    <p className="text-xs text-muted-foreground">Transport</p>
+                    <p className="font-medium text-card-foreground">
+                      {formatBudget(generatedTrip.suggestedBudget.breakdown.transport)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg border border-[#C7EFD1] bg-[#ECFDF3]">
+                    <p className="text-xs text-muted-foreground">Meals</p>
+                    <p className="font-medium text-card-foreground">
+                      {formatBudget(generatedTrip.suggestedBudget.breakdown.meals)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg border border-[#C7EFD1] bg-[#ECFDF3]">
+                    <p className="text-xs text-muted-foreground">Activities</p>
+                    <p className="font-medium text-card-foreground">
+                      {formatBudget(generatedTrip.suggestedBudget.breakdown.activities)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg border border-[#C7EFD1] bg-[#ECFDF3]">
+                    <p className="text-xs text-muted-foreground">Accommodation</p>
+                    <p className="font-medium text-card-foreground">
+                      {formatBudget(generatedTrip.suggestedBudget.breakdown.accommodation)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg border border-[#C7EFD1] bg-[#ECFDF3]">
+                    <p className="text-xs text-muted-foreground">Misc</p>
+                    <p className="font-medium text-card-foreground">
+                      {formatBudget(generatedTrip.suggestedBudget.breakdown.misc)}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground italic">
+                  Based on {generatedTrip.metadata.travelers} traveler(s), the trip duration,
+                  typical daily costs, and a ₱1,000 buffer for price variability.
+                </p>
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium">Sources (stub):</span> Local transport estimates,
+                  mid-range meal averages, typical attraction fees, and standard accommodation
+                  rates for the selected destination. Replace with official pricing sources.
+                </div>
+              </div>
+            </ContentCard>
+          )}
+
           {/* Itinerary */}
           <ContentCard title="Your Itinerary" icon={Calendar}>
             <div className="space-y-4">
@@ -732,6 +901,7 @@ export function SmartTrip() {
                           <p className="text-xs text-muted-foreground">
                             {activity.description}
                           </p>
+
                         </div>
                       </div>
                     ))}
